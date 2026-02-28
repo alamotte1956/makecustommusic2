@@ -10,7 +10,7 @@ import { synthesizeAudio, createAudioUrl } from "@/lib/audioSynthesizer";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Printer, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Zap, Crown, Cpu, FileText
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import {
@@ -35,6 +35,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
+const ENGINE_BADGES: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+  free: { label: "Built-in", icon: <Zap className="w-3 h-3" />, color: "bg-green-100 text-green-700 border-green-300" },
+  suno: { label: "Suno", icon: <Crown className="w-3 h-3" />, color: "bg-purple-100 text-purple-700 border-purple-300" },
+  musicgen: { label: "MusicGen", icon: <Cpu className="w-3 h-3" />, color: "bg-blue-100 text-blue-700 border-blue-300" },
+};
+
 export default function History() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const { data: songs, isLoading } = trpc.songs.list.useQuery(undefined, {
@@ -49,6 +55,7 @@ export default function History() {
   const utils = trpc.useUtils();
 
   const [expandedSong, setExpandedSong] = useState<number | null>(null);
+  const [showLyrics, setShowLyrics] = useState<number | null>(null);
   const [playingSong, setPlayingSong] = useState<number | null>(null);
   const [audioUrls, setAudioUrls] = useState<Record<number, string>>({});
   const [synthesizing, setSynthesizing] = useState<number | null>(null);
@@ -59,8 +66,22 @@ export default function History() {
   const [showBulkAlbumDialog, setShowBulkAlbumDialog] = useState(false);
 
   const handlePlay = useCallback(async (song: any) => {
+    // If we already have an audio URL cached, just show the player
     if (audioUrls[song.id]) {
       setPlayingSong(song.id);
+      return;
+    }
+
+    // Premium engines have server-side audio URLs
+    if (song.engine !== "free" && song.mp3Url) {
+      setAudioUrls(prev => ({ ...prev, [song.id]: song.mp3Url }));
+      setPlayingSong(song.id);
+      return;
+    }
+
+    // Free engine: synthesize client-side from ABC notation
+    if (!song.abcNotation) {
+      toast.error("No audio available for this song");
       return;
     }
 
@@ -78,6 +99,20 @@ export default function History() {
   }, [audioUrls]);
 
   const handleDownload = useCallback(async (song: any) => {
+    // Premium engines: download from server URL
+    if (song.engine !== "free" && song.mp3Url) {
+      const a = document.createElement("a");
+      a.href = song.mp3Url;
+      a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Download started!");
+      return;
+    }
+
+    // Free engine: synthesize and download WAV
     let blob: Blob;
     if (audioUrls[song.id]) {
       const response = await fetch(audioUrls[song.id]);
@@ -116,6 +151,10 @@ export default function History() {
   }, [deleteMutation, utils]);
 
   const handlePrint = useCallback((song: any) => {
+    if (!song.abcNotation) {
+      toast.error("Sheet music is only available for Built-in AI songs");
+      return;
+    }
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Please allow pop-ups to print sheet music");
@@ -239,134 +278,177 @@ export default function History() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {songs.map((song) => (
-            <Card key={song.id} className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-4 sm:p-5">
-                  <div className="flex items-start gap-3">
-                    {/* Selection checkbox */}
-                    <input
-                      type="checkbox"
-                      checked={selectedSongs.has(song.id)}
-                      onChange={() => toggleSongSelection(song.id)}
-                      className="mt-1.5 h-4 w-4 rounded border-border accent-primary"
-                    />
+          {songs.map((song) => {
+            const engineBadge = ENGINE_BADGES[song.engine || "free"] || ENGINE_BADGES.free;
+            const isFreeEngine = !song.engine || song.engine === "free";
+            const hasAudio = isFreeEngine ? !!song.abcNotation : !!song.mp3Url;
+            const hasSheetMusic = isFreeEngine && !!song.abcNotation;
+            const hasLyrics = !!(song as any).lyrics;
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                            Keywords: {song.keywords}
-                          </p>
+            return (
+              <Card key={song.id} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      {/* Selection checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={selectedSongs.has(song.id)}
+                        onChange={() => toggleSongSelection(song.id)}
+                        className="mt-1.5 h-4 w-4 rounded border-border accent-primary"
+                      />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                              Keywords: {song.keywords}
+                            </p>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {new Date(song.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {new Date(song.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
 
-                      {/* Badges */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
-                        {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
-                        {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
-                      </div>
-
-                      {/* Player */}
-                      {playingSong === song.id && audioUrls[song.id] && (
-                        <div className="mt-3">
-                          <AudioPlayer src={audioUrls[song.id]} compact />
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          <Badge variant="outline" className={`text-xs gap-1 ${engineBadge.color}`}>
+                            {engineBadge.icon}
+                            {engineBadge.label}
+                          </Badge>
+                          {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
+                          {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
+                          {song.vocalType && song.vocalType !== "none" && (
+                            <Badge variant="secondary" className="text-xs capitalize">{song.vocalType} vocals</Badge>
+                          )}
+                          {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
+                          {song.duration && <Badge variant="outline" className="text-xs">{song.duration}s</Badge>}
                         </div>
-                      )}
 
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePlay(song)}
-                          disabled={synthesizing === song.id}
-                        >
-                          {synthesizing === song.id ? (
-                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                          ) : (
-                            <Play className="w-3.5 h-3.5 mr-1.5" />
-                          )}
-                          Play
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(song)}
-                          disabled={synthesizing === song.id}
-                        >
-                          <Download className="w-3.5 h-3.5 mr-1.5" />
-                          MP3
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
-                        >
-                          {expandedSong === song.id ? (
-                            <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
-                          ) : (
-                            <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                          )}
-                          Sheet Music
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePrint(song)}
-                        >
-                          <Printer className="w-3.5 h-3.5 mr-1.5" />
-                          Print
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setAlbumDialogSongId(song.id)}
-                        >
-                          <Disc3 className="w-3.5 h-3.5 mr-1.5" />
-                          Add to Album
-                        </Button>
+                        {/* Player */}
+                        {playingSong === song.id && audioUrls[song.id] && (
+                          <div className="mt-3">
+                            <AudioPlayer src={audioUrls[song.id]} compact />
+                          </div>
+                        )}
 
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                              <Trash2 className="w-3.5 h-3.5" />
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {hasAudio && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePlay(song)}
+                                disabled={synthesizing === song.id}
+                              >
+                                {synthesizing === song.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                ) : (
+                                  <Play className="w-3.5 h-3.5 mr-1.5" />
+                                )}
+                                Play
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownload(song)}
+                                disabled={synthesizing === song.id}
+                              >
+                                <Download className="w-3.5 h-3.5 mr-1.5" />
+                                {isFreeEngine ? "WAV" : "MP3"}
+                              </Button>
+                            </>
+                          )}
+                          {hasSheetMusic && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
+                              >
+                                {expandedSong === song.id ? (
+                                  <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
+                                )}
+                                Sheet Music
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePrint(song)}
+                              >
+                                <Printer className="w-3.5 h-3.5 mr-1.5" />
+                                Print
+                              </Button>
+                            </>
+                          )}
+                          {hasLyrics && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowLyrics(showLyrics === song.id ? null : song.id)}
+                            >
+                              <FileText className="w-3.5 h-3.5 mr-1.5" />
+                              Lyrics
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Song</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{song.title}"? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(song.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAlbumDialogSongId(song.id)}
+                          >
+                            <Disc3 className="w-3.5 h-3.5 mr-1.5" />
+                            Add to Album
+                          </Button>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Song</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{song.title}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(song.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Expanded Sheet Music */}
-                {expandedSong === song.id && (
-                  <div className="border-t border-border p-4 bg-muted/30">
-                    <SheetMusic abcNotation={song.abcNotation} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  {/* Expanded Sheet Music */}
+                  {expandedSong === song.id && hasSheetMusic && (
+                    <div className="border-t border-border p-4 bg-muted/30">
+                      <SheetMusic abcNotation={song.abcNotation} />
+                    </div>
+                  )}
+
+                  {/* Expanded Lyrics */}
+                  {showLyrics === song.id && hasLyrics && (
+                    <div className="border-t border-border p-4 bg-muted/30">
+                      <pre className="whitespace-pre-wrap text-sm text-foreground leading-relaxed font-sans">
+                        {(song as any).lyrics}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

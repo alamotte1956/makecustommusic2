@@ -125,6 +125,31 @@ export async function updateSongMp3(id: number, mp3Url: string, mp3Key: string) 
   await db.update(songs).set({ mp3Url, mp3Key }).where(eq(songs.id, id));
 }
 
+export async function updateSongAudio(id: number, data: {
+  mp3Url?: string;
+  mp3Key?: string;
+  imageUrl?: string;
+  lyrics?: string;
+  duration?: number;
+  status?: string;
+  title?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: Record<string, unknown> = {};
+  if (data.mp3Url !== undefined) updateData.mp3Url = data.mp3Url;
+  if (data.mp3Key !== undefined) updateData.mp3Key = data.mp3Key;
+  if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+  if (data.lyrics !== undefined) updateData.lyrics = data.lyrics;
+  if (data.duration !== undefined) updateData.duration = data.duration;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.title !== undefined) updateData.title = data.title;
+  if (Object.keys(updateData).length > 0) {
+    await db.update(songs).set(updateData).where(eq(songs.id, id));
+  }
+  return getSongById(id);
+}
+
 // ─── Album Queries ───
 
 export async function createAlbum(data: InsertAlbum) {

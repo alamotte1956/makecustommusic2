@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import AudioPlayer from "@/components/AudioPlayer";
 import SheetMusic from "@/components/SheetMusic";
 import { useState, useCallback, useRef, useMemo } from "react";
@@ -12,11 +14,13 @@ import { synthesizeAudio, createAudioUrl, revokeAudioUrl } from "@/lib/audioSynt
 import { toast } from "sonner";
 import {
   Sparkles, Download, Printer, Music, Loader2, Disc3,
-  ChevronDown, ChevronUp, Clock, Guitar, Gauge, Mic, MicOff
+  ChevronDown, ChevronUp, Clock, Guitar, Gauge, Mic, MicOff,
+  Zap, Crown, Cpu, Info, Timer, FileText
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 
 type VocalType = "none" | "male" | "female" | "mixed";
+type Engine = "free" | "suno" | "musicgen";
 
 type GeneratedSong = {
   id: number;
@@ -24,6 +28,7 @@ type GeneratedSong = {
   keywords: string;
   abcNotation: string;
   musicDescription: string | null;
+  lyrics: string | null;
   genre: string | null;
   mood: string | null;
   tempo: number | null;
@@ -31,7 +36,11 @@ type GeneratedSong = {
   timeSignature: string | null;
   instruments: string[] | null;
   mp3Url: string | null;
+  imageUrl: string | null;
   vocalType: string | null;
+  engine: string;
+  status: string;
+  duration: number | null;
 };
 
 const GENRE_PRESETS = [
@@ -69,25 +78,108 @@ const VOCAL_OPTIONS: { value: VocalType; label: string; icon: React.ReactNode; d
   { value: "mixed", label: "Mixed", icon: <Mic className="w-4 h-4" />, description: "Male & female" },
 ];
 
+const ENGINE_INFO: Record<Engine, {
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+  badge: string;
+  badgeColor: string;
+  maxDuration: number;
+  minDuration: number;
+  defaultDuration: number;
+  supportsVocals: boolean;
+  supportsSheetMusic: boolean;
+}> = {
+  free: {
+    label: "Built-in AI",
+    icon: <Zap className="w-5 h-5" />,
+    description: "Free AI composition with sheet music. Uses LLM to compose in ABC notation, synthesized in your browser.",
+    badge: "Free",
+    badgeColor: "bg-green-100 text-green-700 border-green-300",
+    maxDuration: 120,
+    minDuration: 15,
+    defaultDuration: 30,
+    supportsVocals: true,
+    supportsSheetMusic: true,
+  },
+  musicgen: {
+    label: "MusicGen",
+    icon: <Cpu className="w-5 h-5" />,
+    description: "Meta's MusicGen model via Replicate. High-quality instrumental audio generation. Requires API key.",
+    badge: "Premium",
+    badgeColor: "bg-blue-100 text-blue-700 border-blue-300",
+    maxDuration: 30,
+    minDuration: 8,
+    defaultDuration: 15,
+    supportsVocals: false,
+    supportsSheetMusic: false,
+  },
+  suno: {
+    label: "Suno",
+    icon: <Crown className="w-5 h-5" />,
+    description: "Professional-quality music with vocals, lyrics, and full production. Powered by Suno AI. Requires API key.",
+    badge: "Pro",
+    badgeColor: "bg-purple-100 text-purple-700 border-purple-300",
+    maxDuration: 120,
+    minDuration: 30,
+    defaultDuration: 60,
+    supportsVocals: true,
+    supportsSheetMusic: false,
+  },
+};
+
+const DURATION_MARKS = [
+  { value: 8, label: "8s" },
+  { value: 15, label: "15s" },
+  { value: 30, label: "30s" },
+  { value: 60, label: "1m" },
+  { value: 90, label: "1.5m" },
+  { value: 120, label: "2m" },
+];
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
+
 export default function Generator() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const [keywords, setKeywords] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [selectedVocal, setSelectedVocal] = useState<VocalType>("none");
+  const [selectedEngine, setSelectedEngine] = useState<Engine>("free");
+  const [duration, setDuration] = useState(30);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
   const [generatedSong, setGeneratedSong] = useState<GeneratedSong | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [mp3Blob, setMp3Blob] = useState<Blob | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [showSheetMusic, setShowSheetMusic] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const audioUrlRef = useRef<string | null>(null);
 
+  const { data: engines } = trpc.engines.available.useQuery();
   const generateMutation = trpc.songs.generate.useMutation();
   const saveAudioMutation = trpc.songs.saveAudio.useMutation();
   const utils = trpc.useUtils();
+
+  const engineInfo = ENGINE_INFO[selectedEngine];
+
+  // Adjust duration when engine changes
+  const handleEngineChange = useCallback((engine: Engine) => {
+    setSelectedEngine(engine);
+    const info = ENGINE_INFO[engine];
+    setDuration(info.defaultDuration);
+    // MusicGen doesn't support vocals
+    if (!info.supportsVocals && selectedVocal !== "none") {
+      setSelectedVocal("none");
+    }
+  }, [selectedVocal]);
 
   // Build the full prompt from keywords + presets
   const fullPrompt = useMemo(() => {
@@ -99,11 +191,11 @@ export default function Generator() {
     if (selectedMood && !keywords.toLowerCase().includes(selectedMood.toLowerCase())) {
       parts.push(selectedMood);
     }
-    if (selectedVocal !== "none") {
+    if (selectedVocal !== "none" && engineInfo.supportsVocals) {
       parts.push(`${selectedVocal} vocals`);
     }
     return parts.join(", ");
-  }, [keywords, selectedGenre, selectedMood, selectedVocal]);
+  }, [keywords, selectedGenre, selectedMood, selectedVocal, engineInfo]);
 
   const handleGenerate = useCallback(async () => {
     if (!keywords.trim() && !selectedGenre && !selectedMood) {
@@ -117,74 +209,117 @@ export default function Generator() {
       audioUrlRef.current = null;
     }
     setAudioUrl(null);
-    setMp3Blob(null);
+    setAudioBlob(null);
     setGeneratedSong(null);
     setShowSheetMusic(false);
+    setShowLyrics(false);
 
     try {
-      // Step 1: Generate composition with AI
       setIsGenerating(true);
       setProgress(10);
-      setProgressMessage("AI is composing your music...");
+
+      if (selectedEngine === "suno") {
+        setProgressMessage("Sending to Suno AI... This may take 1-3 minutes.");
+      } else if (selectedEngine === "musicgen") {
+        setProgressMessage("Generating with MusicGen... This may take 30-60 seconds.");
+      } else {
+        setProgressMessage("AI is composing your music...");
+      }
 
       const effectiveKeywords = keywords.trim() || [selectedGenre, selectedMood].filter(Boolean).join(" ");
+
+      // Simulate progress for premium engines
+      let progressInterval: ReturnType<typeof setInterval> | null = null;
+      if (selectedEngine !== "free") {
+        let fakeProgress = 10;
+        const maxFake = selectedEngine === "suno" ? 85 : 75;
+        progressInterval = setInterval(() => {
+          fakeProgress = Math.min(fakeProgress + 2, maxFake);
+          setProgress(fakeProgress);
+          if (selectedEngine === "suno") {
+            if (fakeProgress < 30) setProgressMessage("Sending to Suno AI...");
+            else if (fakeProgress < 50) setProgressMessage("Suno is composing your track...");
+            else if (fakeProgress < 70) setProgressMessage("Adding vocals and production...");
+            else setProgressMessage("Finalizing your track...");
+          } else {
+            if (fakeProgress < 30) setProgressMessage("Sending to MusicGen...");
+            else if (fakeProgress < 50) setProgressMessage("Generating audio waveforms...");
+            else setProgressMessage("Processing audio...");
+          }
+        }, 2000);
+      }
 
       const song = await generateMutation.mutateAsync({
         keywords: effectiveKeywords,
         genre: selectedGenre || undefined,
         mood: selectedMood || undefined,
         vocalType: selectedVocal,
+        duration,
+        engine: selectedEngine,
       });
+
+      if (progressInterval) clearInterval(progressInterval);
+
       if (!song) throw new Error("Failed to generate song");
-
       setGeneratedSong(song as GeneratedSong);
-      setProgress(40);
-      setProgressMessage("Synthesizing audio...");
-      setIsGenerating(false);
-      setIsSynthesizing(true);
 
-      // Step 2: Synthesize audio from ABC notation
-      const { blob } = await synthesizeAudio(
-        song.abcNotation,
-        song.tempo || 120,
-        (p) => {
-          setProgress(40 + Math.round(p * 0.5));
-          if (p < 50) setProgressMessage("Rendering notes...");
-          else if (p < 70) setProgressMessage("Processing audio...");
-          else if (p < 90) setProgressMessage("Encoding audio...");
-          else setProgressMessage("Finalizing...");
+      // For premium engines, the audio URL comes from the server
+      if (selectedEngine !== "free" && song.mp3Url) {
+        setAudioUrl(song.mp3Url);
+        setProgress(100);
+        setProgressMessage("Done!");
+        setIsGenerating(false);
+      } else if (selectedEngine === "free") {
+        // For free engine, synthesize audio client-side from ABC notation
+        setProgress(40);
+        setProgressMessage("Synthesizing audio...");
+        setIsGenerating(false);
+        setIsSynthesizing(true);
+
+        const { blob } = await synthesizeAudio(
+          song.abcNotation,
+          song.tempo || 120,
+          (p) => {
+            setProgress(40 + Math.round(p * 0.5));
+            if (p < 50) setProgressMessage("Rendering notes...");
+            else if (p < 70) setProgressMessage("Processing audio...");
+            else if (p < 90) setProgressMessage("Encoding audio...");
+            else setProgressMessage("Finalizing...");
+          }
+        );
+
+        const url = createAudioUrl(blob);
+        audioUrlRef.current = url;
+        setAudioUrl(url);
+        setAudioBlob(blob);
+        setProgress(95);
+        setProgressMessage("Uploading audio...");
+
+        // Upload to storage
+        try {
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => {
+              const result = reader.result as string;
+              resolve(result.split(",")[1]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          await saveAudioMutation.mutateAsync({
+            songId: song.id,
+            audioBase64: base64,
+          });
+        } catch {
+          console.warn("Failed to upload audio to storage");
         }
-      );
 
-      const url = createAudioUrl(blob);
-      audioUrlRef.current = url;
-      setAudioUrl(url);
-      setMp3Blob(blob);
-      setProgress(95);
-      setProgressMessage("Uploading audio...");
-
-      // Step 3: Upload audio to storage
-      try {
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => {
-            const result = reader.result as string;
-            resolve(result.split(",")[1]);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-
-        await saveAudioMutation.mutateAsync({
-          songId: song.id,
-          audioBase64: base64,
-        });
-      } catch {
-        console.warn("Failed to upload audio to storage");
+        setProgress(100);
+        setProgressMessage("Done!");
+        setIsSynthesizing(false);
       }
 
-      setProgress(100);
-      setProgressMessage("Done!");
       utils.songs.list.invalidate();
       toast.success("Music generated successfully!");
     } catch (error: any) {
@@ -195,23 +330,42 @@ export default function Generator() {
       setIsGenerating(false);
       setIsSynthesizing(false);
     }
-  }, [keywords, selectedGenre, selectedMood, selectedVocal, generateMutation, saveAudioMutation, utils]);
+  }, [keywords, selectedGenre, selectedMood, selectedVocal, selectedEngine, duration, generateMutation, saveAudioMutation, utils]);
 
-  const handleDownload = useCallback(() => {
-    if (!mp3Blob || !generatedSong) return;
-    const url = URL.createObjectURL(mp3Blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${generatedSong.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.wav`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Download started!");
-  }, [mp3Blob, generatedSong]);
+  const handleDownload = useCallback(async () => {
+    if (!generatedSong) return;
+
+    const fileName = `${generatedSong.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}`;
+
+    // For premium engines, download from the server URL
+    if (generatedSong.mp3Url && generatedSong.engine !== "free") {
+      const a = document.createElement("a");
+      a.href = generatedSong.mp3Url;
+      a.download = `${fileName}.mp3`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Download started!");
+      return;
+    }
+
+    // For free engine, download from blob
+    if (audioBlob) {
+      const url = URL.createObjectURL(audioBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${fileName}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Download started!");
+    }
+  }, [audioBlob, generatedSong]);
 
   const handlePrintSheetMusic = useCallback(() => {
-    if (!generatedSong) return;
+    if (!generatedSong || !generatedSong.abcNotation) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Please allow pop-ups to print sheet music");
@@ -281,6 +435,62 @@ export default function Generator() {
           Describe the music you want, pick a style, and let AI compose it for you
         </p>
       </div>
+
+      {/* Engine Selector */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-primary" />
+            Generation Engine
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(["free", "musicgen", "suno"] as Engine[]).map((eng) => {
+              const info = ENGINE_INFO[eng];
+              const isAvailable = eng === "free" || (engines && engines[eng]);
+              return (
+                <button
+                  key={eng}
+                  onClick={() => isAvailable ? handleEngineChange(eng) : toast.info(`${info.label} requires an API key. Add it in Settings > Secrets.`)}
+                  disabled={isWorking}
+                  className={`
+                    relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-center
+                    ${selectedEngine === eng
+                      ? "border-primary bg-primary/5 shadow-md"
+                      : isAvailable
+                        ? "border-border bg-card hover:border-primary/40 hover:bg-accent"
+                        : "border-border bg-muted/50 opacity-60"
+                    }
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                >
+                  <div className={`
+                    w-12 h-12 rounded-xl flex items-center justify-center
+                    ${selectedEngine === eng
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                    }
+                  `}>
+                    {info.icon}
+                  </div>
+                  <span className="text-sm font-semibold">{info.label}</span>
+                  <Badge variant="outline" className={`text-xs ${info.badgeColor}`}>
+                    {info.badge}
+                  </Badge>
+                  {!isAvailable && (
+                    <span className="text-xs text-muted-foreground">API key required</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3 flex items-start gap-1.5">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            {engineInfo.description}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Input Section */}
       <Card>
@@ -361,39 +571,81 @@ export default function Generator() {
           </div>
 
           {/* Vocal Type Selector */}
+          {engineInfo.supportsVocals && (
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Mic className="w-4 h-4 text-primary" />
+                Vocals
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {VOCAL_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSelectedVocal(option.value)}
+                    disabled={isWorking}
+                    className={`
+                      flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200
+                      ${selectedVocal === option.value
+                        ? "border-primary bg-primary/5 text-primary shadow-sm"
+                        : "border-border bg-card text-card-foreground hover:border-primary/40 hover:bg-accent"
+                      }
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                    `}
+                  >
+                    <div className={`
+                      w-10 h-10 rounded-full flex items-center justify-center
+                      ${selectedVocal === option.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                      }
+                    `}>
+                      {option.icon}
+                    </div>
+                    <span className="text-sm font-medium">{option.label}</span>
+                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Duration Slider */}
           <div className="space-y-3">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Mic className="w-4 h-4 text-primary" />
-              Vocals
+              <Timer className="w-4 h-4 text-primary" />
+              Duration
+              <span className="ml-auto text-sm font-bold text-primary tabular-nums">
+                {formatDuration(duration)}
+              </span>
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {VOCAL_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedVocal(option.value)}
-                  disabled={isWorking}
-                  className={`
-                    flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200
-                    ${selectedVocal === option.value
-                      ? "border-primary bg-primary/5 text-primary shadow-sm"
-                      : "border-border bg-card text-card-foreground hover:border-primary/40 hover:bg-accent"
-                    }
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                  `}
-                >
-                  <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center
-                    ${selectedVocal === option.value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                    }
-                  `}>
-                    {option.icon}
-                  </div>
-                  <span className="text-sm font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
-                </button>
-              ))}
+            <div className="px-1">
+              <Slider
+                value={[duration]}
+                min={engineInfo.minDuration}
+                max={engineInfo.maxDuration}
+                step={1}
+                onValueChange={(v) => setDuration(v[0])}
+                disabled={isWorking}
+                className="w-full"
+              />
+              <div className="flex justify-between mt-2">
+                {DURATION_MARKS
+                  .filter(m => m.value >= engineInfo.minDuration && m.value <= engineInfo.maxDuration)
+                  .map((mark) => (
+                    <button
+                      key={mark.value}
+                      onClick={() => setDuration(mark.value)}
+                      disabled={isWorking}
+                      className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                        duration === mark.value
+                          ? "text-primary font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {mark.label}
+                    </button>
+                  ))}
+              </div>
             </div>
           </div>
 
@@ -402,6 +654,16 @@ export default function Generator() {
             <div className="rounded-lg bg-muted/50 border border-border px-4 py-3">
               <p className="text-xs font-medium text-muted-foreground mb-1">Generation prompt:</p>
               <p className="text-sm text-foreground">{fullPrompt}</p>
+              <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Cpu className="w-3 h-3" />
+                  {engineInfo.label}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Timer className="w-3 h-3" />
+                  {formatDuration(duration)}
+                </span>
+              </div>
             </div>
           )}
 
@@ -448,6 +710,11 @@ export default function Generator() {
                 <span className="text-muted-foreground tabular-nums">{progress}%</span>
               </div>
               <Progress value={progress} className="h-2" />
+              {selectedEngine === "suno" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Suno generation typically takes 1-3 minutes. Please be patient.
+                </p>
+              )}
             </div>
           )}
         </CardContent>
@@ -490,13 +757,29 @@ export default function Generator() {
                     <Music className="w-5 h-5 text-primary" />
                     {generatedSong.title}
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {generatedSong.musicDescription}
-                  </p>
+                  {generatedSong.musicDescription && (
+                    <p className="text-sm text-muted-foreground">
+                      {generatedSong.musicDescription}
+                    </p>
+                  )}
                 </div>
+                <Badge variant="outline" className={ENGINE_INFO[generatedSong.engine as Engine]?.badgeColor || ""}>
+                  {ENGINE_INFO[generatedSong.engine as Engine]?.label || generatedSong.engine}
+                </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Cover image for Suno tracks */}
+              {generatedSong.imageUrl && (
+                <div className="rounded-xl overflow-hidden border border-border">
+                  <img
+                    src={generatedSong.imageUrl}
+                    alt={generatedSong.title}
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+              )}
+
               {/* Metadata badges */}
               <div className="flex flex-wrap gap-2">
                 {generatedSong.genre && (
@@ -529,6 +812,12 @@ export default function Generator() {
                     {generatedSong.tempo} BPM
                   </Badge>
                 )}
+                {generatedSong.duration && (
+                  <Badge variant="outline" className="gap-1">
+                    <Timer className="w-3 h-3" />
+                    {formatDuration(generatedSong.duration)}
+                  </Badge>
+                )}
               </div>
 
               {/* Instruments */}
@@ -546,31 +835,48 @@ export default function Generator() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 pt-2">
-                <Button onClick={handleDownload} disabled={!mp3Blob}>
+                <Button onClick={handleDownload} disabled={!audioUrl && !audioBlob}>
                   <Download className="w-4 h-4 mr-2" />
-                  Download Audio
+                  Download {generatedSong.engine === "free" ? "WAV" : "MP3"}
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowSheetMusic(!showSheetMusic)}
-                >
-                  {showSheetMusic ? (
-                    <ChevronUp className="w-4 h-4 mr-2" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 mr-2" />
-                  )}
-                  {showSheetMusic ? "Hide" : "View"} Sheet Music
-                </Button>
-                <Button variant="outline" onClick={handlePrintSheetMusic}>
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print Sheet Music
-                </Button>
+
+                {/* Sheet Music (only for free engine) */}
+                {generatedSong.abcNotation && ENGINE_INFO[generatedSong.engine as Engine]?.supportsSheetMusic && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowSheetMusic(!showSheetMusic)}
+                    >
+                      {showSheetMusic ? (
+                        <ChevronUp className="w-4 h-4 mr-2" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 mr-2" />
+                      )}
+                      {showSheetMusic ? "Hide" : "View"} Sheet Music
+                    </Button>
+                    <Button variant="outline" onClick={handlePrintSheetMusic}>
+                      <Printer className="w-4 h-4 mr-2" />
+                      Print Sheet Music
+                    </Button>
+                  </>
+                )}
+
+                {/* Lyrics (for Suno tracks) */}
+                {generatedSong.lyrics && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowLyrics(!showLyrics)}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    {showLyrics ? "Hide" : "View"} Lyrics
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
 
           {/* Sheet Music */}
-          {showSheetMusic && (
+          {showSheetMusic && generatedSong.abcNotation && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -580,6 +886,23 @@ export default function Generator() {
               </CardHeader>
               <CardContent>
                 <SheetMusic abcNotation={generatedSong.abcNotation} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lyrics */}
+          {showLyrics && generatedSong.lyrics && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Lyrics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="whitespace-pre-wrap text-sm text-foreground leading-relaxed font-sans">
+                  {generatedSong.lyrics}
+                </pre>
               </CardContent>
             </Card>
           )}

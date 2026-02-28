@@ -31,7 +31,7 @@
 - [x] S3 storage for generated audio files
 
 ## Testing
-- [x] Unit tests for backend routes (17 tests passing)
+- [x] Unit tests for backend routes (25 tests passing)
 - [x] Test music generation flow
 
 ## Bug Fixes
@@ -44,4 +44,25 @@
 - [x] Presets append to keyword input, shown in generation prompt preview
 - [x] Update backend LLM prompt to incorporate vocal type in music generation
 - [x] Update database schema to store vocal type per song
-- [x] Tests updated and all 21 passing
+
+## Duration Slider
+- [x] Add duration slider to generator page (15s, 30s, 60s, 90s, 120s)
+- [x] Update backend generate mutation to accept duration parameter
+- [x] Update LLM prompt to use requested duration for composition length
+- [x] Update tests for duration parameter
+
+## Suno-Quality Music Upgrade
+- [x] Integrate Suno API (sunoapi.org) as premium engine with vocals/lyrics
+- [x] Integrate Replicate MusicGen as premium instrumental engine
+- [x] Keep LLM+ABC as free fallback engine
+- [x] Add engine selector UI (Free / MusicGen / Suno)
+- [x] Add duration slider (15s, 30s, 60s, 90s, 120s) for all engines
+- [x] Backend: Suno API integration with async polling
+- [x] Backend: Replicate MusicGen integration
+- [x] Update database schema to store engine type per song
+- [x] Redesign Generator page for premium Suno-like experience
+- [x] Support lyrics display for Suno vocal tracks
+- [x] Request SUNO_API_KEY and REPLICATE_API_TOKEN secrets
+- [x] Update tests for new API integrations (25 tests passing)
+- [x] Update History page with engine badges and per-engine playback/download
+- [x] Update AlbumDetail page with engine-aware playback/download
