@@ -140,7 +140,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="border-t border-border py-6 mt-auto">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>AI Music Generator — Create unique music from your imagination</p>
+          <p>Make Custom Music — Create unique music from your imagination</p>
         </div>
       </footer>
     </div>

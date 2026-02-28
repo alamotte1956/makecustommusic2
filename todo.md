@@ -80,3 +80,6 @@
 - [x] Three engines: Built-in AI (free), Replicate MusicGen (premium), Suno V5 (pro)
 - [x] Engine availability check based on configured API keys
 - [x] Engine selector UI with descriptions and availability badges
+
+## App Rename
+- [x] Rename app to "Make Custom Music" across all UI elements (header, footer, page title, hero badge)
