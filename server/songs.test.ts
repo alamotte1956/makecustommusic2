@@ -449,3 +449,94 @@ describe("albums router", () => {
     });
   });
 });
+
+describe("favorites router", () => {
+  describe("favorites.toggle", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.favorites.toggle({ songId: 1 })
+      ).rejects.toThrow();
+    });
+
+    it("validates songId is a number", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.favorites.toggle({ songId: "abc" as any })
+      ).rejects.toThrow();
+    });
+
+    it("toggles favorite for a valid song", async () => {
+      const { ctx } = createAuthContext(50);
+      const caller = appRouter.createCaller(ctx);
+
+      // First toggle should add to favorites
+      const result1 = await caller.favorites.toggle({ songId: 999 });
+      expect(result1).toHaveProperty("isFavorited");
+      expect(typeof result1.isFavorited).toBe("boolean");
+
+      // Second toggle should remove from favorites
+      const result2 = await caller.favorites.toggle({ songId: 999 });
+      expect(result2.isFavorited).toBe(!result1.isFavorited);
+    });
+  });
+
+  describe("favorites.list", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(caller.favorites.list()).rejects.toThrow();
+    });
+
+    it("returns array for authenticated user", async () => {
+      const { ctx } = createAuthContext(51);
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.favorites.list();
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe("favorites.ids", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(caller.favorites.ids()).rejects.toThrow();
+    });
+
+    it("returns array of numbers for authenticated user", async () => {
+      const { ctx } = createAuthContext(52);
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.favorites.ids();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it("reflects toggled favorites", async () => {
+      const { ctx } = createAuthContext(53);
+      const caller = appRouter.createCaller(ctx);
+
+      // Start with no favorites
+      const idsBefore = await caller.favorites.ids();
+      const countBefore = idsBefore.length;
+
+      // Add a favorite
+      await caller.favorites.toggle({ songId: 12345 });
+      const idsAfter = await caller.favorites.ids();
+      expect(idsAfter.length).toBe(countBefore + 1);
+      expect(idsAfter).toContain(12345);
+
+      // Remove the favorite
+      await caller.favorites.toggle({ songId: 12345 });
+      const idsFinal = await caller.favorites.ids();
+      expect(idsFinal.length).toBe(countBefore);
+      expect(idsFinal).not.toContain(12345);
+    });
+  });
+});

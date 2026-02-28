@@ -70,3 +70,13 @@ export const albumSongs = mysqlTable("album_songs", {
 
 export type AlbumSong = typeof albumSongs.$inferSelect;
 export type InsertAlbumSong = typeof albumSongs.$inferInsert;
+
+export const favorites = mysqlTable("favorites", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  songId: int("songId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = typeof favorites.$inferInsert;

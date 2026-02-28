@@ -91,3 +91,14 @@
 - [x] Support click-to-seek on the waveform with hover preview
 - [x] Ensure waveform works for both Suno (URL-based) and free engine (blob-based) audio
 - [x] Smooth animation and color-coded played/unplayed/hover sections
+
+## Personal Favorites
+- [x] Create favorites table in database (userId + songId, unique constraint)
+- [x] Add backend tRPC routes: toggleFavorite, listFavorites, isFavorited
+- [x] Add heart/favorite toggle button on Generator result card
+- [x] Add heart/favorite toggle button on History page song cards
+- [x] Add heart/favorite toggle button on AlbumDetail page song cards
+- [x] Create dedicated Favorites page showing all favorited songs
+- [x] Add Favorites link to navigation header
+- [x] Optimistic UI updates for instant toggle feedback
+- [x] Update tests for favorites functionality (46 tests passing)

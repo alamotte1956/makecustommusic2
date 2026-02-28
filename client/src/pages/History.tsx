@@ -12,6 +12,7 @@ import {
   History as HistoryIcon, Music, Download, Printer, Trash2,
   Loader2, ChevronDown, ChevronUp, Disc3, Play
 } from "lucide-react";
+import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
 import {
   AlertDialog,
@@ -331,6 +332,7 @@ export default function History() {
                           <Disc3 className="w-3.5 h-3.5 mr-1.5" />
                           Add to Album
                         </Button>
+                        <FavoriteButton songId={song.id} size="sm" />
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

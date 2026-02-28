@@ -19,6 +19,7 @@ import {
   Share2, RefreshCw, Mic, MicOff, Zap, Crown,
   FileText, Tag
 } from "lucide-react";
+import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
 
 type GeneratedSong = {
@@ -785,6 +786,7 @@ export default function Generator() {
                   <Download className="w-4 h-4 mr-2" />
                   Download
                 </Button>
+                <FavoriteButton songId={generatedSong.id} variant="outline" showLabel />
                 <Button variant="outline" onClick={handleRegenerate}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Regenerate

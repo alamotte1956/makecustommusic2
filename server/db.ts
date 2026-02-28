@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, InsertSong, InsertAlbum, InsertAlbumSong } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -218,4 +218,42 @@ export async function getAlbumSongCount(albumId: number) {
   if (!db) throw new Error("Database not available");
   const result = await db.select().from(albumSongs).where(eq(albumSongs.albumId, albumId));
   return result.length;
+}
+
+// ─── Favorites Queries ───
+
+export async function toggleFavorite(userId: number, songId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db.select().from(favorites)
+    .where(and(eq(favorites.userId, userId), eq(favorites.songId, songId)))
+    .limit(1);
+  if (existing.length > 0) {
+    await db.delete(favorites).where(and(eq(favorites.userId, userId), eq(favorites.songId, songId)));
+    return false; // removed from favorites
+  } else {
+    await db.insert(favorites).values({ userId, songId });
+    return true; // added to favorites
+  }
+}
+
+export async function getUserFavorites(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const favs = await db.select().from(favorites)
+    .where(eq(favorites.userId, userId))
+    .orderBy(desc(favorites.createdAt));
+  if (favs.length === 0) return [];
+  const songIds = favs.map(f => f.songId);
+  const songList = await db.select().from(songs).where(inArray(songs.id, songIds));
+  const songMap = new Map(songList.map(s => [s.id, s]));
+  return favs.map(f => songMap.get(f.songId)).filter(Boolean);
+}
+
+export async function getUserFavoriteIds(userId: number): Promise<number[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const favs = await db.select({ songId: favorites.songId }).from(favorites)
+    .where(eq(favorites.userId, userId));
+  return favs.map(f => f.songId);
 }

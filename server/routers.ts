@@ -8,7 +8,8 @@ import {
   createSong, getSongById, getUserSongs, deleteSong, updateSongMp3,
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
-  updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount
+  updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
+  toggleFavorite, getUserFavorites, getUserFavoriteIds
 } from "./db";
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
@@ -296,6 +297,26 @@ Return your response as a JSON object with these fields:
         await deleteSong(input.id, ctx.user.id);
         return { success: true };
       }),
+  }),
+
+  favorites: router({
+    // Toggle favorite status for a song
+    toggle: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const isFavorited = await toggleFavorite(ctx.user.id, input.songId);
+        return { isFavorited };
+      }),
+
+    // List all favorited songs
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getUserFavorites(ctx.user.id);
+    }),
+
+    // Get IDs of all favorited songs (for checking favorite status)
+    ids: protectedProcedure.query(async ({ ctx }) => {
+      return getUserFavoriteIds(ctx.user.id);
+    }),
   }),
 
   albums: router({

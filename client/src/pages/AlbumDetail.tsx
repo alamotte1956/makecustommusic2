@@ -13,6 +13,7 @@ import {
   Disc3, Music, Download, Printer, Loader2,
   ArrowLeft, Play, X, ChevronDown, ChevronUp, ImagePlus, Sparkles
 } from "lucide-react";
+import FavoriteButton from "@/components/FavoriteButton";
 
 export default function AlbumDetail() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
@@ -370,6 +371,7 @@ export default function AlbumDetail() {
                           </Button>
                         </>
                       )}
+                      <FavoriteButton songId={song.id} size="sm" />
                       <Button
                         variant="ghost"
                         size="sm"

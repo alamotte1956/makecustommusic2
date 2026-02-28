@@ -2,12 +2,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/generate", label: "Create Music", icon: Sparkles },
   { href: "/history", label: "My Songs", icon: History },
+  { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/albums", label: "Albums", icon: Disc3 },
 ];
 

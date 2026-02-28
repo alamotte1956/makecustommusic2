@@ -9,6 +9,7 @@ import Generator from "./pages/Generator";
 import History from "./pages/History";
 import Albums from "./pages/Albums";
 import AlbumDetail from "./pages/AlbumDetail";
+import Favorites from "./pages/Favorites";
 import Layout from "./components/Layout";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path={"/history"} component={History} />
       <Route path={"/albums"} component={Albums} />
       <Route path={"/albums/:id"} component={AlbumDetail} />
+      <Route path={"/favorites"} component={Favorites} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
