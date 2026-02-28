@@ -8,8 +8,9 @@ import {
   createSong, getSongById, getUserSongs, deleteSong, updateSongMp3,
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
-  addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount
+  updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount
 } from "./db";
+import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { isSunoAvailable, sunoGenerateAndWait } from "./sunoApi";
@@ -381,6 +382,45 @@ Return your response as a JSON object with these fields:
       .mutation(async ({ ctx, input }) => {
         await removeSongFromAlbum(input.albumId, input.songId);
         return { success: true };
+      }),
+
+    // Generate album cover image based on album's songs
+    generateCover: protectedProcedure
+      .input(z.object({ albumId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const album = await getAlbumById(input.albumId);
+        if (!album || album.userId !== ctx.user.id) {
+          throw new Error("Album not found");
+        }
+
+        // Get the album's songs to extract genres and moods
+        const songList = await getAlbumSongs(input.albumId);
+
+        // Collect unique genres and moods from songs
+        const genres = Array.from(new Set(songList.map((s: any) => s?.genre).filter(Boolean)));
+        const moods = Array.from(new Set(songList.map((s: any) => s?.mood).filter(Boolean)));
+        const instruments = Array.from(new Set(songList.flatMap((s: any) => s?.instruments || []).filter(Boolean)));
+
+        // Build a rich prompt for album cover generation
+        const genreStr = genres.length > 0 ? genres.join(", ") : "eclectic";
+        const moodStr = moods.length > 0 ? moods.join(" and ") : "expressive";
+        const instrumentStr = instruments.length > 0 ? instruments.slice(0, 5).join(", ") : "";
+
+        const prompt = `Create a stunning, professional album cover art for a music album titled "${album.title}". ` +
+          `The music style is ${genreStr} with a ${moodStr} atmosphere. ` +
+          (instrumentStr ? `Featured instruments include ${instrumentStr}. ` : "") +
+          (album.description ? `Album description: ${album.description}. ` : "") +
+          `The design should be artistic, visually striking, and suitable as a square album cover. ` +
+          `Use rich colors, abstract or symbolic imagery that evokes the music's mood. ` +
+          `No text or typography on the image. Professional quality, high detail.`;
+
+        const { url } = await generateImage({ prompt });
+
+        if (url) {
+          await updateAlbumCoverImage(input.albumId, url);
+        }
+
+        return { coverImageUrl: url };
       }),
   }),
 });

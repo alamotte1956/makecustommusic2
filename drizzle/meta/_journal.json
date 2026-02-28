@@ -50,6 +50,13 @@
       "when": 1772306684107,
       "tag": "0006_black_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1772307668969,
+      "tag": "0007_dapper_echo",
+      "breakpoints": true
     }
   ]
 }

@@ -174,11 +174,17 @@ export async function deleteAlbum(id: number, userId: number) {
   await db.delete(albums).where(and(eq(albums.id, id), eq(albums.userId, userId)));
 }
 
-export async function updateAlbum(id: number, userId: number, data: { title?: string; description?: string; coverColor?: string }) {
+export async function updateAlbum(id: number, userId: number, data: { title?: string; description?: string; coverColor?: string; coverImageUrl?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(albums).set(data).where(and(eq(albums.id, id), eq(albums.userId, userId)));
   return getAlbumById(id);
+}
+
+export async function updateAlbumCoverImage(id: number, coverImageUrl: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(albums).set({ coverImageUrl }).where(eq(albums.id, id));
 }
 
 // ─── Album Songs Queries ───

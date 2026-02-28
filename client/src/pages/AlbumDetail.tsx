@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useRoute, Link } from "wouter";
 import {
   Disc3, Music, Download, Printer, Loader2,
-  ArrowLeft, Play, X, ChevronDown, ChevronUp
+  ArrowLeft, Play, X, ChevronDown, ChevronUp, ImagePlus, Sparkles
 } from "lucide-react";
 
 export default function AlbumDetail() {
@@ -24,16 +24,28 @@ export default function AlbumDetail() {
     { enabled: isAuthenticated && albumId > 0 }
   );
   const removeSongMutation = trpc.albums.removeSong.useMutation();
+  const generateCoverMutation = trpc.albums.generateCover.useMutation();
   const utils = trpc.useUtils();
 
   const [playingSong, setPlayingSong] = useState<number | null>(null);
   const [audioUrls, setAudioUrls] = useState<Record<number, string>>({});
   const [synthesizing, setSynthesizing] = useState<number | null>(null);
   const [expandedSong, setExpandedSong] = useState<number | null>(null);
+  const [generatingCover, setGeneratingCover] = useState(false);
 
   const handlePlay = useCallback(async (song: any) => {
+    // If song has an audioUrl from Suno/external, use it directly
+    if (song.audioUrl) {
+      setAudioUrls(prev => ({ ...prev, [song.id]: song.audioUrl }));
+      setPlayingSong(song.id);
+      return;
+    }
     if (audioUrls[song.id]) {
       setPlayingSong(song.id);
+      return;
+    }
+    if (!song.abcNotation) {
+      toast.error("No audio available for this song");
       return;
     }
     setSynthesizing(song.id);
@@ -50,6 +62,24 @@ export default function AlbumDetail() {
   }, [audioUrls]);
 
   const handleDownload = useCallback(async (song: any) => {
+    // If song has an audioUrl from Suno/external, download it directly
+    if (song.audioUrl) {
+      const a = document.createElement("a");
+      a.href = song.audioUrl;
+      a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Download started!");
+      return;
+    }
+
+    if (!song.abcNotation) {
+      toast.error("No audio available for this song");
+      return;
+    }
+
     let blob: Blob;
     if (audioUrls[song.id]) {
       const response = await fetch(audioUrls[song.id]);
@@ -68,7 +98,7 @@ export default function AlbumDetail() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
+    a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.wav`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -87,7 +117,25 @@ export default function AlbumDetail() {
     }
   }, [albumId, removeSongMutation, utils]);
 
+  const handleGenerateCover = useCallback(async () => {
+    setGeneratingCover(true);
+    try {
+      await generateCoverMutation.mutateAsync({ albumId });
+      utils.albums.getById.invalidate({ id: albumId });
+      utils.albums.list.invalidate();
+      toast.success("Album cover generated!");
+    } catch {
+      toast.error("Failed to generate cover. Try adding songs first.");
+    } finally {
+      setGeneratingCover(false);
+    }
+  }, [albumId, generateCoverMutation, utils]);
+
   const handlePrint = useCallback((song: any) => {
+    if (!song.abcNotation) {
+      toast.error("Sheet music not available for this song");
+      return;
+    }
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Please allow pop-ups to print sheet music");
@@ -159,13 +207,43 @@ export default function AlbumDetail() {
         </Button>
       </Link>
 
-      {/* Album Header */}
+      {/* Album Header with Cover Image */}
       <div className="flex items-start gap-6">
-        <div
-          className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl flex items-center justify-center shrink-0"
-          style={{ backgroundColor: album.coverColor || "#6366f1" }}
-        >
-          <Disc3 className="w-12 h-12 sm:w-16 sm:h-16 text-white/30" />
+        <div className="relative group shrink-0">
+          <div
+            className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl flex items-center justify-center overflow-hidden shadow-lg"
+            style={{ backgroundColor: album.coverColor || "#6366f1" }}
+          >
+            {album.coverImageUrl ? (
+              <img
+                src={album.coverImageUrl}
+                alt={`${album.title} cover`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Disc3 className="w-12 h-12 sm:w-16 sm:h-16 text-white/30" />
+            )}
+          </div>
+          {/* Generate Cover Overlay */}
+          <button
+            onClick={handleGenerateCover}
+            disabled={generatingCover}
+            className="absolute inset-0 rounded-xl bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-70"
+          >
+            {generatingCover ? (
+              <>
+                <Loader2 className="w-6 h-6 text-white animate-spin mb-1" />
+                <span className="text-white text-xs font-medium">Generating...</span>
+              </>
+            ) : (
+              <>
+                <ImagePlus className="w-6 h-6 text-white mb-1" />
+                <span className="text-white text-xs font-medium">
+                  {album.coverImageUrl ? "Regenerate" : "Generate"} Cover
+                </span>
+              </>
+            )}
+          </button>
         </div>
         <div className="space-y-2 min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{album.title}</h1>
@@ -175,6 +253,22 @@ export default function AlbumDetail() {
           <p className="text-sm text-muted-foreground">
             {album.songs?.length ?? 0} song{(album.songs?.length ?? 0) !== 1 ? "s" : ""}
           </p>
+          {!album.coverImageUrl && (album.songs?.length ?? 0) > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateCover}
+              disabled={generatingCover}
+              className="mt-2"
+            >
+              {generatingCover ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Generate AI Cover Art
+            </Button>
+          )}
         </div>
       </div>
 
@@ -206,8 +300,16 @@ export default function AlbumDetail() {
                       <div className="min-w-0">
                         <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
                         <div className="flex flex-wrap gap-1.5 mt-1">
+                          {song.engine && song.engine !== "free" && (
+                            <Badge variant="default" className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600">
+                              {song.engine === "suno" ? "Suno V5" : "MusicGen"}
+                            </Badge>
+                          )}
                           {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
                           {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
+                          {song.vocalType && song.vocalType !== "none" && (
+                            <Badge variant="outline" className="text-xs capitalize">{song.vocalType} Vocals</Badge>
+                          )}
                           {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
                         </div>
                       </div>
@@ -226,7 +328,7 @@ export default function AlbumDetail() {
                         variant="outline"
                         size="sm"
                         onClick={() => handlePlay(song)}
-                        disabled={synthesizing === song.id}
+                        disabled={synthesizing === song.id || (!song.audioUrl && !song.abcNotation)}
                       >
                         {synthesizing === song.id ? (
                           <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
@@ -239,31 +341,35 @@ export default function AlbumDetail() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDownload(song)}
-                        disabled={synthesizing === song.id}
+                        disabled={synthesizing === song.id || (!song.audioUrl && !song.abcNotation)}
                       >
                         <Download className="w-3.5 h-3.5 mr-1.5" />
-                        MP3
+                        {song.audioUrl ? "MP3" : "WAV"}
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
-                      >
-                        {expandedSong === song.id ? (
-                          <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                        )}
-                        Sheet Music
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePrint(song)}
-                      >
-                        <Printer className="w-3.5 h-3.5 mr-1.5" />
-                        Print
-                      </Button>
+                      {song.abcNotation && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
+                          >
+                            {expandedSong === song.id ? (
+                              <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
+                            )}
+                            Sheet Music
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePrint(song)}
+                          >
+                            <Printer className="w-3.5 h-3.5 mr-1.5" />
+                            Print
+                          </Button>
+                        </>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -278,7 +384,7 @@ export default function AlbumDetail() {
                 </div>
 
                 {/* Expanded Sheet Music */}
-                {expandedSong === song.id && (
+                {expandedSong === song.id && song.abcNotation && (
                   <div className="mt-4 pt-4 border-t border-border">
                     <SheetMusic abcNotation={song.abcNotation} />
                   </div>

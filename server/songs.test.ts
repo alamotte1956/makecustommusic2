@@ -419,4 +419,33 @@ describe("albums router", () => {
       ).rejects.toThrow();
     });
   });
+
+  describe("albums.generateCover", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.albums.generateCover({ albumId: 1 })
+      ).rejects.toThrow();
+    });
+
+    it("throws for non-existent album", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.albums.generateCover({ albumId: 999999 })
+      ).rejects.toThrow("Album not found");
+    });
+
+    it("validates albumId is a number", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.albums.generateCover({ albumId: "abc" as any })
+      ).rejects.toThrow();
+    });
+  });
 });

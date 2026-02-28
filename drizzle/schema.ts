@@ -52,6 +52,7 @@ export const albums = mysqlTable("albums", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   coverColor: varchar("coverColor", { length: 20 }).default("#6366f1"),
+  coverImageUrl: text("coverImageUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -9,7 +9,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import {
-  Disc3, Plus, Loader2, Music, Trash2, ArrowRight
+  Disc3, Plus, Loader2, Music, Trash2, ArrowRight, ImagePlus
 } from "lucide-react";
 import {
   Dialog,
@@ -44,12 +44,14 @@ export default function Albums() {
   });
   const createMutation = trpc.albums.create.useMutation();
   const deleteMutation = trpc.albums.delete.useMutation();
+  const generateCoverMutation = trpc.albums.generateCover.useMutation();
   const utils = trpc.useUtils();
 
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverColor, setCoverColor] = useState(COVER_COLORS[0]);
+  const [generatingCoverId, setGeneratingCoverId] = useState<number | null>(null);
 
   const handleCreate = useCallback(async () => {
     if (!title.trim()) {
@@ -81,6 +83,21 @@ export default function Albums() {
       toast.error("Failed to delete album");
     }
   }, [deleteMutation, utils]);
+
+  const handleGenerateCover = useCallback(async (albumId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setGeneratingCoverId(albumId);
+    try {
+      await generateCoverMutation.mutateAsync({ albumId });
+      utils.albums.list.invalidate();
+      toast.success("Album cover generated!");
+    } catch {
+      toast.error("Failed to generate cover. Try adding songs to the album first.");
+    } finally {
+      setGeneratingCoverId(null);
+    }
+  }, [generateCoverMutation, utils]);
 
   if (!isAuthenticated) return null;
 
@@ -124,11 +141,33 @@ export default function Albums() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {albums.map((album) => (
             <Card key={album.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
+              {/* Album Cover */}
               <div
-                className="h-32 flex items-center justify-center"
+                className="h-40 flex items-center justify-center relative overflow-hidden"
                 style={{ backgroundColor: album.coverColor || "#6366f1" }}
               >
-                <Disc3 className="w-16 h-16 text-white/30" />
+                {album.coverImageUrl ? (
+                  <img
+                    src={album.coverImageUrl}
+                    alt={`${album.title} cover`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Disc3 className="w-16 h-16 text-white/30" />
+                )}
+                {/* Generate Cover Button Overlay */}
+                <button
+                  onClick={(e) => handleGenerateCover(album.id, e)}
+                  disabled={generatingCoverId === album.id}
+                  className="absolute bottom-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                  title={album.coverImageUrl ? "Regenerate cover art" : "Generate cover art"}
+                >
+                  {generatingCoverId === album.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="w-4 h-4" />
+                  )}
+                </button>
               </div>
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-start justify-between">
