@@ -27,7 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Music className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-lg font-bold text-foreground">
-              AI Music
+              Make Custom Music
             </span>
           </Link>
 
