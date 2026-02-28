@@ -83,3 +83,11 @@
 
 ## App Rename
 - [x] Rename app to "Make Custom Music" across all UI elements (header, footer, page title, hero badge)
+
+## Audio Waveform Visualization
+- [x] Replace progress bar with dynamic waveform canvas visualization in AudioPlayer
+- [x] Generate waveform data from audio buffer using Web Audio API (with fallback)
+- [x] Render animated waveform bars that respond to playback position
+- [x] Support click-to-seek on the waveform with hover preview
+- [x] Ensure waveform works for both Suno (URL-based) and free engine (blob-based) audio
+- [x] Smooth animation and color-coded played/unplayed/hover sections
