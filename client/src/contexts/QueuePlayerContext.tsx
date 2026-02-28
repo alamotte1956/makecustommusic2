@@ -33,6 +33,11 @@ type QueuePlayerState = {
   volume: number;
   isMuted: boolean;
   queueName: string;
+  isShuffled: boolean;
+  /** The order in which songs are played. When shuffled, this is a random permutation; otherwise sequential. */
+  playOrder: number[];
+  /** Position within playOrder (not the raw queue index). */
+  playOrderPosition: number;
 };
 
 type QueuePlayerActions = {
@@ -48,6 +53,7 @@ type QueuePlayerActions = {
   jumpTo: (index: number) => void;
   clearQueue: () => void;
   isInQueue: (songId: number) => boolean;
+  toggleShuffle: () => void;
   currentSong: QueueSong | null;
 };
 
@@ -63,6 +69,29 @@ export function useQueuePlayer() {
   return ctx;
 }
 
+/** Fisher-Yates shuffle producing a random permutation of indices 0..n-1 */
+export function shuffleIndices(length: number, currentQueueIndex?: number): number[] {
+  const indices = Array.from({ length }, (_, i) => i);
+  // Shuffle all indices
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  // If a current index is provided, move it to position 0 so the current song stays playing
+  if (currentQueueIndex !== undefined && currentQueueIndex >= 0 && currentQueueIndex < length) {
+    const pos = indices.indexOf(currentQueueIndex);
+    if (pos > 0) {
+      [indices[0], indices[pos]] = [indices[pos], indices[0]];
+    }
+  }
+  return indices;
+}
+
+/** Sequential order: [0, 1, 2, ..., n-1] */
+function sequentialIndices(length: number): number[] {
+  return Array.from({ length }, (_, i) => i);
+}
+
 export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<QueueSong[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -73,6 +102,9 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [queueName, setQueueName] = useState("");
+  const [isShuffled, setIsShuffled] = useState(false);
+  const [playOrder, setPlayOrder] = useState<number[]>([]);
+  const [playOrderPosition, setPlayOrderPosition] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const synthUrlsRef = useRef<Map<number, string>>(new Map());
@@ -105,7 +137,6 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("error", onError);
       audio.pause();
       audio.src = "";
-      // Clean up synthesized URLs
       synthUrlsRef.current.forEach((url) => revokeAudioUrl(url));
       synthUrlsRef.current.clear();
     };
@@ -119,19 +150,19 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   }, [volume, isMuted]);
 
   const handleAutoNext = useCallback(() => {
-    setCurrentIndex((prev) => {
-      const nextIdx = prev + 1;
-      if (nextIdx < queue.length) {
-        // Will trigger the loadAndPlay effect
-        return nextIdx;
+    setPlayOrderPosition((prevPos) => {
+      const nextPos = prevPos + 1;
+      if (nextPos < playOrder.length) {
+        setCurrentIndex(playOrder[nextPos]);
+        return nextPos;
       }
       // End of queue
       setIsPlaying(false);
-      return prev;
+      return prevPos;
     });
-  }, [queue.length]);
+  }, [playOrder]);
 
-  // Re-attach ended handler when queue changes
+  // Re-attach ended handler when playOrder changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -144,15 +175,12 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   // Resolve audio source for a song
   const resolveAudioSrc = useCallback(
     async (song: QueueSong, signal: AbortSignal): Promise<string | null> => {
-      // Suno / external URL
       if (song.audioUrl) return song.audioUrl;
       if (song.mp3Url) return song.mp3Url;
 
-      // Already synthesized
       const cached = synthUrlsRef.current.get(song.id);
       if (cached) return cached;
 
-      // Synthesize from ABC notation
       if (song.abcNotation) {
         const { blob } = await synthesizeAudio(song.abcNotation, song.tempo || 120);
         if (signal.aborted) return null;
@@ -173,7 +201,6 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
     const song = queue[idx];
     if (!audio || !song) return;
 
-    // Cancel any pending synthesis
     pendingSynthRef.current?.abort();
     const controller = new AbortController();
     pendingSynthRef.current = controller;
@@ -233,7 +260,6 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
 
   const loadQueue = useCallback(
     (songs: QueueSong[], startIndex = 0, name = "") => {
-      // Clean up old synth URLs
       synthUrlsRef.current.forEach((url) => revokeAudioUrl(url));
       synthUrlsRef.current.clear();
 
@@ -243,9 +269,21 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
+
+      // Build play order based on current shuffle state
+      if (isShuffled) {
+        const order = shuffleIndices(songs.length, startIndex);
+        setPlayOrder(order);
+        setPlayOrderPosition(0); // current song is at position 0
+      } else {
+        const order = sequentialIndices(songs.length);
+        setPlayOrder(order);
+        setPlayOrderPosition(startIndex);
+      }
+
       queueIdRef.current += 1;
     },
-    []
+    [isShuffled]
   );
 
   const play = useCallback(() => {
@@ -266,23 +304,27 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   }, [isPlaying, play, pause]);
 
   const next = useCallback(() => {
-    if (currentIndex < queue.length - 1) {
-      setCurrentIndex((i) => i + 1);
+    const nextPos = playOrderPosition + 1;
+    if (nextPos < playOrder.length) {
+      setPlayOrderPosition(nextPos);
+      setCurrentIndex(playOrder[nextPos]);
     }
-  }, [currentIndex, queue.length]);
+  }, [playOrderPosition, playOrder]);
 
   const previous = useCallback(() => {
-    // If more than 3 seconds in, restart current track; otherwise go to previous
+    // If more than 3 seconds in, restart current track; otherwise go to previous in play order
     if (audioRef.current && audioRef.current.currentTime > 3) {
       audioRef.current.currentTime = 0;
       setCurrentTime(0);
-    } else if (currentIndex > 0) {
-      setCurrentIndex((i) => i - 1);
+    } else if (playOrderPosition > 0) {
+      const prevPos = playOrderPosition - 1;
+      setPlayOrderPosition(prevPos);
+      setCurrentIndex(playOrder[prevPos]);
     } else if (audioRef.current) {
       audioRef.current.currentTime = 0;
       setCurrentTime(0);
     }
-  }, [currentIndex]);
+  }, [playOrderPosition, playOrder]);
 
   const seekTo = useCallback((time: number) => {
     if (audioRef.current) {
@@ -304,10 +346,33 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
     (index: number) => {
       if (index >= 0 && index < queue.length) {
         setCurrentIndex(index);
+        // Update playOrderPosition to match
+        const pos = playOrder.indexOf(index);
+        if (pos >= 0) {
+          setPlayOrderPosition(pos);
+        }
       }
     },
-    [queue.length]
+    [queue.length, playOrder]
   );
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffled((prev) => {
+      const newShuffled = !prev;
+      if (newShuffled) {
+        // Shuffle: create random order with current song at position 0
+        const order = shuffleIndices(queue.length, currentIndex);
+        setPlayOrder(order);
+        setPlayOrderPosition(0);
+      } else {
+        // Unshuffle: restore sequential order, position at current song
+        const order = sequentialIndices(queue.length);
+        setPlayOrder(order);
+        setPlayOrderPosition(currentIndex);
+      }
+      return newShuffled;
+    });
+  }, [queue.length, currentIndex]);
 
   const clearQueue = useCallback(() => {
     audioRef.current?.pause();
@@ -321,6 +386,9 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
     setCurrentTime(0);
     setDuration(0);
     setQueueName("");
+    setIsShuffled(false);
+    setPlayOrder([]);
+    setPlayOrderPosition(0);
   }, []);
 
   const isInQueue = useCallback(
@@ -342,6 +410,9 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
         volume,
         isMuted,
         queueName,
+        isShuffled,
+        playOrder,
+        playOrderPosition,
         loadQueue,
         play,
         pause,
@@ -354,6 +425,7 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
         jumpTo,
         clearQueue,
         isInQueue,
+        toggleShuffle,
         currentSong,
       }}
     >

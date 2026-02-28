@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
-  X, Loader2, ListMusic, Music
+  X, Loader2, ListMusic, Music, Shuffle
 } from "lucide-react";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 
@@ -16,7 +16,6 @@ function formatTime(time: number): string {
 
 /**
  * Mini waveform visualization for the queue player bar.
- * Uses a simulated waveform pattern since we need it to be lightweight.
  */
 function MiniWaveform({
   progress,
@@ -30,7 +29,6 @@ function MiniWaveform({
   const [hoveredProgress, setHoveredProgress] = useState<number | null>(null);
   const animationRef = useRef(0);
 
-  // Generate a stable pseudo-random waveform pattern
   const peaks = useMemo(() => {
     const barCount = 60;
     return Array.from({ length: barCount }, (_, i) => {
@@ -132,24 +130,31 @@ export default function QueuePlayerBar() {
     volume,
     isMuted,
     queueName,
+    isShuffled,
+    playOrder,
+    playOrderPosition,
     togglePlay,
     next,
     previous,
     seekTo,
     setVolume,
     toggleMute,
+    toggleShuffle,
     clearQueue,
     currentSong,
+    jumpTo,
   } = useQueuePlayer();
 
   const [showQueue, setShowQueue] = useState(false);
-  const { jumpTo } = useQueuePlayer();
 
   if (queue.length === 0) return null;
 
   const progress = duration > 0 ? currentTime / duration : 0;
-  const hasNext = currentIndex < queue.length - 1;
-  const hasPrevious = currentIndex > 0;
+  const hasNext = playOrderPosition < playOrder.length - 1;
+  const hasPrevious = playOrderPosition > 0;
+
+  // Build the display order for the queue overlay: show songs in play order
+  const displayOrder = isShuffled ? playOrder : queue.map((_, i) => i);
 
   return (
     <>
@@ -163,40 +168,49 @@ export default function QueuePlayerBar() {
             <div className="p-3 border-b border-border flex items-center justify-between">
               <span className="text-sm font-semibold text-card-foreground">
                 {queueName || "Queue"} ({queue.length} songs)
+                {isShuffled && (
+                  <span className="ml-1.5 text-xs text-primary font-normal">
+                    — Shuffled
+                  </span>
+                )}
               </span>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowQueue(false)}>
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
             <div className="overflow-y-auto max-h-[320px]">
-              {queue.map((song, idx) => (
-                <button
-                  key={`${song.id}-${idx}`}
-                  onClick={() => {
-                    jumpTo(idx);
-                    setShowQueue(false);
-                  }}
-                  className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-accent ${
-                    idx === currentIndex ? "bg-primary/10" : ""
-                  }`}
-                >
-                  <span className="text-xs text-muted-foreground font-mono w-5 text-right shrink-0">
-                    {idx === currentIndex && isPlaying ? (
-                      <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    ) : (
-                      idx + 1
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-sm truncate ${idx === currentIndex ? "font-semibold text-primary" : "text-card-foreground"}`}>
-                      {song.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {[song.genre, song.mood].filter(Boolean).join(" · ") || song.keywords}
-                    </p>
-                  </div>
-                </button>
-              ))}
+              {displayOrder.map((queueIdx, displayPos) => {
+                const song = queue[queueIdx];
+                if (!song) return null;
+                return (
+                  <button
+                    key={`${song.id}-${displayPos}`}
+                    onClick={() => {
+                      jumpTo(queueIdx);
+                      setShowQueue(false);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-accent ${
+                      queueIdx === currentIndex ? "bg-primary/10" : ""
+                    }`}
+                  >
+                    <span className="text-xs text-muted-foreground font-mono w-5 text-right shrink-0">
+                      {queueIdx === currentIndex && isPlaying ? (
+                        <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      ) : (
+                        displayPos + 1
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm truncate ${queueIdx === currentIndex ? "font-semibold text-primary" : "text-card-foreground"}`}>
+                        {song.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {[song.genre, song.mood].filter(Boolean).join(" · ") || song.keywords}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -230,6 +244,18 @@ export default function QueuePlayerBar() {
           <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
             {/* Transport controls */}
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${isShuffled ? "text-primary" : ""}`}
+                onClick={toggleShuffle}
+                title={isShuffled ? "Disable shuffle" : "Enable shuffle"}
+              >
+                <Shuffle className="w-4 h-4" />
+                {isShuffled && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                )}
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"

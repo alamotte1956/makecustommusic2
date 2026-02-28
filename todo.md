@@ -112,3 +112,11 @@
 - [x] Auto-advance to next song when current song ends
 - [x] Highlight currently playing song in the list
 - [x] Write tests for queue player logic (61 tests passing)
+
+## Shuffle Mode
+- [x] Add shuffle state and shuffled index order to QueuePlayerContext
+- [x] Implement shuffle toggle that creates a random permutation of the queue
+- [x] Wire next/previous to follow shuffled order when shuffle is active
+- [x] Add shuffle toggle button to QueuePlayerBar UI with active indicator
+- [x] Update queue list overlay to show shuffled order when active
+- [x] Update tests for shuffle logic (75 tests passing)
