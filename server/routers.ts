@@ -6,11 +6,13 @@ import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import {
   createSong, getSongById, getUserSongs, deleteSong, updateSongMp3,
+  updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount
 } from "./db";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { isSunoAvailable, sunoGenerateAndWait } from "./sunoApi";
 
 export const appRouter = router({
   system: systemRouter,
@@ -24,14 +26,106 @@ export const appRouter = router({
   }),
 
   songs: router({
+    // Check which engines are available
+    engines: publicProcedure.query(() => {
+      return {
+        free: true,
+        suno: isSunoAvailable(),
+      };
+    }),
+
+    // Generate music — supports "free" (LLM+ABC) and "suno" (simple or custom mode)
     generate: protectedProcedure
       .input(z.object({
         keywords: z.string().min(1).max(500),
+        engine: z.enum(["free", "suno"]).default("free"),
+        genre: z.string().max(100).optional(),
+        mood: z.string().max(100).optional(),
+        vocalType: z.enum(["none", "male", "female", "mixed"]).optional(),
+        duration: z.number().min(15).max(240).optional(),
+        // Suno Custom Mode fields
+        sunoMode: z.enum(["simple", "custom"]).optional(),
+        customTitle: z.string().max(255).optional(),
+        customLyrics: z.string().max(5000).optional(),
+        customStyle: z.string().max(500).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { keywords } = input;
+        const {
+          keywords, engine, genre, mood, vocalType, duration,
+          sunoMode, customTitle, customLyrics, customStyle
+        } = input;
 
-        // Use LLM to generate ABC notation music from keywords
+        // ─── SUNO ENGINE ───
+        if (engine === "suno") {
+          if (!isSunoAvailable()) {
+            throw new Error("Suno engine is not available. Please configure the SUNO_API_KEY.");
+          }
+
+          let sunoResult;
+
+          if (sunoMode === "custom" && customLyrics && customStyle) {
+            // Suno Custom Mode: user provides lyrics, style tags, and title
+            sunoResult = await sunoGenerateAndWait({
+              mode: "custom",
+              title: customTitle || "Untitled",
+              lyrics: customLyrics,
+              style: customStyle,
+              duration: duration,
+            });
+          } else {
+            // Suno Simple Mode: build a rich prompt from keywords + genre + mood + vocal
+            let prompt = keywords;
+            if (genre) prompt += `, ${genre} style`;
+            if (mood) prompt += `, ${mood} mood`;
+            if (vocalType && vocalType !== "none") {
+              prompt += `, with ${vocalType} vocals`;
+            }
+            if (duration) prompt += `, ${duration} seconds long`;
+
+            sunoResult = await sunoGenerateAndWait({
+              mode: "simple",
+              prompt,
+              duration,
+            });
+          }
+
+          // Save to database
+          const song = await createSong({
+            userId: ctx.user.id,
+            title: sunoResult.title || customTitle || "Suno Track",
+            keywords,
+            abcNotation: null,
+            musicDescription: `Generated with Suno V5${sunoMode === "custom" ? " (Custom Mode)" : ""}`,
+            audioUrl: sunoResult.audioUrl,
+            tempo: null,
+            keySignature: null,
+            timeSignature: null,
+            genre: genre || sunoResult.tags || null,
+            mood: mood || null,
+            instruments: null,
+            duration: sunoResult.duration ? Math.round(sunoResult.duration) : (duration || 30),
+            engine: "suno",
+            vocalType: vocalType || null,
+            lyrics: sunoResult.lyric || customLyrics || null,
+            styleTags: customStyle || sunoResult.tags || null,
+            sunoSongId: sunoResult.id || null,
+            imageUrl: sunoResult.imageUrl || null,
+          });
+
+          return song;
+        }
+
+        // ─── FREE ENGINE (LLM + ABC Notation) ───
+        const vocalInstruction = vocalType && vocalType !== "none"
+          ? `\nInclude vocal melody line marked with "V:" voice. The vocal style should be ${vocalType}. Add lyrics as "w:" lines under the vocal melody.`
+          : "";
+
+        const genreInstruction = genre ? `\nThe genre should be: ${genre}` : "";
+        const moodInstruction = mood ? `\nThe mood should be: ${mood}` : "";
+        const durationInstruction = duration
+          ? `\nTarget duration: approximately ${duration} seconds. Adjust the number of bars accordingly (roughly ${Math.round(duration / 2)} bars at moderate tempo).`
+          : "";
+
         const response = await invokeLLM({
           messages: [
             {
@@ -44,7 +138,7 @@ IMPORTANT RULES:
 3. Include proper headers: X (reference number), T (title), M (meter), L (default note length), K (key), Q (tempo)
 4. Use appropriate key signatures, time signatures, and tempos for the described style
 5. Create melodically interesting and harmonically coherent music
-6. Include dynamics and expression marks where appropriate
+6. Include dynamics and expression marks where appropriate${vocalInstruction}${genreInstruction}${moodInstruction}${durationInstruction}
 
 Return your response as a JSON object with these fields:
 - title: A creative title for the piece
@@ -94,7 +188,6 @@ Return your response as a JSON object with these fields:
 
         const composition = JSON.parse(content);
 
-        // Save to database
         const song = await createSong({
           userId: ctx.user.id,
           title: composition.title,
@@ -104,15 +197,18 @@ Return your response as a JSON object with these fields:
           tempo: composition.tempo,
           keySignature: composition.keySignature,
           timeSignature: composition.timeSignature,
-          genre: composition.genre,
-          mood: composition.mood,
+          genre: genre || composition.genre,
+          mood: mood || composition.mood,
           instruments: composition.instruments,
-          duration: 30,
+          duration: duration || 30,
+          engine: "free",
+          vocalType: vocalType || null,
         });
 
         return song;
       }),
 
+    // Save synthesized audio to S3
     saveMp3: protectedProcedure
       .input(z.object({
         songId: z.number(),
@@ -125,11 +221,60 @@ Return your response as a JSON object with these fields:
         }
 
         const buffer = Buffer.from(input.mp3Base64, "base64");
-        const fileKey = `songs/${ctx.user.id}/${nanoid()}.mp3`;
-        const { url } = await storagePut(fileKey, buffer, "audio/mpeg");
+        const fileKey = `songs/${ctx.user.id}/${nanoid()}.wav`;
+        const { url } = await storagePut(fileKey, buffer, "audio/wav");
 
         await updateSongMp3(input.songId, url, fileKey);
         return { mp3Url: url };
+      }),
+
+    // Create a share link for a song
+    createShareLink: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+
+        if (song.shareToken) {
+          return { shareToken: song.shareToken };
+        }
+
+        const shareToken = nanoid(16);
+        await updateSongShareToken(input.songId, shareToken);
+        return { shareToken };
+      }),
+
+    // Get a shared song (public, no auth required)
+    getShared: publicProcedure
+      .input(z.object({ shareToken: z.string() }))
+      .query(async ({ input }) => {
+        const song = await getSongByShareToken(input.shareToken);
+        if (!song) return null;
+        // Return limited info for public view
+        return {
+          id: song.id,
+          title: song.title,
+          keywords: song.keywords,
+          abcNotation: song.abcNotation,
+          musicDescription: song.musicDescription,
+          audioUrl: song.audioUrl,
+          mp3Url: song.mp3Url,
+          duration: song.duration,
+          tempo: song.tempo,
+          keySignature: song.keySignature,
+          timeSignature: song.timeSignature,
+          genre: song.genre,
+          mood: song.mood,
+          instruments: song.instruments,
+          engine: song.engine,
+          vocalType: song.vocalType,
+          lyrics: song.lyrics,
+          styleTags: song.styleTags,
+          imageUrl: song.imageUrl,
+          createdAt: song.createdAt,
+        };
       }),
 
     getById: protectedProcedure

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -47,6 +47,26 @@ function createUnauthContext(): { ctx: TrpcContext } {
 }
 
 describe("songs router", () => {
+  describe("songs.engines", () => {
+    it("returns available engines (public)", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.engines();
+      expect(result).toHaveProperty("free", true);
+      expect(result).toHaveProperty("suno");
+      expect(typeof result.suno).toBe("boolean");
+    });
+
+    it("free engine is always available", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.engines();
+      expect(result.free).toBe(true);
+    });
+  });
+
   describe("songs.list", () => {
     it("requires authentication", async () => {
       const { ctx } = createUnauthContext();
@@ -82,6 +102,136 @@ describe("songs router", () => {
         caller.songs.generate({ keywords: "" })
       ).rejects.toThrow();
     });
+
+    it("validates keywords max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({ keywords: "a".repeat(501) })
+      ).rejects.toThrow();
+    });
+
+    it("accepts valid engine values", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Valid engine should pass input validation and attempt generation
+      // It may succeed or fail (LLM call), but should NOT throw a Zod error
+      try {
+        await caller.songs.generate({ keywords: "test", engine: "free" });
+      } catch (e: any) {
+        // Should not be a Zod validation error
+        expect(e.message).not.toMatch(/invalid_enum_value/i);
+      }
+    }, 60000);
+
+    it("rejects invalid engine values", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({ keywords: "test", engine: "invalid" as any })
+      ).rejects.toThrow();
+    });
+
+    it("accepts optional genre, mood, vocalType, and duration", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Valid optional fields should pass input validation
+      try {
+        await caller.songs.generate({
+          keywords: "test music",
+          engine: "free",
+          genre: "Jazz",
+          mood: "Happy",
+          vocalType: "male",
+          duration: 60,
+        });
+      } catch (e: any) {
+        // Should not be a Zod validation error
+        expect(e.message).not.toMatch(/invalid_type/i);
+        expect(e.message).not.toMatch(/invalid_enum_value/i);
+      }
+    }, 60000);
+
+    it("validates duration range (min 15)", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({ keywords: "test", duration: 5 })
+      ).rejects.toThrow();
+    });
+
+    it("validates duration range (max 240)", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({ keywords: "test", duration: 500 })
+      ).rejects.toThrow();
+    });
+
+    it("accepts Suno custom mode fields", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Input validation should accept custom mode fields
+      const promise = caller.songs.generate({
+        keywords: "custom song",
+        engine: "suno",
+        sunoMode: "custom",
+        customTitle: "My Custom Song",
+        customLyrics: "[Verse 1]\nHello world\n[Chorus]\nLa la la",
+        customStyle: "pop, female vocals, upbeat",
+        duration: 60,
+      });
+
+      // Should not throw a Zod validation error (may throw Suno API error)
+      await expect(promise).rejects.not.toThrow(/invalid_type/i);
+    });
+
+    it("validates customLyrics max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({
+          keywords: "test",
+          engine: "suno",
+          sunoMode: "custom",
+          customLyrics: "a".repeat(5001),
+          customStyle: "pop",
+        })
+      ).rejects.toThrow();
+    });
+
+    it("validates vocalType enum values", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({
+          keywords: "test",
+          vocalType: "soprano" as any,
+        })
+      ).rejects.toThrow();
+    });
+
+    it("validates sunoMode enum values", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({
+          keywords: "test",
+          engine: "suno",
+          sunoMode: "advanced" as any,
+        })
+      ).rejects.toThrow();
+    });
   });
 
   describe("songs.getById", () => {
@@ -111,6 +261,45 @@ describe("songs router", () => {
       await expect(
         caller.songs.delete({ id: 1 })
       ).rejects.toThrow();
+    });
+  });
+
+  describe("songs.createShareLink", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.createShareLink({ songId: 1 })
+      ).rejects.toThrow();
+    });
+
+    it("throws for non-existent song", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.createShareLink({ songId: 999999 })
+      ).rejects.toThrow("Song not found");
+    });
+  });
+
+  describe("songs.getShared", () => {
+    it("returns null for non-existent share token", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.getShared({ shareToken: "nonexistent-token-xyz" });
+      expect(result).toBeNull();
+    });
+
+    it("does not require authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Should not throw auth error, just return null
+      const result = await caller.songs.getShared({ shareToken: "test-token" });
+      expect(result).toBeNull();
     });
   });
 });
@@ -205,6 +394,28 @@ describe("albums router", () => {
 
       await expect(
         caller.albums.update({ id: 1, title: "Updated" })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("albums.addSong", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.albums.addSong({ albumId: 1, songId: 1 })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("albums.removeSong", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.albums.removeSong({ albumId: 1, songId: 1 })
       ).rejects.toThrow();
     });
   });

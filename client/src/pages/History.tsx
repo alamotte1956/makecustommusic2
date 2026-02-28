@@ -359,7 +359,7 @@ export default function History() {
                 </div>
 
                 {/* Expanded Sheet Music */}
-                {expandedSong === song.id && (
+                {expandedSong === song.id && song.abcNotation && (
                   <div className="border-t border-border p-4 bg-muted/30">
                     <SheetMusic abcNotation={song.abcNotation} />
                   </div>

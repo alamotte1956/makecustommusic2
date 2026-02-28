@@ -125,6 +125,25 @@ export async function updateSongMp3(id: number, mp3Url: string, mp3Key: string) 
   await db.update(songs).set({ mp3Url, mp3Key }).where(eq(songs.id, id));
 }
 
+export async function updateSongAudioUrl(id: number, audioUrl: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ audioUrl }).where(eq(songs.id, id));
+}
+
+export async function updateSongShareToken(id: number, shareToken: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ shareToken }).where(eq(songs.id, id));
+}
+
+export async function getSongByShareToken(shareToken: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(songs).where(eq(songs.shareToken, shareToken)).limit(1);
+  return result[0] ?? null;
+}
+
 // ─── Album Queries ───
 
 export async function createAlbum(data: InsertAlbum) {

@@ -33,3 +33,18 @@
 ## Testing
 - [x] Unit tests for backend routes (17 tests passing)
 - [x] Test music generation flow
+
+## Suno V5 Custom Mode
+- [ ] Add Custom Mode toggle when Suno engine is selected
+- [ ] Add separate lyrics textarea field for custom lyrics input
+- [ ] Add style tags field for genre/style control (e.g., "synthwave, male vocals, slow tempo")
+- [ ] Add custom title field for song naming
+- [ ] Update backend Suno API integration to send custom mode parameters
+- [ ] Update database schema to store custom lyrics if provided
+- [ ] Maintain existing simple prompt mode as default
+- [ ] Update tests for Custom Mode
+
+## Vocal Type Enhancement
+- [x] Ensure Male Singer, Female Singer, and Both Singers options are prominent card-style in the UI
+- [x] Verify vocal type is passed correctly to Suno API in both Simple and Custom modes
+- [x] Fix stale TS watcher issue with sunoApiKey in env.ts (use process.env directly)

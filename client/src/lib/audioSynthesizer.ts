@@ -1,10 +1,7 @@
 /**
  * Audio Synthesizer - Converts ABC notation to playable audio using Web Audio API
- * and encodes to MP3 using lamejs
+ * and encodes to WAV natively (no external dependencies)
  */
-
-// @ts-ignore - lamejs doesn't have proper types
-import lamejs from "lamejs";
 
 type NoteEvent = {
   frequency: number;
@@ -176,55 +173,65 @@ export async function synthesizeAudio(
 
   onProgress?.(70);
 
-  // Convert to MP3
-  const mp3Blob = await encodeToMp3(audioBuffer, onProgress);
+  // Encode to WAV
+  const wavBlob = encodeToWav(audioBuffer, onProgress);
 
   onProgress?.(100);
 
-  return { audioBuffer, blob: mp3Blob };
+  return { audioBuffer, blob: wavBlob };
 }
 
-async function encodeToMp3(
+function encodeToWav(
   audioBuffer: AudioBuffer,
   onProgress?: (progress: number) => void
-): Promise<Blob> {
-  const samples = audioBuffer.getChannelData(0);
+): Blob {
+  const numChannels = 1;
   const sampleRate = audioBuffer.sampleRate;
+  const samples = audioBuffer.getChannelData(0);
+  const bitsPerSample = 16;
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const dataSize = samples.length * numChannels * (bitsPerSample / 8);
+  const headerSize = 44;
+  const totalSize = headerSize + dataSize;
 
-  const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
-  const mp3Data: BlobPart[] = [];
+  const buffer = new ArrayBuffer(totalSize);
+  const view = new DataView(buffer);
 
-  const sampleBlockSize = 1152;
-  const totalBlocks = Math.ceil(samples.length / sampleBlockSize);
-
-  for (let i = 0; i < samples.length; i += sampleBlockSize) {
-    const blockEnd = Math.min(i + sampleBlockSize, samples.length);
-    const block = samples.subarray(i, blockEnd);
-
-    // Convert float samples to int16
-    const int16 = new Int16Array(block.length);
-    for (let j = 0; j < block.length; j++) {
-      const s = Math.max(-1, Math.min(1, block[j]));
-      int16[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  // WAV header
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
     }
+  };
 
-    const mp3buf = mp3encoder.encodeBuffer(int16);
-    if (mp3buf.length > 0) {
-      mp3Data.push(new Blob([mp3buf]));
-    }
+  writeString(0, "RIFF");
+  view.setUint32(4, totalSize - 8, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true); // PCM format chunk size
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, "data");
+  view.setUint32(40, dataSize, true);
 
-    const currentBlock = Math.floor(i / sampleBlockSize);
-    if (onProgress && currentBlock % 10 === 0) {
-      onProgress(70 + Math.round((currentBlock / totalBlocks) * 25));
+  // Write PCM samples
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+
+    if (onProgress && i % 44100 === 0) {
+      onProgress(70 + Math.round((i / samples.length) * 25));
     }
   }
 
-  const end = mp3encoder.flush();
-  if (end.length > 0) {
-    mp3Data.push(new Blob([end]));
-  }
-
-  return new Blob(mp3Data, { type: "audio/mpeg" });
+  return new Blob([buffer], { type: "audio/wav" });
 }
 
 export function createAudioUrl(blob: Blob): string {

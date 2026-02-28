@@ -15,6 +15,41 @@
       "when": 1772293426931,
       "tag": "0001_nasty_triton",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772296413953,
+      "tag": "0002_clammy_whiplash",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1772301715700,
+      "tag": "0003_zippy_longshot",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1772304264374,
+      "tag": "0004_chief_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1772305649975,
+      "tag": "0005_secret_tattoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1772306684107,
+      "tag": "0006_black_preak",
+      "breakpoints": true
     }
   ]
 }
