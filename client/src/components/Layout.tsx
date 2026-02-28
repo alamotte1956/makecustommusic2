@@ -144,7 +144,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className={`border-t border-border py-6 mt-auto ${hasQueue ? "pb-24" : ""}`}>
         <div className="container text-center text-sm text-muted-foreground">
-          <p>Make Custom Music — Create unique music from your imagination</p>
+          <p>© 2026 A. LaMotte Music</p>
         </div>
       </footer>
     </div>

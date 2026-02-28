@@ -120,3 +120,6 @@
 - [x] Add shuffle toggle button to QueuePlayerBar UI with active indicator
 - [x] Update queue list overlay to show shuffled order when active
 - [x] Update tests for shuffle logic (75 tests passing)
+
+## Footer Update
+- [x] Update footer copyright text to "© 2026 A. LaMotte Music"
