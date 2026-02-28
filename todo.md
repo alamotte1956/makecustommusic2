@@ -102,3 +102,13 @@
 - [x] Add Favorites link to navigation header
 - [x] Optimistic UI updates for instant toggle feedback
 - [x] Update tests for favorites functionality (46 tests passing)
+
+## Sequential Playback / Queue Player
+- [x] Create QueuePlayer React context to manage playlist state (queue, current index, play/pause)
+- [x] Build persistent bottom player bar with song info, waveform, next/previous/play-pause controls
+- [x] Handle audio source resolution for both Suno (URL-based) and free engine (ABC synthesis) songs
+- [x] Add "Play All" button to Favorites page that loads all favorited songs into the queue
+- [x] Add "Play All" button to AlbumDetail page that loads all album songs into the queue
+- [x] Auto-advance to next song when current song ends
+- [x] Highlight currently playing song in the list
+- [x] Write tests for queue player logic (61 tests passing)

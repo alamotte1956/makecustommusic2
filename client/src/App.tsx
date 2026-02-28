@@ -11,6 +11,8 @@ import Albums from "./pages/Albums";
 import AlbumDetail from "./pages/AlbumDetail";
 import Favorites from "./pages/Favorites";
 import Layout from "./components/Layout";
+import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
+import QueuePlayerBar from "./components/QueuePlayerBar";
 
 function Router() {
   return (
@@ -31,12 +33,15 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Layout>
-            <Router />
-          </Layout>
-        </TooltipProvider>
+        <QueuePlayerProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Layout>
+              <Router />
+            </Layout>
+            <QueuePlayerBar />
+          </TooltipProvider>
+        </QueuePlayerProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

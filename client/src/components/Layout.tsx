@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart } from "lucide-react";
 import { useState } from "react";
+import { useQueuePlayer } from "@/contexts/QueuePlayerContext";
 
 const navItems = [
   { href: "/generate", label: "Create Music", icon: Sparkles },
@@ -16,6 +17,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { queue } = useQueuePlayer();
+  const hasQueue = queue.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -139,7 +142,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-6 mt-auto">
+      <footer className={`border-t border-border py-6 mt-auto ${hasQueue ? "pb-24" : ""}`}>
         <div className="container text-center text-sm text-muted-foreground">
           <p>Make Custom Music — Create unique music from your imagination</p>
         </div>
