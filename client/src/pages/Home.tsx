@@ -45,8 +45,8 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/10" />
-        <div className="container relative py-20 md:py-32">
-          <div className="max-w-3xl mx-auto text-center space-y-6">
+        <div className="container relative py-8 md:py-12">
+          <div className="max-w-3xl mx-auto text-center space-y-4">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
               <Sparkles className="w-4 h-4" />
               Make Custom Music
@@ -59,7 +59,7 @@ export default function Home() {
               Describe the music you imagine, and our AI will compose it for you instantly.
               Download as MP3, view sheet music, and build your own album collection.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
               {isAuthenticated ? (
                 <Button asChild size="lg" className="text-base px-8">
                   <Link href="/generate">

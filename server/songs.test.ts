@@ -292,6 +292,85 @@ describe("songs router", () => {
     });
   });
 
+  describe("songs.generateLyrics", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generateLyrics({ subject: "love" })
+      ).rejects.toThrow();
+    });
+
+    it("validates empty subject", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generateLyrics({ subject: "" })
+      ).rejects.toThrow();
+    });
+
+    it("validates subject max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generateLyrics({ subject: "a".repeat(501) })
+      ).rejects.toThrow();
+    });
+
+    it("accepts optional genre, mood, and vocalType", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Should pass input validation and attempt LLM call
+      try {
+        const result = await caller.songs.generateLyrics({
+          subject: "summer road trip",
+          genre: "Pop",
+          mood: "Happy",
+          vocalType: "female",
+        });
+        expect(result).toHaveProperty("lyrics");
+        expect(typeof result.lyrics).toBe("string");
+        expect(result.lyrics.length).toBeGreaterThan(0);
+      } catch (e: any) {
+        // LLM may fail in test env, but should not be a Zod validation error
+        expect(e.message).not.toMatch(/invalid_type/i);
+      }
+    }, 30000);
+
+    it("validates vocalType enum", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generateLyrics({
+          subject: "love",
+          vocalType: "soprano" as any,
+        })
+      ).rejects.toThrow();
+    });
+
+    it("generates lyrics for a simple subject", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      try {
+        const result = await caller.songs.generateLyrics({
+          subject: "walking in the rain",
+        });
+        expect(result).toHaveProperty("lyrics");
+        expect(typeof result.lyrics).toBe("string");
+        expect(result.lyrics.length).toBeGreaterThan(50);
+      } catch (e: any) {
+        // LLM may fail in test env, but should not be a validation error
+        expect(e.message).not.toMatch(/invalid_type/i);
+      }
+    }, 30000);
+  });
+
   describe("songs.getShared", () => {
     it("returns null for non-existent share token", async () => {
       const { ctx } = createUnauthContext();

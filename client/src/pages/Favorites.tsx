@@ -11,6 +11,7 @@ import {
   ChevronDown, ChevronUp, Play, Share2, ListMusic, Pause
 } from "lucide-react";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
+import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 
 export default function Favorites() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
@@ -23,6 +24,9 @@ export default function Favorites() {
   } = useQueuePlayer();
 
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
+  const [filters, setFilters] = useState<SongFilters>({ search: "", genre: "__all__", mood: "__all__" });
+
+  const filteredSongs = filterSongs(songs, filters);
 
   const isFavoritesQueue = queueName === "Favorites";
 
@@ -112,6 +116,7 @@ export default function Favorites() {
           </h1>
           <p className="text-muted-foreground">
             {songs?.length ?? 0} favorite song{(songs?.length ?? 0) !== 1 ? "s" : ""}
+            {songs && filteredSongs.length !== songs.length && ` · ${filteredSongs.length} shown`}
           </p>
         </div>
         {playableSongs.length > 0 && (
@@ -134,6 +139,11 @@ export default function Favorites() {
         )}
       </div>
 
+      {/* Filters */}
+      {songs && songs.length > 0 && (
+        <SongFiltersBar filters={filters} onFiltersChange={setFilters} songs={songs} />
+      )}
+
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -152,8 +162,18 @@ export default function Favorites() {
           </CardContent>
         </Card>
       ) : (
+        filteredSongs.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No songs match your filters</p>
+            <Button variant="link" onClick={() => setFilters({ search: "", genre: "__all__", mood: "__all__" })}>
+              Clear filters
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
         <div className="space-y-3">
-          {songs.map((song: any) => {
+          {filteredSongs.map((song: any) => {
             const audioUrl = song.audioUrl || song.mp3Url;
             const isCurrentlyPlaying = isFavoritesQueue && currentSong?.id === song.id;
             return (
@@ -273,7 +293,7 @@ export default function Favorites() {
             );
           })}
         </div>
-      )}
+      ))}
     </div>
   );
 }

@@ -119,6 +119,47 @@ export const appRouter = router({
         throw new Error("Suno engine is not available. Please configure the SUNO_API_KEY.");
       }),
 
+    // Generate lyrics from a subject/topic using LLM
+    generateLyrics: protectedProcedure
+      .input(z.object({
+        subject: z.string().min(1).max(500),
+        genre: z.string().max(100).optional(),
+        mood: z.string().max(100).optional(),
+        vocalType: z.enum(["none", "male", "female", "mixed"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { subject, genre, mood, vocalType } = input;
+
+        let styleHints = "";
+        if (genre) styleHints += ` in a ${genre} style`;
+        if (mood) styleHints += ` with a ${mood} mood`;
+        if (vocalType && vocalType !== "none") {
+          const vocalDesc = vocalType === "mixed" ? "a male and female duet" : `a ${vocalType} singer`;
+          styleHints += `, written for ${vocalDesc}`;
+        }
+
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a professional songwriter. Write original song lyrics based on the user's subject. Format the lyrics with section markers like [Verse 1], [Chorus], [Verse 2], [Bridge], etc. The lyrics should be creative, emotionally resonant, and ready to be set to music. Keep lyrics between 150-400 words. Do not include any explanation or commentary — output only the lyrics.`,
+            },
+            {
+              role: "user",
+              content: `Write song lyrics about the following subject${styleHints}:\n\n"${subject}"`,
+            },
+          ],
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        const lyrics = typeof rawContent === "string" ? rawContent.trim() : null;
+        if (!lyrics) {
+          throw new Error("Failed to generate lyrics. Please try again.");
+        }
+
+        return { lyrics };
+      }),
+
     // Save synthesized audio to S3
     saveMp3: protectedProcedure
       .input(z.object({

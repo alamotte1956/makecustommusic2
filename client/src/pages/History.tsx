@@ -11,6 +11,7 @@ import {
   Loader2, ChevronDown, ChevronUp, Disc3, Play
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
+import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 import { getLoginUrl } from "@/const";
 import {
   AlertDialog,
@@ -54,6 +55,9 @@ export default function History() {
   const [selectedSongs, setSelectedSongs] = useState<Set<number>>(new Set());
   const [showBulkAlbumDialog, setShowBulkAlbumDialog] = useState(false);
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
+  const [filters, setFilters] = useState<SongFilters>({ search: "", genre: "__all__", mood: "__all__" });
+
+  const filteredSongs = filterSongs(songs, filters);
 
   const getAudioUrl = (song: any): string | null => {
     return song.audioUrl || song.mp3Url || null;
@@ -153,6 +157,7 @@ export default function History() {
           </h1>
           <p className="text-muted-foreground">
             {songs?.length ?? 0} song{(songs?.length ?? 0) !== 1 ? "s" : ""} generated
+            {songs && filteredSongs.length !== songs.length && ` · ${filteredSongs.length} shown`}
           </p>
         </div>
         {selectedSongs.size > 0 && (
@@ -162,6 +167,11 @@ export default function History() {
           </Button>
         )}
       </div>
+
+      {/* Filters */}
+      {songs && songs.length > 0 && (
+        <SongFiltersBar filters={filters} onFiltersChange={setFilters} songs={songs} />
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
@@ -181,8 +191,18 @@ export default function History() {
           </CardContent>
         </Card>
       ) : (
+        filteredSongs.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No songs match your filters</p>
+            <Button variant="link" onClick={() => setFilters({ search: "", genre: "__all__", mood: "__all__" })}>
+              Clear filters
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
         <div className="space-y-4">
-          {songs.map((song) => {
+          {filteredSongs.map((song) => {
             const audioUrl = getAudioUrl(song);
             return (
               <Card key={song.id} className="overflow-hidden">
@@ -310,7 +330,7 @@ export default function History() {
             );
           })}
         </div>
-      )}
+      ))}
 
       {/* Add to Album Dialog */}
       <Dialog open={albumDialogSongId !== null} onOpenChange={(open) => !open && setAlbumDialogSongId(null)}>

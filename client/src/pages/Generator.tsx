@@ -15,7 +15,7 @@ import {
   Sparkles, Download, Music, Loader2,
   ChevronDown, ChevronUp, Clock, Guitar, Gauge,
   Share2, RefreshCw, Mic, MicOff, Crown,
-  FileText, Tag
+  FileText, Tag, Wand2
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
@@ -83,6 +83,11 @@ export default function Generator() {
   const [customTitle, setCustomTitle] = useState("");
   const [customLyrics, setCustomLyrics] = useState("");
   const [customStyle, setCustomStyle] = useState("");
+
+  // Lyrics generation state
+  const [lyricsSubject, setLyricsSubject] = useState("");
+  const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
+  const generateLyricsMutation = trpc.songs.generateLyrics.useMutation();
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -272,14 +277,73 @@ export default function Generator() {
           )}
 
           {/* Suno Custom Mode Fields */}
+      
           {sunoMode === "custom" && (
             <div className="space-y-4">
+              {/* AI Lyrics Generator */}
+              <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
+                <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <Wand2 className="w-4 h-4 text-primary" />
+                  AI Lyrics Generator
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Enter a subject or topic and let AI write lyrics for you. The generated lyrics will fill the field below.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g., falling in love on a summer night, overcoming challenges, road trip with friends..."
+                    value={lyricsSubject}
+                    onChange={(e) => setLyricsSubject(e.target.value)}
+                    maxLength={500}
+                    disabled={isGenerating || isGeneratingLyrics}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!lyricsSubject.trim()) {
+                        toast.error("Please enter a subject for the lyrics");
+                        return;
+                      }
+                      try {
+                        setIsGeneratingLyrics(true);
+                        const result = await generateLyricsMutation.mutateAsync({
+                          subject: lyricsSubject.trim(),
+                          genre: selectedGenre || undefined,
+                          mood: selectedMood || undefined,
+                          vocalType,
+                        });
+                        setCustomLyrics(result.lyrics);
+                        toast.success("Lyrics generated! Review and edit them below.");
+                      } catch (error: any) {
+                        toast.error(error.message || "Failed to generate lyrics");
+                      } finally {
+                        setIsGeneratingLyrics(false);
+                      }
+                    }}
+                    disabled={!lyricsSubject.trim() || isGenerating || isGeneratingLyrics}
+                    size="sm"
+                    className="shrink-0 gap-1.5"
+                  >
+                    {isGeneratingLyrics ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Writing...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4" />
+                        Generate
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Music className="w-4 h-4" />
                   Song Title
-                </label>
-                <Input
+                </label>              <Input
                   placeholder="e.g., Midnight in Paris"
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}

@@ -130,3 +130,21 @@
 - [x] Remove ABC notation synthesis and related code from all pages
 - [x] Remove ABC synthesis from QueuePlayerContext
 - [x] Update tests to remove free engine references (77 tests passing)
+
+## Search & Filter
+- [x] Create reusable SongFilters component with search bar, genre dropdown, and mood dropdown
+- [x] Extract unique genres and moods from song data for filter options
+- [x] Integrate SongFilters into History page with client-side filtering
+- [x] Integrate SongFilters into Favorites page with client-side filtering
+- [x] Show result count and "no results" empty state when filters match nothing
+- [x] Write tests for filter logic (100 tests passing)
+
+## Home Page Layout
+- [x] Move all home page content up to the top (reduce vertical padding/spacing)
+
+## AI Lyrics Generation
+- [x] Add backend tRPC route to generate lyrics from a subject/topic using LLM
+- [x] Add subject input field and "Generate Lyrics" button in Custom Mode on Generator page
+- [x] Pre-fill the lyrics textarea with AI-generated lyrics
+- [x] Show loading state during lyrics generation
+- [x] Write tests for lyrics generation route (106 tests passing)
