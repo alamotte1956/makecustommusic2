@@ -53,17 +53,16 @@ describe("songs router", () => {
       const caller = appRouter.createCaller(ctx);
 
       const result = await caller.songs.engines();
-      expect(result).toHaveProperty("free", true);
       expect(result).toHaveProperty("suno");
       expect(typeof result.suno).toBe("boolean");
     });
 
-    it("free engine is always available", async () => {
+    it("does not include free engine", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
 
       const result = await caller.songs.engines();
-      expect(result.free).toBe(true);
+      expect(result).not.toHaveProperty("free");
     });
   });
 
@@ -117,14 +116,23 @@ describe("songs router", () => {
       const caller = appRouter.createCaller(ctx);
 
       // Valid engine should pass input validation and attempt generation
-      // It may succeed or fail (LLM call), but should NOT throw a Zod error
+      // It may succeed or fail (Suno API call), but should NOT throw a Zod error
       try {
-        await caller.songs.generate({ keywords: "test", engine: "free" });
+        await caller.songs.generate({ keywords: "test", engine: "suno" });
       } catch (e: any) {
         // Should not be a Zod validation error
         expect(e.message).not.toMatch(/invalid_enum_value/i);
       }
     }, 60000);
+
+    it("rejects free engine value", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({ keywords: "test", engine: "free" as any })
+      ).rejects.toThrow();
+    });
 
     it("rejects invalid engine values", async () => {
       const { ctx } = createAuthContext();
@@ -143,7 +151,7 @@ describe("songs router", () => {
       try {
         await caller.songs.generate({
           keywords: "test music",
-          engine: "free",
+          engine: "suno",
           genre: "Jazz",
           mood: "Happy",
           vocalType: "male",

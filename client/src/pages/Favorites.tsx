@@ -3,16 +3,14 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import SheetMusic from "@/components/SheetMusic";
 import FavoriteButton from "@/components/FavoriteButton";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
-  Heart, Download, Printer, Loader2,
+  Heart, Download, Loader2,
   ChevronDown, ChevronUp, Play, Share2, ListMusic, Pause
 } from "lucide-react";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
-import { synthesizeAudio, createAudioUrl } from "@/lib/audioSynthesizer";
 
 export default function Favorites() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
@@ -21,34 +19,39 @@ export default function Favorites() {
   });
   const shareMutation = trpc.songs.createShareLink.useMutation();
   const {
-    loadQueue, currentSong, isPlaying, togglePlay, jumpTo, queue, queueName,
+    loadQueue, currentSong, isPlaying, togglePlay, queueName,
   } = useQueuePlayer();
 
-  const [expandedSong, setExpandedSong] = useState<number | null>(null);
-  const [synthesizing, setSynthesizing] = useState<number | null>(null);
+  const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
 
   const isFavoritesQueue = queueName === "Favorites";
 
   const toQueueSongs = useCallback((list: any[]): QueueSong[] => {
-    return list.map((s) => ({
-      id: s.id,
-      title: s.title,
-      keywords: s.keywords,
-      genre: s.genre,
-      mood: s.mood,
-      tempo: s.tempo,
-      engine: s.engine,
-      vocalType: s.vocalType,
-      audioUrl: s.audioUrl,
-      mp3Url: s.mp3Url ?? null,
-      abcNotation: s.abcNotation,
-    }));
+    return list
+      .filter((s) => s.audioUrl || s.mp3Url)
+      .map((s) => ({
+        id: s.id,
+        title: s.title,
+        keywords: s.keywords,
+        genre: s.genre,
+        mood: s.mood,
+        tempo: s.tempo,
+        engine: s.engine,
+        vocalType: s.vocalType,
+        audioUrl: s.audioUrl,
+        mp3Url: s.mp3Url ?? null,
+      }));
   }, []);
 
   const handlePlayAll = useCallback(
     (startIndex = 0) => {
       if (!songs || songs.length === 0) return;
-      loadQueue(toQueueSongs(songs), startIndex, "Favorites");
+      const playable = toQueueSongs(songs);
+      if (playable.length === 0) {
+        toast.error("No playable songs in favorites");
+        return;
+      }
+      loadQueue(playable, startIndex, "Favorites");
     },
     [songs, loadQueue, toQueueSongs]
   );
@@ -56,7 +59,8 @@ export default function Favorites() {
   const handlePlaySong = useCallback(
     (song: any) => {
       if (!songs) return;
-      const idx = songs.findIndex((s: any) => s.id === song.id);
+      const playable = songs.filter((s: any) => s.audioUrl || s.mp3Url);
+      const idx = playable.findIndex((s: any) => s.id === song.id);
       if (isFavoritesQueue && currentSong?.id === song.id) {
         togglePlay();
       } else {
@@ -66,81 +70,21 @@ export default function Favorites() {
     [songs, isFavoritesQueue, currentSong, togglePlay, handlePlayAll]
   );
 
-  const handleDownload = useCallback(async (song: any) => {
-    if (song.audioUrl) {
-      const a = document.createElement("a");
-      a.href = song.audioUrl;
-      a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success("Download started!");
+  const handleDownload = useCallback((song: any) => {
+    const url = song.audioUrl || song.mp3Url;
+    if (!url) {
+      toast.error("No audio available for download");
       return;
     }
-    if (!song.abcNotation) {
-      toast.error("No audio available for this song");
-      return;
-    }
-    setSynthesizing(song.id);
-    try {
-      const result = await synthesizeAudio(song.abcNotation, song.tempo || 120);
-      const url = URL.createObjectURL(result.blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.wav`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Download started!");
-    } catch {
-      toast.error("Failed to download");
-    } finally {
-      setSynthesizing(null);
-    }
-  }, []);
-
-  const handlePrint = useCallback((song: any) => {
-    if (!song.abcNotation) {
-      toast.error("Sheet music not available for this song");
-      return;
-    }
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("Please allow pop-ups to print sheet music");
-      return;
-    }
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${song.title} - Sheet Music</title>
-          <script src="https://cdn.jsdelivr.net/npm/abcjs@6.6.2/dist/abcjs-basic-min.js"><\/script>
-          <style>
-            body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-            h1 { font-size: 24px; margin-bottom: 8px; }
-            .meta { color: #666; font-size: 14px; margin-bottom: 24px; }
-          </style>
-        </head>
-        <body>
-          <h1>${song.title}</h1>
-          <div class="meta">
-            ${song.genre ? `Genre: ${song.genre}` : ""}
-            ${song.keySignature ? ` | Key: ${song.keySignature}` : ""}
-            ${song.tempo ? ` | Tempo: ${song.tempo} BPM` : ""}
-          </div>
-          <div id="sheet-music"></div>
-          <script>
-            window.onload = function() {
-              ABCJS.renderAbc("sheet-music", ${JSON.stringify(song.abcNotation)}, { staffwidth: 700 });
-              setTimeout(function() { window.print(); }, 500);
-            };
-          <\/script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const filename = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("Download started!");
   }, []);
 
   const handleShare = useCallback(async (song: any) => {
@@ -156,7 +100,7 @@ export default function Favorites() {
 
   if (!isAuthenticated) return null;
 
-  const playableSongs = songs?.filter((s: any) => s.audioUrl || s.abcNotation) ?? [];
+  const playableSongs = songs?.filter((s: any) => s.audioUrl || s.mp3Url) ?? [];
 
   return (
     <div className="container py-8 md:py-12 max-w-4xl mx-auto space-y-6">
@@ -209,7 +153,8 @@ export default function Favorites() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {songs.map((song: any, idx: number) => {
+          {songs.map((song: any) => {
+            const audioUrl = song.audioUrl || song.mp3Url;
             const isCurrentlyPlaying = isFavoritesQueue && currentSong?.id === song.id;
             return (
               <Card
@@ -223,15 +168,15 @@ export default function Favorites() {
                 <CardContent className="p-0">
                   <div className="p-4 sm:p-5">
                     <div className="flex items-start gap-3">
-                      {/* Play indicator / track number */}
+                      {/* Play indicator */}
                       <button
                         onClick={() => handlePlaySong(song)}
-                        disabled={!song.audioUrl && !song.abcNotation}
+                        disabled={!audioUrl}
                         className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${
                           isCurrentlyPlaying
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted hover:bg-primary/10 text-muted-foreground hover:text-primary"
-                        } ${!song.audioUrl && !song.abcNotation ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                        } ${!audioUrl ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                       >
                         {isCurrentlyPlaying && isPlaying ? (
                           <Pause className="w-4 h-4" />
@@ -265,11 +210,9 @@ export default function Favorites() {
                               Now Playing
                             </Badge>
                           )}
-                          {song.engine && song.engine !== "free" && (
-                            <Badge variant="default" className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600">
-                              {song.engine === "suno" ? "Suno V5" : "MusicGen"}
-                            </Badge>
-                          )}
+                          <Badge variant="default" className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600">
+                            Suno V5
+                          </Badge>
                           {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
                           {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
                           {song.vocalType && song.vocalType !== "none" && (
@@ -280,38 +223,29 @@ export default function Favorites() {
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 mt-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(song)}
-                            disabled={synthesizing === song.id || (!song.audioUrl && !song.abcNotation)}
-                          >
-                            <Download className="w-3.5 h-3.5 mr-1.5" />
-                            {song.audioUrl ? "MP3" : "WAV"}
-                          </Button>
-                          {song.abcNotation && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
-                              >
-                                {expandedSong === song.id ? (
-                                  <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
-                                ) : (
-                                  <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                                )}
-                                Sheet Music
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePrint(song)}
-                              >
-                                <Printer className="w-3.5 h-3.5 mr-1.5" />
-                                Print
-                              </Button>
-                            </>
+                          {audioUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownload(song)}
+                            >
+                              <Download className="w-3.5 h-3.5 mr-1.5" />
+                              MP3
+                            </Button>
+                          )}
+                          {song.lyrics && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setExpandedLyrics(expandedLyrics === song.id ? null : song.id)}
+                            >
+                              {expandedLyrics === song.id ? (
+                                <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
+                              )}
+                              Lyrics
+                            </Button>
                           )}
                           <Button
                             variant="outline"
@@ -326,10 +260,12 @@ export default function Favorites() {
                     </div>
                   </div>
 
-                  {/* Expanded Sheet Music */}
-                  {expandedSong === song.id && song.abcNotation && (
+                  {/* Expanded Lyrics */}
+                  {expandedLyrics === song.id && song.lyrics && (
                     <div className="border-t border-border p-4 bg-muted/30">
-                      <SheetMusic abcNotation={song.abcNotation} />
+                      <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
+                        {song.lyrics}
+                      </pre>
                     </div>
                   )}
                 </CardContent>

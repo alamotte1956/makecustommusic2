@@ -31,16 +31,15 @@ export const appRouter = router({
     // Check which engines are available
     engines: publicProcedure.query(() => {
       return {
-        free: true,
         suno: isSunoAvailable(),
       };
     }),
 
-    // Generate music — supports "free" (LLM+ABC) and "suno" (simple or custom mode)
+    // Generate music with Suno (simple or custom mode)
     generate: protectedProcedure
       .input(z.object({
         keywords: z.string().min(1).max(500),
-        engine: z.enum(["free", "suno"]).default("free"),
+        engine: z.enum(["suno"]).default("suno"),
         genre: z.string().max(100).optional(),
         mood: z.string().max(100).optional(),
         vocalType: z.enum(["none", "male", "female", "mixed"]).optional(),
@@ -117,97 +116,7 @@ export const appRouter = router({
           return song;
         }
 
-        // ─── FREE ENGINE (LLM + ABC Notation) ───
-        const vocalInstruction = vocalType && vocalType !== "none"
-          ? `\nInclude vocal melody line marked with "V:" voice. The vocal style should be ${vocalType}. Add lyrics as "w:" lines under the vocal melody.`
-          : "";
-
-        const genreInstruction = genre ? `\nThe genre should be: ${genre}` : "";
-        const moodInstruction = mood ? `\nThe mood should be: ${mood}` : "";
-        const durationInstruction = duration
-          ? `\nTarget duration: approximately ${duration} seconds. Adjust the number of bars accordingly (roughly ${Math.round(duration / 2)} bars at moderate tempo).`
-          : "";
-
-        const response = await invokeLLM({
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert music composer. Given keywords describing a desired piece of music, generate a complete musical composition in ABC notation format.
-
-IMPORTANT RULES:
-1. Generate valid ABC notation that can be rendered as sheet music
-2. The piece should be 16-32 bars long
-3. Include proper headers: X (reference number), T (title), M (meter), L (default note length), K (key), Q (tempo)
-4. Use appropriate key signatures, time signatures, and tempos for the described style
-5. Create melodically interesting and harmonically coherent music
-6. Include dynamics and expression marks where appropriate${vocalInstruction}${genreInstruction}${moodInstruction}${durationInstruction}
-
-Return your response as a JSON object with these fields:
-- title: A creative title for the piece
-- abcNotation: The complete ABC notation string
-- genre: The primary genre
-- mood: The primary mood
-- tempo: BPM as a number
-- keySignature: The key (e.g., "C major", "A minor")
-- timeSignature: The time signature (e.g., "4/4", "3/4")
-- instruments: Array of instrument names suitable for this piece
-- description: A brief description of the musical piece (2-3 sentences)`
-            },
-            {
-              role: "user",
-              content: `Create a musical composition based on these keywords: "${keywords}"`
-            }
-          ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "music_composition",
-              strict: true,
-              schema: {
-                type: "object",
-                properties: {
-                  title: { type: "string", description: "Creative title for the piece" },
-                  abcNotation: { type: "string", description: "Complete ABC notation" },
-                  genre: { type: "string", description: "Primary genre" },
-                  mood: { type: "string", description: "Primary mood" },
-                  tempo: { type: "integer", description: "BPM tempo" },
-                  keySignature: { type: "string", description: "Key signature" },
-                  timeSignature: { type: "string", description: "Time signature" },
-                  instruments: { type: "array", items: { type: "string" }, description: "Suitable instruments" },
-                  description: { type: "string", description: "Brief description" },
-                },
-                required: ["title", "abcNotation", "genre", "mood", "tempo", "keySignature", "timeSignature", "instruments", "description"],
-                additionalProperties: false,
-              },
-            },
-          },
-        });
-
-        const content = response.choices[0]?.message?.content;
-        if (!content || typeof content !== "string") {
-          throw new Error("Failed to generate music composition");
-        }
-
-        const composition = JSON.parse(content);
-
-        const song = await createSong({
-          userId: ctx.user.id,
-          title: composition.title,
-          keywords,
-          abcNotation: composition.abcNotation,
-          musicDescription: composition.description,
-          tempo: composition.tempo,
-          keySignature: composition.keySignature,
-          timeSignature: composition.timeSignature,
-          genre: genre || composition.genre,
-          mood: mood || composition.mood,
-          instruments: composition.instruments,
-          duration: duration || 30,
-          engine: "free",
-          vocalType: vocalType || null,
-        });
-
-        return song;
+        throw new Error("Suno engine is not available. Please configure the SUNO_API_KEY.");
       }),
 
     // Save synthesized audio to S3

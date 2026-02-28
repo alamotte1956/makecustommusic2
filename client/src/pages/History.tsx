@@ -4,12 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AudioPlayer from "@/components/AudioPlayer";
-import SheetMusic from "@/components/SheetMusic";
 import { useState, useCallback } from "react";
-import { synthesizeAudio, createAudioUrl } from "@/lib/audioSynthesizer";
 import { toast } from "sonner";
 import {
-  History as HistoryIcon, Music, Download, Printer, Trash2,
+  History as HistoryIcon, Music, Download, Trash2,
   Loader2, ChevronDown, ChevronUp, Disc3, Play
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -49,62 +47,44 @@ export default function History() {
   const createAlbumMutation = trpc.albums.create.useMutation();
   const utils = trpc.useUtils();
 
-  const [expandedSong, setExpandedSong] = useState<number | null>(null);
   const [playingSong, setPlayingSong] = useState<number | null>(null);
-  const [audioUrls, setAudioUrls] = useState<Record<number, string>>({});
-  const [synthesizing, setSynthesizing] = useState<number | null>(null);
   const [albumDialogSongId, setAlbumDialogSongId] = useState<number | null>(null);
   const [newAlbumTitle, setNewAlbumTitle] = useState("");
   const [newAlbumDesc, setNewAlbumDesc] = useState("");
   const [selectedSongs, setSelectedSongs] = useState<Set<number>>(new Set());
   const [showBulkAlbumDialog, setShowBulkAlbumDialog] = useState(false);
+  const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
 
-  const handlePlay = useCallback(async (song: any) => {
-    if (audioUrls[song.id]) {
+  const getAudioUrl = (song: any): string | null => {
+    return song.audioUrl || song.mp3Url || null;
+  };
+
+  const handlePlay = useCallback((song: any) => {
+    const url = getAudioUrl(song);
+    if (url) {
       setPlayingSong(song.id);
+    } else {
+      toast.error("No audio available for this song");
+    }
+  }, []);
+
+  const handleDownload = useCallback((song: any) => {
+    const url = getAudioUrl(song);
+    if (!url) {
+      toast.error("No audio available for download");
       return;
     }
 
-    setSynthesizing(song.id);
-    try {
-      const { blob } = await synthesizeAudio(song.abcNotation, song.tempo || 120);
-      const url = createAudioUrl(blob);
-      setAudioUrls(prev => ({ ...prev, [song.id]: url }));
-      setPlayingSong(song.id);
-    } catch {
-      toast.error("Failed to synthesize audio");
-    } finally {
-      setSynthesizing(null);
-    }
-  }, [audioUrls]);
-
-  const handleDownload = useCallback(async (song: any) => {
-    let blob: Blob;
-    if (audioUrls[song.id]) {
-      const response = await fetch(audioUrls[song.id]);
-      blob = await response.blob();
-    } else {
-      setSynthesizing(song.id);
-      try {
-        const result = await synthesizeAudio(song.abcNotation, song.tempo || 120);
-        blob = result.blob;
-        const url = createAudioUrl(result.blob);
-        setAudioUrls(prev => ({ ...prev, [song.id]: url }));
-      } finally {
-        setSynthesizing(null);
-      }
-    }
-
-    const url = URL.createObjectURL(blob);
+    const filename = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
+    a.download = filename;
+    a.target = "_blank";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
     toast.success("Download started!");
-  }, [audioUrls]);
+  }, []);
 
   const handleDelete = useCallback(async (id: number) => {
     try {
@@ -115,44 +95,6 @@ export default function History() {
       toast.error("Failed to delete song");
     }
   }, [deleteMutation, utils]);
-
-  const handlePrint = useCallback((song: any) => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("Please allow pop-ups to print sheet music");
-      return;
-    }
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${song.title} - Sheet Music</title>
-          <script src="https://cdn.jsdelivr.net/npm/abcjs@6.6.2/dist/abcjs-basic-min.js"><\/script>
-          <style>
-            body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-            h1 { font-size: 24px; margin-bottom: 8px; }
-            .meta { color: #666; font-size: 14px; margin-bottom: 24px; }
-          </style>
-        </head>
-        <body>
-          <h1>${song.title}</h1>
-          <div class="meta">
-            ${song.genre ? `Genre: ${song.genre}` : ""}
-            ${song.keySignature ? ` | Key: ${song.keySignature}` : ""}
-            ${song.tempo ? ` | Tempo: ${song.tempo} BPM` : ""}
-          </div>
-          <div id="sheet-music"></div>
-          <script>
-            window.onload = function() {
-              ABCJS.renderAbc("sheet-music", ${JSON.stringify(song.abcNotation)}, { staffwidth: 700 });
-              setTimeout(function() { window.print(); }, 500);
-            };
-          <\/script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  }, []);
 
   const handleAddToAlbum = useCallback(async (albumId: number, songId: number) => {
     try {
@@ -240,135 +182,133 @@ export default function History() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {songs.map((song) => (
-            <Card key={song.id} className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-4 sm:p-5">
-                  <div className="flex items-start gap-3">
-                    {/* Selection checkbox */}
-                    <input
-                      type="checkbox"
-                      checked={selectedSongs.has(song.id)}
-                      onChange={() => toggleSongSelection(song.id)}
-                      className="mt-1.5 h-4 w-4 rounded border-border accent-primary"
-                    />
+          {songs.map((song) => {
+            const audioUrl = getAudioUrl(song);
+            return (
+              <Card key={song.id} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      {/* Selection checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={selectedSongs.has(song.id)}
+                        onChange={() => toggleSongSelection(song.id)}
+                        className="mt-1.5 h-4 w-4 rounded border-border accent-primary"
+                      />
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                            Keywords: {song.keywords}
-                          </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                              Keywords: {song.keywords}
+                            </p>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {new Date(song.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {new Date(song.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
 
-                      {/* Badges */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
-                        {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
-                        {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
-                      </div>
-
-                      {/* Player */}
-                      {playingSong === song.id && audioUrls[song.id] && (
-                        <div className="mt-3">
-                          <AudioPlayer src={audioUrls[song.id]} compact />
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
+                          {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
+                          {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
+                          {song.duration && <Badge variant="outline" className="text-xs">{Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}</Badge>}
                         </div>
-                      )}
 
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePlay(song)}
-                          disabled={synthesizing === song.id}
-                        >
-                          {synthesizing === song.id ? (
-                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                          ) : (
-                            <Play className="w-3.5 h-3.5 mr-1.5" />
-                          )}
-                          Play
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(song)}
-                          disabled={synthesizing === song.id}
-                        >
-                          <Download className="w-3.5 h-3.5 mr-1.5" />
-                          MP3
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
-                        >
-                          {expandedSong === song.id ? (
-                            <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
-                          ) : (
-                            <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                          )}
-                          Sheet Music
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePrint(song)}
-                        >
-                          <Printer className="w-3.5 h-3.5 mr-1.5" />
-                          Print
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setAlbumDialogSongId(song.id)}
-                        >
-                          <Disc3 className="w-3.5 h-3.5 mr-1.5" />
-                          Add to Album
-                        </Button>
-                        <FavoriteButton songId={song.id} size="sm" />
+                        {/* Player */}
+                        {playingSong === song.id && audioUrl && (
+                          <div className="mt-3">
+                            <AudioPlayer src={audioUrl} title={song.title} />
+                          </div>
+                        )}
 
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                              <Trash2 className="w-3.5 h-3.5" />
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {audioUrl && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePlay(song)}
+                              >
+                                <Play className="w-3.5 h-3.5 mr-1.5" />
+                                Play
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownload(song)}
+                              >
+                                <Download className="w-3.5 h-3.5 mr-1.5" />
+                                MP3
+                              </Button>
+                            </>
+                          )}
+                          {song.lyrics && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setExpandedLyrics(expandedLyrics === song.id ? null : song.id)}
+                            >
+                              {expandedLyrics === song.id ? (
+                                <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
+                              )}
+                              Lyrics
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Song</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{song.title}"? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(song.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAlbumDialogSongId(song.id)}
+                          >
+                            <Disc3 className="w-3.5 h-3.5 mr-1.5" />
+                            Add to Album
+                          </Button>
+                          <FavoriteButton songId={song.id} size="sm" />
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Song</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{song.title}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(song.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Expanded Sheet Music */}
-                {expandedSong === song.id && song.abcNotation && (
-                  <div className="border-t border-border p-4 bg-muted/30">
-                    <SheetMusic abcNotation={song.abcNotation} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  {/* Expanded Lyrics */}
+                  {expandedLyrics === song.id && song.lyrics && (
+                    <div className="border-t border-border p-4 bg-muted/30">
+                      <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
+                        {song.lyrics}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

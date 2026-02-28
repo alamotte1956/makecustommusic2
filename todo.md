@@ -123,3 +123,10 @@
 
 ## Footer Update
 - [x] Update footer copyright text to "© 2026 A. LaMotte Music"
+
+## Remove Free Engine
+- [x] Remove free engine option from Generator page UI (engine selector)
+- [x] Remove free engine generation logic from backend routers
+- [x] Remove ABC notation synthesis and related code from all pages
+- [x] Remove ABC synthesis from QueuePlayerContext
+- [x] Update tests to remove free engine references (77 tests passing)

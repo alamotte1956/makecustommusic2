@@ -13,11 +13,10 @@ function makeSong(overrides: Partial<QueueSong> & { id: number }): QueueSong {
     genre: null,
     mood: null,
     tempo: 120,
-    engine: "free",
+    engine: "suno",
     vocalType: null,
-    audioUrl: null,
+    audioUrl: "https://cdn.suno.ai/test.mp3",
     mp3Url: null,
-    abcNotation: "X:1\nT:Test\nK:C\nCDEF|",
     ...overrides,
   };
 }
@@ -28,7 +27,7 @@ describe("QueueSong type", () => {
     expect(song.id).toBe(1);
     expect(song.title).toBe("Song 1");
     expect(song.keywords).toBe("test");
-    expect(song.abcNotation).toBeTruthy();
+    expect(song.audioUrl).toBeTruthy();
   });
 
   it("allows audioUrl for Suno songs", () => {
@@ -36,10 +35,8 @@ describe("QueueSong type", () => {
       id: 2,
       engine: "suno",
       audioUrl: "https://cdn.suno.ai/test.mp3",
-      abcNotation: null,
     });
     expect(song.audioUrl).toBe("https://cdn.suno.ai/test.mp3");
-    expect(song.abcNotation).toBeNull();
   });
 
   it("allows mp3Url as alternative audio source", () => {
@@ -194,20 +191,16 @@ describe("Queue state logic", () => {
     const resolveSource = (song: QueueSong): string | null => {
       if (song.audioUrl) return song.audioUrl;
       if (song.mp3Url) return song.mp3Url;
-      if (song.abcNotation) return "synthesized";
       return null;
     };
 
-    const sunoSong = makeSong({ id: 1, audioUrl: "https://suno.ai/song.mp3", mp3Url: "https://alt.mp3", abcNotation: "X:1" });
+    const sunoSong = makeSong({ id: 1, audioUrl: "https://suno.ai/song.mp3", mp3Url: "https://alt.mp3" });
     expect(resolveSource(sunoSong)).toBe("https://suno.ai/song.mp3");
 
-    const mp3Song = makeSong({ id: 2, audioUrl: null, mp3Url: "https://alt.mp3", abcNotation: "X:1" });
+    const mp3Song = makeSong({ id: 2, audioUrl: null, mp3Url: "https://alt.mp3" });
     expect(resolveSource(mp3Song)).toBe("https://alt.mp3");
 
-    const abcSong = makeSong({ id: 3, audioUrl: null, mp3Url: null });
-    expect(resolveSource(abcSong)).toBe("synthesized");
-
-    const noAudioSong = makeSong({ id: 4, audioUrl: null, mp3Url: null, abcNotation: null });
+    const noAudioSong = makeSong({ id: 4, audioUrl: null, mp3Url: null });
     expect(resolveSource(noAudioSong)).toBeNull();
   });
 
@@ -364,10 +357,10 @@ describe("Shuffle-aware navigation", () => {
   it("auto-advance follows shuffled order and stops at end", () => {
     const playOrder = [2, 0, 1];
     let playOrderPosition = 0;
-    let currentIndex = playOrder[0];
+    let currentIndex = playOrder[0]; // song 2
     let isPlaying = true;
 
-    const handleAutoNext = () => {
+    const autoNext = () => {
       const nextPos = playOrderPosition + 1;
       if (nextPos < playOrder.length) {
         playOrderPosition = nextPos;
@@ -377,77 +370,99 @@ describe("Shuffle-aware navigation", () => {
       }
     };
 
-    expect(currentIndex).toBe(2);
-    handleAutoNext();
+    autoNext();
     expect(currentIndex).toBe(0);
-    handleAutoNext();
+    expect(isPlaying).toBe(true);
+
+    autoNext();
     expect(currentIndex).toBe(1);
-    handleAutoNext(); // end of queue
+    expect(isPlaying).toBe(true);
+
+    autoNext();
     expect(currentIndex).toBe(1);
     expect(isPlaying).toBe(false);
-  });
-
-  it("hasNext/hasPrevious based on playOrderPosition", () => {
-    const playOrder = [3, 1, 4, 0, 2];
-
-    const hasNext = (pos: number) => pos < playOrder.length - 1;
-    const hasPrevious = (pos: number) => pos > 0;
-
-    expect(hasNext(0)).toBe(true);
-    expect(hasPrevious(0)).toBe(false);
-
-    expect(hasNext(2)).toBe(true);
-    expect(hasPrevious(2)).toBe(true);
-
-    expect(hasNext(4)).toBe(false);
-    expect(hasPrevious(4)).toBe(true);
   });
 
   it("jumpTo updates playOrderPosition correctly", () => {
     const playOrder = [3, 1, 4, 0, 2];
     let playOrderPosition = 0;
-    let currentIndex = 3;
+    let currentIndex = playOrder[0];
 
-    const jumpTo = (queueIdx: number) => {
-      if (queueIdx >= 0 && queueIdx < 5) {
-        currentIndex = queueIdx;
-        const pos = playOrder.indexOf(queueIdx);
-        if (pos >= 0) playOrderPosition = pos;
+    const jumpTo = (index: number) => {
+      currentIndex = index;
+      const pos = playOrder.indexOf(index);
+      if (pos >= 0) {
+        playOrderPosition = pos;
       }
     };
 
-    jumpTo(4); // song at index 4 is at position 2 in playOrder
+    jumpTo(4); // song 4 is at position 2 in play order
     expect(currentIndex).toBe(4);
     expect(playOrderPosition).toBe(2);
 
-    jumpTo(2); // song at index 2 is at position 4
-    expect(currentIndex).toBe(2);
-    expect(playOrderPosition).toBe(4);
+    jumpTo(0); // song 0 is at position 3
+    expect(currentIndex).toBe(0);
+    expect(playOrderPosition).toBe(3);
   });
 
-  it("toggleShuffle preserves current song", () => {
-    const queue = [makeSong({ id: 1 }), makeSong({ id: 2 }), makeSong({ id: 3 }), makeSong({ id: 4 })];
+  it("toggle shuffle preserves current song at position 0", () => {
+    const queueLength = 5;
     let currentIndex = 2;
     let isShuffled = false;
-    let playOrder = [0, 1, 2, 3];
-    let playOrderPosition = 2;
 
-    // Enable shuffle
+    // Toggle ON
     isShuffled = true;
-    playOrder = shuffleIndices(queue.length, currentIndex);
-    playOrderPosition = 0; // current song moves to position 0
+    const shuffled = shuffleIndices(queueLength, currentIndex);
+    expect(shuffled[0]).toBe(currentIndex);
+    expect(shuffled).toHaveLength(queueLength);
+    expect(new Set(shuffled).size).toBe(queueLength);
 
-    expect(playOrder[0]).toBe(currentIndex);
-    expect(isShuffled).toBe(true);
-    expect(playOrderPosition).toBe(0);
-
-    // Disable shuffle
+    // Toggle OFF
     isShuffled = false;
-    playOrder = [0, 1, 2, 3];
-    playOrderPosition = currentIndex;
+    const sequential = Array.from({ length: queueLength }, (_, i) => i);
+    expect(sequential).toEqual([0, 1, 2, 3, 4]);
+    const seqPos = sequential.indexOf(currentIndex);
+    expect(seqPos).toBe(2);
+  });
 
-    expect(playOrder).toEqual([0, 1, 2, 3]);
+  it("loadQueue with shuffle creates shuffled order", () => {
+    const songs = [makeSong({ id: 1 }), makeSong({ id: 2 }), makeSong({ id: 3 }), makeSong({ id: 4 })];
+    const startIndex = 1;
+    const isShuffled = true;
+
+    let playOrder: number[];
+    let playOrderPosition: number;
+
+    if (isShuffled) {
+      playOrder = shuffleIndices(songs.length, startIndex);
+      playOrderPosition = 0;
+    } else {
+      playOrder = Array.from({ length: songs.length }, (_, i) => i);
+      playOrderPosition = startIndex;
+    }
+
+    expect(playOrder[0]).toBe(startIndex);
+    expect(playOrder).toHaveLength(songs.length);
+    expect(playOrderPosition).toBe(0);
+  });
+
+  it("loadQueue without shuffle creates sequential order", () => {
+    const songs = [makeSong({ id: 1 }), makeSong({ id: 2 }), makeSong({ id: 3 })];
+    const startIndex = 2;
+    const isShuffled = false;
+
+    let playOrder: number[];
+    let playOrderPosition: number;
+
+    if (isShuffled) {
+      playOrder = shuffleIndices(songs.length, startIndex);
+      playOrderPosition = 0;
+    } else {
+      playOrder = Array.from({ length: songs.length }, (_, i) => i);
+      playOrderPosition = startIndex;
+    }
+
+    expect(playOrder).toEqual([0, 1, 2]);
     expect(playOrderPosition).toBe(2);
-    expect(isShuffled).toBe(false);
   });
 });

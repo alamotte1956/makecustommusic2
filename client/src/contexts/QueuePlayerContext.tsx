@@ -7,7 +7,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { synthesizeAudio, createAudioUrl, revokeAudioUrl } from "@/lib/audioSynthesizer";
+
 
 export type QueueSong = {
   id: number;
@@ -20,7 +20,7 @@ export type QueueSong = {
   vocalType: string | null;
   audioUrl: string | null;
   mp3Url: string | null;
-  abcNotation: string | null;
+
 };
 
 type QueuePlayerState = {
@@ -107,7 +107,7 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   const [playOrderPosition, setPlayOrderPosition] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const synthUrlsRef = useRef<Map<number, string>>(new Map());
+
   const pendingSynthRef = useRef<AbortController | null>(null);
 
   // Initialize audio element once
@@ -137,8 +137,6 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("error", onError);
       audio.pause();
       audio.src = "";
-      synthUrlsRef.current.forEach((url) => revokeAudioUrl(url));
-      synthUrlsRef.current.clear();
     };
   }, []);
 
@@ -174,21 +172,9 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
 
   // Resolve audio source for a song
   const resolveAudioSrc = useCallback(
-    async (song: QueueSong, signal: AbortSignal): Promise<string | null> => {
+    async (song: QueueSong, _signal: AbortSignal): Promise<string | null> => {
       if (song.audioUrl) return song.audioUrl;
       if (song.mp3Url) return song.mp3Url;
-
-      const cached = synthUrlsRef.current.get(song.id);
-      if (cached) return cached;
-
-      if (song.abcNotation) {
-        const { blob } = await synthesizeAudio(song.abcNotation, song.tempo || 120);
-        if (signal.aborted) return null;
-        const url = createAudioUrl(blob);
-        synthUrlsRef.current.set(song.id, url);
-        return url;
-      }
-
       return null;
     },
     []
@@ -260,9 +246,6 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
 
   const loadQueue = useCallback(
     (songs: QueueSong[], startIndex = 0, name = "") => {
-      synthUrlsRef.current.forEach((url) => revokeAudioUrl(url));
-      synthUrlsRef.current.clear();
-
       setQueue(songs);
       setCurrentIndex(startIndex);
       setQueueName(name);
@@ -377,8 +360,6 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   const clearQueue = useCallback(() => {
     audioRef.current?.pause();
     if (audioRef.current) audioRef.current.src = "";
-    synthUrlsRef.current.forEach((url) => revokeAudioUrl(url));
-    synthUrlsRef.current.clear();
     setQueue([]);
     setCurrentIndex(0);
     setIsPlaying(false);
