@@ -82,6 +82,60 @@ describe("songs router", () => {
         caller.songs.generate({ keywords: "" })
       ).rejects.toThrow();
     });
+
+    it("accepts genre and mood presets and generates a song", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.generate({
+        keywords: "test composition",
+        genre: "Jazz",
+        mood: "Happy",
+        vocalType: "none",
+      });
+
+      expect(result).toBeTruthy();
+      expect(result?.title).toBeTruthy();
+      expect(result?.abcNotation).toBeTruthy();
+      expect(result?.genre).toBeTruthy();
+      expect(result?.vocalType).toBe("none");
+    }, 30000);
+
+    it("generates a song with female vocals", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.generate({
+        keywords: "love ballad",
+        vocalType: "female",
+      });
+
+      expect(result).toBeTruthy();
+      expect(result?.title).toBeTruthy();
+      expect(result?.vocalType).toBe("female");
+    }, 30000);
+
+    it("rejects invalid vocal type", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generate({
+          keywords: "test",
+          // @ts-expect-error testing invalid input
+          vocalType: "invalid",
+        })
+      ).rejects.toThrow();
+    });
+
+    it("defaults vocalType to none when not provided", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.generate({ keywords: "simple test" });
+      expect(result).toBeTruthy();
+      expect(result?.vocalType).toBe("none");
+    }, 30000);
   });
 
   describe("songs.getById", () => {

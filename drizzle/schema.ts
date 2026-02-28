@@ -31,6 +31,7 @@ export const songs = mysqlTable("songs", {
   genre: varchar("genre", { length: 100 }),
   mood: varchar("mood", { length: 100 }),
   instruments: json("instruments").$type<string[]>(),
+  vocalType: varchar("vocalType", { length: 20 }).default("none"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

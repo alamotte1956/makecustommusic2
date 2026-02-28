@@ -15,6 +15,13 @@
       "when": 1772293426931,
       "tag": "0001_nasty_triton",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772296413953,
+      "tag": "0002_clammy_whiplash",
+      "breakpoints": true
     }
   ]
 }

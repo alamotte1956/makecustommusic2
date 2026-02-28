@@ -36,3 +36,12 @@
 
 ## Bug Fixes
 - [x] Fix "Failed to synthesize music" error (replaced lamejs with native WAV encoder)
+
+## Feature Enhancements
+- [x] Add genre preset buttons to generator page (Jazz, Classical, Electronic, Rock, Ambient, Pop, Hip Hop, Country, R&B, Folk, Reggae, Blues)
+- [x] Add mood preset buttons to generator page (Happy, Melancholic, Energetic, Calm, Epic, Romantic, Dark, Uplifting, Mysterious, Playful)
+- [x] Add vocal type selector (Male, Female, Mixed, No Vocals)
+- [x] Presets append to keyword input, shown in generation prompt preview
+- [x] Update backend LLM prompt to incorporate vocal type in music generation
+- [x] Update database schema to store vocal type per song
+- [x] Tests updated and all 21 passing

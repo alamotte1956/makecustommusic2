@@ -27,9 +27,30 @@ export const appRouter = router({
     generate: protectedProcedure
       .input(z.object({
         keywords: z.string().min(1).max(500),
+        genre: z.string().max(100).optional(),
+        mood: z.string().max(100).optional(),
+        vocalType: z.enum(["none", "male", "female", "mixed"]).default("none"),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { keywords } = input;
+        const { keywords, genre, mood, vocalType } = input;
+
+        // Build vocal instruction
+        let vocalInstruction = "";
+        if (vocalType === "male") {
+          vocalInstruction = "\n7. Include a vocal melody line suitable for a male vocalist (baritone/tenor range). Add lyrics using the w: field in ABC notation. The lyrics should match the mood and theme.";
+        } else if (vocalType === "female") {
+          vocalInstruction = "\n7. Include a vocal melody line suitable for a female vocalist (alto/soprano range). Add lyrics using the w: field in ABC notation. The lyrics should match the mood and theme.";
+        } else if (vocalType === "mixed") {
+          vocalInstruction = "\n7. Include vocal melody lines suitable for mixed vocals (both male and female parts). Add lyrics using the w: field in ABC notation. The lyrics should match the mood and theme.";
+        } else {
+          vocalInstruction = "\n7. This is an instrumental piece with no vocals.";
+        }
+
+        // Build context from presets
+        let presetContext = "";
+        if (genre) presetContext += ` The genre should be ${genre}.`;
+        if (mood) presetContext += ` The mood should be ${mood}.`;
+        if (vocalType !== "none") presetContext += ` Include ${vocalType} vocals with lyrics.`;
 
         // Use LLM to generate ABC notation music from keywords
         const response = await invokeLLM({
@@ -44,22 +65,22 @@ IMPORTANT RULES:
 3. Include proper headers: X (reference number), T (title), M (meter), L (default note length), K (key), Q (tempo)
 4. Use appropriate key signatures, time signatures, and tempos for the described style
 5. Create melodically interesting and harmonically coherent music
-6. Include dynamics and expression marks where appropriate
+6. Include dynamics and expression marks where appropriate${vocalInstruction}
 
 Return your response as a JSON object with these fields:
 - title: A creative title for the piece
-- abcNotation: The complete ABC notation string
+- abcNotation: The complete ABC notation string (include w: lines for lyrics if vocals are requested)
 - genre: The primary genre
 - mood: The primary mood
 - tempo: BPM as a number
 - keySignature: The key (e.g., "C major", "A minor")
 - timeSignature: The time signature (e.g., "4/4", "3/4")
-- instruments: Array of instrument names suitable for this piece
+- instruments: Array of instrument names suitable for this piece (include "Vocals" if vocals are requested)
 - description: A brief description of the musical piece (2-3 sentences)`
             },
             {
               role: "user",
-              content: `Create a musical composition based on these keywords: "${keywords}"`
+              content: `Create a musical composition based on these keywords: "${keywords}"${presetContext}`
             }
           ],
           response_format: {
@@ -107,6 +128,7 @@ Return your response as a JSON object with these fields:
           genre: composition.genre,
           mood: composition.mood,
           instruments: composition.instruments,
+          vocalType,
           duration: 30,
         });
 

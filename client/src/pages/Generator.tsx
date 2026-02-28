@@ -7,14 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import AudioPlayer from "@/components/AudioPlayer";
 import SheetMusic from "@/components/SheetMusic";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { synthesizeAudio, createAudioUrl, revokeAudioUrl } from "@/lib/audioSynthesizer";
 import { toast } from "sonner";
 import {
   Sparkles, Download, Printer, Music, Loader2, Disc3,
-  ChevronDown, ChevronUp, Clock, Guitar, Gauge
+  ChevronDown, ChevronUp, Clock, Guitar, Gauge, Mic, MicOff
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
+
+type VocalType = "none" | "male" | "female" | "mixed";
 
 type GeneratedSong = {
   id: number;
@@ -29,11 +31,50 @@ type GeneratedSong = {
   timeSignature: string | null;
   instruments: string[] | null;
   mp3Url: string | null;
+  vocalType: string | null;
 };
+
+const GENRE_PRESETS = [
+  { label: "Jazz", icon: "🎷", color: "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200" },
+  { label: "Classical", icon: "🎻", color: "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200" },
+  { label: "Electronic", icon: "🎹", color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200" },
+  { label: "Rock", icon: "🎸", color: "bg-red-100 text-red-800 border-red-300 hover:bg-red-200" },
+  { label: "Ambient", icon: "🌊", color: "bg-teal-100 text-teal-800 border-teal-300 hover:bg-teal-200" },
+  { label: "Pop", icon: "🎤", color: "bg-pink-100 text-pink-800 border-pink-300 hover:bg-pink-200" },
+  { label: "Hip Hop", icon: "🥁", color: "bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200" },
+  { label: "Country", icon: "🤠", color: "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200" },
+  { label: "R&B", icon: "🎙️", color: "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200" },
+  { label: "Folk", icon: "🪕", color: "bg-green-100 text-green-800 border-green-300 hover:bg-green-200" },
+  { label: "Reggae", icon: "🌴", color: "bg-lime-100 text-lime-800 border-lime-300 hover:bg-lime-200" },
+  { label: "Blues", icon: "🎺", color: "bg-sky-100 text-sky-800 border-sky-300 hover:bg-sky-200" },
+];
+
+const MOOD_PRESETS = [
+  { label: "Happy", icon: "😊", color: "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200" },
+  { label: "Melancholic", icon: "😢", color: "bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200" },
+  { label: "Energetic", icon: "⚡", color: "bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200" },
+  { label: "Calm", icon: "🧘", color: "bg-teal-100 text-teal-800 border-teal-300 hover:bg-teal-200" },
+  { label: "Epic", icon: "🏔️", color: "bg-violet-100 text-violet-800 border-violet-300 hover:bg-violet-200" },
+  { label: "Romantic", icon: "💕", color: "bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200" },
+  { label: "Dark", icon: "🌑", color: "bg-gray-200 text-gray-800 border-gray-400 hover:bg-gray-300" },
+  { label: "Uplifting", icon: "🌅", color: "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200" },
+  { label: "Mysterious", icon: "🔮", color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200" },
+  { label: "Playful", icon: "🎪", color: "bg-pink-100 text-pink-800 border-pink-300 hover:bg-pink-200" },
+];
+
+const VOCAL_OPTIONS: { value: VocalType; label: string; icon: React.ReactNode; description: string }[] = [
+  { value: "none", label: "No Vocals", icon: <MicOff className="w-4 h-4" />, description: "Instrumental only" },
+  { value: "male", label: "Male", icon: <Mic className="w-4 h-4" />, description: "Male vocalist" },
+  { value: "female", label: "Female", icon: <Mic className="w-4 h-4" />, description: "Female vocalist" },
+  { value: "mixed", label: "Mixed", icon: <Mic className="w-4 h-4" />, description: "Male & female" },
+];
 
 export default function Generator() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const [keywords, setKeywords] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [selectedVocal, setSelectedVocal] = useState<VocalType>("none");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -48,9 +89,25 @@ export default function Generator() {
   const saveAudioMutation = trpc.songs.saveAudio.useMutation();
   const utils = trpc.useUtils();
 
+  // Build the full prompt from keywords + presets
+  const fullPrompt = useMemo(() => {
+    const parts: string[] = [];
+    if (keywords.trim()) parts.push(keywords.trim());
+    if (selectedGenre && !keywords.toLowerCase().includes(selectedGenre.toLowerCase())) {
+      parts.push(selectedGenre);
+    }
+    if (selectedMood && !keywords.toLowerCase().includes(selectedMood.toLowerCase())) {
+      parts.push(selectedMood);
+    }
+    if (selectedVocal !== "none") {
+      parts.push(`${selectedVocal} vocals`);
+    }
+    return parts.join(", ");
+  }, [keywords, selectedGenre, selectedMood, selectedVocal]);
+
   const handleGenerate = useCallback(async () => {
-    if (!keywords.trim()) {
-      toast.error("Please enter some keywords to describe your music");
+    if (!keywords.trim() && !selectedGenre && !selectedMood) {
+      toast.error("Please enter some keywords or select a genre/mood");
       return;
     }
 
@@ -70,7 +127,14 @@ export default function Generator() {
       setProgress(10);
       setProgressMessage("AI is composing your music...");
 
-      const song = await generateMutation.mutateAsync({ keywords: keywords.trim() });
+      const effectiveKeywords = keywords.trim() || [selectedGenre, selectedMood].filter(Boolean).join(" ");
+
+      const song = await generateMutation.mutateAsync({
+        keywords: effectiveKeywords,
+        genre: selectedGenre || undefined,
+        mood: selectedMood || undefined,
+        vocalType: selectedVocal,
+      });
       if (!song) throw new Error("Failed to generate song");
 
       setGeneratedSong(song as GeneratedSong);
@@ -99,7 +163,7 @@ export default function Generator() {
       setProgress(95);
       setProgressMessage("Uploading audio...");
 
-      // Step 3: Upload MP3 to storage
+      // Step 3: Upload audio to storage
       try {
         const reader = new FileReader();
         const base64 = await new Promise<string>((resolve, reject) => {
@@ -116,8 +180,7 @@ export default function Generator() {
           audioBase64: base64,
         });
       } catch {
-        // Non-critical: local playback still works
-        console.warn("Failed to upload MP3 to storage");
+        console.warn("Failed to upload audio to storage");
       }
 
       setProgress(100);
@@ -132,7 +195,7 @@ export default function Generator() {
       setIsGenerating(false);
       setIsSynthesizing(false);
     }
-  }, [keywords, generateMutation, saveAudioMutation, utils]);
+  }, [keywords, selectedGenre, selectedMood, selectedVocal, generateMutation, saveAudioMutation, utils]);
 
   const handleDownload = useCallback(() => {
     if (!mp3Blob || !generatedSong) return;
@@ -155,7 +218,6 @@ export default function Generator() {
       return;
     }
 
-    // Import abcjs dynamically for the print window
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -216,19 +278,20 @@ export default function Generator() {
           Create Music
         </h1>
         <p className="text-muted-foreground">
-          Describe the music you want and let AI compose it for you
+          Describe the music you want, pick a style, and let AI compose it for you
         </p>
       </div>
 
       {/* Input Section */}
       <Card>
-        <CardContent className="pt-6 space-y-4">
+        <CardContent className="pt-6 space-y-6">
+          {/* Keywords Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Describe your music
             </label>
             <Textarea
-              placeholder="e.g., happy jazz piano, relaxing ambient rain, epic orchestral adventure, upbeat electronic dance..."
+              placeholder="e.g., sunset beach vibes, rainy day coffee shop, adventure through mountains..."
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               rows={3}
@@ -241,10 +304,112 @@ export default function Generator() {
             </p>
           </div>
 
+          {/* Genre Presets */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Guitar className="w-4 h-4 text-primary" />
+              Genre
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {GENRE_PRESETS.map((genre) => (
+                <button
+                  key={genre.label}
+                  onClick={() => setSelectedGenre(selectedGenre === genre.label ? null : genre.label)}
+                  disabled={isWorking}
+                  className={`
+                    px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200
+                    ${selectedGenre === genre.label
+                      ? `${genre.color} ring-2 ring-primary/50 shadow-sm scale-105`
+                      : "bg-card text-card-foreground border-border hover:bg-accent hover:text-accent-foreground"
+                    }
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                >
+                  <span className="mr-1.5">{genre.icon}</span>
+                  {genre.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mood Presets */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Mood
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {MOOD_PRESETS.map((mood) => (
+                <button
+                  key={mood.label}
+                  onClick={() => setSelectedMood(selectedMood === mood.label ? null : mood.label)}
+                  disabled={isWorking}
+                  className={`
+                    px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200
+                    ${selectedMood === mood.label
+                      ? `${mood.color} ring-2 ring-primary/50 shadow-sm scale-105`
+                      : "bg-card text-card-foreground border-border hover:bg-accent hover:text-accent-foreground"
+                    }
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                >
+                  <span className="mr-1.5">{mood.icon}</span>
+                  {mood.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Vocal Type Selector */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Mic className="w-4 h-4 text-primary" />
+              Vocals
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {VOCAL_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedVocal(option.value)}
+                  disabled={isWorking}
+                  className={`
+                    flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200
+                    ${selectedVocal === option.value
+                      ? "border-primary bg-primary/5 text-primary shadow-sm"
+                      : "border-border bg-card text-card-foreground hover:border-primary/40 hover:bg-accent"
+                    }
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                >
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center
+                    ${selectedVocal === option.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                    }
+                  `}>
+                    {option.icon}
+                  </div>
+                  <span className="text-sm font-medium">{option.label}</span>
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Preview of what will be generated */}
+          {fullPrompt && (
+            <div className="rounded-lg bg-muted/50 border border-border px-4 py-3">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Generation prompt:</p>
+              <p className="text-sm text-foreground">{fullPrompt}</p>
+            </div>
+          )}
+
+          {/* Generate Button */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               onClick={handleGenerate}
-              disabled={isWorking || !keywords.trim()}
+              disabled={isWorking || (!keywords.trim() && !selectedGenre && !selectedMood)}
               size="lg"
               className="flex-1 sm:flex-none"
             >
@@ -260,6 +425,19 @@ export default function Generator() {
                 </>
               )}
             </Button>
+            {(selectedGenre || selectedMood || selectedVocal !== "none") && !isWorking && (
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={() => {
+                  setSelectedGenre(null);
+                  setSelectedMood(null);
+                  setSelectedVocal("none");
+                }}
+              >
+                Clear Presets
+              </Button>
+            )}
           </div>
 
           {/* Progress */}
@@ -275,20 +453,18 @@ export default function Generator() {
         </CardContent>
       </Card>
 
-      {/* Suggestion chips */}
-      {!generatedSong && !isWorking && (
+      {/* Quick Ideas (only when no song generated and not working) */}
+      {!generatedSong && !isWorking && !keywords && !selectedGenre && !selectedMood && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">Try these ideas:</p>
+          <p className="text-sm font-medium text-muted-foreground">Quick ideas:</p>
           <div className="flex flex-wrap gap-2">
             {[
-              "happy jazz piano",
-              "epic orchestral adventure",
-              "calm acoustic guitar",
-              "energetic electronic dance",
-              "melancholic classical violin",
-              "tropical reggae vibes",
-              "dark cinematic suspense",
-              "cheerful folk ukulele",
+              "sunset beach vibes",
+              "epic movie soundtrack",
+              "cozy rainy afternoon",
+              "night drive through the city",
+              "morning yoga flow",
+              "space exploration theme",
             ].map((suggestion) => (
               <button
                 key={suggestion}
@@ -331,6 +507,12 @@ export default function Generator() {
                 )}
                 {generatedSong.mood && (
                   <Badge variant="secondary">{generatedSong.mood}</Badge>
+                )}
+                {generatedSong.vocalType && generatedSong.vocalType !== "none" && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Mic className="w-3 h-3" />
+                    {generatedSong.vocalType.charAt(0).toUpperCase() + generatedSong.vocalType.slice(1)} Vocals
+                  </Badge>
                 )}
                 {generatedSong.keySignature && (
                   <Badge variant="outline">{generatedSong.keySignature}</Badge>
