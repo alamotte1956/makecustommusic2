@@ -222,6 +222,54 @@ describe("songs router", () => {
       ).rejects.toThrow();
     });
   });
+
+  describe("songs.createShareLink", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.createShareLink({ songId: 1 })
+      ).rejects.toThrow();
+    });
+
+    it("throws for non-existent song", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.createShareLink({ songId: 999999 })
+      ).rejects.toThrow("Song not found");
+    });
+  });
+
+  describe("songs.getShared", () => {
+    it("returns null for non-existent share token", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.getShared({ shareToken: "nonexistent-token" });
+      expect(result).toBeNull();
+    });
+
+    it("does not require authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Should not throw auth error, just return null for missing token
+      const result = await caller.songs.getShared({ shareToken: "test-token-123" });
+      expect(result).toBeNull();
+    });
+
+    it("validates empty share token", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.getShared({ shareToken: "" })
+      ).rejects.toThrow();
+    });
+  });
 });
 
 describe("albums router", () => {

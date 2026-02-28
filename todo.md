@@ -63,6 +63,19 @@
 - [x] Redesign Generator page for premium Suno-like experience
 - [x] Support lyrics display for Suno vocal tracks
 - [x] Request SUNO_API_KEY and REPLICATE_API_TOKEN secrets
-- [x] Update tests for new API integrations (25 tests passing)
+- [x] Update tests for new API integrations (30 tests passing)
 - [x] Update History page with engine badges and per-engine playback/download
 - [x] Update AlbumDetail page with engine-aware playback/download
+
+## Regenerate Button
+- [x] Add "Regenerate" button on Generator page after a song is generated
+- [x] Reuse same keywords, genre, mood, vocal type, duration, and engine settings
+- [x] Generate a new variation with the same prompt
+
+## Public Sharing Links
+- [x] Add shareToken column to songs table for unique share URLs
+- [x] Create public share API route (no auth required) to fetch song by shareToken
+- [x] Add "Share" button on History page and Generator result
+- [x] Create public /share/:token page for viewing shared songs without login
+- [x] Copy-to-clipboard functionality for share links
+- [x] Public share page with playback, download, and sheet music view

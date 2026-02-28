@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import {
   Sparkles, Download, Printer, Music, Loader2, Disc3,
   ChevronDown, ChevronUp, Clock, Guitar, Gauge, Mic, MicOff,
-  Zap, Crown, Cpu, Info, Timer, FileText
+  Zap, Crown, Cpu, Info, Timer, FileText, RefreshCw, Share2, Check, Copy
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 
@@ -166,7 +166,10 @@ export default function Generator() {
   const { data: engines } = trpc.engines.available.useQuery();
   const generateMutation = trpc.songs.generate.useMutation();
   const saveAudioMutation = trpc.songs.saveAudio.useMutation();
+  const shareMutation = trpc.songs.createShareLink.useMutation();
   const utils = trpc.useUtils();
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const engineInfo = ENGINE_INFO[selectedEngine];
 
@@ -363,6 +366,38 @@ export default function Generator() {
       toast.success("Download started!");
     }
   }, [audioBlob, generatedSong]);
+
+  const handleRegenerate = useCallback(() => {
+    // Keep all current settings but clear the result to trigger a new generation
+    if (audioUrlRef.current) {
+      revokeAudioUrl(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    setAudioUrl(null);
+    setAudioBlob(null);
+    setGeneratedSong(null);
+    setShowSheetMusic(false);
+    setShowLyrics(false);
+    setShareUrl(null);
+    setShareCopied(false);
+    // Trigger generation immediately
+    handleGenerate();
+  }, [handleGenerate]);
+
+  const handleShare = useCallback(async () => {
+    if (!generatedSong) return;
+    try {
+      const result = await shareMutation.mutateAsync({ songId: generatedSong.id });
+      const url = `${window.location.origin}/share/${result.shareToken}`;
+      setShareUrl(url);
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      toast.success("Share link copied to clipboard!");
+      setTimeout(() => setShareCopied(false), 3000);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create share link");
+    }
+  }, [generatedSong, shareMutation]);
 
   const handlePrintSheetMusic = useCallback(() => {
     if (!generatedSong || !generatedSong.abcNotation) return;
@@ -871,7 +906,61 @@ export default function Generator() {
                     {showLyrics ? "Hide" : "View"} Lyrics
                   </Button>
                 )}
+
+                {/* Regenerate Button */}
+                <Button
+                  variant="outline"
+                  onClick={handleRegenerate}
+                  disabled={isWorking}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Regenerate
+                </Button>
+
+                {/* Share Button */}
+                <Button
+                  variant="outline"
+                  onClick={handleShare}
+                  disabled={shareMutation.isPending}
+                >
+                  {shareCopied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2 text-green-500" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
+                    </>
+                  )}
+                </Button>
               </div>
+
+              {/* Share URL display */}
+              {shareUrl && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                  <Share2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input
+                    type="text"
+                    readOnly
+                    value={shareUrl}
+                    className="flex-1 bg-transparent text-sm text-foreground outline-none truncate"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(shareUrl);
+                      setShareCopied(true);
+                      toast.success("Copied!");
+                      setTimeout(() => setShareCopied(false), 3000);
+                    }}
+                  >
+                    {shareCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

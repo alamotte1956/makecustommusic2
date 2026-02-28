@@ -37,6 +37,7 @@ export const songs = mysqlTable("songs", {
   vocalType: varchar("vocalType", { length: 20 }).default("none"),
   engine: varchar("engine", { length: 20 }).default("free").notNull(),
   externalId: varchar("externalId", { length: 255 }),
+  shareToken: varchar("shareToken", { length: 64 }).unique(),
   status: varchar("status", { length: 20 }).default("completed").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

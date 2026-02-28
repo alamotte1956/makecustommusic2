@@ -6,6 +6,7 @@ import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import {
   createSong, getSongById, getUserSongs, deleteSong, updateSongMp3, updateSongAudio,
+  getSongByShareToken, updateSongShareToken,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount
 } from "./db";
@@ -122,6 +123,53 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await deleteSong(input.id, ctx.user.id);
         return { success: true };
+      }),
+
+    // Create a share link for a song
+    createShareLink: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+        // If already has a share token, return it
+        if (song.shareToken) {
+          return { shareToken: song.shareToken };
+        }
+        // Generate a new share token
+        const shareToken = nanoid(16);
+        await updateSongShareToken(song.id, shareToken);
+        return { shareToken };
+      }),
+
+    // Public endpoint to get a shared song (no auth required)
+    getShared: publicProcedure
+      .input(z.object({ shareToken: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const song = await getSongByShareToken(input.shareToken);
+        if (!song || song.status !== "completed") return null;
+        // Return a safe subset of song data (no userId)
+        return {
+          id: song.id,
+          title: song.title,
+          keywords: song.keywords,
+          abcNotation: song.abcNotation,
+          musicDescription: song.musicDescription,
+          lyrics: song.lyrics,
+          mp3Url: song.mp3Url,
+          imageUrl: song.imageUrl,
+          duration: song.duration,
+          tempo: song.tempo,
+          keySignature: song.keySignature,
+          timeSignature: song.timeSignature,
+          genre: song.genre,
+          mood: song.mood,
+          instruments: song.instruments,
+          vocalType: song.vocalType,
+          engine: song.engine,
+          createdAt: song.createdAt,
+        };
       }),
   }),
 

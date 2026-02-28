@@ -10,7 +10,8 @@ import { synthesizeAudio, createAudioUrl } from "@/lib/audioSynthesizer";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Printer, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play, Zap, Crown, Cpu, FileText
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Zap, Crown, Cpu, FileText,
+  Share2, Check
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import {
@@ -52,7 +53,9 @@ export default function History() {
   const deleteMutation = trpc.songs.delete.useMutation();
   const addToAlbumMutation = trpc.albums.addSong.useMutation();
   const createAlbumMutation = trpc.albums.create.useMutation();
+  const shareMutation = trpc.songs.createShareLink.useMutation();
   const utils = trpc.useUtils();
+  const [sharedSongId, setSharedSongId] = useState<number | null>(null);
 
   const [expandedSong, setExpandedSong] = useState<number | null>(null);
   const [showLyrics, setShowLyrics] = useState<number | null>(null);
@@ -402,6 +405,30 @@ export default function History() {
                           >
                             <Disc3 className="w-3.5 h-3.5 mr-1.5" />
                             Add to Album
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const result = await shareMutation.mutateAsync({ songId: song.id });
+                                const url = `${window.location.origin}/share/${result.shareToken}`;
+                                await navigator.clipboard.writeText(url);
+                                setSharedSongId(song.id);
+                                toast.success("Share link copied to clipboard!");
+                                setTimeout(() => setSharedSongId(null), 3000);
+                              } catch {
+                                toast.error("Failed to create share link");
+                              }
+                            }}
+                            disabled={shareMutation.isPending}
+                          >
+                            {sharedSongId === song.id ? (
+                              <Check className="w-3.5 h-3.5 mr-1.5 text-green-500" />
+                            ) : (
+                              <Share2 className="w-3.5 h-3.5 mr-1.5" />
+                            )}
+                            {sharedSongId === song.id ? "Copied!" : "Share"}
                           </Button>
 
                           <AlertDialog>
