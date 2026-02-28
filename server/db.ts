@@ -144,6 +144,17 @@ export async function getSongByShareToken(shareToken: string) {
   return result[0] ?? null;
 }
 
+export async function updateSong(
+  id: number,
+  userId: number,
+  data: { title?: string; lyrics?: string | null; genre?: string | null; mood?: string | null; styleTags?: string | null }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set(data).where(and(eq(songs.id, id), eq(songs.userId, userId)));
+  return getSongById(id);
+}
+
 // ─── Album Queries ───
 
 export async function createAlbum(data: InsertAlbum) {

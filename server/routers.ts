@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import {
-  createSong, getSongById, getUserSongs, deleteSong, updateSongMp3,
+  createSong, getSongById, getUserSongs, deleteSong, updateSong, updateSongMp3,
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
@@ -240,6 +240,37 @@ export const appRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return getUserSongs(ctx.user.id);
     }),
+
+    // Update song metadata (title, lyrics, genre, mood, styleTags)
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1).max(255).optional(),
+        lyrics: z.string().max(5000).nullable().optional(),
+        genre: z.string().max(100).nullable().optional(),
+        mood: z.string().max(100).nullable().optional(),
+        styleTags: z.string().max(500).nullable().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        const song = await getSongById(id);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+        // Filter out undefined fields
+        const updateData: Record<string, any> = {};
+        if (data.title !== undefined) updateData.title = data.title;
+        if (data.lyrics !== undefined) updateData.lyrics = data.lyrics;
+        if (data.genre !== undefined) updateData.genre = data.genre;
+        if (data.mood !== undefined) updateData.mood = data.mood;
+        if (data.styleTags !== undefined) updateData.styleTags = data.styleTags;
+
+        if (Object.keys(updateData).length === 0) {
+          return song;
+        }
+
+        return updateSong(id, ctx.user.id, updateData);
+      }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))

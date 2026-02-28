@@ -148,3 +148,13 @@
 - [x] Pre-fill the lyrics textarea with AI-generated lyrics
 - [x] Show loading state during lyrics generation
 - [x] Write tests for lyrics generation route (106 tests passing)
+
+## Song Editing
+- [x] Add updateSong DB helper to update title, lyrics, genre, mood, styleTags
+- [x] Add songs.update tRPC route (protected, owner-only)
+- [x] Create reusable EditSongDialog component with form fields
+- [x] Add edit button to History page song cards
+- [x] Add edit button to Favorites page song cards
+- [x] Add edit button to AlbumDetail page song cards
+- [x] Optimistic UI updates after editing (invalidate on save)
+- [x] Write tests for song update route (116 tests passing)

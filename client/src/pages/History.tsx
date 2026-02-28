@@ -8,9 +8,10 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pencil
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
+import EditSongDialog from "@/components/EditSongDialog";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 import { getLoginUrl } from "@/const";
 import {
@@ -56,6 +57,7 @@ export default function History() {
   const [showBulkAlbumDialog, setShowBulkAlbumDialog] = useState(false);
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
   const [filters, setFilters] = useState<SongFilters>({ search: "", genre: "__all__", mood: "__all__" });
+  const [editingSong, setEditingSong] = useState<any>(null);
 
   const filteredSongs = filterSongs(songs, filters);
 
@@ -289,6 +291,14 @@ export default function History() {
                             <Disc3 className="w-3.5 h-3.5 mr-1.5" />
                             Add to Album
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingSong(song)}
+                          >
+                            <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                            Edit
+                          </Button>
                           <FavoriteButton songId={song.id} size="sm" />
 
                           <AlertDialog>
@@ -387,6 +397,19 @@ export default function History() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Song Dialog */}
+      {editingSong && (
+        <EditSongDialog
+          open={!!editingSong}
+          onOpenChange={(open) => !open && setEditingSong(null)}
+          song={editingSong}
+          onSaved={() => {
+            utils.songs.list.invalidate();
+            setEditingSong(null);
+          }}
+        />
+      )}
 
       {/* Bulk Album Dialog */}
       <Dialog open={showBulkAlbumDialog} onOpenChange={setShowBulkAlbumDialog}>

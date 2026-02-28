@@ -8,9 +8,10 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Heart, Download, Loader2,
-  ChevronDown, ChevronUp, Play, Share2, ListMusic, Pause
+  ChevronDown, ChevronUp, Play, Share2, ListMusic, Pause, Pencil
 } from "lucide-react";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
+import EditSongDialog from "@/components/EditSongDialog";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 
 export default function Favorites() {
@@ -25,6 +26,8 @@ export default function Favorites() {
 
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
   const [filters, setFilters] = useState<SongFilters>({ search: "", genre: "__all__", mood: "__all__" });
+  const [editingSong, setEditingSong] = useState<any>(null);
+  const utils = trpc.useUtils();
 
   const filteredSongs = filterSongs(songs, filters);
 
@@ -270,6 +273,14 @@ export default function Favorites() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => setEditingSong(song)}
+                          >
+                            <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleShare(song)}
                           >
                             <Share2 className="w-3.5 h-3.5 mr-1.5" />
@@ -294,6 +305,20 @@ export default function Favorites() {
           })}
         </div>
       ))}
+
+      {/* Edit Song Dialog */}
+      {editingSong && (
+        <EditSongDialog
+          open={!!editingSong}
+          onOpenChange={(open) => !open && setEditingSong(null)}
+          song={editingSong}
+          onSaved={() => {
+            utils.favorites.list.invalidate();
+            utils.songs.list.invalidate();
+            setEditingSong(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -8,9 +8,10 @@ import { toast } from "sonner";
 import { useRoute, Link } from "wouter";
 import {
   Disc3, Music, Download, Loader2,
-  ArrowLeft, Play, Pause, X, ChevronDown, ChevronUp, ImagePlus, Sparkles, ListMusic
+  ArrowLeft, Play, Pause, X, ChevronDown, ChevronUp, ImagePlus, Sparkles, ListMusic, Pencil
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
+import EditSongDialog from "@/components/EditSongDialog";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 
 export default function AlbumDetail() {
@@ -32,6 +33,7 @@ export default function AlbumDetail() {
 
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
   const [generatingCover, setGeneratingCover] = useState(false);
+  const [editingSong, setEditingSong] = useState<any>(null);
 
   const albumQueueName = album ? `Album: ${album.title}` : "";
   const isAlbumQueue = queueName === albumQueueName && albumQueueName !== "";
@@ -339,6 +341,14 @@ export default function AlbumDetail() {
                             Lyrics
                           </Button>
                         )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingSong(song)}
+                        >
+                          <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                          Edit
+                        </Button>
                         <FavoriteButton songId={song.id} size="sm" />
                         <Button
                           variant="ghost"
@@ -366,6 +376,20 @@ export default function AlbumDetail() {
             );
           })}
         </div>
+      )}
+
+      {/* Edit Song Dialog */}
+      {editingSong && (
+        <EditSongDialog
+          open={!!editingSong}
+          onOpenChange={(open) => !open && setEditingSong(null)}
+          song={editingSong}
+          onSaved={() => {
+            utils.albums.getById.invalidate({ id: albumId });
+            utils.songs.list.invalidate();
+            setEditingSong(null);
+          }}
+        />
       )}
     </div>
   );

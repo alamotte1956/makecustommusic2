@@ -242,6 +242,107 @@ describe("songs router", () => {
     });
   });
 
+  describe("songs.update", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 1, title: "Updated Title" })
+      ).rejects.toThrow();
+    });
+
+    it("validates title min length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 1, title: "" })
+      ).rejects.toThrow();
+    });
+
+    it("validates title max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 1, title: "a".repeat(256) })
+      ).rejects.toThrow();
+    });
+
+    it("validates lyrics max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 1, lyrics: "a".repeat(5001) })
+      ).rejects.toThrow();
+    });
+
+    it("validates genre max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 1, genre: "a".repeat(101) })
+      ).rejects.toThrow();
+    });
+
+    it("validates mood max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 1, mood: "a".repeat(101) })
+      ).rejects.toThrow();
+    });
+
+    it("validates styleTags max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 1, styleTags: "a".repeat(501) })
+      ).rejects.toThrow();
+    });
+
+    it("throws for non-existent song", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.update({ id: 999999, title: "Updated" })
+      ).rejects.toThrow("Song not found");
+    });
+
+    it("accepts nullable lyrics, genre, mood, styleTags", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Should pass validation (will fail at DB level for non-existent song)
+      await expect(
+        caller.songs.update({
+          id: 999999,
+          title: "Valid Title",
+          lyrics: null,
+          genre: null,
+          mood: null,
+          styleTags: null,
+        })
+      ).rejects.toThrow("Song not found");
+    });
+
+    it("accepts partial updates", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Only updating title should be valid
+      await expect(
+        caller.songs.update({ id: 999999, title: "Just Title" })
+      ).rejects.toThrow("Song not found");
+    });
+  });
+
   describe("songs.getById", () => {
     it("requires authentication", async () => {
       const { ctx } = createUnauthContext();
