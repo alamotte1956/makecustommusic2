@@ -46,19 +46,6 @@ function createUnauthContext(): { ctx: TrpcContext } {
   return { ctx };
 }
 
-describe("engines router", () => {
-  it("returns engine availability (free always true)", async () => {
-    const { ctx } = createUnauthContext();
-    const caller = appRouter.createCaller(ctx);
-
-    const result = await caller.engines.available();
-    expect(result).toBeTruthy();
-    expect(result.free).toBe(true);
-    expect(typeof result.suno).toBe("boolean");
-    expect(typeof result.musicgen).toBe("boolean");
-  });
-});
-
 describe("songs router", () => {
   describe("songs.list", () => {
     it("requires authentication", async () => {
@@ -95,102 +82,6 @@ describe("songs router", () => {
         caller.songs.generate({ keywords: "" })
       ).rejects.toThrow();
     });
-
-    it("accepts genre, mood, duration, and engine presets and generates a song", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const result = await caller.songs.generate({
-        keywords: "test composition",
-        genre: "Jazz",
-        mood: "Happy",
-        vocalType: "none",
-        duration: 30,
-        engine: "free",
-      });
-
-      expect(result).toBeTruthy();
-      expect(result?.title).toBeTruthy();
-      expect(result?.abcNotation).toBeTruthy();
-      expect(result?.genre).toBeTruthy();
-      expect(result?.vocalType).toBe("none");
-      expect(result?.engine).toBe("free");
-    }, 30000);
-
-    it("generates a song with female vocals", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const result = await caller.songs.generate({
-        keywords: "love ballad",
-        vocalType: "female",
-        engine: "free",
-      });
-
-      expect(result).toBeTruthy();
-      expect(result?.title).toBeTruthy();
-      expect(result?.vocalType).toBe("female");
-    }, 30000);
-
-    it("rejects invalid vocal type", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(
-        caller.songs.generate({
-          keywords: "test",
-          // @ts-expect-error testing invalid input
-          vocalType: "invalid",
-        })
-      ).rejects.toThrow();
-    });
-
-    it("rejects invalid engine", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(
-        caller.songs.generate({
-          keywords: "test",
-          // @ts-expect-error testing invalid input
-          engine: "invalid_engine",
-        })
-      ).rejects.toThrow();
-    });
-
-    it("rejects duration below minimum", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(
-        caller.songs.generate({
-          keywords: "test",
-          duration: 3,
-        })
-      ).rejects.toThrow();
-    });
-
-    it("rejects duration above maximum", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(
-        caller.songs.generate({
-          keywords: "test",
-          duration: 500,
-        })
-      ).rejects.toThrow();
-    });
-
-    it("defaults vocalType to none and engine to free when not provided", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const result = await caller.songs.generate({ keywords: "simple test" });
-      expect(result).toBeTruthy();
-      expect(result?.vocalType).toBe("none");
-      expect(result?.engine).toBe("free");
-    }, 30000);
   });
 
   describe("songs.getById", () => {
@@ -219,54 +110,6 @@ describe("songs router", () => {
 
       await expect(
         caller.songs.delete({ id: 1 })
-      ).rejects.toThrow();
-    });
-  });
-
-  describe("songs.createShareLink", () => {
-    it("requires authentication", async () => {
-      const { ctx } = createUnauthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(
-        caller.songs.createShareLink({ songId: 1 })
-      ).rejects.toThrow();
-    });
-
-    it("throws for non-existent song", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(
-        caller.songs.createShareLink({ songId: 999999 })
-      ).rejects.toThrow("Song not found");
-    });
-  });
-
-  describe("songs.getShared", () => {
-    it("returns null for non-existent share token", async () => {
-      const { ctx } = createUnauthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const result = await caller.songs.getShared({ shareToken: "nonexistent-token" });
-      expect(result).toBeNull();
-    });
-
-    it("does not require authentication", async () => {
-      const { ctx } = createUnauthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      // Should not throw auth error, just return null for missing token
-      const result = await caller.songs.getShared({ shareToken: "test-token-123" });
-      expect(result).toBeNull();
-    });
-
-    it("validates empty share token", async () => {
-      const { ctx } = createUnauthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      await expect(
-        caller.songs.getShared({ shareToken: "" })
       ).rejects.toThrow();
     });
   });

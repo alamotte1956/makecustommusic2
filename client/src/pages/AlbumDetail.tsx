@@ -11,15 +11,8 @@ import { toast } from "sonner";
 import { useRoute, Link } from "wouter";
 import {
   Disc3, Music, Download, Printer, Loader2,
-  ArrowLeft, Play, X, ChevronDown, ChevronUp,
-  Zap, Crown, Cpu
+  ArrowLeft, Play, X, ChevronDown, ChevronUp
 } from "lucide-react";
-
-const ENGINE_BADGES: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  free: { label: "Built-in", icon: <Zap className="w-3 h-3" />, color: "bg-green-100 text-green-700 border-green-300" },
-  suno: { label: "Suno", icon: <Crown className="w-3 h-3" />, color: "bg-purple-100 text-purple-700 border-purple-300" },
-  musicgen: { label: "MusicGen", icon: <Cpu className="w-3 h-3" />, color: "bg-blue-100 text-blue-700 border-blue-300" },
-};
 
 export default function AlbumDetail() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
@@ -43,20 +36,6 @@ export default function AlbumDetail() {
       setPlayingSong(song.id);
       return;
     }
-
-    // Premium engines have server-side audio URLs
-    if (song.engine !== "free" && song.mp3Url) {
-      setAudioUrls(prev => ({ ...prev, [song.id]: song.mp3Url }));
-      setPlayingSong(song.id);
-      return;
-    }
-
-    // Free engine: synthesize client-side
-    if (!song.abcNotation) {
-      toast.error("No audio available for this song");
-      return;
-    }
-
     setSynthesizing(song.id);
     try {
       const { blob } = await synthesizeAudio(song.abcNotation, song.tempo || 120);
@@ -71,22 +50,6 @@ export default function AlbumDetail() {
   }, [audioUrls]);
 
   const handleDownload = useCallback(async (song: any) => {
-    const fileName = song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_");
-
-    // Premium engines: download from server URL
-    if (song.engine !== "free" && song.mp3Url) {
-      const a = document.createElement("a");
-      a.href = song.mp3Url;
-      a.download = `${fileName}.mp3`;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success("Download started!");
-      return;
-    }
-
-    // Free engine: synthesize and download WAV
     let blob: Blob;
     if (audioUrls[song.id]) {
       const response = await fetch(audioUrls[song.id]);
@@ -105,7 +68,7 @@ export default function AlbumDetail() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${fileName}.wav`;
+    a.download = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -125,10 +88,6 @@ export default function AlbumDetail() {
   }, [albumId, removeSongMutation, utils]);
 
   const handlePrint = useCallback((song: any) => {
-    if (!song.abcNotation) {
-      toast.error("Sheet music is only available for Built-in AI songs");
-      return;
-    }
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Please allow pop-ups to print sheet music");
@@ -235,117 +194,98 @@ export default function AlbumDetail() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {album.songs.map((song: any, index: number) => {
-            const engineBadge = ENGINE_BADGES[song.engine || "free"] || ENGINE_BADGES.free;
-            const isFreeEngine = !song.engine || song.engine === "free";
-            const hasAudio = isFreeEngine ? !!song.abcNotation : !!song.mp3Url;
-            const hasSheetMusic = isFreeEngine && !!song.abcNotation;
-
-            return (
-              <Card key={song.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-sm text-muted-foreground font-mono mt-1 w-6 text-right shrink-0">
-                      {index + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            <Badge variant="outline" className={`text-xs gap-1 ${engineBadge.color}`}>
-                              {engineBadge.icon}
-                              {engineBadge.label}
-                            </Badge>
-                            {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
-                            {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
-                            {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
-                          </div>
+          {album.songs.map((song: any, index: number) => (
+            <Card key={song.id} className="overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-sm text-muted-foreground font-mono mt-1 w-6 text-right shrink-0">
+                    {index + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
+                          {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
+                          {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
                         </div>
                       </div>
+                    </div>
 
-                      {/* Player */}
-                      {playingSong === song.id && audioUrls[song.id] && (
-                        <div className="mt-3">
-                          <AudioPlayer src={audioUrls[song.id]} compact />
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {hasAudio && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePlay(song)}
-                              disabled={synthesizing === song.id}
-                            >
-                              {synthesizing === song.id ? (
-                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                              ) : (
-                                <Play className="w-3.5 h-3.5 mr-1.5" />
-                              )}
-                              Play
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownload(song)}
-                              disabled={synthesizing === song.id}
-                            >
-                              <Download className="w-3.5 h-3.5 mr-1.5" />
-                              {isFreeEngine ? "WAV" : "MP3"}
-                            </Button>
-                          </>
-                        )}
-                        {hasSheetMusic && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
-                            >
-                              {expandedSong === song.id ? (
-                                <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
-                              ) : (
-                                <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                              )}
-                              Sheet Music
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePrint(song)}
-                            >
-                              <Printer className="w-3.5 h-3.5 mr-1.5" />
-                              Print
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemoveSong(song.id)}
-                        >
-                          <X className="w-3.5 h-3.5 mr-1.5" />
-                          Remove
-                        </Button>
+                    {/* Player */}
+                    {playingSong === song.id && audioUrls[song.id] && (
+                      <div className="mt-3">
+                        <AudioPlayer src={audioUrls[song.id]} compact />
                       </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePlay(song)}
+                        disabled={synthesizing === song.id}
+                      >
+                        {synthesizing === song.id ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <Play className="w-3.5 h-3.5 mr-1.5" />
+                        )}
+                        Play
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownload(song)}
+                        disabled={synthesizing === song.id}
+                      >
+                        <Download className="w-3.5 h-3.5 mr-1.5" />
+                        MP3
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpandedSong(expandedSong === song.id ? null : song.id)}
+                      >
+                        {expandedSong === song.id ? (
+                          <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
+                        )}
+                        Sheet Music
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePrint(song)}
+                      >
+                        <Printer className="w-3.5 h-3.5 mr-1.5" />
+                        Print
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveSong(song.id)}
+                      >
+                        <X className="w-3.5 h-3.5 mr-1.5" />
+                        Remove
+                      </Button>
                     </div>
                   </div>
+                </div>
 
-                  {/* Expanded Sheet Music */}
-                  {expandedSong === song.id && hasSheetMusic && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <SheetMusic abcNotation={song.abcNotation} />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                {/* Expanded Sheet Music */}
+                {expandedSong === song.id && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <SheetMusic abcNotation={song.abcNotation} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>

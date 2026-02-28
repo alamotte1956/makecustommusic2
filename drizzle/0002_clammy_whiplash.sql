@@ -1,1 +1,0 @@
-ALTER TABLE `songs` ADD `vocalType` varchar(20) DEFAULT 'none';

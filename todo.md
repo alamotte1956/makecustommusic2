@@ -27,55 +27,9 @@
 - [x] tRPC routes for song CRUD operations
 - [x] tRPC routes for album CRUD operations
 - [x] LLM integration for generating musical data from keywords
-- [x] Music synthesis engine (ABC notation to audio via Web Audio API + native WAV encoder)
-- [x] S3 storage for generated audio files
+- [x] Music synthesis engine (ABC notation to audio via Web Audio API + lamejs)
+- [x] S3 storage for generated MP3 files
 
 ## Testing
-- [x] Unit tests for backend routes (25 tests passing)
+- [x] Unit tests for backend routes (17 tests passing)
 - [x] Test music generation flow
-
-## Bug Fixes
-- [x] Fix "Failed to synthesize music" error (replaced lamejs with native WAV encoder)
-
-## Feature Enhancements
-- [x] Add genre preset buttons to generator page (Jazz, Classical, Electronic, Rock, Ambient, Pop, Hip Hop, Country, R&B, Folk, Reggae, Blues)
-- [x] Add mood preset buttons to generator page (Happy, Melancholic, Energetic, Calm, Epic, Romantic, Dark, Uplifting, Mysterious, Playful)
-- [x] Add vocal type selector (Male, Female, Mixed, No Vocals)
-- [x] Presets append to keyword input, shown in generation prompt preview
-- [x] Update backend LLM prompt to incorporate vocal type in music generation
-- [x] Update database schema to store vocal type per song
-
-## Duration Slider
-- [x] Add duration slider to generator page (15s, 30s, 60s, 90s, 120s)
-- [x] Update backend generate mutation to accept duration parameter
-- [x] Update LLM prompt to use requested duration for composition length
-- [x] Update tests for duration parameter
-
-## Suno-Quality Music Upgrade
-- [x] Integrate Suno API (sunoapi.org) as premium engine with vocals/lyrics
-- [x] Integrate Replicate MusicGen as premium instrumental engine
-- [x] Keep LLM+ABC as free fallback engine
-- [x] Add engine selector UI (Free / MusicGen / Suno)
-- [x] Add duration slider (15s, 30s, 60s, 90s, 120s) for all engines
-- [x] Backend: Suno API integration with async polling
-- [x] Backend: Replicate MusicGen integration
-- [x] Update database schema to store engine type per song
-- [x] Redesign Generator page for premium Suno-like experience
-- [x] Support lyrics display for Suno vocal tracks
-- [x] Request SUNO_API_KEY and REPLICATE_API_TOKEN secrets
-- [x] Update tests for new API integrations (30 tests passing)
-- [x] Update History page with engine badges and per-engine playback/download
-- [x] Update AlbumDetail page with engine-aware playback/download
-
-## Regenerate Button
-- [x] Add "Regenerate" button on Generator page after a song is generated
-- [x] Reuse same keywords, genre, mood, vocal type, duration, and engine settings
-- [x] Generate a new variation with the same prompt
-
-## Public Sharing Links
-- [x] Add shareToken column to songs table for unique share URLs
-- [x] Create public share API route (no auth required) to fetch song by shareToken
-- [x] Add "Share" button on History page and Generator result
-- [x] Create public /share/:token page for viewing shared songs without login
-- [x] Copy-to-clipboard functionality for share links
-- [x] Public share page with playback, download, and sheet music view

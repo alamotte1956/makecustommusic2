@@ -10,7 +10,6 @@ import History from "./pages/History";
 import Albums from "./pages/Albums";
 import AlbumDetail from "./pages/AlbumDetail";
 import Layout from "./components/Layout";
-import SharedSong from "./pages/SharedSong";
 
 function Router() {
   return (
@@ -20,7 +19,6 @@ function Router() {
       <Route path={"/history"} component={History} />
       <Route path={"/albums"} component={Albums} />
       <Route path={"/albums/:id"} component={AlbumDetail} />
-      <Route path={"/share/:token"} component={SharedSong} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
