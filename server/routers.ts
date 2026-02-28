@@ -113,10 +113,10 @@ Return your response as a JSON object with these fields:
         return song;
       }),
 
-    saveMp3: protectedProcedure
+    saveAudio: protectedProcedure
       .input(z.object({
         songId: z.number(),
-        mp3Base64: z.string(),
+        audioBase64: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
         const song = await getSongById(input.songId);
@@ -124,12 +124,12 @@ Return your response as a JSON object with these fields:
           throw new Error("Song not found");
         }
 
-        const buffer = Buffer.from(input.mp3Base64, "base64");
-        const fileKey = `songs/${ctx.user.id}/${nanoid()}.mp3`;
-        const { url } = await storagePut(fileKey, buffer, "audio/mpeg");
+        const buffer = Buffer.from(input.audioBase64, "base64");
+        const fileKey = `songs/${ctx.user.id}/${nanoid()}.wav`;
+        const { url } = await storagePut(fileKey, buffer, "audio/wav");
 
         await updateSongMp3(input.songId, url, fileKey);
-        return { mp3Url: url };
+        return { audioUrl: url };
       }),
 
     getById: protectedProcedure

@@ -1,10 +1,7 @@
 /**
  * Audio Synthesizer - Converts ABC notation to playable audio using Web Audio API
- * and encodes to MP3 using lamejs
+ * Outputs WAV format (reliable, no external dependencies)
  */
-
-// @ts-ignore - lamejs doesn't have proper types
-import lamejs from "lamejs";
 
 type NoteEvent = {
   frequency: number;
@@ -45,8 +42,8 @@ function parseAbcToNotes(abc: string, tempo: number = 120): NoteEvent[] {
   let currentTime = 0;
   const defaultDuration = beatDuration; // eighth note default
 
-  // Simple regex to match ABC notes
-  const noteRegex = /([_^]?)([A-Ga-g])([',]*)(\d*\/?\.?\d*)/g;
+  // Simple regex to match ABC notes (including rests z/Z)
+  const noteRegex = /([_^]?)([A-Ga-gz])([',]*)(\d*\/?\.?\d*)/g;
   let match;
 
   while ((match = noteRegex.exec(noteString)) !== null) {
@@ -54,6 +51,9 @@ function parseAbcToNotes(abc: string, tempo: number = 120): NoteEvent[] {
     const noteLetter = match[2];
     const octaveModifier = match[3];
     const durationStr = match[4];
+
+    // Check for rest
+    const isRest = noteLetter.toLowerCase() === "z";
 
     // Determine base note
     const isLower = noteLetter === noteLetter.toLowerCase();
@@ -63,7 +63,7 @@ function parseAbcToNotes(abc: string, tempo: number = 120): NoteEvent[] {
     let freq = NOTE_FREQUENCIES[noteKey] || NOTE_FREQUENCIES[baseNote] || 440;
 
     // Adjust octave
-    if (isLower) freq *= 2;
+    if (isLower && !isRest) freq *= 2;
     for (const ch of octaveModifier) {
       if (ch === "'") freq *= 2;
       if (ch === ",") freq /= 2;
@@ -85,8 +85,8 @@ function parseAbcToNotes(abc: string, tempo: number = 120): NoteEvent[] {
       }
     }
 
-    // Skip rests (z/Z)
-    if (baseNote !== "Z") {
+    // Add note event (skip rests)
+    if (!isRest) {
       events.push({
         frequency: freq,
         duration: dur * 0.9, // slight gap between notes
@@ -124,7 +124,7 @@ export async function synthesizeAudio(
     const osc = offlineCtx.createOscillator();
     const gainNode = offlineCtx.createGain();
 
-    // Use a mix of sine and triangle for a richer sound
+    // Use triangle wave for a warmer sound
     osc.type = "triangle";
     osc.frequency.value = note.frequency;
 
@@ -132,7 +132,7 @@ export async function synthesizeAudio(
     const attackTime = 0.02;
     const decayTime = 0.05;
     const sustainLevel = 0.6;
-    const releaseTime = 0.1;
+    const releaseTime = Math.min(0.1, note.duration * 0.2);
 
     gainNode.gain.setValueAtTime(0, note.startTime);
     gainNode.gain.linearRampToValueAtTime(0.4, note.startTime + attackTime);
@@ -176,55 +176,72 @@ export async function synthesizeAudio(
 
   onProgress?.(70);
 
-  // Convert to MP3
-  const mp3Blob = await encodeToMp3(audioBuffer, onProgress);
+  // Convert to WAV (reliable, no external dependencies)
+  const wavBlob = encodeToWav(audioBuffer, onProgress);
 
   onProgress?.(100);
 
-  return { audioBuffer, blob: mp3Blob };
+  return { audioBuffer, blob: wavBlob };
 }
 
-async function encodeToMp3(
+/**
+ * Encode AudioBuffer to WAV format
+ */
+function encodeToWav(
   audioBuffer: AudioBuffer,
   onProgress?: (progress: number) => void
-): Promise<Blob> {
-  const samples = audioBuffer.getChannelData(0);
+): Blob {
+  const numChannels = 1;
   const sampleRate = audioBuffer.sampleRate;
+  const samples = audioBuffer.getChannelData(0);
+  const bitsPerSample = 16;
+  const bytesPerSample = bitsPerSample / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = samples.length * blockAlign;
+  const bufferSize = 44 + dataSize;
 
-  const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
-  const mp3Data: BlobPart[] = [];
+  const buffer = new ArrayBuffer(bufferSize);
+  const view = new DataView(buffer);
 
-  const sampleBlockSize = 1152;
-  const totalBlocks = Math.ceil(samples.length / sampleBlockSize);
+  // WAV header
+  writeString(view, 0, "RIFF");
+  view.setUint32(4, bufferSize - 8, true);
+  writeString(view, 8, "WAVE");
 
-  for (let i = 0; i < samples.length; i += sampleBlockSize) {
-    const blockEnd = Math.min(i + sampleBlockSize, samples.length);
-    const block = samples.subarray(i, blockEnd);
+  // fmt chunk
+  writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true); // chunk size
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true); // byte rate
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
 
-    // Convert float samples to int16
-    const int16 = new Int16Array(block.length);
-    for (let j = 0; j < block.length; j++) {
-      const s = Math.max(-1, Math.min(1, block[j]));
-      int16[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-    }
+  // data chunk
+  writeString(view, 36, "data");
+  view.setUint32(40, dataSize, true);
 
-    const mp3buf = mp3encoder.encodeBuffer(int16);
-    if (mp3buf.length > 0) {
-      mp3Data.push(new Blob([mp3buf]));
-    }
+  // Write samples
+  let offset = 44;
+  const totalSamples = samples.length;
+  for (let i = 0; i < totalSamples; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
 
-    const currentBlock = Math.floor(i / sampleBlockSize);
-    if (onProgress && currentBlock % 10 === 0) {
-      onProgress(70 + Math.round((currentBlock / totalBlocks) * 25));
+    if (onProgress && i % 44100 === 0) {
+      onProgress(70 + Math.round((i / totalSamples) * 25));
     }
   }
 
-  const end = mp3encoder.flush();
-  if (end.length > 0) {
-    mp3Data.push(new Blob([end]));
-  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
 
-  return new Blob(mp3Data, { type: "audio/mpeg" });
+function writeString(view: DataView, offset: number, str: string) {
+  for (let i = 0; i < str.length; i++) {
+    view.setUint8(offset + i, str.charCodeAt(i));
+  }
 }
 
 export function createAudioUrl(blob: Blob): string {

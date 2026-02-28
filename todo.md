@@ -27,9 +27,12 @@
 - [x] tRPC routes for song CRUD operations
 - [x] tRPC routes for album CRUD operations
 - [x] LLM integration for generating musical data from keywords
-- [x] Music synthesis engine (ABC notation to audio via Web Audio API + lamejs)
-- [x] S3 storage for generated MP3 files
+- [x] Music synthesis engine (ABC notation to audio via Web Audio API + native WAV encoder)
+- [x] S3 storage for generated audio files
 
 ## Testing
 - [x] Unit tests for backend routes (17 tests passing)
 - [x] Test music generation flow
+
+## Bug Fixes
+- [x] Fix "Failed to synthesize music" error (replaced lamejs with native WAV encoder)

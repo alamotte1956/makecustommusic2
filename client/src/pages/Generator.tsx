@@ -45,7 +45,7 @@ export default function Generator() {
   const audioUrlRef = useRef<string | null>(null);
 
   const generateMutation = trpc.songs.generate.useMutation();
-  const saveMp3Mutation = trpc.songs.saveMp3.useMutation();
+  const saveAudioMutation = trpc.songs.saveAudio.useMutation();
   const utils = trpc.useUtils();
 
   const handleGenerate = useCallback(async () => {
@@ -87,7 +87,7 @@ export default function Generator() {
           setProgress(40 + Math.round(p * 0.5));
           if (p < 50) setProgressMessage("Rendering notes...");
           else if (p < 70) setProgressMessage("Processing audio...");
-          else if (p < 90) setProgressMessage("Encoding MP3...");
+          else if (p < 90) setProgressMessage("Encoding audio...");
           else setProgressMessage("Finalizing...");
         }
       );
@@ -97,7 +97,7 @@ export default function Generator() {
       setAudioUrl(url);
       setMp3Blob(blob);
       setProgress(95);
-      setProgressMessage("Uploading MP3...");
+      setProgressMessage("Uploading audio...");
 
       // Step 3: Upload MP3 to storage
       try {
@@ -111,9 +111,9 @@ export default function Generator() {
           reader.readAsDataURL(blob);
         });
 
-        await saveMp3Mutation.mutateAsync({
+        await saveAudioMutation.mutateAsync({
           songId: song.id,
-          mp3Base64: base64,
+          audioBase64: base64,
         });
       } catch {
         // Non-critical: local playback still works
@@ -132,14 +132,14 @@ export default function Generator() {
       setIsGenerating(false);
       setIsSynthesizing(false);
     }
-  }, [keywords, generateMutation, saveMp3Mutation, utils]);
+  }, [keywords, generateMutation, saveAudioMutation, utils]);
 
   const handleDownload = useCallback(() => {
     if (!mp3Blob || !generatedSong) return;
     const url = URL.createObjectURL(mp3Blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${generatedSong.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
+    a.download = `${generatedSong.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.wav`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -366,7 +366,7 @@ export default function Generator() {
               <div className="flex flex-wrap gap-3 pt-2">
                 <Button onClick={handleDownload} disabled={!mp3Blob}>
                   <Download className="w-4 h-4 mr-2" />
-                  Download MP3
+                  Download Audio
                 </Button>
                 <Button
                   variant="outline"
