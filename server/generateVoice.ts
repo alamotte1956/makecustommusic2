@@ -102,11 +102,13 @@ export function registerGenerateVoiceRoute(app: Express) {
 
       // ── Voice Settings (matching user's preferred defaults) ──
       const voiceSettings = {
-        stability: typeof stability === "number" ? Math.max(0, Math.min(1, stability)) : 0.4,
+        stability: typeof stability === "number" ? Math.max(0, Math.min(1, stability)) : 0.5,
         similarity_boost:
           typeof similarityBoost === "number"
             ? Math.max(0, Math.min(1, similarityBoost))
-            : 0.75,
+            : 0.8,
+        style: 0.35,
+        use_speaker_boost: true,
       };
 
       // ── Call ElevenLabs TTS API ──
@@ -120,7 +122,7 @@ export function registerGenerateVoiceRoute(app: Express) {
         responseType: "arraybuffer",
         timeout: 60000,
         params: {
-          output_format: "mp3_44100_128",
+          output_format: "mp3_44100_192",
         },
         data: {
           text: lyrics,

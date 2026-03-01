@@ -60,10 +60,12 @@ export type TTSResult = {
   audioKey: string;
 };
 
-// Default voice settings matching the user's preferred configuration
+// Default voice settings for fuller, highly produced sound
 const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
-  stability: 0.4,
-  similarity_boost: 0.75,
+  stability: 0.5,
+  similarity_boost: 0.8,
+  style: 0.35,
+  use_speaker_boost: true,
 };
 
 // ─── Music Generation ───
@@ -99,7 +101,7 @@ export async function generateMusic(
       responseType: "arraybuffer",
       timeout: 120000, // 2 minutes - music generation can take time
       params: {
-        output_format: "mp3_44100_128",
+        output_format: "mp3_44100_192",
       },
     }
   );
@@ -159,7 +161,7 @@ export async function textToSpeech(
       responseType: "arraybuffer",
       timeout: 60000,
       params: {
-        output_format: "mp3_44100_128",
+        output_format: "mp3_44100_192",
       },
     }
   );

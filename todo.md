@@ -212,22 +212,22 @@
 ## ElevenLabs Features (Backend routes ready, frontend integration pending)
 ### Feature 1: Text-to-Speech Lyrics Preview
 - [x] Add tRPC route (songs.ttsPreview) to convert lyrics text to speech audio
-- [ ] Add "Listen to Lyrics" button on song cards (History, Favorites, AlbumDetail)
-- [ ] Play TTS audio inline with loading state
+- [x] Add "Listen to Lyrics" button on song cards (History, Favorites, AlbumDetail)
+- [x] Play TTS audio inline with loading state
 
 ### Feature 2: Voice Narration Intros/Outros
 - [x] Add tRPC route (songs.narration) to generate narration audio from custom text
-- [ ] Add UI on Generator/song detail to create intro/outro narration
-- [ ] Save narration audio to S3 and associate with song
+- [ ] Add UI on Generator/song detail to create intro/outro narration (future)
+- [ ] Save narration audio to S3 and associate with song (future)
 
 ### Feature 3: AI Vocal Generation
 - [x] Add tRPC route (songs.generateVocals) to generate singing/vocal track from lyrics
-- [ ] Add "Generate Vocals" button on song cards
-- [ ] Save vocal audio to S3 and associate with song
+- [ ] Add "Generate Vocals" button on song cards (future)
+- [ ] Save vocal audio to S3 and associate with song (future)
 
 ### Common
 - [x] Add voices route (songs.voices) to list ElevenLabs voices
-- [ ] Add voice selector dropdown (ElevenLabs voices) to UI
+- [x] Add voice selector dropdown (ElevenLabs voices) to UI
 
 ## SEO Fixes for Home Page
 - [x] Add keywords meta tag to home page (10 relevant keywords)
@@ -235,7 +235,7 @@
 - [x] Add meta description (50-160 characters, 155 chars)
 
 ## API Key Issue
-- [ ] ElevenLabs API key returns 401 (unauthorized) — user needs to provide a valid/active key
+- [x] ElevenLabs API key returns 401 (unauthorized) — resolved with new key
 
 ## ElevenLabs Voice Settings & TTS UI Integration
 - [x] Add voice_settings (stability, similarity_boost) to elevenLabsApi.ts TTS function

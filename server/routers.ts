@@ -16,6 +16,7 @@ import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { isElevenLabsAvailable, generateMusic, textToSpeech, getVoices } from "./elevenLabsApi";
+import { getGenreGuidance, getMoodGuidance, buildProductionPrompt } from "./songwritingHelpers";
 
 export const appRouter = router({
   system: systemRouter,
@@ -61,36 +62,18 @@ export const appRouter = router({
           throw new Error("ElevenLabs engine is not available. Please configure the ELEVENLABS_API_KEY.");
         }
 
-        // Build the prompt for ElevenLabs music generation
-        let prompt: string;
-        let forceInstrumental = false;
-
-        if (mode === "custom" && customLyrics && customStyle) {
-          // Custom Mode: build a detailed prompt from lyrics + style + title
-          prompt = `Create a song titled "${customTitle || "Untitled"}" in the style of ${customStyle}.`;
-          if (genre) prompt += ` Genre: ${genre}.`;
-          if (mood) prompt += ` Mood: ${mood}.`;
-          if (vocalType && vocalType !== "none") {
-            prompt += ` Vocals: ${vocalType}.`;
-          }
-          prompt += `\n\nLyrics:\n${customLyrics}`;
-        } else {
-          // Simple Mode: build a rich prompt from keywords + genre + mood + vocal
-          prompt = keywords;
-          if (genre) prompt += `, ${genre} style`;
-          if (mood) prompt += `, ${mood} mood`;
-          if (vocalType === "none") {
-            forceInstrumental = true;
-          } else if (vocalType) {
-            prompt += `, with ${vocalType} vocals`;
-          }
-          if (duration) prompt += `, ${duration} seconds long`;
-        }
-
-        // Truncate prompt to ElevenLabs limit (4100 chars)
-        if (prompt.length > 4100) {
-          prompt = prompt.substring(0, 4100);
-        }
+        // Build production-quality prompt using the songwriting helpers
+        const { prompt, forceInstrumental } = buildProductionPrompt({
+          keywords,
+          genre: genre || null,
+          mood: mood || null,
+          vocalType: vocalType || null,
+          duration: duration ?? 30,
+          mode: mode || "simple",
+          customTitle,
+          customLyrics,
+          customStyle,
+        });
 
         const durationMs = (duration ?? 30) * 1000;
 
@@ -109,7 +92,7 @@ export const appRouter = router({
           title: customTitle || keywords.substring(0, 100) || "ElevenLabs Track",
           keywords,
           abcNotation: null,
-          musicDescription: `Generated with ElevenLabs${mode === "custom" ? " (Custom Mode)" : ""}`,
+          musicDescription: `ElevenLabs${mode === "custom" ? " Custom" : " Simple"} | ${prompt.substring(0, 400)}`,
           audioUrl: result.audioUrl,
           mp3Url: result.audioUrl,
           mp3Key: result.audioKey,
@@ -131,7 +114,7 @@ export const appRouter = router({
         return song;
       }),
 
-    // Generate lyrics from a subject/topic using LLM
+    // Generate lyrics from a subject/topic using Claude Sonnet — best-in-class songwriter
     generateLyrics: protectedProcedure
       .input(z.object({
         subject: z.string().min(1).max(500),
@@ -143,30 +126,62 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { subject, genre, mood, vocalType, length } = input;
 
-        let styleHints = "";
-        if (genre) styleHints += ` in a ${genre} style`;
-        if (mood) styleHints += ` with a ${mood} mood`;
-        if (vocalType && vocalType !== "none") {
-          const vocalDesc = vocalType === "mixed" ? "a male and female duet" : `a ${vocalType} singer`;
-          styleHints += `, written for ${vocalDesc}`;
+        // Build vocal arrangement guidance
+        let vocalGuidance = "";
+        if (vocalType === "mixed") {
+          vocalGuidance = `\n\nVOCAL ARRANGEMENT: This is a DUET for male and female voices. Use [Male], [Female], and [Both] markers within sections to indicate who sings what. Create call-and-response moments, harmonized lines, and distinct perspectives for each voice. The interplay between voices should tell the story from two angles.`;
+        } else if (vocalType === "male") {
+          vocalGuidance = `\n\nVOCAL STYLE: Written for a male vocalist. Consider the natural range and emotional expression of male voices — from chest-voice power to falsetto vulnerability. Write lines that feel natural in a male register.`;
+        } else if (vocalType === "female") {
+          vocalGuidance = `\n\nVOCAL STYLE: Written for a female vocalist. Consider the natural range and emotional expression of female voices — from powerful belting to intimate whisper. Write lines that feel natural in a female register.`;
         }
 
+        // Get genre-specific and mood-specific songwriting guidance
+        const genreGuide = getGenreGuidance(genre || null);
+        const moodGuide = getMoodGuidance(mood || null);
+
         const isExtended = length === "extended";
-        const wordRange = isExtended ? "500-800" : "150-400";
-        const structureHint = isExtended
-          ? "Include at least 3 verses, a pre-chorus, a chorus, a bridge, and an outro. Make the lyrics rich with imagery, storytelling, and emotional depth."
-          : "Include verses, a chorus, and optionally a bridge.";
+        const wordRange = isExtended ? "400-700" : "150-350";
+        const structureGuide = isExtended
+          ? `STRUCTURE: Full radio-length song. Include: [Intro] (optional spoken/sung hook), [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Chorus] (final, with variation), [Outro]. The bridge MUST shift perspective, key, or energy — it's the emotional pivot of the entire song.`
+          : `STRUCTURE: Standard song. Include: [Verse 1], [Pre-Chorus] (optional but recommended), [Chorus], [Verse 2], [Chorus], [Bridge] (optional), [Chorus]. Keep it tight — every line earns its place.`;
+
+        const systemPrompt = `You are an elite, Grammy-caliber songwriter with 20 years of experience writing #1 hits across genres. You've written for the biggest artists in modern American music. Your lyrics are known for:
+
+1. HOOKS THAT HAUNT: Your choruses get stuck in people's heads for weeks. They're melodically singable, rhythmically tight, and emotionally devastating in their simplicity.
+
+2. SPECIFICITY OVER GENERALITY: You never write "I'm sad" — you write the exact moment, the specific detail, the precise image that MAKES the listener feel sad. A cracked phone screen. The 2:47 AM timestamp. The hoodie that still smells like them.
+
+3. CONVERSATIONAL AUTHENTICITY: Your lyrics sound like real people talk in 2025 America — not poetry class, not greeting cards. Natural cadence, contemporary language, real references.
+
+4. RHYTHMIC PRECISION: Every syllable is placed intentionally. Your verses have a natural flow that rappers respect and singers love. The words WANT to be sung — they fall naturally into rhythmic patterns.
+
+5. EMOTIONAL ARCHITECTURE: Each song has an emotional arc. Verse 1 sets the scene. Verse 2 deepens it. The pre-chorus builds tension. The chorus releases it. The bridge flips everything. The final chorus hits different because of the journey.
+
+6. SINGABILITY: You write for the VOICE, not the page. Short vowels on high notes. Open vowels on sustained notes. Consonant clusters that feel good in the mouth. Lines that breathe.
+
+RULES:
+- Output ONLY the lyrics with section markers: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro], etc.
+- NO explanations, NO commentary, NO notes about the song
+- Keep lyrics between ${wordRange} words
+- ${structureGuide}
+- Every line must be SINGABLE — read it aloud, does it flow naturally?
+- The chorus must work as a standalone 15-second clip (think TikTok/Reels virality)
+- Use internal rhymes and slant rhymes, not just end rhymes
+- Avoid clichés unless you're subverting them
+- Root everything in modern American culture (2024-2026)
+${genreGuide}${moodGuide}${vocalGuidance}`;
+
+        let userPrompt = `Write a hit song about: "${subject}"`;
+        if (genre) userPrompt += `\nGenre: ${genre}`;
+        if (mood) userPrompt += `\nMood: ${mood}`;
+        userPrompt += `\n\nMake it radio-ready. Make it unforgettable. Make it the kind of song that stops someone mid-scroll.`;
 
         const response = await invokeLLM({
+          model: "claude-sonnet-4-20250514",
           messages: [
-            {
-              role: "system",
-              content: `You are a professional songwriter. Write original song lyrics based on the user's subject. Format the lyrics with section markers like [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro], etc. The lyrics should be creative, emotionally resonant, and ready to be set to music. ${structureHint} Keep lyrics between ${wordRange} words. Do not include any explanation or commentary — output only the lyrics.`,
-            },
-            {
-              role: "user",
-              content: `Write song lyrics about the following subject${styleHints}:\n\n"${subject}"`,
-            },
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
           ],
         });
 
@@ -193,8 +208,10 @@ export const appRouter = router({
             text: input.text,
             voiceId: input.voiceId,
             voiceSettings: {
-              stability: input.stability ?? 0.4,
-              similarity_boost: input.similarityBoost ?? 0.75,
+              stability: input.stability ?? 0.5,
+              similarity_boost: input.similarityBoost ?? 0.8,
+              style: 0.35,
+              use_speaker_boost: true,
             },
           },
           ctx.user.id
@@ -223,8 +240,10 @@ export const appRouter = router({
             text: input.text,
             voiceId: input.voiceId,
             voiceSettings: {
-              stability: input.stability ?? 0.4,
-              similarity_boost: input.similarityBoost ?? 0.75,
+              stability: input.stability ?? 0.5,
+              similarity_boost: input.similarityBoost ?? 0.8,
+              style: 0.35,
+              use_speaker_boost: true,
             },
           },
           ctx.user.id
@@ -257,8 +276,10 @@ export const appRouter = router({
             text: input.lyrics,
             voiceId: input.voiceId,
             voiceSettings: {
-              stability: input.stability ?? 0.4,
-              similarity_boost: input.similarityBoost ?? 0.75,
+              stability: input.stability ?? 0.5,
+              similarity_boost: input.similarityBoost ?? 0.8,
+              style: 0.35,
+              use_speaker_boost: true,
             },
           },
           ctx.user.id

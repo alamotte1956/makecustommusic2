@@ -38,8 +38,8 @@ export default function ListenToLyricsButton({
 }: ListenToLyricsButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [voiceId, setVoiceId] = useState("");
-  const [stability, setStability] = useState(0.4);
-  const [similarityBoost, setSimilarityBoost] = useState(0.75);
+  const [stability, setStability] = useState(0.5);
+  const [similarityBoost, setSimilarityBoost] = useState(0.8);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
