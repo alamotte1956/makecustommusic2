@@ -144,15 +144,49 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
-            <div className="pt-2 border-t border-border">
-              {isAuthenticated ? (
-                <button
-                  onClick={() => { logout(); setMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
+            {/* Pricing & Usage links */}
+            <Link href="/pricing">
+              <span
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
+                  location === "/pricing" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <CreditCard className="w-4 h-4" />
+                Pricing
+              </span>
+            </Link>
+            {isAuthenticated && (
+              <Link href="/usage">
+                <span
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
+                    location === "/usage" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
+                  <BarChart3 className="w-4 h-4" />
+                  Usage
+                </span>
+              </Link>
+            )}
+            <div className="pt-2 border-t border-border space-y-1">
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => { startTour(); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    Guided Tour
+                  </button>
+                  <button
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </>
               ) : (
                 <a
                   href={getLoginUrl()}

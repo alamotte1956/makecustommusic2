@@ -522,3 +522,16 @@
 - [x] Add notifyOwner call when a new song is generated (both standard and sheet music flows)
 - [x] Include song title, genre, mood, user name, and generation mode in notification
 - [x] Fire-and-forget pattern so notifications don't block song delivery
+
+## Bug Fix: Mobile Player & Cross-Browser Compatibility
+- [x] Fix QueuePlayerBar mobile layout (separate mobile/desktop layouts, touch events, expandable controls)
+- [x] Fix AudioPlayer mobile and cross-browser compatibility (roundRect fallback, touch seek, Safari durationchange)
+- [x] Fix Safari audio autoplay and Web Audio API issues (webkitAudioContext fallback, play() error handling)
+- [x] Fix Firefox CSS and layout compatibility (roundRect canvas fallback)
+- [x] Audit all components for cross-browser issues (QueuePlayerContext, Metronome hook)
+- [x] Test mobile view in responsive mode (461 tests passing)
+
+## Bug Fix: Missing Pricing Link in Mobile Nav
+- [x] Add Pricing link to mobile navigation menu
+- [x] Add Usage link to mobile navigation menu (authenticated only)
+- [x] Add Guided Tour button to mobile navigation menu

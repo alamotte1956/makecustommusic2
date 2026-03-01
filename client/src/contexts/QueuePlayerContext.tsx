@@ -114,11 +114,22 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "metadata";
-    audio.crossOrigin = "anonymous";
+    // Note: crossOrigin removed — it can cause CORS failures on some CDNs/browsers
+    // Only needed if we do Web Audio API analysis on the queue player audio element
     audioRef.current = audio;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onLoadedMetadata = () => setDuration(audio.duration);
+    const onLoadedMetadata = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+    // Safari sometimes fires durationchange instead of/before loadedmetadata
+    const onDurationChange = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
     const onEnded = () => handleAutoNext();
     const onError = () => {
       setIsLoading(false);
@@ -127,12 +138,14 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
+    audio.addEventListener("durationchange", onDurationChange);
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+      audio.removeEventListener("durationchange", onDurationChange);
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
       audio.pause();
@@ -270,7 +283,13 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const play = useCallback(() => {
-    audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => {});
+    const audio = audioRef.current;
+    if (!audio) return;
+    // Handle autoplay restrictions (Safari, mobile Chrome)
+    audio.play().then(() => setIsPlaying(true)).catch((err) => {
+      console.warn("Playback blocked:", err?.message);
+      setIsPlaying(false);
+    });
   }, []);
 
   const pause = useCallback(() => {

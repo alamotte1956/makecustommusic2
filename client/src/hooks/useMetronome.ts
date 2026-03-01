@@ -216,9 +216,10 @@ export function useMetronome(
   const start = useCallback(() => {
     if (isPlayingRef.current) return;
 
-    // Create or resume AudioContext
+    // Create or resume AudioContext (with Safari fallback)
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioContext();
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      audioCtxRef.current = new AudioCtx();
     }
     if (audioCtxRef.current.state === "suspended") {
       audioCtxRef.current.resume();

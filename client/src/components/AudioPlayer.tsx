@@ -16,13 +16,25 @@ const COMPACT_BAR_COUNT = 50;
  * Extract waveform peaks from an audio source URL.
  * Uses Web Audio API to decode the audio buffer and compute
  * amplitude peaks for each bar in the visualization.
+ * Includes Safari/webkit fallback.
  */
 async function extractWaveformData(src: string, barCount: number): Promise<number[]> {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) throw new Error("No AudioContext");
+
+    const audioContext = new AudioCtx();
     const response = await fetch(src);
     const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    // Safari needs callback-based decodeAudioData in some versions
+    const audioBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+      audioContext.decodeAudioData(
+        arrayBuffer,
+        (buffer) => resolve(buffer),
+        (err) => reject(err)
+      );
+    });
 
     const channelData = audioBuffer.getChannelData(0);
     const samplesPerBar = Math.floor(channelData.length / barCount);
@@ -45,17 +57,46 @@ async function extractWaveformData(src: string, barCount: number): Promise<numbe
     audioContext.close();
     return normalized;
   } catch {
-    // Fallback: generate random-ish waveform if decoding fails
+    // Fallback: generate deterministic waveform if decoding fails
     return Array.from({ length: barCount }, (_, i) => {
       const x = i / barCount;
-      return 0.2 + 0.6 * Math.abs(Math.sin(x * Math.PI * 3)) * (0.5 + 0.5 * Math.random());
+      return 0.2 + 0.6 * Math.abs(Math.sin(x * Math.PI * 3)) * (0.5 + 0.5 * Math.abs(Math.cos(x * Math.PI * 5.3)));
     });
   }
 }
 
 /**
+ * Draw a rounded rectangle with fallback for browsers that don't support roundRect.
+ */
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(x, y, width, height, radius);
+  } else {
+    // Manual fallback for older Safari/Firefox
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.arcTo(x + width, y, x + width, y + r, r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.arcTo(x + width, y + height, x + width - r, y + height, r);
+    ctx.lineTo(x + r, y + height);
+    ctx.arcTo(x, y + height, x, y + height - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+}
+
+/**
  * Waveform component that renders bars on a canvas element.
- * Supports click-to-seek and shows played/unplayed sections with different colors.
+ * Supports click-to-seek, touch-to-seek, and shows played/unplayed sections.
  */
 function Waveform({
   peaks,
@@ -65,7 +106,7 @@ function Waveform({
   compact = false,
 }: {
   peaks: number[];
-  progress: number; // 0-1
+  progress: number;
   onSeek: (progress: number) => void;
   height?: number;
   compact?: boolean;
@@ -75,7 +116,6 @@ function Waveform({
   const [hoveredProgress, setHoveredProgress] = useState<number | null>(null);
   const animationRef = useRef<number>(0);
 
-  // Draw the waveform
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -100,7 +140,6 @@ function Waveform({
 
     ctx.clearRect(0, 0, w, h);
 
-    // Get CSS custom property colors
     const computedStyle = getComputedStyle(canvas);
     const playedColor = computedStyle.getPropertyValue("--waveform-played").trim() || "#7c3aed";
     const unplayedColor = computedStyle.getPropertyValue("--waveform-unplayed").trim() || "#3f3f46";
@@ -113,7 +152,6 @@ function Waveform({
       const y = (h - barHeight) / 2;
       const barProgress = (i + 0.5) / barCount;
 
-      // Determine color
       let color: string;
       if (barProgress <= progress) {
         color = playedColor;
@@ -123,15 +161,13 @@ function Waveform({
         color = unplayedColor;
       }
 
-      // Draw rounded bar
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barHeight, borderRadius);
+      drawRoundedRect(ctx, x, y, barWidth, barHeight, borderRadius);
       ctx.fill();
     }
   }, [peaks, progress, hoveredProgress, compact]);
 
-  // Animate on every frame for smooth updates
   useEffect(() => {
     const animate = () => {
       draw();
@@ -141,45 +177,41 @@ function Waveform({
     return () => cancelAnimationFrame(animationRef.current);
   }, [draw]);
 
-  // Handle resize
   useEffect(() => {
     const observer = new ResizeObserver(() => draw());
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [draw]);
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getProgressFromEvent = useCallback((clientX: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    const newProgress = Math.max(0, Math.min(1, x / rect.width));
-    onSeek(newProgress);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    setHoveredProgress(Math.max(0, Math.min(1, x / rect.width)));
-  };
-
-  const handleMouseLeave = () => setHoveredProgress(null);
+    if (!rect) return 0;
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  }, []);
 
   return (
-    <div ref={containerRef} className="w-full" style={{ height }}>
+    <div ref={containerRef} className="w-full touch-none" style={{ height }}>
       <canvas
         ref={canvasRef}
         className="w-full h-full cursor-pointer"
         style={{
-          // CSS custom properties for waveform colors
-          // These use oklch to match the app's color system
           ["--waveform-played" as any]: "oklch(0.541 0.281 293.009)",
           ["--waveform-unplayed" as any]: "oklch(0.4 0.05 293)",
           ["--waveform-hover" as any]: "oklch(0.7 0.15 293)",
         }}
-        onClick={handleClick}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onClick={(e) => onSeek(getProgressFromEvent(e.clientX))}
+        onMouseMove={(e) => setHoveredProgress(getProgressFromEvent(e.clientX))}
+        onMouseLeave={() => setHoveredProgress(null)}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          const touch = e.touches[0];
+          if (touch) onSeek(getProgressFromEvent(touch.clientX));
+        }}
+        onTouchMove={(e) => {
+          e.preventDefault();
+          const touch = e.touches[0];
+          if (touch) onSeek(getProgressFromEvent(touch.clientX));
+        }}
       />
     </div>
   );
@@ -226,16 +258,26 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
     if (!audio) return;
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+    };
+    // Safari sometimes fires durationchange instead of loadedmetadata
+    const handleDurationChange = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
     const handleEnded = () => setIsPlaying(false);
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("durationchange", handleDurationChange);
     audio.addEventListener("ended", handleEnded);
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("durationchange", handleDurationChange);
       audio.removeEventListener("ended", handleEnded);
     };
   }, [src]);
@@ -250,12 +292,20 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      await audio.play();
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        // Use play() promise for proper error handling across browsers
+        await audio.play();
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      // Handle autoplay restrictions (common on mobile Safari/Chrome)
+      console.warn("Playback failed:", err);
+      setIsPlaying(false);
     }
-    setIsPlaying(!isPlaying);
   }, [isPlaying]);
 
   const handleWaveformSeek = useCallback(
@@ -285,7 +335,7 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
   if (compact) {
     return (
       <div className="flex items-center gap-2">
-        <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
+        <audio ref={audioRef} src={src} preload="metadata" />
         <Button
           variant="ghost"
           size="icon"
@@ -311,8 +361,8 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
+    <div className="rounded-xl border border-border bg-card p-3 sm:p-4 space-y-3">
+      <audio ref={audioRef} src={src} preload="metadata" />
 
       {title && (
         <p className="text-sm font-medium text-card-foreground truncate">{title}</p>
@@ -360,7 +410,7 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
               setVolume(v[0]);
               setIsMuted(false);
             }}
-            className="w-24"
+            className="w-20 sm:w-24"
           />
         </div>
       </div>
