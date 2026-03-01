@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-describe("ElevenLabs API Key Configuration", () => {
+describe("ElevenLabs API Key Validation", () => {
   it("should have ELEVENLABS_API_KEY set in environment", () => {
     const key = process.env.ELEVENLABS_API_KEY;
     expect(key).toBeDefined();
@@ -10,15 +10,11 @@ describe("ElevenLabs API Key Configuration", () => {
 
   it("should authenticate with ElevenLabs API (list voices)", async () => {
     const key = process.env.ELEVENLABS_API_KEY;
-    if (!key || key.length === 0) {
-      // Skip if no key configured
-      return;
-    }
+    if (!key || key.length === 0) return;
     const res = await fetch("https://api.elevenlabs.io/v1/voices", {
       headers: { "xi-api-key": key },
     });
-    // Accept 200 (valid key) or 401 (invalid key) — both confirm the endpoint works
-    // A valid key returns 200; an expired/invalid key returns 401
+    // Accept 200 (valid key) or 401 (invalid/expired key)
     expect([200, 401]).toContain(res.status);
     if (res.status === 200) {
       const data = await res.json();
@@ -29,13 +25,10 @@ describe("ElevenLabs API Key Configuration", () => {
 
   it("should reach ElevenLabs API (list models)", async () => {
     const key = process.env.ELEVENLABS_API_KEY;
-    if (!key || key.length === 0) {
-      return;
-    }
+    if (!key || key.length === 0) return;
     const res = await fetch("https://api.elevenlabs.io/v1/models", {
       headers: { "xi-api-key": key },
     });
-    // Accept 200 (valid key) or 401 (invalid key)
     expect([200, 401]).toContain(res.status);
     if (res.status === 200) {
       const data = await res.json();

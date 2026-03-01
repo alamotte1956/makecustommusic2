@@ -187,19 +187,24 @@ describe("songs router", () => {
       const caller = appRouter.createCaller(ctx);
 
       // Input validation should accept custom mode fields
-      const promise = caller.songs.generate({
-        keywords: "custom song",
-        engine: "elevenlabs",
-        mode: "custom",
-        customTitle: "My Custom Song",
-        customLyrics: "[Verse 1]\nHello world\n[Chorus]\nLa la la",
-        customStyle: "pop, female vocals, upbeat",
-        duration: 60,
-      });
-
-      // Should not throw a Zod validation error (may throw ElevenLabs API error)
-      await expect(promise).rejects.not.toThrow(/invalid_type/i);
-    });
+      try {
+        const result = await caller.songs.generate({
+          keywords: "custom song",
+          engine: "elevenlabs",
+          mode: "custom",
+          customTitle: "My Custom Song",
+          customLyrics: "[Verse 1]\nHello world\n[Chorus]\nLa la la",
+          customStyle: "pop, female vocals, upbeat",
+          duration: 60,
+        });
+        // If it succeeds, verify we got a song back
+        expect(result).toBeTruthy();
+      } catch (e: any) {
+        // Should not be a Zod validation error
+        expect(e.message).not.toMatch(/invalid_type/i);
+        expect(e.message).not.toMatch(/invalid_enum_value/i);
+      }
+    }, 120000);
 
     it("validates customLyrics max length", async () => {
       const { ctx } = createAuthContext();
