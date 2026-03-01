@@ -1,12 +1,15 @@
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { getLoginUrl } from "@/const";
 import {
   CreditCard, TrendingUp, Music, Mic, FileText, Guitar,
-  ArrowUpRight, ArrowDownRight, Clock, Sparkles,
+  ArrowUpRight, ArrowDownRight, Clock, Sparkles, ExternalLink,
+  Loader2, CheckCircle2, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 function ProgressBar({ value, max, color = "bg-violet-600" }: { value: number; max: number; color?: string }) {
   const pct = max <= 0 ? 0 : Math.min(100, (value / max) * 100);
@@ -19,8 +22,58 @@ function ProgressBar({ value, max, color = "bg-violet-600" }: { value: number; m
 
 export default function UsageDashboard() {
   const { user, loading } = useAuth();
-  const { data: summary, isLoading: summaryLoading } = trpc.credits.summary.useQuery(undefined, { enabled: !!user });
-  const { data: history, isLoading: historyLoading } = trpc.credits.history.useQuery({ limit: 30 }, { enabled: !!user });
+  const searchString = useSearch();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = trpc.credits.summary.useQuery(undefined, { enabled: !!user });
+  const { data: history, isLoading: historyLoading, refetch: refetchHistory } = trpc.credits.history.useQuery({ limit: 30 }, { enabled: !!user });
+  const { data: stripeStatus } = trpc.credits.stripeStatus.useQuery();
+
+  const createPortalSession = trpc.credits.createPortalSession.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        window.open(data.url, "_blank");
+      }
+      setPortalLoading(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to open billing portal");
+      setPortalLoading(false);
+    },
+  });
+
+  // Handle checkout success redirect
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    if (params.get("checkout") === "success") {
+      setShowSuccess(true);
+      // Refetch data after successful checkout
+      const timer = setTimeout(() => {
+        refetchSummary();
+        refetchHistory();
+      }, 2000);
+      // Clear URL params
+      window.history.replaceState({}, "", "/usage");
+      // Hide success banner after 8 seconds
+      const hideTimer = setTimeout(() => setShowSuccess(false), 8000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(hideTimer);
+      };
+    }
+  }, [searchString]);
+
+  const handleManageBilling = () => {
+    if (!stripeStatus?.configured) {
+      toast.error("Billing portal is not available yet.");
+      return;
+    }
+    setPortalLoading(true);
+    createPortalSession.mutate({
+      returnUrl: `${window.location.origin}/usage`,
+    });
+  };
 
   if (loading || summaryLoading) {
     return (
@@ -45,6 +98,7 @@ export default function UsageDashboard() {
   const limits = summary?.limits;
   const balance = summary?.balance;
   const usage = summary?.usage;
+  const subscription = summary?.subscription;
 
   const planLabel: Record<string, string> = {
     free: "Free",
@@ -74,6 +128,22 @@ export default function UsageDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-12">
+        {/* Checkout Success Banner */}
+        {showSuccess && (
+          <div className="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-800">Payment successful!</p>
+              <p className="text-xs text-green-600 mt-0.5">
+                Your account has been updated. Credits may take a moment to appear.
+              </p>
+            </div>
+            <button onClick={() => setShowSuccess(false)} className="text-green-400 hover:text-green-600">
+              &times;
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -84,13 +154,62 @@ export default function UsageDashboard() {
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${planColor[plan]}`}>
               {planLabel[plan]} Plan
             </span>
+            {plan !== "free" && subscription?.stripeCustomerId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManageBilling}
+                disabled={portalLoading}
+              >
+                {portalLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <Settings className="h-4 w-4 mr-1" />
+                )}
+                Manage Billing
+              </Button>
+            )}
             <Link href="/pricing">
               <Button variant="outline" size="sm">
-                {plan === "free" ? "Upgrade" : "Manage Plan"}
+                {plan === "free" ? "Upgrade" : "Change Plan"}
               </Button>
             </Link>
           </div>
         </div>
+
+        {/* Subscription Info (for paid plans) */}
+        {plan !== "free" && subscription && (
+          <div className="rounded-xl border bg-gradient-to-r from-violet-50 to-fuchsia-50 p-5 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-black">
+                  {planLabel[plan]} Plan — {subscription.billingCycle === "annual" ? "Annual" : "Monthly"}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {subscription.status === "active" && subscription.currentPeriodEnd && (
+                    <>Next billing date: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</>
+                  )}
+                  {subscription.status === "past_due" && (
+                    <span className="text-amber-600 font-medium">Payment past due — please update your payment method</span>
+                  )}
+                  {subscription.status === "canceled" && (
+                    <span className="text-red-600 font-medium">Subscription canceled — access until period end</span>
+                  )}
+                </p>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                subscription.status === "active" ? "bg-green-100 text-green-700" :
+                subscription.status === "past_due" ? "bg-amber-100 text-amber-700" :
+                "bg-red-100 text-red-700"
+              }`}>
+                {subscription.status === "active" ? "Active" :
+                 subscription.status === "past_due" ? "Past Due" :
+                 subscription.status === "trialing" ? "Trial" :
+                 "Canceled"}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Credit Balance Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -201,6 +320,25 @@ export default function UsageDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Quick Actions for free users */}
+        {plan === "free" && (
+          <div className="rounded-xl border bg-gradient-to-r from-violet-50 to-fuchsia-50 p-5 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-black">Want more songs?</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Upgrade to Creator for 100 songs/month, studio mastering, and commercial rights.
+                </p>
+              </div>
+              <Link href="/pricing">
+                <Button className="bg-violet-600 hover:bg-violet-700 text-white">
+                  View Plans <ArrowUpRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Transaction History */}
         <div className="rounded-xl border bg-card">

@@ -26,8 +26,18 @@ import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssm
 import {
   getUserPlan, getCreditBalance, deductCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
+  getUserSubscription,
 } from "./credits";
 import { PLAN_LIMITS, type PlanName } from "../drizzle/schema";
+import { STRIPE_PLANS, CREDIT_PACKS, type StripePlanId, type CreditPackId } from "./stripeProducts";
+import Stripe from "stripe";
+import { ENV } from "./_core/env";
+
+function getStripe(): Stripe | null {
+  const key = ENV.STRIPE_SECRET_KEY;
+  if (!key) return null;
+  return new Stripe(key, { apiVersion: "2025-02-24.acacia" as any });
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -1076,6 +1086,172 @@ RULES:
             ],
           },
         ],
+      };
+    }),
+
+    // ─── Stripe Checkout ─────────────────────────────────────────────
+    // Create a Stripe Checkout session for a subscription plan
+    createCheckout: protectedProcedure
+      .input(z.object({
+        planId: z.enum(["creator", "professional", "studio"]),
+        billingCycle: z.enum(["monthly", "annual"]).default("monthly"),
+        successUrl: z.string().url(),
+        cancelUrl: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const stripe = getStripe();
+        if (!stripe) throw new Error("Stripe is not configured. Please set STRIPE_SECRET_KEY.");
+
+        const plan = STRIPE_PLANS[input.planId as StripePlanId];
+        if (!plan) throw new Error(`Invalid plan: ${input.planId}`);
+
+        const priceInCents = input.billingCycle === "annual" ? plan.prices.annual : plan.prices.monthly;
+        const interval = input.billingCycle === "annual" ? "year" : "month";
+
+        // Check if user already has a Stripe customer ID
+        const existingSub = await getUserSubscription(ctx.user.id);
+        const customerOptions: Stripe.Checkout.SessionCreateParams.CustomerCreation = "always";
+
+        const sessionParams: Stripe.Checkout.SessionCreateParams = {
+          mode: "subscription",
+          client_reference_id: String(ctx.user.id),
+          metadata: {
+            user_id: String(ctx.user.id),
+            plan_tier: input.planId,
+            customer_email: ctx.user.email || "",
+          },
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: plan.name,
+                  description: plan.description,
+                  metadata: plan.metadata,
+                },
+                unit_amount: priceInCents,
+                recurring: { interval },
+              },
+              quantity: 1,
+            },
+          ],
+          subscription_data: {
+            metadata: {
+              user_id: String(ctx.user.id),
+              plan_tier: input.planId,
+            },
+          },
+          success_url: input.successUrl,
+          cancel_url: input.cancelUrl,
+        };
+
+        // If user already has a Stripe customer, reuse it
+        if (existingSub?.stripeCustomerId) {
+          sessionParams.customer = existingSub.stripeCustomerId;
+        } else {
+          sessionParams.customer_creation = customerOptions;
+          if (ctx.user.email) {
+            sessionParams.customer_email = ctx.user.email;
+          }
+        }
+
+        const session = await stripe.checkout.sessions.create(sessionParams);
+        return { url: session.url, sessionId: session.id };
+      }),
+
+    // Create a Stripe Checkout session for a one-time credit pack purchase
+    buyCredits: protectedProcedure
+      .input(z.object({
+        packId: z.enum(["starter", "creator_pack", "studio_pack"]),
+        successUrl: z.string().url(),
+        cancelUrl: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const stripe = getStripe();
+        if (!stripe) throw new Error("Stripe is not configured. Please set STRIPE_SECRET_KEY.");
+
+        const pack = CREDIT_PACKS[input.packId as CreditPackId];
+        if (!pack) throw new Error(`Invalid credit pack: ${input.packId}`);
+
+        const existingSub = await getUserSubscription(ctx.user.id);
+
+        const sessionParams: Stripe.Checkout.SessionCreateParams = {
+          mode: "payment",
+          client_reference_id: String(ctx.user.id),
+          metadata: {
+            user_id: String(ctx.user.id),
+            pack_type: "credits",
+            pack_name: pack.name,
+            credits: String(pack.credits),
+          },
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: pack.name,
+                  description: pack.description,
+                },
+                unit_amount: pack.priceInCents,
+              },
+              quantity: 1,
+            },
+          ],
+          success_url: input.successUrl,
+          cancel_url: input.cancelUrl,
+        };
+
+        if (existingSub?.stripeCustomerId) {
+          sessionParams.customer = existingSub.stripeCustomerId;
+        } else {
+          sessionParams.customer_creation = "always";
+          if (ctx.user.email) {
+            sessionParams.customer_email = ctx.user.email;
+          }
+        }
+
+        const session = await stripe.checkout.sessions.create(sessionParams);
+        return { url: session.url, sessionId: session.id };
+      }),
+
+    // Create a Stripe Customer Portal session for billing management
+    createPortalSession: protectedProcedure
+      .input(z.object({
+        returnUrl: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const stripe = getStripe();
+        if (!stripe) throw new Error("Stripe is not configured. Please set STRIPE_SECRET_KEY.");
+
+        const sub = await getUserSubscription(ctx.user.id);
+        if (!sub?.stripeCustomerId) {
+          throw new Error("No billing account found. Please subscribe to a plan first.");
+        }
+
+        const session = await stripe.billingPortal.sessions.create({
+          customer: sub.stripeCustomerId,
+          return_url: input.returnUrl,
+        });
+
+        return { url: session.url };
+      }),
+
+    // Get available credit packs for purchase
+    creditPacks: publicProcedure.query(() => {
+      return Object.values(CREDIT_PACKS).map(pack => ({
+        id: pack.id,
+        name: pack.name,
+        description: pack.description,
+        price: pack.priceInCents / 100,
+        credits: pack.credits,
+        pricePerCredit: (pack.priceInCents / 100 / pack.credits).toFixed(2),
+      }));
+    }),
+
+    // Check if Stripe is configured
+    stripeStatus: publicProcedure.query(() => {
+      return {
+        configured: !!ENV.STRIPE_SECRET_KEY,
       };
     }),
 

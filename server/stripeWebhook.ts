@@ -1,0 +1,303 @@
+import express from "express";
+import Stripe from "stripe";
+import { ENV } from "./_core/env";
+import { upsertSubscription, getUserSubscription, refillMonthlyCredits, addPurchasedCredits } from "./credits";
+import { getPlanFromMetadata, getCreditPackFromMetadata } from "./stripeProducts";
+import { getDb } from "./db";
+import { eq } from "drizzle-orm";
+import { users, userSubscriptions } from "../drizzle/schema";
+import type { PlanName } from "../drizzle/schema";
+
+function getStripe(): Stripe {
+  const key = ENV.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
+  return new Stripe(key, { apiVersion: "2025-02-24.acacia" as any });
+}
+
+// Find user ID from Stripe customer ID
+async function findUserByStripeCustomerId(stripeCustomerId: string): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [sub] = await db
+    .select()
+    .from(userSubscriptions)
+    .where(eq(userSubscriptions.stripeCustomerId, stripeCustomerId))
+    .limit(1);
+  return sub?.userId ?? null;
+}
+
+// Find user ID from email
+async function findUserByEmail(email: string): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  return user?.id ?? null;
+}
+
+export function registerStripeWebhookRoute(app: express.Express) {
+  // CRITICAL: This route must be registered BEFORE express.json() middleware
+  // The raw body is needed for Stripe signature verification
+  app.post(
+    "/api/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      const stripe = getStripe();
+      const sig = req.headers["stripe-signature"];
+      const webhookSecret = ENV.STRIPE_WEBHOOK_SECRET;
+
+      if (!sig || !webhookSecret) {
+        console.error("[Stripe Webhook] Missing signature or webhook secret");
+        return res.status(400).json({ error: "Missing signature or webhook secret" });
+      }
+
+      let event: Stripe.Event;
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } catch (err: any) {
+        console.error("[Stripe Webhook] Signature verification failed:", err.message);
+        return res.status(400).json({ error: `Webhook signature verification failed: ${err.message}` });
+      }
+
+      console.log(`[Stripe Webhook] Received event: ${event.type} (${event.id})`);
+
+      // Handle test events
+      if (event.id.startsWith("evt_test_")) {
+        console.log("[Stripe Webhook] Test event detected, returning verification response");
+        return res.json({ verified: true });
+      }
+
+      try {
+        switch (event.type) {
+          case "checkout.session.completed":
+            await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+            break;
+
+          case "customer.subscription.created":
+          case "customer.subscription.updated":
+            await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+            break;
+
+          case "customer.subscription.deleted":
+            await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+            break;
+
+          case "invoice.paid":
+            await handleInvoicePaid(event.data.object as Stripe.Invoice);
+            break;
+
+          case "invoice.payment_failed":
+            await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+            break;
+
+          default:
+            console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        }
+
+        res.json({ received: true });
+      } catch (err: any) {
+        console.error(`[Stripe Webhook] Error handling ${event.type}:`, err);
+        res.status(500).json({ error: "Webhook handler error" });
+      }
+    }
+  );
+}
+
+// ─── Event Handlers ────────────────────────────────────────────────────────
+
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const userId = session.client_reference_id
+    ? parseInt(session.client_reference_id, 10)
+    : session.metadata?.user_id
+      ? parseInt(session.metadata.user_id, 10)
+      : null;
+
+  if (!userId) {
+    // Try to find user by email
+    const email = session.customer_email || session.metadata?.customer_email;
+    if (email) {
+      const foundUserId = await findUserByEmail(email);
+      if (foundUserId) {
+        return processCheckout(foundUserId, session);
+      }
+    }
+    console.error("[Stripe Webhook] checkout.session.completed: No user ID found", session.id);
+    return;
+  }
+
+  await processCheckout(userId, session);
+}
+
+async function processCheckout(userId: number, session: Stripe.Checkout.Session) {
+  const customerId = typeof session.customer === "string"
+    ? session.customer
+    : session.customer?.id;
+
+  if (session.mode === "subscription") {
+    // Subscription checkout — the subscription.created/updated webhook will handle the details
+    // Just link the Stripe customer ID to the user
+    const subscriptionId = typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id;
+
+    console.log(`[Stripe Webhook] Subscription checkout completed for user ${userId}, subscription: ${subscriptionId}`);
+
+    // The actual plan activation happens in handleSubscriptionUpdated
+    // But we ensure the customer ID is linked
+    if (customerId) {
+      const existing = await getUserSubscription(userId);
+      if (!existing || !existing.stripeCustomerId) {
+        await upsertSubscription(userId, {
+          plan: existing?.plan as PlanName ?? "free",
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId ?? undefined,
+        });
+      }
+    }
+  } else if (session.mode === "payment") {
+    // One-time payment — credit pack purchase
+    const packMeta = session.metadata ?? {};
+    const credits = parseInt(packMeta.credits ?? "0", 10);
+
+    if (credits > 0) {
+      const packName = packMeta.pack_name ?? "Credit Pack";
+      await addPurchasedCredits(userId, credits, `Purchased ${packName} (${credits} credits)`);
+      console.log(`[Stripe Webhook] Added ${credits} purchased credits for user ${userId}`);
+    }
+
+    // Link customer ID if not already linked
+    if (customerId) {
+      const existing = await getUserSubscription(userId);
+      if (existing && !existing.stripeCustomerId) {
+        await upsertSubscription(userId, {
+          plan: existing.plan as PlanName,
+          stripeCustomerId: customerId,
+        });
+      }
+    }
+  }
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  const customerId = typeof subscription.customer === "string"
+    ? subscription.customer
+    : subscription.customer.id;
+
+  let userId = await findUserByStripeCustomerId(customerId);
+
+  // If not found by customer ID, try metadata
+  if (!userId && subscription.metadata?.user_id) {
+    userId = parseInt(subscription.metadata.user_id, 10);
+  }
+
+  if (!userId) {
+    console.error(`[Stripe Webhook] subscription.updated: No user found for customer ${customerId}`);
+    return;
+  }
+
+  // Get plan tier from the subscription's product metadata
+  const item = subscription.items.data[0];
+  const priceId = item?.price?.id;
+  const productMetadata = (item?.price?.product as Stripe.Product)?.metadata ?? {};
+  const planTier = getPlanFromMetadata(productMetadata) ?? getPlanFromMetadata(subscription.metadata ?? {});
+
+  if (!planTier) {
+    console.error(`[Stripe Webhook] subscription.updated: No plan tier found in metadata for subscription ${subscription.id}`);
+    return;
+  }
+
+  // Map Stripe subscription status to our status
+  const statusMap: Record<string, "active" | "canceled" | "past_due" | "trialing" | "incomplete"> = {
+    active: "active",
+    past_due: "past_due",
+    canceled: "canceled",
+    incomplete: "incomplete",
+    trialing: "trialing",
+    incomplete_expired: "canceled",
+    unpaid: "past_due",
+    paused: "canceled",
+  };
+
+  const status = statusMap[subscription.status] ?? "active";
+  const billingCycle = item?.price?.recurring?.interval === "year" ? "annual" as const : "monthly" as const;
+
+  await upsertSubscription(userId, {
+    plan: planTier,
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: subscription.id,
+    stripePriceId: priceId,
+    status,
+    billingCycle,
+    currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+    currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+  });
+
+  console.log(`[Stripe Webhook] Updated subscription for user ${userId}: plan=${planTier}, status=${status}`);
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const customerId = typeof subscription.customer === "string"
+    ? subscription.customer
+    : subscription.customer.id;
+
+  const userId = await findUserByStripeCustomerId(customerId);
+  if (!userId) {
+    console.error(`[Stripe Webhook] subscription.deleted: No user found for customer ${customerId}`);
+    return;
+  }
+
+  // Downgrade to free plan
+  await upsertSubscription(userId, {
+    plan: "free",
+    status: "canceled",
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: subscription.id,
+  });
+
+  console.log(`[Stripe Webhook] Subscription canceled for user ${userId}, downgraded to free`);
+}
+
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  const customerId = typeof invoice.customer === "string"
+    ? invoice.customer
+    : invoice.customer?.id;
+
+  if (!customerId) return;
+
+  const userId = await findUserByStripeCustomerId(customerId);
+  if (!userId) {
+    console.log(`[Stripe Webhook] invoice.paid: No user found for customer ${customerId}`);
+    return;
+  }
+
+  // If this is a subscription renewal invoice, refill monthly credits
+  if ((invoice as any).subscription) {
+    await refillMonthlyCredits(userId);
+    console.log(`[Stripe Webhook] Refilled monthly credits for user ${userId} (invoice paid)`);
+  }
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const customerId = typeof invoice.customer === "string"
+    ? invoice.customer
+    : invoice.customer?.id;
+
+  if (!customerId) return;
+
+  const userId = await findUserByStripeCustomerId(customerId);
+  if (!userId) return;
+
+  // Update subscription status to past_due
+  const existing = await getUserSubscription(userId);
+  if (existing) {
+    await upsertSubscription(userId, {
+      plan: existing.plan as PlanName,
+      status: "past_due",
+      stripeCustomerId: customerId,
+    });
+    console.log(`[Stripe Webhook] Payment failed for user ${userId}, status set to past_due`);
+  }
+}

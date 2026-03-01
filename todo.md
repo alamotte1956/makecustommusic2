@@ -346,3 +346,21 @@
 - [x] Ensure private songs are never returned in public queries
 - [x] Add creator name/avatar display on public song cards
 - [x] Write tests for visibility and public song routes
+
+## Stripe Payment Gateway Integration
+- [x] Add Stripe feature to project scaffold (webdev_add_feature)
+- [x] Configure Stripe API keys (secret key + publishable key + webhook secret in ENV)
+- [x] Create Stripe products and price configuration (stripeProducts.ts with 3 plans + 3 credit packs)
+- [x] Build Stripe Checkout session creation endpoint (credits.createCheckout for subscriptions)
+- [x] Build Stripe Checkout for one-time credit pack purchases (credits.buyCredits)
+- [x] Build Stripe webhook handler for subscription events (stripeWebhook.ts)
+- [x] Handle subscription lifecycle: created, updated, cancelled, payment_failed, invoice.paid
+- [x] Connect Stripe subscriptions to credit system (auto-refill credits on invoice.paid)
+- [x] Update Pricing page with real Stripe checkout buttons (redirects to Stripe Checkout)
+- [x] Add subscription management (cancel, change plan) to Usage Dashboard
+- [x] Add Stripe customer portal link for billing management (credits.createPortalSession)
+- [x] Add checkout success handling with banner on Usage Dashboard
+- [x] Add credit packs API endpoint (credits.creditPacks)
+- [x] Add Stripe status check endpoint (credits.stripeStatus)
+- [x] Write tests for Stripe integration (23 tests in stripe.test.ts)
+- [x] All 283 tests passing across 16 test files
