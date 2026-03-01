@@ -15,6 +15,21 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// Song take for multiple vocal variations
+export type SongTake = {
+  index: number;
+  label: string; // e.g., "Take 1 - Warm", "Take 2 - Bright"
+  vocalUrl: string;
+  mixedUrl: string;
+  voiceSettings: {
+    stability: number;
+    similarity_boost: number;
+    style: number;
+    use_speaker_boost: boolean;
+  };
+  createdAt: number; // Unix timestamp ms
+};
+
 export const songs = mysqlTable("songs", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -39,9 +54,44 @@ export const songs = mysqlTable("songs", {
   shareToken: varchar("shareToken", { length: 64 }),
   externalSongId: varchar("externalSongId", { length: 100 }),
   imageUrl: text("imageUrl"),
+  sheetMusicAbc: text("sheetMusicAbc"),
+  chordProgression: json("chordProgression").$type<ChordProgressionData>(),
+  // Studio production fields
+  instrumentalUrl: text("instrumentalUrl"),
+  vocalUrl: text("vocalUrl"),
+  mixedUrl: text("mixedUrl"),
+  takes: json("takes").$type<SongTake[]>(),
+  selectedTakeIndex: int("selectedTakeIndex").default(0),
+  postProcessPreset: varchar("postProcessPreset", { length: 50 }).default("radio-ready"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+
+// Chord progression data structure
+export type ChordSection = {
+  section: string; // e.g., "Verse 1", "Chorus"
+  chords: string[]; // e.g., ["Am", "F", "C", "G"]
+  strummingPattern: string; // e.g., "D DU UDU"
+  bpm: number;
+};
+
+export type GuitarChordDiagram = {
+  name: string; // e.g., "Am"
+  frets: number[]; // e.g., [-1, 0, 2, 2, 1, 0] (-1 = muted, 0 = open)
+  fingers: number[]; // e.g., [0, 0, 2, 3, 1, 0]
+  barres: { fromString: number; toString: number; fret: number }[];
+  baseFret: number;
+};
+
+export type ChordProgressionData = {
+  key: string; // e.g., "Am" or "C"
+  capo: number; // 0 = no capo
+  tempo: number;
+  timeSignature: string; // e.g., "4/4"
+  sections: ChordSection[];
+  chordDiagrams: GuitarChordDiagram[];
+  notes: string; // Additional playing notes/tips
+};
 
 export type Song = typeof songs.$inferSelect;
 export type InsertSong = typeof songs.$inferInsert;

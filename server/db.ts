@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -146,6 +146,42 @@ export async function getSongByShareToken(shareToken: string) {
   if (!db) throw new Error("Database not available");
   const result = await db.select().from(songs).where(eq(songs.shareToken, shareToken)).limit(1);
   return result[0] ?? null;
+}
+
+export async function updateSongSheetMusic(id: number, sheetMusicAbc: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ sheetMusicAbc }).where(eq(songs.id, id));
+}
+
+export async function updateSongChordProgression(id: number, chordProgression: ChordProgressionData) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ chordProgression }).where(eq(songs.id, id));
+}
+
+export async function updateSongStems(id: number, data: {
+  instrumentalUrl?: string;
+  vocalUrl?: string;
+  mixedUrl?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set(data).where(eq(songs.id, id));
+}
+
+export async function updateSongTakes(id: number, takes: SongTake[], selectedTakeIndex?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: Record<string, unknown> = { takes };
+  if (selectedTakeIndex !== undefined) updateData.selectedTakeIndex = selectedTakeIndex;
+  await db.update(songs).set(updateData).where(eq(songs.id, id));
+}
+
+export async function updateSongPostProcessPreset(id: number, preset: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ postProcessPreset: preset }).where(eq(songs.id, id));
 }
 
 export async function updateSong(

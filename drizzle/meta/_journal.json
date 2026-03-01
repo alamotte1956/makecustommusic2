@@ -71,6 +71,20 @@
       "when": 1772331533787,
       "tag": "0009_right_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1772336814741,
+      "tag": "0010_abnormal_sentry",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1772337907998,
+      "tag": "0011_flashy_rafael_vega",
+      "breakpoints": true
     }
   ]
 }

@@ -267,3 +267,61 @@
 - [x] Upload generated TTS audio to S3 for persistent URLs
 - [x] Write tests for /api/generate-voice endpoint
 - [x] Write tests for rate limiting
+
+## World-Class Enhancements
+
+### Sheet Music Generation (Downloadable/Printable PDF)
+- [x] Add backend route to generate professional sheet music from song lyrics + genre + mood using Claude Sonnet
+- [x] Generate lead sheet with melody notation, lyrics aligned under notes, tempo/key markings
+- [x] Render sheet music as SVG using abcjs library (ABC notation → visual score)
+- [x] Add PDF export using print window for downloadable/printable sheet music
+- [x] Add "Sheet Music" tab on song detail page
+- [x] Store generated sheet music data (ABC notation) in database
+
+### Chord Progressions for Acoustic Guitar
+- [x] Add backend route to generate chord progressions tailored for acoustic guitar
+- [x] Include chord names, fingering positions, strumming patterns, and capo recommendations
+- [x] Build guitar chord diagram component (SVG-based fretboard visualization)
+- [x] Display chord progression timeline aligned with song sections (verse, chorus, bridge)
+- [x] Add "Guitar Chords" tab on song detail page
+- [x] Make chord charts downloadable as PDF (print window)
+
+### World-Class Polish
+- [x] Add professional song detail page with tabs: Lyrics, Sheet Music, Guitar Chords
+- [x] Improve loading animations with skeleton screens and progress indicators
+- [x] Add toast notifications for all user actions
+- [x] Ensure all pages have proper empty states with CTAs
+
+## Headline Text Change
+- [x] Replace "Turn Your Words Into Music" with "Turn Your Ideas into Songs" on Home page
+
+## Studio-Grade Production Enhancements
+
+### 1. Audio Post-Processing (FFmpeg)
+- [x] Install FFmpeg on server
+- [x] Build audioPostProcess module with reverb, EQ, and compression filters
+- [x] Apply post-processing to generated audio before S3 upload
+- [x] Add processing preset options (raw, warm, bright, radio-ready, cinematic)
+
+### 2. Vocal-Instrumental Mixing
+- [x] Build vocal-instrumental mixer that layers TTS vocal over instrumental track
+- [x] Auto-balance volume levels (vocal prominence vs instrumental bed)
+- [x] Generate mixed output as single MP3 file
+- [x] Store mixed audio URL in database
+
+### 3. Tempo-Synced Delivery (SSML)
+- [x] Add SSML markup generation based on song BPM and time signature
+- [x] Align vocal pacing with instrumental tempo using tempo-aware text processing
+- [x] Adjust voice settings (stability/style) based on BPM for natural pacing
+
+### 4. Multiple Takes
+- [x] Generate 3 vocal variations per song with different voice settings
+- [x] Store all takes in database with take number and labels
+- [x] Build take selector UI for user to audition and pick best take
+- [x] Allow switching between takes with instant playback
+
+### 5. Stem Separation
+- [x] Offer separate instrumental and vocal stem downloads
+- [x] Store stem URLs in database (instrumentalUrl, vocalUrl, mixedUrl)
+- [x] Add stem download buttons on song detail page
+- [x] Build Studio tab in SongDetail with mastering presets, mixing controls, and stem downloads

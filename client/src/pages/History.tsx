@@ -8,8 +8,9 @@ import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic, FileText
 } from "lucide-react";
+import { Link } from "wouter";
 import FavoriteButton from "@/components/FavoriteButton";
 import EditSongDialog from "@/components/EditSongDialog";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
@@ -367,6 +368,12 @@ export default function History() {
                           {song.lyrics && (
                             <ListenToLyricsButton lyrics={song.lyrics} size="sm" />
                           )}
+                          <Link href={`/songs/${song.id}`}>
+                            <Button variant="outline" size="sm">
+                              <FileText className="w-3.5 h-3.5 mr-1.5" />
+                              Details
+                            </Button>
+                          </Link>
                           <FavoriteButton songId={song.id} size="sm" />
 
                           <Button

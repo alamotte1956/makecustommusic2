@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
+import { Link } from "wouter";
 
 type GeneratedSong = {
   id: number;
@@ -714,6 +715,12 @@ export default function Generator() {
                     {showLyrics ? "Hide" : "View"} Lyrics
                   </Button>
                 )}
+                <Link href={`/songs/${generatedSong.id}`}>
+                  <Button variant="outline">
+                    <Music className="w-4 h-4 mr-2" />
+                    Sheet Music & Chords
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

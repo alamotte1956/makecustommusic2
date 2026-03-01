@@ -10,6 +10,7 @@ import History from "./pages/History";
 import Albums from "./pages/Albums";
 import AlbumDetail from "./pages/AlbumDetail";
 import Favorites from "./pages/Favorites";
+import SongDetail from "./pages/SongDetail";
 import Layout from "./components/Layout";
 import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
@@ -23,6 +24,7 @@ function Router() {
       <Route path={"/albums"} component={Albums} />
       <Route path={"/albums/:id"} component={AlbumDetail} />
       <Route path={"/favorites"} component={Favorites} />
+      <Route path={"/songs/:id"} component={SongDetail} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

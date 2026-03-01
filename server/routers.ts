@@ -7,16 +7,21 @@ import { invokeLLM } from "./_core/llm";
 import {
   createSong, getSongById, getUserSongs, deleteSong, updateSong, updateSongMp3,
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
+  updateSongSheetMusic, updateSongChordProgression,
+  updateSongStems, updateSongTakes, updateSongPostProcessPreset,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
   reorderAlbumSongs,
   toggleFavorite, getUserFavorites, getUserFavoriteIds
 } from "./db";
+import type { ChordProgressionData } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { isElevenLabsAvailable, generateMusic, textToSpeech, getVoices } from "./elevenLabsApi";
 import { getGenreGuidance, getMoodGuidance, buildProductionPrompt } from "./songwritingHelpers";
+import { postProcessAudio, mixVocalInstrumental, prepareStemDownloads, getPresets, type ProcessingPreset } from "./audioProcessor";
+import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssmlBuilder";
 
 export const appRouter = router({
   system: systemRouter,
@@ -418,6 +423,388 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
       .mutation(async ({ ctx, input }) => {
         await deleteSong(input.id, ctx.user.id);
         return { success: true };
+      }),
+
+    // Generate professional sheet music (ABC notation) from song data
+    generateSheetMusic: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+
+        // If already generated, return cached
+        if (song.sheetMusicAbc) {
+          return { abcNotation: song.sheetMusicAbc };
+        }
+
+        const songContext = [
+          `Title: ${song.title}`,
+          song.genre ? `Genre: ${song.genre}` : null,
+          song.mood ? `Mood: ${song.mood}` : null,
+          song.keySignature ? `Key: ${song.keySignature}` : null,
+          song.timeSignature ? `Time Signature: ${song.timeSignature}` : null,
+          song.tempo ? `Tempo: ${song.tempo} BPM` : null,
+          song.lyrics ? `Lyrics:\n${song.lyrics}` : null,
+        ].filter(Boolean).join("\n");
+
+        const response = await invokeLLM({
+          model: "claude-sonnet-4-20250514",
+          messages: [
+            {
+              role: "system",
+              content: `You are a professional music arranger and sheet music engraver. Generate valid ABC notation for a lead sheet based on the song information provided.
+
+RULES:
+- Output ONLY valid ABC notation, no explanations
+- Include the X: (reference number), T: (title), M: (meter), L: (default note length), Q: (tempo), K: (key) headers
+- Write a singable melody line that matches the lyrics and genre
+- Align lyrics under notes using w: lines
+- Use appropriate key signature for the genre (e.g., minor keys for dark/melancholic, major for happy/uplifting)
+- Include dynamics and expression marks where appropriate
+- For songs without lyrics, write an instrumental melody
+- Keep the notation clean and professional — this will be rendered as printable sheet music
+- Use standard ABC notation features: bar lines |, repeat signs :|, section markers [P:Verse], etc.
+- Ensure the melody is musically coherent and matches the mood/genre
+- Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
+- The output must be parseable by abcjs library`,
+            },
+            {
+              role: "user",
+              content: `Generate a professional lead sheet in ABC notation for this song:\n\n${songContext}`,
+            },
+          ],
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        const abcNotation = typeof rawContent === "string" ? rawContent.trim() : null;
+        if (!abcNotation) {
+          throw new Error("Failed to generate sheet music. Please try again.");
+        }
+
+        // Clean up: extract just the ABC notation if wrapped in markdown code blocks
+        const cleanAbc = abcNotation.replace(/^```[a-z]*\n?/gm, "").replace(/```$/gm, "").trim();
+
+        // Save to database
+        await updateSongSheetMusic(input.songId, cleanAbc);
+
+        return { abcNotation: cleanAbc };
+      }),
+
+    // Generate chord progression for acoustic guitar
+    generateChordProgression: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+
+        // If already generated, return cached
+        if (song.chordProgression) {
+          return { chordProgression: song.chordProgression as ChordProgressionData };
+        }
+
+        const songContext = [
+          `Title: ${song.title}`,
+          song.genre ? `Genre: ${song.genre}` : null,
+          song.mood ? `Mood: ${song.mood}` : null,
+          song.keySignature ? `Key: ${song.keySignature}` : null,
+          song.tempo ? `Tempo: ${song.tempo} BPM` : null,
+          song.lyrics ? `Lyrics:\n${song.lyrics}` : null,
+        ].filter(Boolean).join("\n");
+
+        const response = await invokeLLM({
+          model: "claude-sonnet-4-20250514",
+          messages: [
+            {
+              role: "system",
+              content: `You are a professional guitar instructor and music arranger specializing in acoustic guitar. Generate a complete chord progression analysis for a song, optimized for acoustic guitar performance.
+
+You MUST respond with ONLY a valid JSON object (no markdown, no explanation) matching this exact structure:
+{
+  "key": "Am",
+  "capo": 0,
+  "tempo": 120,
+  "timeSignature": "4/4",
+  "sections": [
+    {
+      "section": "Verse 1",
+      "chords": ["Am", "F", "C", "G"],
+      "strummingPattern": "D DU UDU",
+      "bpm": 120
+    }
+  ],
+  "chordDiagrams": [
+    {
+      "name": "Am",
+      "frets": [-1, 0, 2, 2, 1, 0],
+      "fingers": [0, 0, 2, 3, 1, 0],
+      "barres": [],
+      "baseFret": 1
+    }
+  ],
+  "notes": "Playing tips and performance notes"
+}
+
+RULES:
+- Choose guitar-friendly keys (C, G, D, A, E, Am, Em, Dm are preferred)
+- If the song's natural key isn't guitar-friendly, recommend a capo position to simplify chords
+- frets array: 6 values for strings E-A-D-G-B-e. -1 = muted, 0 = open, 1+ = fret number
+- fingers array: 0 = not pressed, 1 = index, 2 = middle, 3 = ring, 4 = pinky
+- barres: only include if the chord requires a barre (e.g., F major, Bm)
+- Include ALL unique chords used across all sections in chordDiagrams
+- Strumming patterns should match the genre and feel (D=down, U=up, x=mute)
+- Match sections to the song's lyrics structure (Verse 1, Pre-Chorus, Chorus, Bridge, etc.)
+- Include practical playing tips in the notes field
+- For modern pop/rock, use common progressions (I-V-vi-IV, vi-IV-I-V, etc.)
+- The chord progression should sound good on acoustic guitar specifically`,
+            },
+            {
+              role: "user",
+              content: `Generate a complete acoustic guitar chord progression for this song:\n\n${songContext}`,
+            },
+          ],
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        if (!rawContent || typeof rawContent !== "string") {
+          throw new Error("Failed to generate chord progression. Please try again.");
+        }
+
+        // Parse the JSON response
+        let chordProgression: ChordProgressionData;
+        try {
+          // Clean up potential markdown wrapping
+          const cleanJson = rawContent.replace(/^```[a-z]*\n?/gm, "").replace(/```$/gm, "").trim();
+          chordProgression = JSON.parse(cleanJson);
+        } catch {
+          throw new Error("Failed to parse chord progression data. Please try again.");
+        }
+
+        // Save to database
+        await updateSongChordProgression(input.songId, chordProgression);
+
+        return { chordProgression };
+      }),
+
+    // ─── Studio Production Routes ───
+
+    // Get available processing presets
+    processingPresets: publicProcedure.query(() => {
+      return getPresets();
+    }),
+
+    // Post-process a song's audio with a preset
+    postProcess: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        preset: z.enum(["raw", "warm", "bright", "radio-ready", "cinematic"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+        if (!song.audioUrl) throw new Error("Song has no audio to process");
+
+        const result = await postProcessAudio(song.audioUrl, input.preset, ctx.user.id);
+        await updateSongAudioUrl(song.id, result.url);
+        await updateSongPostProcessPreset(song.id, input.preset);
+
+        return { audioUrl: result.url, preset: input.preset };
+      }),
+
+    // Generate vocal track from lyrics and mix with instrumental
+    generateVocalMix: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        voiceId: z.string().min(1),
+        voiceSettings: z.object({
+          stability: z.number().min(0).max(1).optional(),
+          similarity_boost: z.number().min(0).max(1).optional(),
+          style: z.number().min(0).max(1).optional(),
+          use_speaker_boost: z.boolean().optional(),
+        }).optional(),
+        vocalLevel: z.number().min(-10).max(10).optional(),
+        instrumentalLevel: z.number().min(-10).max(10).optional(),
+        preset: z.enum(["raw", "warm", "bright", "radio-ready", "cinematic"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+        if (!song.lyrics) throw new Error("Song has no lyrics for vocal generation");
+        if (!song.audioUrl) throw new Error("Song has no instrumental track");
+
+        // Apply tempo-synced pacing to lyrics
+        const songBpm = song.tempo ?? (song.genre ? estimateBpmFromGenre(song.genre) : 110);
+        const tempoSyncedLyrics = addTempoSync(song.lyrics, {
+          bpm: songBpm,
+          timeSignature: song.timeSignature ?? "4/4",
+          genre: song.genre ?? undefined,
+          mood: song.mood ?? undefined,
+        });
+
+        // Get tempo-aware voice setting adjustments
+        const tempoAdjust = getTempoVoiceSettings(songBpm);
+        const baseStability = input.voiceSettings?.stability ?? 0.5;
+        const baseStyle = input.voiceSettings?.style ?? 0.35;
+
+        // Generate the vocal track via TTS with tempo-synced text and adjusted settings
+        const vocalResult = await textToSpeech({
+          text: tempoSyncedLyrics,
+          voiceId: input.voiceId,
+          modelId: "eleven_multilingual_v2",
+          voiceSettings: {
+            stability: Math.max(0, Math.min(1, baseStability + tempoAdjust.stabilityAdjust)),
+            similarity_boost: input.voiceSettings?.similarity_boost ?? 0.8,
+            style: Math.max(0, Math.min(1, baseStyle + tempoAdjust.styleAdjust)),
+            use_speaker_boost: input.voiceSettings?.use_speaker_boost ?? true,
+          },
+        }, ctx.user.id);
+
+        // Mix vocal over instrumental
+        const mixResult = await mixVocalInstrumental(
+          song.audioUrl,
+          vocalResult.audioUrl,
+          ctx.user.id,
+          {
+            vocalLevel: input.vocalLevel ?? 2,
+            instrumentalLevel: input.instrumentalLevel ?? -3,
+            preset: input.preset ?? "radio-ready",
+          }
+        );
+
+        // Save stems and mix to database
+        await updateSongStems(song.id, {
+          instrumentalUrl: song.audioUrl,
+          vocalUrl: vocalResult.audioUrl,
+          mixedUrl: mixResult.mixedUrl,
+        });
+
+        return {
+          vocalUrl: vocalResult.audioUrl,
+          mixedUrl: mixResult.mixedUrl,
+          instrumentalUrl: song.audioUrl,
+        };
+      }),
+
+    // Generate multiple takes with different voice settings
+    generateTakes: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        voiceId: z.string().min(1),
+        takeCount: z.number().min(2).max(3).default(3),
+        preset: z.enum(["raw", "warm", "bright", "radio-ready", "cinematic"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+        if (!song.lyrics) throw new Error("Song has no lyrics for vocal generation");
+        if (!song.audioUrl) throw new Error("Song has no instrumental track");
+
+        // Define voice setting variations for each take
+        const takeVariations = [
+          { label: "Take 1 — Warm & Intimate", stability: 0.6, similarity_boost: 0.85, style: 0.25, use_speaker_boost: true },
+          { label: "Take 2 — Energetic & Bright", stability: 0.4, similarity_boost: 0.75, style: 0.5, use_speaker_boost: true },
+          { label: "Take 3 — Smooth & Polished", stability: 0.55, similarity_boost: 0.9, style: 0.35, use_speaker_boost: true },
+        ].slice(0, input.takeCount);
+
+        const takes = [];
+
+        for (let i = 0; i < takeVariations.length; i++) {
+          const variation = takeVariations[i];
+
+          // Generate vocal with this variation's settings
+          const vocalResult = await textToSpeech({
+            text: song.lyrics,
+            voiceId: input.voiceId,
+            modelId: "eleven_multilingual_v2",
+            voiceSettings: {
+              stability: variation.stability,
+              similarity_boost: variation.similarity_boost,
+              style: variation.style,
+              use_speaker_boost: variation.use_speaker_boost,
+            },
+          }, ctx.user.id);
+
+          // Mix with instrumental
+          const mixResult = await mixVocalInstrumental(
+            song.audioUrl,
+            vocalResult.audioUrl,
+            ctx.user.id,
+            { preset: input.preset ?? "radio-ready" }
+          );
+
+          takes.push({
+            index: i,
+            label: variation.label,
+            vocalUrl: vocalResult.audioUrl,
+            mixedUrl: mixResult.mixedUrl,
+            voiceSettings: {
+              stability: variation.stability,
+              similarity_boost: variation.similarity_boost,
+              style: variation.style,
+              use_speaker_boost: variation.use_speaker_boost,
+            },
+            createdAt: Date.now(),
+          });
+        }
+
+        // Save all takes and set the first as selected
+        await updateSongTakes(song.id, takes, 0);
+        // Also save the first take's stems
+        await updateSongStems(song.id, {
+          instrumentalUrl: song.audioUrl,
+          vocalUrl: takes[0].vocalUrl,
+          mixedUrl: takes[0].mixedUrl,
+        });
+
+        return { takes };
+      }),
+
+    // Select a specific take as the active one
+    selectTake: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        takeIndex: z.number().min(0).max(2),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+        const takes = (song.takes as any[]) ?? [];
+        if (input.takeIndex >= takes.length) throw new Error("Take not found");
+
+        const selectedTake = takes[input.takeIndex];
+        await updateSongTakes(song.id, takes, input.takeIndex);
+        await updateSongStems(song.id, {
+          vocalUrl: selectedTake.vocalUrl,
+          mixedUrl: selectedTake.mixedUrl,
+        });
+
+        return { selectedTakeIndex: input.takeIndex, take: selectedTake };
+      }),
+
+    // Get stem download URLs
+    getStems: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        processPreset: z.enum(["raw", "warm", "bright", "radio-ready", "cinematic"]).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+
+        const instrumentalUrl = song.instrumentalUrl || song.audioUrl;
+        const vocalUrl = song.vocalUrl;
+
+        if (!instrumentalUrl) throw new Error("No instrumental track available");
+
+        return {
+          instrumentalUrl,
+          vocalUrl: vocalUrl || null,
+          mixedUrl: song.mixedUrl || null,
+          hasStems: !!vocalUrl,
+        };
       }),
   }),
 
