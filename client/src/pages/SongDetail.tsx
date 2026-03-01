@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { copyToClipboard } from "@/lib/clipboard";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,7 @@ export default function SongDetail() {
 
   const handleShare = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await copyToClipboard(window.location.href);
       toast.success("Link copied to clipboard!");
     } catch {
       toast.error("Failed to copy link");

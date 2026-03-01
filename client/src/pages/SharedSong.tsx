@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { copyToClipboard } from "@/lib/clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +85,7 @@ export default function SharedSong() {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await copyToClipboard(window.location.href);
       toast.success("Link copied to clipboard!");
     } catch {
       toast.error("Failed to copy link");

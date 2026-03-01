@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { copyToClipboard } from "@/lib/clipboard";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -101,7 +102,7 @@ export default function Favorites() {
     try {
       const result = await shareMutation.mutateAsync({ songId: song.id });
       const shareUrl = `${window.location.origin}/share/${result.shareToken}`;
-      await navigator.clipboard.writeText(shareUrl);
+      await copyToClipboard(shareUrl);
       toast.success("Share link copied to clipboard!");
     } catch {
       toast.error("Failed to create share link");

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
+import { copyToClipboard } from "@/lib/clipboard";
 import { Link } from "wouter";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
@@ -325,7 +326,7 @@ export default function Generator() {
     try {
       const result = await shareMutation.mutateAsync({ songId: generatedSong.id });
       const shareUrl = `${window.location.origin}/share/${result.shareToken}`;
-      await navigator.clipboard.writeText(shareUrl);
+      await copyToClipboard(shareUrl);
       toast.success("Share link copied to clipboard!");
     } catch {
       toast.error("Failed to create share link");

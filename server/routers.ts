@@ -30,7 +30,8 @@ import {
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
   getUserSubscription,
 } from "./credits";
-import { PLAN_LIMITS, type PlanName } from "../drizzle/schema";
+import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName } from "../drizzle/schema";
+import { ensureReferralCode, getReferralStats, getReferralHistory, getUserByReferralCode, processReferral } from "./referrals";
 import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
@@ -1495,6 +1496,35 @@ RULES:
       .mutation(async ({ ctx, input }) => {
         await deleteNotification(input.id, ctx.user.id);
         return { success: true };
+      }),
+  }),
+
+  // ─── Referrals ─────────────────────────────────────────────────────────────
+  referrals: router({
+    getInfo: protectedProcedure.query(async ({ ctx }) => {
+      const code = await ensureReferralCode(ctx.user.id);
+      const stats = await getReferralStats(ctx.user.id);
+      return {
+        referralCode: code,
+        ...stats,
+      };
+    }),
+
+    getHistory: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
+      .query(async ({ ctx, input }) => {
+        return getReferralHistory(ctx.user.id, input?.limit ?? 50);
+      }),
+
+    claim: protectedProcedure
+      .input(z.object({ code: z.string().min(1).max(16) }))
+      .mutation(async ({ ctx, input }) => {
+        const referrer = await getUserByReferralCode(input.code);
+        if (!referrer) return { success: false, reason: "invalid_code" };
+        if (referrer.id === ctx.user.id) return { success: false, reason: "self_referral" };
+
+        const result = await processReferral(referrer.id, ctx.user.id, input.code);
+        return { success: result, reason: result ? null : "already_referred" };
       }),
   }),
 });

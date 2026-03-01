@@ -10,6 +10,8 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  referralCode: varchar("referralCode", { length: 16 }).unique(),
+  referredBy: int("referredBy"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -244,3 +246,19 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// ─── Referrals ───
+
+export const referrals = mysqlTable("referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  referrerId: int("referrerId").notNull(),
+  referredUserId: int("referredUserId").notNull(),
+  referralCode: varchar("referralCode", { length: 16 }).notNull(),
+  creditsAwarded: int("creditsAwarded").default(5).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;
+
+export const REFERRAL_BONUS_CREDITS = 5;

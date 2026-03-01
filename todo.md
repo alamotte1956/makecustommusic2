@@ -651,3 +651,22 @@
 - [x] Update plan features text in server/routers.ts allPlans procedure
 - [x] Update all hardcoded credit values in Pricing, FAQ, Terms, UsageDashboard, and stripeProducts.ts
 - [x] Update tests to reflect new credit values (535 tests passing across 25 files)
+
+## Referral System (5 bonus credits per signup)
+- [x] Add referrals table to schema (id, referrerId, referredUserId, referralCode, status, creditAwarded, createdAt)
+- [x] Add referralCode field to users table
+- [x] Push database migration
+- [x] Build DB helpers: ensureReferralCode, getReferralStats, processReferral, getReferralHistory, getUserByReferralCode
+- [x] Build tRPC procedures: referrals.getInfo, referrals.getHistory, referrals.claim
+- [x] Wire referral tracking via useReferral hook (captures ?ref= param, claims on login)
+- [x] Award 5 bonus credits to referrer when referred user completes signup
+- [x] Build Referrals page UI with shareable invite link, stats cards, and referral history table
+- [x] Register /referrals route in App.tsx and add navigation/footer link
+- [x] Write tests for referral logic (31 tests, 566 total passing across 26 files)
+
+## Safari Browser Compatibility
+- [x] Add clipboard fallback for Safari (copyToClipboard utility with execCommand fallback)
+- [x] Wrap localStorage access in try/catch for Safari private browsing (ThemeContext, DashboardLayout, useAuth, CookieConsent, useReferral)
+- [x] Ensure navigator.share graceful fallback with AbortError handling
+- [x] Verify URL constructor and replaceState work in Safari
+- [x] Test referral flow end-to-end in Safari-compatible patterns (31 referral tests passing)

@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
 import CookieConsent from "@/components/CookieConsent";
 import { useState } from "react";
@@ -273,6 +273,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-border">|</span>
             <Link href="/faq">
               <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">FAQ</span>
+            </Link>
+            <span className="text-border">|</span>
+            <Link href="/referrals">
+              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Invite Friends</span>
             </Link>
           </div>
           <p>© 2026 MakeCustomMusic.com</p>

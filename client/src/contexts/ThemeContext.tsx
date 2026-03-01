@@ -16,6 +16,14 @@ interface ThemeProviderProps {
   switchable?: boolean;
 }
 
+/** Safari private browsing may throw on localStorage access */
+function safeGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeSet(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* noop */ }
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "light",
@@ -23,7 +31,7 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (switchable) {
-      const stored = localStorage.getItem("theme");
+      const stored = safeGet("theme");
       return (stored as Theme) || defaultTheme;
     }
     return defaultTheme;
@@ -38,7 +46,7 @@ export function ThemeProvider({
     }
 
     if (switchable) {
-      localStorage.setItem("theme", theme);
+      safeSet("theme", theme);
     }
   }, [theme, switchable]);
 

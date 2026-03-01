@@ -7,13 +7,21 @@ const STORAGE_KEY = "cookie-consent";
 
 type ConsentValue = "accepted" | "declined";
 
+/** Safari private browsing may throw on localStorage access */
+function safeStorageGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeStorageSet(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* noop */ }
+}
+
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
     // Only show if no consent decision has been stored
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = safeStorageGet(STORAGE_KEY);
     if (!stored) {
       // Small delay so the banner slides up after the page loads
       const timer = setTimeout(() => {
@@ -26,7 +34,7 @@ export default function CookieConsent() {
   }, []);
 
   const handleConsent = (value: ConsentValue) => {
-    localStorage.setItem(STORAGE_KEY, value);
+    safeStorageSet(STORAGE_KEY, value);
     setAnimating(false);
     // Wait for the slide-down animation to finish before unmounting
     setTimeout(() => setVisible(false), 300);

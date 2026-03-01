@@ -19,10 +19,12 @@ import SharedSong from "./pages/SharedSong";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import FAQ from "./pages/FAQ";
+import Referrals from "./pages/Referrals";
 import Layout from "./components/Layout";
 import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
 import TourTooltip from "./components/TourTooltip";
+import { useReferral } from "./hooks/useReferral";
 
 function Router() {
   return (
@@ -42,10 +44,16 @@ function Router() {
       <Route path={"/privacy"} component={Privacy} />
       <Route path={"/terms"} component={Terms} />
       <Route path={"/faq"} component={FAQ} />
+      <Route path={"/referrals"} component={Referrals} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
+}
+
+function ReferralCapture() {
+  useReferral();
+  return null;
 }
 
 function App() {
@@ -60,6 +68,7 @@ function App() {
             </Layout>
             <QueuePlayerBar />
             <TourTooltip />
+            <ReferralCapture />
           </TooltipProvider>
         </QueuePlayerProvider>
       </ThemeProvider>
