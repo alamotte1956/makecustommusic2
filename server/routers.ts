@@ -1037,7 +1037,14 @@ RULES:
 
         if (album && input.songIds && input.songIds.length > 0) {
           for (let i = 0; i < input.songIds.length; i++) {
-            await addSongToAlbum(album.id, input.songIds[i], i);
+            // Verify each song belongs to the user
+            const song = await getSongById(input.songIds[i]);
+            if (!song || song.userId !== ctx.user.id) continue;
+            try {
+              await addSongToAlbum(album.id, input.songIds[i], i);
+            } catch {
+              // Skip duplicates or invalid songs
+            }
           }
         }
 
@@ -1090,8 +1097,18 @@ RULES:
       .mutation(async ({ ctx, input }) => {
         const album = await getAlbumById(input.albumId);
         if (!album || album.userId !== ctx.user.id) throw new Error("Album not found");
+        // Verify the song belongs to the user
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
         const count = await getAlbumSongCount(input.albumId);
-        await addSongToAlbum(input.albumId, input.songId, count);
+        try {
+          await addSongToAlbum(input.albumId, input.songId, count);
+        } catch (err: any) {
+          if (err.message?.includes("already in this album")) {
+            throw new Error("This song is already in the album");
+          }
+          throw err;
+        }
         return { success: true };
       }),
 
@@ -1101,6 +1118,8 @@ RULES:
         songId: z.number(),
       }))
       .mutation(async ({ ctx, input }) => {
+        const album = await getAlbumById(input.albumId);
+        if (!album || album.userId !== ctx.user.id) throw new Error("Album not found");
         await removeSongFromAlbum(input.albumId, input.songId);
         return { success: true };
       }),

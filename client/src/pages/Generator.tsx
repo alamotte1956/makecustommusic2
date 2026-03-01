@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import AudioPlayer from "@/components/AudioPlayer";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Download, Music, Loader2,
@@ -19,6 +19,7 @@ import {
 import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 type GeneratedSong = {
   id: number;
@@ -195,6 +196,15 @@ export default function Generator() {
   const isElevenLabsAvailable = enginesQuery.data?.elevenlabs ?? false;
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
 
+  // Auto-trigger onboarding tour for first-time users
+  const { hasCompletedTour, startTour, isActive: tourIsActive } = useOnboarding();
+  useEffect(() => {
+    if (!hasCompletedTour && !tourIsActive && isAuthenticated) {
+      const timer = setTimeout(() => startTour(), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [hasCompletedTour, tourIsActive, isAuthenticated, startTour]);
+
   /* ── Handlers ── */
 
   const handleGenerateLyrics = useCallback(async () => {
@@ -355,7 +365,7 @@ export default function Generator() {
       {/* ═══════════════════════════════════════════════ */}
       {/* STEP 1 — Choose how to create                  */}
       {/* ═══════════════════════════════════════════════ */}
-      <Card>
+      <Card data-tour="creation-mode">
         <CardContent className="pt-5 pb-5 space-y-3">
           <StepHeader step={1} title="How do you want to create?" />
 
@@ -394,7 +404,7 @@ export default function Generator() {
       {/* ═══════════════════════════════════════════════ */}
       {/* STEP 2 — Your content                          */}
       {/* ═══════════════════════════════════════════════ */}
-      <Card>
+      <Card data-tour="content-input">
         <CardContent className="pt-5 pb-5 space-y-4">
           <StepHeader
             step={2}
@@ -700,7 +710,7 @@ export default function Generator() {
       {/* ═══════════════════════════════════════════════ */}
       {/* STEP 3 — Genre & Mood                          */}
       {/* ═══════════════════════════════════════════════ */}
-      <Card>
+      <Card data-tour="genre-mood">
         <CardContent className="pt-5 pb-5 space-y-4">
           <StepHeader step={3} title="Choose a genre and mood" subtitle="Pick one of each, or skip to let AI decide." />
 
@@ -721,7 +731,7 @@ export default function Generator() {
       {/* ═══════════════════════════════════════════════ */}
       {/* STEP 4 — Vocals & Duration                     */}
       {/* ═══════════════════════════════════════════════ */}
-      <Card>
+      <Card data-tour="vocals-duration">
         <CardContent className="pt-5 pb-5 space-y-4">
           <StepHeader step={4} title="Vocals and duration" />
 
@@ -789,7 +799,7 @@ export default function Generator() {
       {/* ═══════════════════════════════════════════════ */}
       {/* STEP 5 — Generate                              */}
       {/* ═══════════════════════════════════════════════ */}
-      <Card className={canGenerate ? "border-primary/50 shadow-sm" : ""}>
+      <Card data-tour="generate-button" className={canGenerate ? "border-primary/50 shadow-sm" : ""}>
         <CardContent className="pt-5 pb-5">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-1">

@@ -8,8 +8,15 @@ import { toast } from "sonner";
 import { useRoute, Link } from "wouter";
 import {
   Disc3, Music, Download, Loader2, Trash2, FolderDown, GripVertical,
-  ArrowLeft, Play, Pause, X, ChevronDown, ChevronUp, ImagePlus, Sparkles, ListMusic, Pencil
+  ArrowLeft, Play, Pause, X, ChevronDown, ChevronUp, ImagePlus, Sparkles, ListMusic, Pencil, Plus, Check, Search
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import FavoriteButton from "@/components/FavoriteButton";
 import EditSongDialog from "@/components/EditSongDialog";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
@@ -213,7 +220,13 @@ export default function AlbumDetail() {
   const removeSongMutation = trpc.albums.removeSong.useMutation();
   const generateCoverMutation = trpc.albums.generateCover.useMutation();
   const reorderMutation = trpc.albums.reorderSongs.useMutation();
+  const addSongMutation = trpc.albums.addSong.useMutation();
   const utils = trpc.useUtils();
+
+  // Fetch user's songs for the "Add Songs" dialog
+  const { data: userSongs } = trpc.songs.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   const {
     loadQueue, currentSong, isPlaying, togglePlay, queueName,
@@ -224,6 +237,9 @@ export default function AlbumDetail() {
   const [editingSong, setEditingSong] = useState<any>(null);
   const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [showAddSongs, setShowAddSongs] = useState(false);
+  const [addSongSearch, setAddSongSearch] = useState("");
+  const [addingSongId, setAddingSongId] = useState<number | null>(null);
 
   // DnD sensors
   const sensors = useSensors(
@@ -393,6 +409,42 @@ export default function AlbumDetail() {
     }
   }, [albumId, generateCoverMutation, utils]);
 
+  const handleAddSong = useCallback(async (songId: number) => {
+    setAddingSongId(songId);
+    try {
+      await addSongMutation.mutateAsync({ albumId, songId });
+      utils.albums.getById.invalidate({ id: albumId });
+      utils.albums.list.invalidate();
+      toast.success("Song added to album!");
+    } catch (err: any) {
+      const msg = err.message || "";
+      if (msg.includes("already in")) {
+        toast.error("This song is already in the album");
+      } else {
+        toast.error("Failed to add song");
+      }
+    } finally {
+      setAddingSongId(null);
+    }
+  }, [albumId, addSongMutation, utils]);
+
+  // Filter available songs for the Add Songs dialog
+  const albumSongIds = useMemo(
+    () => new Set((album?.songs ?? []).map((s: any) => s.id)),
+    [album?.songs]
+  );
+  const filteredAvailableSongs = useMemo(() => {
+    if (!userSongs) return [];
+    const available = userSongs.filter((s: any) => !albumSongIds.has(s.id));
+    if (!addSongSearch.trim()) return available;
+    const q = addSongSearch.toLowerCase();
+    return available.filter((s: any) =>
+      s.title?.toLowerCase().includes(q) ||
+      s.genre?.toLowerCase().includes(q) ||
+      s.keywords?.toLowerCase().includes(q)
+    );
+  }, [userSongs, albumSongIds, addSongSearch]);
+
   if (!isAuthenticated) return null;
 
   if (isLoading) {
@@ -530,6 +582,14 @@ export default function AlbumDetail() {
                 Generate AI Cover Art
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setShowAddSongs(true); setAddSongSearch(""); }}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              Add Songs
+            </Button>
           </div>
         </div>
       </div>
@@ -541,10 +601,11 @@ export default function AlbumDetail() {
             <Music className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No songs in this album</h3>
             <p className="text-muted-foreground mb-4">
-              Go to My Songs to add songs to this album
+              Add songs from your library to build this album
             </p>
-            <Button asChild variant="outline">
-              <Link href="/history">Go to My Songs</Link>
+            <Button onClick={() => { setShowAddSongs(true); setAddSongSearch(""); }}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              Add Songs
             </Button>
           </CardContent>
         </Card>
@@ -607,6 +668,68 @@ export default function AlbumDetail() {
           }}
         />
       )}
+
+      {/* Add Songs Dialog */}
+      <Dialog open={showAddSongs} onOpenChange={setShowAddSongs}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Add Songs to Album</DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search your songs..."
+              value={addSongSearch}
+              onChange={(e) => setAddSongSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-1 min-h-0 -mx-1 px-1">
+            {filteredAvailableSongs.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                <Music className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">
+                  {userSongs && userSongs.length === 0
+                    ? "No songs yet. Create some music first!"
+                    : albumSongIds.size > 0 && filteredAvailableSongs.length === 0 && !addSongSearch
+                    ? "All your songs are already in this album"
+                    : "No matching songs found"}
+                </p>
+              </div>
+            ) : (
+              filteredAvailableSongs.map((song: any) => (
+                <div
+                  key={song.id}
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 transition-colors group"
+                >
+                  <div className="w-9 h-9 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                    <Music className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{song.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {[song.genre, song.mood].filter(Boolean).join(" · ") || "No genre"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 h-8"
+                    disabled={addingSongId === song.id}
+                    onClick={() => handleAddSong(song.id)}
+                  >
+                    {addingSongId === song.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <><Plus className="w-3.5 h-3.5 mr-1" /> Add</>
+                    )}
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

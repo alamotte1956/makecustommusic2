@@ -366,16 +366,16 @@
 - [x] All 283 tests passing across 16 test files
 
 ## First-Time User Onboarding Walkthrough
-- [ ] Create OnboardingContext to track walkthrough state (step, active, completed)
-- [ ] Persist onboarding completion status in localStorage
-- [ ] Build OnboardingOverlay component with spotlight highlight, tooltip, and step navigation
-- [ ] Add walkthrough steps for Generator page (describe music, select options, generate)
-- [ ] Add walkthrough steps for SongDetail page (view sheet music, explore tabs)
-- [ ] Add welcome modal for first-time users with option to start or skip walkthrough
-- [ ] Integrate walkthrough into Generator page with step-specific highlights
-- [ ] Integrate walkthrough into SongDetail page with sheet music guidance
-- [ ] Add "Restart Tour" button in navigation or settings for returning users
-- [ ] Write tests for onboarding logic
+- [x] Create OnboardingContext to track walkthrough state (step, active, completed)
+- [x] Persist onboarding completion status in localStorage
+- [x] Build OnboardingOverlay component with spotlight highlight, tooltip, and step navigation
+- [x] Add walkthrough steps for Generator page (describe music, select options, generate)
+- [x] Add walkthrough steps for SongDetail page (view sheet music, explore tabs)
+- [x] Auto-trigger tour for first-time users on Generator page
+- [x] Integrate walkthrough into Generator page with step-specific highlights
+- [x] Integrate walkthrough into SongDetail page with sheet music guidance
+- [x] Add "Restart Tour" button in navigation (help icon) for returning users
+- [x] Write tests for onboarding logic (29 tests in onboarding.test.ts)
 
 ## Custom Lyrics UX Improvement
 - [x] Make "Write Your Own Lyrics" a first-class option on the Generator page (three-tab creation mode selector)
@@ -455,3 +455,27 @@
 - [x] Add key selector dropdown to SheetMusicViewer (transpose ABC notation before PDF export)
 - [x] Add key selector dropdown to GuitarChordViewer (transpose chord progression before PDF export)
 - [x] Build transposition utility for notes and chords (client/src/lib/transpose.ts)
+
+## Guided Onboarding Walkthrough
+- [x] Create OnboardingContext to manage walkthrough state (current step, active, completed)
+- [x] Create TourTooltip component with spotlight overlay and step-by-step tooltips
+- [x] Define 9 walkthrough steps: creation mode, content entry, genre/mood, vocals/duration, generate, audio player, sheet music, chords, lyrics
+- [x] Integrate data-tour attributes into Generator and SongDetail pages
+- [x] Add first-time user detection (localStorage-based)
+- [x] Add help icon button accessible from nav for returning users
+- [x] Add walkthrough persistence so users can resume or skip
+- [x] Write tests for onboarding logic (29 tests, 395 total passing)
+
+## Album Creation Bug Fix
+- [x] Fix: Duplicate song prevention in addSongToAlbum (checks before insert, throws error)
+- [x] Fix: "Add to Album" UI — added "Add Songs" dialog in AlbumDetail page with search
+- [x] Fix: "Add to Album" in History page now handles duplicate error gracefully
+- [x] Fix: removeSong now verifies album ownership before removing
+- [x] Fix: Track order gaps recompacted after song removal
+- [x] Fix: Album creation verifies song ownership before adding
+- [x] Fix: addSong endpoint verifies both album and song ownership
+- [x] Fix: Empty album state now shows "Add Songs" button instead of dead-end "Go to My Songs"
+
+## Professional Logo Redesign
+- [ ] Generate a professional, modern logo for MakeCustomMusic.com
+- [ ] Upload to CDN and update VITE_APP_LOGO

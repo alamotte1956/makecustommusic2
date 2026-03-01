@@ -19,6 +19,7 @@ import SharedSong from "./pages/SharedSong";
 import Layout from "./components/Layout";
 import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
+import TourTooltip from "./components/TourTooltip";
 
 function Router() {
   return (
@@ -52,6 +53,7 @@ function App() {
               <Router />
             </Layout>
             <QueuePlayerBar />
+            <TourTooltip />
           </TooltipProvider>
         </QueuePlayerProvider>
       </ThemeProvider>

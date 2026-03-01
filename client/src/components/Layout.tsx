@@ -2,9 +2,10 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { useQueuePlayer } from "@/contexts/QueuePlayerContext";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 const navItems = [
   { href: "/generate", label: "Create Music", icon: Sparkles },
@@ -21,6 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { queue } = useQueuePlayer();
   const hasQueue = queue.length > 0;
+  const { startTour } = useOnboarding();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -29,9 +31,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <Music className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp"
+              alt="MakeCustomMusic logo"
+              className="w-9 h-9 rounded-lg object-contain"
+            />
             <span className="text-lg font-bold text-foreground">
               Make Custom Music
             </span>
@@ -81,6 +85,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-sm text-muted-foreground">
                   {user?.name || user?.email || "User"}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => startTour()}
+                  className="text-muted-foreground hover:text-foreground"
+                  title="Start guided tour"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

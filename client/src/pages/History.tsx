@@ -169,8 +169,13 @@ export default function History() {
       utils.albums.getById.invalidate({ id: albumId });
       setAlbumDialogSongId(null);
       toast.success("Song added to album!");
-    } catch {
-      toast.error("Failed to add song to album");
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("already in")) {
+        toast.error("This song is already in that album");
+      } else {
+        toast.error("Failed to add song to album");
+      }
     }
   }, [addToAlbumMutation, utils]);
 

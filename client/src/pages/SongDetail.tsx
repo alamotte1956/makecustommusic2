@@ -183,10 +183,12 @@ export default function SongDetail() {
 
           {/* Audio Player — prefer mixed URL if available */}
           {(song.mixedUrl || song.audioUrl || song.mp3Url) && (
-            <AudioPlayer
-              src={(song.mixedUrl || song.audioUrl || song.mp3Url)!}
-              title={song.title}
-            />
+            <div data-tour="audio-player">
+              <AudioPlayer
+                src={(song.mixedUrl || song.audioUrl || song.mp3Url)!}
+                title={song.title}
+              />
+            </div>
           )}
 
           {/* Action Buttons */}
@@ -210,15 +212,15 @@ export default function SongDetail() {
       {/* Tabs: Lyrics / Sheet Music / Guitar Chords */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="lyrics" className="gap-1.5">
+          <TabsTrigger value="lyrics" className="gap-1.5" data-tour="lyrics-tab">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Lyrics</span>
           </TabsTrigger>
-          <TabsTrigger value="sheet-music" className="gap-1.5">
+          <TabsTrigger value="sheet-music" className="gap-1.5" data-tour="sheet-music-tab">
             <Music className="w-4 h-4" />
             <span className="hidden sm:inline">Sheet Music</span>
           </TabsTrigger>
-          <TabsTrigger value="guitar" className="gap-1.5">
+          <TabsTrigger value="guitar" className="gap-1.5" data-tour="chords-tab">
             <Guitar className="w-4 h-4" />
             <span className="hidden sm:inline">Guitar</span>
           </TabsTrigger>

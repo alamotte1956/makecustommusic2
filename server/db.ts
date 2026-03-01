@@ -243,6 +243,13 @@ export async function updateAlbumCoverImage(id: number, coverImageUrl: string) {
 export async function addSongToAlbum(albumId: number, songId: number, trackOrder: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  // Check for duplicate
+  const existing = await db.select().from(albumSongs)
+    .where(and(eq(albumSongs.albumId, albumId), eq(albumSongs.songId, songId)))
+    .limit(1);
+  if (existing.length > 0) {
+    throw new Error("Song is already in this album");
+  }
   await db.insert(albumSongs).values({ albumId, songId, trackOrder });
 }
 
@@ -250,6 +257,16 @@ export async function removeSongFromAlbum(albumId: number, songId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(albumSongs).where(and(eq(albumSongs.albumId, albumId), eq(albumSongs.songId, songId)));
+  // Recompact track orders after removal
+  const remaining = await db.select().from(albumSongs)
+    .where(eq(albumSongs.albumId, albumId))
+    .orderBy(albumSongs.trackOrder);
+  const reorders = remaining.map((r, index) =>
+    db.update(albumSongs)
+      .set({ trackOrder: index })
+      .where(eq(albumSongs.id, r.id))
+  );
+  await Promise.all(reorders);
 }
 
 export async function getAlbumSongs(albumId: number) {
