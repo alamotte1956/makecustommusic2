@@ -257,7 +257,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Footer */}
       <footer className={`border-t border-border py-6 mt-auto ${hasQueue ? "pb-24" : ""}`}>
-        <div className="container text-center text-sm text-muted-foreground">
+        <div className="container text-center text-sm text-muted-foreground space-y-2">
+          <div className="flex items-center justify-center gap-4">
+            <Link href="/privacy">
+              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Privacy Policy</span>
+            </Link>
+            <span className="text-border">|</span>
+            <Link href="/terms">
+              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Terms of Service</span>
+            </Link>
+          </div>
           <p>© 2026 A. LaMotte Music</p>
         </div>
       </footer>

@@ -579,3 +579,16 @@
 - [x] Remove TTS type icon from history list
 - [x] Remove TTS credit mention from Pricing FAQ
 - [x] Note: ListenToLyricsButton.tsx has internal handleDownloadTTS function name (not user-facing, kept as-is)
+
+## Notification System Architecture & Performance Page
+- [ ] Create NotificationSystemInfo page with architecture diagram, metrics tables, and performance summary
+- [ ] Register /system/notifications route in App.tsx
+- [ ] Add navigation link or access point for the page
+- [ ] Write tests for the page component
+
+## Privacy Policy & Terms of Service Pages
+- [x] Create Privacy Policy page with data collection, usage, cookies, third-party services, user rights
+- [x] Create Terms of Service page with acceptable use, IP ownership, subscriptions, limitations
+- [x] Register /privacy and /terms routes in App.tsx
+- [x] Add Privacy Policy and Terms of Service links to footer
+- [x] Write tests for both pages (9 tests, 492 total passing across 23 files)
