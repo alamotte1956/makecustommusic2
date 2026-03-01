@@ -493,3 +493,19 @@
 - [x] Fix chord chart PDF export to respect proper margins (no content encroachment)
 - [x] Fix lyrics PDF export to respect proper margins (no content encroachment)
 - [x] Ensure consistent margin handling across all PDF exports (SAFE_BOTTOM + FOOTER_RESERVE system)
+
+## Metronome Feature
+- [x] Build Metronome audio engine using Web Audio API (click/accent sounds)
+- [x] Create MetronomeVisualizer component with animated beat indicators
+- [x] Parse strumming patterns (D/U/x) and sync visual indicators to beats
+- [x] Add tempo control (BPM slider/input) with tap-tempo support
+- [x] Add time signature support (4/4, 3/4, 6/8, etc.)
+- [x] Integrate metronome into GuitarChordViewer with play/stop controls
+- [x] Show current strum direction (down/up) synced to beat position
+- [x] Add volume control for metronome click
+- [x] Write tests for metronome logic (35 new tests)
+
+## Bug Fix: PDF Sheet Music Upload Not Working
+- [x] Investigate upload page PDF processing flow (root cause: PDFs sent as image_url instead of file_url to LLM)
+- [x] Fix PDF upload — now uses file_url content type for PDFs, with better error messages for empty/corrupted files
+- [x] Test PDF upload end-to-end (verified server correctly sends file_url for PDFs)

@@ -316,7 +316,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           const ext = input.mimeType.split("/")[1];
           const fileKey = `sheet-music/${ctx.user.id}/${nanoid()}.${ext}`;
           const { url } = await storagePut(fileKey, buffer, input.mimeType);
-          const analysis = await analyzeSheetMusicImage(url);
+          const analysis = await analyzeSheetMusicImage(url, input.mimeType);
           return { analysis, sourceUrl: url };
         }
 

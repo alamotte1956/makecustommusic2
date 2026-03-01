@@ -115,7 +115,14 @@ export default function UploadPage() {
       setAnalysis(result.analysis);
       toast.success("Sheet music analyzed! Review the details and generate your song.");
     } catch (err: any) {
-      toast.error(err.message || "Analysis failed");
+      const msg = err?.message || "";
+      if (msg.includes("Could not extract meaningful")) {
+        toast.error(msg, { duration: 8000 });
+      } else if (msg.includes("Insufficient credits")) {
+        toast.error("Insufficient credits. Please purchase more credits to analyze sheet music.");
+      } else {
+        toast.error(msg || "Analysis failed. Please try again with a clearer image or PDF.", { duration: 6000 });
+      }
     } finally {
       setAnalyzing(false);
     }

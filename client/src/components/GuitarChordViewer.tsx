@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportChordPDF, type ChordPDFData } from "@/lib/pdfExport";
 import { COMMON_KEYS, getSemitoneInterval, transposeChordWithSlash, recommendCapo, getAllCapoOptions, type CapoRecommendation } from "@/lib/transpose";
+import Metronome from "@/components/Metronome";
 
 interface ChordSection {
   section: string;
@@ -500,6 +501,17 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
                 <div className="text-sm text-muted-foreground">
                   <span className="font-medium">Strum:</span>{" "}
                   <span className="font-mono tracking-widest">{section.strummingPattern}</span>
+                </div>
+              )}
+              {/* Metronome for this section */}
+              {section.strummingPattern && (
+                <div className="mt-3" data-tour="metronome">
+                  <Metronome
+                    bpm={section.bpm || data.tempo || 120}
+                    strummingPattern={section.strummingPattern}
+                    timeSignature={data.timeSignature || "4/4"}
+                    sectionName={section.section}
+                  />
                 </div>
               )}
             </div>
