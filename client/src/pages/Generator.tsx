@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import {
   Sparkles, Download, Music, Loader2,
   ChevronDown, ChevronUp, Clock, Guitar, Gauge,
-  Share2, RefreshCw, Mic, MicOff, Crown,
+  Share2, RefreshCw, Mic, MicOff,
   FileText, Tag, Wand2, PenLine, MessageSquareText
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -52,13 +52,20 @@ const MOODS = [
 ];
 
 const VOCAL_OPTIONS = [
-  { value: "none", label: "No Vocals", desc: "Instrumental only", icon: MicOff, color: "text-muted-foreground" },
-  { value: "male", label: "Male Singer", desc: "Male vocal performance", icon: Mic, color: "text-blue-500" },
-  { value: "female", label: "Female Singer", desc: "Female vocal performance", icon: Mic, color: "text-pink-500" },
-  { value: "mixed", label: "Both Singers", desc: "Male & female duet", icon: Mic, color: "text-purple-500" },
+  { value: "none", label: "No Vocals", icon: MicOff },
+  { value: "male", label: "Male", icon: Mic },
+  { value: "female", label: "Female", icon: Mic },
+  { value: "mixed", label: "Duet", icon: Mic },
 ] as const;
 
-const DURATION_MARKS = [15, 30, 60, 90, 120, 180, 240];
+const DURATION_PRESETS = [
+  { value: 15, label: "15s" },
+  { value: 30, label: "30s" },
+  { value: 60, label: "1:00" },
+  { value: 120, label: "2:00" },
+  { value: 180, label: "3:00" },
+  { value: 240, label: "4:00" },
+];
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -68,50 +75,104 @@ function formatDuration(seconds: number): string {
 
 type CreationMode = "describe" | "write-lyrics" | "ai-lyrics";
 
-const CREATION_MODES = [
+const LYRIC_TEMPLATES = [
   {
-    value: "describe" as CreationMode,
-    label: "Describe It",
-    desc: "Tell us what you want and AI creates everything",
-    icon: MessageSquareText,
+    label: "Love Song",
+    template: "[Verse 1]\n\n\n[Pre-Chorus]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Bridge]\n\n\n[Chorus]",
   },
   {
-    value: "write-lyrics" as CreationMode,
-    label: "Write Lyrics",
-    desc: "Paste or type your own lyrics",
-    icon: PenLine,
+    label: "Story Song",
+    template: "[Intro]\n\n\n[Verse 1]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Verse 3]\n\n\n[Chorus]\n\n\n[Outro]",
   },
   {
-    value: "ai-lyrics" as CreationMode,
-    label: "AI Lyrics",
-    desc: "AI writes lyrics from your idea",
-    icon: Wand2,
+    label: "Hip Hop / Rap",
+    template: "[Intro]\n\n\n[Verse 1]\n\n\n[Hook]\n\n\n[Verse 2]\n\n\n[Hook]\n\n\n[Bridge]\n\n\n[Hook]",
+  },
+  {
+    label: "Verse-Chorus",
+    template: "[Verse 1]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]",
   },
 ];
 
+/* ─────────────────────────────────────────────────────── */
+/* Step label helper                                       */
+/* ─────────────────────────────────────────────────────── */
+function StepHeader({ step, title, subtitle }: { step: number; title: string; subtitle?: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 mt-0.5">
+        {step}
+      </span>
+      <div>
+        <h3 className="text-sm font-semibold text-foreground leading-tight">{title}</h3>
+        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* Chip selector (for genre, mood)                         */
+/* ─────────────────────────────────────────────────────── */
+function ChipGroup({
+  options,
+  selected,
+  onSelect,
+  disabled,
+}: {
+  options: string[];
+  selected: string | null;
+  onSelect: (v: string | null) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          onClick={() => onSelect(selected === opt ? null : opt)}
+          disabled={disabled}
+          className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+            selected === opt
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground"
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* Main Component                                          */
+/* ─────────────────────────────────────────────────────── */
 export default function Generator() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
 
-  // Creation mode
+  // Step 1: Creation mode
   const [creationMode, setCreationMode] = useState<CreationMode>("describe");
 
-  // Common fields
+  // Step 2: Content
   const [keywords, setKeywords] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [vocalType, setVocalType] = useState<"none" | "male" | "female" | "mixed">("none");
-  const [duration, setDuration] = useState(30);
-
-  // Custom fields (for write-lyrics and ai-lyrics modes)
   const [customTitle, setCustomTitle] = useState("");
   const [customLyrics, setCustomLyrics] = useState("");
   const [customStyle, setCustomStyle] = useState("");
 
-  // AI Lyrics generation state
+  // AI Lyrics sub-state
   const [lyricsSubject, setLyricsSubject] = useState("");
   const [lyricsLength, setLyricsLength] = useState<"standard" | "extended">("standard");
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const generateLyricsMutation = trpc.songs.generateLyrics.useMutation();
+
+  // Step 3: Style
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+
+  // Step 4: Voice & Duration
+  const [vocalType, setVocalType] = useState<"none" | "male" | "female" | "mixed">("none");
+  const [duration, setDuration] = useState(30);
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -127,9 +188,9 @@ export default function Generator() {
   const utils = trpc.useUtils();
 
   const isElevenLabsAvailable = enginesQuery.data?.elevenlabs ?? false;
-
-  // Determine if this is a custom mode (lyrics-based) generation
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
+
+  /* ── Handlers ── */
 
   const handleGenerateLyrics = useCallback(async () => {
     if (!lyricsSubject.trim()) {
@@ -163,7 +224,6 @@ export default function Generator() {
       toast.error("Please enter or generate lyrics first");
       return;
     }
-
     if (!isElevenLabsAvailable) {
       toast.error("ElevenLabs engine is not available. Please configure the ELEVENLABS_API_KEY in Settings.");
       return;
@@ -174,7 +234,7 @@ export default function Generator() {
 
     try {
       setIsGenerating(true);
-      setProgressMessage("ElevenLabs is composing your music... (this may take 30-120 seconds)");
+      setProgressMessage("Composing your music... (this may take 30-120 seconds)");
       setProgress(15);
 
       const song = await generateMutation.mutateAsync({
@@ -198,7 +258,7 @@ export default function Generator() {
       setProgress(100);
       setProgressMessage("Done!");
       utils.songs.list.invalidate();
-      toast.success("Music generated with ElevenLabs!");
+      toast.success("Your song is ready!");
     } catch (error: any) {
       toast.error(error.message || "Failed to generate music");
       setProgress(0);
@@ -208,16 +268,10 @@ export default function Generator() {
     }
   }, [keywords, creationMode, isCustomMode, selectedGenre, selectedMood, vocalType, duration, customTitle, customLyrics, customStyle, generateMutation, utils, isElevenLabsAvailable]);
 
-  const handleRegenerate = useCallback(() => {
-    handleGenerate();
-  }, [handleGenerate]);
-
   const handleDownload = useCallback(() => {
     if (!generatedSong) return;
-
     const downloadUrl = generatedSong.audioUrl || generatedSong.mp3Url;
     if (!downloadUrl) return;
-
     const filename = `${generatedSong.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
     const a = document.createElement("a");
     a.href = downloadUrl;
@@ -226,7 +280,6 @@ export default function Generator() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
     toast.success("Download started!");
   }, [generatedSong]);
 
@@ -242,6 +295,7 @@ export default function Generator() {
     }
   }, [generatedSong, shareMutation]);
 
+  /* ── Auth gate ── */
   if (!isAuthenticated) {
     return (
       <div className="container py-20 text-center">
@@ -254,531 +308,426 @@ export default function Generator() {
   }
 
   const hasDownloadable = generatedSong?.audioUrl || generatedSong?.mp3Url;
-
-  // Can we generate?
   const canGenerate = isElevenLabsAvailable && !isGenerating && (
     creationMode === "describe" ? keywords.trim().length > 0 : customLyrics.trim().length > 0
   );
 
   return (
-    <div className="container py-8 md:py-12 max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-          <Sparkles className="w-8 h-8 text-primary" />
+    <div className="container py-8 md:py-12 max-w-3xl mx-auto space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Sparkles className="w-6 h-6 text-primary" />
           Create Music
         </h1>
-        <p className="text-muted-foreground">
-          Describe what you want, write your own lyrics, or let AI write them for you
+        <p className="text-sm text-muted-foreground mt-1">
+          Follow the steps below to create your song.
         </p>
       </div>
 
-      {/* Generator Card */}
+      {/* ═══════════════════════════════════════════════ */}
+      {/* STEP 1 — Choose how to create                  */}
+      {/* ═══════════════════════════════════════════════ */}
       <Card>
-        <CardContent className="pt-6 space-y-6">
-          {/* Engine badge */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary bg-primary/5">
-              <Crown className="w-5 h-5 text-amber-500" />
-              <div>
-                <div className="font-medium text-foreground flex items-center gap-2">
-                  ElevenLabs
-                  <Badge variant="default" className="text-xs bg-amber-500 hover:bg-amber-600">Pro</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {isElevenLabsAvailable
-                    ? "Studio-quality AI music with vocals, lyrics, and production."
-                    : "Add ELEVENLABS_API_KEY in Settings to unlock."}
-                </p>
-              </div>
-            </div>
-          </div>
+        <CardContent className="pt-5 pb-5 space-y-3">
+          <StepHeader step={1} title="How do you want to create?" />
 
-          {/* ── Creation Mode Selector ── */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">How do you want to create?</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {CREATION_MODES.map(({ value, label, desc, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => setCreationMode(value)}
-                  disabled={isGenerating}
-                  className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center ${
-                    creationMode === value
-                      ? "border-primary bg-primary/5 shadow-sm"
-                      : "border-border bg-card hover:border-muted-foreground/30 hover:bg-accent/50"
-                  }`}
-                >
-                  <Icon className={`w-6 h-6 ${creationMode === value ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-sm font-semibold ${creationMode === value ? "text-primary" : "text-foreground"}`}>
-                    {label}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground leading-tight">
-                    {desc}
-                  </span>
-                  {value === "write-lyrics" && (
-                    <Badge variant="secondary" className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0.5 bg-violet-100 text-violet-700 border-0">
-                      Popular
-                    </Badge>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ── DESCRIBE MODE ── */}
-          {creationMode === "describe" && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Describe your music
-              </label>
-              <Textarea
-                placeholder="e.g., happy jazz piano, relaxing ambient rain, epic orchestral adventure, upbeat pop song about summer love..."
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                rows={3}
-                maxLength={500}
+          <div className="grid grid-cols-3 gap-2 pl-10">
+            {([
+              { value: "describe" as CreationMode, label: "Describe", icon: MessageSquareText, hint: "AI creates everything" },
+              { value: "write-lyrics" as CreationMode, label: "My Lyrics", icon: PenLine, hint: "Type or paste lyrics" },
+              { value: "ai-lyrics" as CreationMode, label: "AI Lyrics", icon: Wand2, hint: "AI writes for you" },
+            ]).map(({ value, label, icon: Icon, hint }) => (
+              <button
+                key={value}
+                onClick={() => setCreationMode(value)}
                 disabled={isGenerating}
-                className="resize-none text-base"
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {keywords.length}/500
-              </p>
-            </div>
-          )}
-
-          {/* ── WRITE LYRICS MODE ── */}
-          {creationMode === "write-lyrics" && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Music className="w-4 h-4" />
-                  Song Title
-                </label>
-                <Input
-                  placeholder="e.g., Midnight in Paris"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  maxLength={255}
-                  disabled={isGenerating}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <PenLine className="w-4 h-4" />
-                  Your Lyrics
-                </label>
-                <Textarea
-                  placeholder={`Paste or type your lyrics here. Use section markers like [Verse], [Chorus], [Bridge] to structure your song.\n\nExample:\n\n[Verse 1]\nWalking through the city lights\nEvery shadow tells a story tonight\n\n[Chorus]\nWe're dancing in the moonlight\nEverything feels so right\nHolding on to this feeling\nNever letting go tonight`}
-                  value={customLyrics}
-                  onChange={(e) => setCustomLyrics(e.target.value)}
-                  rows={12}
-                  maxLength={5000}
-                  disabled={isGenerating}
-                  className="resize-none text-sm font-mono leading-relaxed"
-                />
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    Tip: Use [Verse], [Chorus], [Bridge], [Outro] markers to structure your song
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {customLyrics.length}/5000
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
-                </label>
-                <Input
-                  placeholder="e.g., synthwave, dreamy, slow tempo, reverb, acoustic"
-                  value={customStyle}
-                  onChange={(e) => setCustomStyle(e.target.value)}
-                  maxLength={500}
-                  disabled={isGenerating}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Comma-separated style descriptors that guide the sound and production.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Additional Context <span className="text-muted-foreground font-normal">(optional)</span>
-                </label>
-                <Input
-                  placeholder="e.g., inspired by The Weeknd, 80s synth pop feel..."
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  maxLength={500}
-                  disabled={isGenerating}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ── AI LYRICS MODE ── */}
-          {creationMode === "ai-lyrics" && (
-            <div className="space-y-4">
-              {/* AI Lyrics Generator */}
-              <div className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-5 space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Wand2 className="w-4 h-4 text-primary" />
-                    What should the song be about?
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Describe the topic, story, or feeling — AI will write professional lyrics for you.
-                  </p>
-                </div>
-
-                <Input
-                  placeholder="e.g., falling in love on a summer night, overcoming challenges, road trip with friends..."
-                  value={lyricsSubject}
-                  onChange={(e) => setLyricsSubject(e.target.value)}
-                  maxLength={500}
-                  disabled={isGenerating || isGeneratingLyrics}
-                  className="text-base"
-                />
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Length:</span>
-                    <button
-                      type="button"
-                      onClick={() => setLyricsLength("standard")}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                        lyricsLength === "standard"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                      }`}
-                    >
-                      Standard
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLyricsLength("extended")}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                        lyricsLength === "extended"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                      }`}
-                    >
-                      Extended (3+ verses)
-                    </button>
-                  </div>
-
-                  <Button
-                    onClick={handleGenerateLyrics}
-                    disabled={!lyricsSubject.trim() || isGenerating || isGeneratingLyrics}
-                    size="sm"
-                    className="shrink-0 gap-1.5"
-                  >
-                    {isGeneratingLyrics ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Writing...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4" />
-                        Generate Lyrics
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Song title */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Music className="w-4 h-4" />
-                  Song Title <span className="text-muted-foreground font-normal">(optional)</span>
-                </label>
-                <Input
-                  placeholder="e.g., Midnight in Paris"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  maxLength={255}
-                  disabled={isGenerating}
-                />
-              </div>
-
-              {/* Generated/editable lyrics */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Lyrics
-                  {customLyrics && (
-                    <Badge variant="secondary" className="text-[10px] ml-1">
-                      Editable — feel free to modify
-                    </Badge>
-                  )}
-                </label>
-                <Textarea
-                  placeholder="Your lyrics will appear here after generation. You can also type or paste lyrics directly."
-                  value={customLyrics}
-                  onChange={(e) => setCustomLyrics(e.target.value)}
-                  rows={12}
-                  maxLength={5000}
-                  disabled={isGenerating}
-                  className="resize-none text-sm font-mono leading-relaxed"
-                />
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    You can edit the AI-generated lyrics before creating your song
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {customLyrics.length}/5000
-                  </p>
-                </div>
-              </div>
-
-              {/* Style tags */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
-                </label>
-                <Input
-                  placeholder="e.g., synthwave, dreamy, slow tempo, reverb, acoustic"
-                  value={customStyle}
-                  onChange={(e) => setCustomStyle(e.target.value)}
-                  maxLength={500}
-                  disabled={isGenerating}
-                />
-              </div>
-
-              {/* Additional context */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Additional Context <span className="text-muted-foreground font-normal">(optional)</span>
-                </label>
-                <Input
-                  placeholder="e.g., inspired by The Weeknd, 80s synth pop feel..."
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  maxLength={500}
-                  disabled={isGenerating}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Genre Presets */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Genre</label>
-            <div className="flex flex-wrap gap-2">
-              {GENRES.map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setSelectedGenre(selectedGenre === g ? null : g)}
-                  disabled={isGenerating}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                    selectedGenre === g
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Mood Presets */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Mood</label>
-            <div className="flex flex-wrap gap-2">
-              {MOODS.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setSelectedMood(selectedMood === m ? null : m)}
-                  disabled={isGenerating}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                    selectedMood === m
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Vocal Type */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Mic className="w-4 h-4" />
-              Vocals
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {VOCAL_OPTIONS.map(({ value, label, desc, icon: Icon, color }) => (
-                <button
-                  key={value}
-                  onClick={() => setVocalType(value)}
-                  disabled={isGenerating}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
-                    vocalType === value
-                      ? "border-primary bg-primary/10 shadow-sm"
-                      : "border-border bg-card hover:border-muted-foreground/30 hover:bg-accent/50"
-                  }`}
-                >
-                  <Icon className={`w-5 h-5 ${vocalType === value ? "text-primary" : color}`} />
-                  <span className={`text-sm font-semibold ${vocalType === value ? "text-primary" : "text-foreground"}`}>
-                    {label}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground leading-tight text-center">
-                    {desc}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Duration Slider */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Duration
-              </label>
-              <span className="text-sm font-mono text-primary font-semibold">
-                {formatDuration(duration)}
-              </span>
-            </div>
-            <Slider
-              value={[duration]}
-              onValueChange={([v]) => setDuration(v)}
-              min={15}
-              max={240}
-              step={15}
-              disabled={isGenerating}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              {DURATION_MARKS.map((d) => (
-                <span key={d} className={duration === d ? "text-primary font-medium" : ""}>
-                  {formatDuration(d)}
+                className={`relative flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all text-center ${
+                  creationMode === value
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/40"
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${creationMode === value ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-xs font-semibold ${creationMode === value ? "text-primary" : "text-foreground"}`}>
+                  {label}
                 </span>
-              ))}
+                <span className="text-[10px] text-muted-foreground leading-tight">{hint}</span>
+                {value === "write-lyrics" && (
+                  <Badge variant="secondary" className="absolute -top-2 -right-2 text-[9px] px-1 py-0 bg-violet-100 text-violet-700 border-0">
+                    Popular
+                  </Badge>
+                )}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══════════════════════════════════════════════ */}
+      {/* STEP 2 — Your content                          */}
+      {/* ═══════════════════════════════════════════════ */}
+      <Card>
+        <CardContent className="pt-5 pb-5 space-y-4">
+          <StepHeader
+            step={2}
+            title={
+              creationMode === "describe"
+                ? "Describe your song"
+                : creationMode === "write-lyrics"
+                ? "Write your lyrics"
+                : "Tell AI what to write about"
+            }
+            subtitle={
+              creationMode === "describe"
+                ? "Be as specific or creative as you like."
+                : creationMode === "write-lyrics"
+                ? "Paste or type lyrics with section markers like [Verse], [Chorus]."
+                : "Describe the topic or feeling and AI will write professional lyrics."
+            }
+          />
+
+          <div className="pl-10 space-y-4">
+            {/* ── DESCRIBE MODE ── */}
+            {creationMode === "describe" && (
+              <>
+                <Textarea
+                  placeholder="e.g., happy jazz piano, relaxing ambient rain, epic orchestral adventure, upbeat pop song about summer love..."
+                  value={keywords}
+                  onChange={(e) => setKeywords(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  disabled={isGenerating}
+                  className="resize-none text-sm"
+                />
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-muted-foreground">{keywords.length}/500</p>
+                </div>
+
+                {/* Quick suggestions */}
+                {!keywords && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "happy jazz piano",
+                      "epic orchestral adventure",
+                      "calm acoustic guitar",
+                      "energetic electronic dance",
+                      "melancholic classical violin",
+                      "tropical reggae vibes",
+                    ].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setKeywords(s)}
+                        className="px-2.5 py-1 rounded-full text-[11px] border border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── WRITE LYRICS MODE ── */}
+            {creationMode === "write-lyrics" && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">Song Title</label>
+                  <Input
+                    placeholder="e.g., Midnight in Paris"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    maxLength={255}
+                    disabled={isGenerating}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">Your Lyrics</label>
+                  <Textarea
+                    placeholder={`Paste or type your lyrics here.\n\nUse section markers like [Verse], [Chorus], [Bridge].\n\nExample:\n[Verse 1]\nWalking through the city lights\nEvery shadow tells a story tonight\n\n[Chorus]\nWe're dancing in the moonlight`}
+                    value={customLyrics}
+                    onChange={(e) => setCustomLyrics(e.target.value)}
+                    rows={10}
+                    maxLength={5000}
+                    disabled={isGenerating}
+                    className="resize-none text-sm font-mono leading-relaxed"
+                  />
+                  <p className="text-[11px] text-muted-foreground text-right">{customLyrics.length}/5000</p>
+                </div>
+
+                {/* Templates — only when lyrics area is empty */}
+                {!customLyrics && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Or start from a template:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {LYRIC_TEMPLATES.map((t) => (
+                        <button
+                          key={t.label}
+                          onClick={() => setCustomLyrics(t.template)}
+                          className="flex items-center gap-2 p-2 rounded-md border border-border bg-card text-card-foreground hover:bg-accent transition-colors text-left"
+                        >
+                          <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="text-xs font-medium">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">
+                    Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
+                  </label>
+                  <Input
+                    placeholder="e.g., synthwave, dreamy, slow tempo, reverb, acoustic"
+                    value={customStyle}
+                    onChange={(e) => setCustomStyle(e.target.value)}
+                    maxLength={500}
+                    disabled={isGenerating}
+                    className="text-sm"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* ── AI LYRICS MODE ── */}
+            {creationMode === "ai-lyrics" && (
+              <>
+                {/* AI prompt area */}
+                <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
+                  <Input
+                    placeholder="e.g., falling in love on a summer night, overcoming challenges, road trip with friends..."
+                    value={lyricsSubject}
+                    onChange={(e) => setLyricsSubject(e.target.value)}
+                    maxLength={500}
+                    disabled={isGenerating || isGeneratingLyrics}
+                    className="text-sm"
+                  />
+
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-muted-foreground">Length:</span>
+                      {(["standard", "extended"] as const).map((len) => (
+                        <button
+                          key={len}
+                          onClick={() => setLyricsLength(len)}
+                          className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                            lyricsLength === len
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                          }`}
+                        >
+                          {len === "standard" ? "Standard" : "Extended"}
+                        </button>
+                      ))}
+                    </div>
+
+                    <Button
+                      onClick={handleGenerateLyrics}
+                      disabled={!lyricsSubject.trim() || isGenerating || isGeneratingLyrics}
+                      size="sm"
+                      className="shrink-0 gap-1 text-xs h-7"
+                    >
+                      {isGeneratingLyrics ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Writing...</>
+                      ) : (
+                        <><Wand2 className="w-3.5 h-3.5" /> Generate Lyrics</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Song title */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">
+                    Song Title <span className="text-muted-foreground font-normal">(optional)</span>
+                  </label>
+                  <Input
+                    placeholder="e.g., Midnight in Paris"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    maxLength={255}
+                    disabled={isGenerating}
+                    className="text-sm"
+                  />
+                </div>
+
+                {/* Editable lyrics */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    Lyrics
+                    {customLyrics && (
+                      <Badge variant="secondary" className="text-[9px] px-1 py-0">Editable</Badge>
+                    )}
+                  </label>
+                  <Textarea
+                    placeholder="Your lyrics will appear here after generation. You can also type or paste lyrics directly."
+                    value={customLyrics}
+                    onChange={(e) => setCustomLyrics(e.target.value)}
+                    rows={10}
+                    maxLength={5000}
+                    disabled={isGenerating}
+                    className="resize-none text-sm font-mono leading-relaxed"
+                  />
+                  <p className="text-[11px] text-muted-foreground text-right">{customLyrics.length}/5000</p>
+                </div>
+
+                {/* Style tags */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">
+                    Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
+                  </label>
+                  <Input
+                    placeholder="e.g., synthwave, dreamy, slow tempo, reverb, acoustic"
+                    value={customStyle}
+                    onChange={(e) => setCustomStyle(e.target.value)}
+                    maxLength={500}
+                    disabled={isGenerating}
+                    className="text-sm"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══════════════════════════════════════════════ */}
+      {/* STEP 3 — Genre & Mood                          */}
+      {/* ═══════════════════════════════════════════════ */}
+      <Card>
+        <CardContent className="pt-5 pb-5 space-y-4">
+          <StepHeader step={3} title="Choose a genre and mood" subtitle="Pick one of each, or skip to let AI decide." />
+
+          <div className="pl-10 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Genre</label>
+              <ChipGroup options={GENRES} selected={selectedGenre} onSelect={setSelectedGenre} disabled={isGenerating} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mood</label>
+              <ChipGroup options={MOODS} selected={selectedMood} onSelect={setSelectedMood} disabled={isGenerating} />
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Generate Button */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+      {/* ═══════════════════════════════════════════════ */}
+      {/* STEP 4 — Vocals & Duration                     */}
+      {/* ═══════════════════════════════════════════════ */}
+      <Card>
+        <CardContent className="pt-5 pb-5 space-y-4">
+          <StepHeader step={4} title="Vocals and duration" />
+
+          <div className="pl-10 space-y-5">
+            {/* Vocals — compact row */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vocals</label>
+              <div className="flex gap-2">
+                {VOCAL_OPTIONS.map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setVocalType(value)}
+                    disabled={isGenerating}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 transition-all text-xs font-medium ${
+                      vocalType === value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Duration — preset buttons + slider */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Duration</label>
+                <span className="text-xs font-mono text-primary font-semibold">{formatDuration(duration)}</span>
+              </div>
+
+              <div className="flex gap-1.5 mb-2">
+                {DURATION_PRESETS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setDuration(value)}
+                    disabled={isGenerating}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${
+                      duration === value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <Slider
+                value={[duration]}
+                onValueChange={([v]) => setDuration(v)}
+                min={15}
+                max={240}
+                step={15}
+                disabled={isGenerating}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══════════════════════════════════════════════ */}
+      {/* STEP 5 — Generate                              */}
+      {/* ═══════════════════════════════════════════════ */}
+      <Card className={canGenerate ? "border-primary/50 shadow-sm" : ""}>
+        <CardContent className="pt-5 pb-5">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-1">
+              <StepHeader step={5} title="Generate your song" subtitle={
+                !isElevenLabsAvailable
+                  ? "ElevenLabs API key required — add it in Settings."
+                  : isGenerating
+                  ? progressMessage
+                  : "Everything looks good. Hit the button to create!"
+              } />
+            </div>
+
             <Button
               onClick={handleGenerate}
               disabled={!canGenerate}
               size="lg"
-              className="flex-1 sm:flex-none"
+              className="shrink-0 gap-2 px-8"
             >
               {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Generating...
-                </>
+                <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</>
               ) : (
-                <>
-                  <Crown className="w-5 h-5 mr-2" />
-                  {isCustomMode ? "Create Song from Lyrics" : "Generate with ElevenLabs"}
-                </>
+                <><Sparkles className="w-5 h-5" /> {isCustomMode ? "Create Song" : "Generate Song"}</>
               )}
             </Button>
-            {!isElevenLabsAvailable && (
-              <p className="text-sm text-destructive self-center">
-                ElevenLabs API key required. Add it in Settings to start creating.
-              </p>
-            )}
           </div>
 
-          {/* Progress */}
+          {/* Progress bar */}
           {isGenerating && (
-            <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{progressMessage}</span>
-                <span className="text-muted-foreground tabular-nums">{progress}%</span>
-              </div>
+            <div className="mt-4 space-y-1">
               <Progress value={progress} className="h-2" />
+              <p className="text-[11px] text-muted-foreground text-right tabular-nums">{progress}%</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Suggestion chips (only when no result and not working, for describe mode) */}
-      {!generatedSong && !isGenerating && creationMode === "describe" && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">Try these ideas:</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              "happy jazz piano",
-              "epic orchestral adventure",
-              "calm acoustic guitar",
-              "energetic electronic dance",
-              "melancholic classical violin",
-              "tropical reggae vibes",
-              "dark cinematic suspense",
-              "cheerful folk ukulele",
-            ].map((suggestion) => (
-              <button
-                key={suggestion}
-                onClick={() => setKeywords(suggestion)}
-                className="px-3 py-1.5 rounded-full text-sm border border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Lyrics template suggestions (for write-lyrics mode when empty) */}
-      {!generatedSong && !isGenerating && creationMode === "write-lyrics" && !customLyrics && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">Need a starting point? Try a template:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              {
-                label: "Love Song",
-                template: "[Verse 1]\n\n\n[Pre-Chorus]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Bridge]\n\n\n[Chorus]",
-              },
-              {
-                label: "Story Song",
-                template: "[Intro]\n\n\n[Verse 1]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Verse 3]\n\n\n[Chorus]\n\n\n[Outro]",
-              },
-              {
-                label: "Hip Hop / Rap",
-                template: "[Intro]\n\n\n[Verse 1]\n\n\n[Hook]\n\n\n[Verse 2]\n\n\n[Hook]\n\n\n[Bridge]\n\n\n[Hook]",
-              },
-              {
-                label: "Simple (Verse-Chorus)",
-                template: "[Verse 1]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]",
-              },
-            ].map((t) => (
-              <button
-                key={t.label}
-                onClick={() => setCustomLyrics(t.template)}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground transition-colors text-left"
-              >
-                <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">{t.label}</p>
-                  <p className="text-xs text-muted-foreground">Click to load template</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Generated Song Result */}
+      {/* ═══════════════════════════════════════════════ */}
+      {/* RESULT                                         */}
+      {/* ═══════════════════════════════════════════════ */}
       {generatedSong && !isGenerating && (
-        <div className="space-y-6">
-          {/* Song Info Card */}
+        <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -787,13 +736,11 @@ export default function Generator() {
                     <Music className="w-5 h-5 text-primary" />
                     {generatedSong.title}
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {generatedSong.musicDescription}
-                  </p>
+                  {generatedSong.musicDescription && (
+                    <p className="text-sm text-muted-foreground">{generatedSong.musicDescription}</p>
+                  )}
                 </div>
-                <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">
-                  ElevenLabs
-                </Badge>
+                <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">ElevenLabs</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -807,55 +754,32 @@ export default function Generator() {
               {/* Metadata badges */}
               <div className="flex flex-wrap gap-2">
                 {generatedSong.genre && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Guitar className="w-3 h-3" />
-                    {generatedSong.genre}
-                  </Badge>
+                  <Badge variant="secondary" className="gap-1"><Guitar className="w-3 h-3" />{generatedSong.genre}</Badge>
                 )}
-                {generatedSong.mood && (
-                  <Badge variant="secondary">{generatedSong.mood}</Badge>
-                )}
+                {generatedSong.mood && <Badge variant="secondary">{generatedSong.mood}</Badge>}
                 {generatedSong.vocalType && generatedSong.vocalType !== "none" && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Mic className="w-3 h-3" />
-                    {generatedSong.vocalType} vocals
-                  </Badge>
+                  <Badge variant="secondary" className="gap-1"><Mic className="w-3 h-3" />{generatedSong.vocalType} vocals</Badge>
                 )}
-                {generatedSong.keySignature && (
-                  <Badge variant="outline">{generatedSong.keySignature}</Badge>
-                )}
+                {generatedSong.keySignature && <Badge variant="outline">{generatedSong.keySignature}</Badge>}
                 {generatedSong.timeSignature && (
-                  <Badge variant="outline" className="gap-1">
-                    <Clock className="w-3 h-3" />
-                    {generatedSong.timeSignature}
-                  </Badge>
+                  <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" />{generatedSong.timeSignature}</Badge>
                 )}
                 {generatedSong.tempo && (
-                  <Badge variant="outline" className="gap-1">
-                    <Gauge className="w-3 h-3" />
-                    {generatedSong.tempo} BPM
-                  </Badge>
+                  <Badge variant="outline" className="gap-1"><Gauge className="w-3 h-3" />{generatedSong.tempo} BPM</Badge>
                 )}
                 {generatedSong.duration && (
-                  <Badge variant="outline" className="gap-1">
-                    <Clock className="w-3 h-3" />
-                    {formatDuration(generatedSong.duration)}
-                  </Badge>
+                  <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" />{formatDuration(generatedSong.duration)}</Badge>
                 )}
                 {generatedSong.styleTags && (
-                  <Badge variant="outline" className="gap-1">
-                    <Tag className="w-3 h-3" />
-                    {generatedSong.styleTags}
-                  </Badge>
+                  <Badge variant="outline" className="gap-1"><Tag className="w-3 h-3" />{generatedSong.styleTags}</Badge>
                 )}
               </div>
 
               {/* Instruments */}
               {generatedSong.instruments && generatedSong.instruments.length > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">Instruments:</span>{" "}
-                  {generatedSong.instruments.join(", ")}
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Instruments:</span> {generatedSong.instruments.join(", ")}
+                </p>
               )}
 
               {/* Audio Player */}
@@ -863,51 +787,39 @@ export default function Generator() {
                 <AudioPlayer src={(generatedSong.audioUrl || generatedSong.mp3Url)!} title={generatedSong.title} />
               )}
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Button onClick={handleDownload} disabled={!hasDownloadable}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button size="sm" onClick={handleDownload} disabled={!hasDownloadable}>
+                  <Download className="w-4 h-4 mr-1.5" /> Download
                 </Button>
                 <FavoriteButton songId={generatedSong.id} variant="outline" showLabel />
-                <Button variant="outline" onClick={handleRegenerate}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Regenerate
+                <Button size="sm" variant="outline" onClick={() => handleGenerate()}>
+                  <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
                 </Button>
-                <Button variant="outline" onClick={handleShare}>
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share
+                <Button size="sm" variant="outline" onClick={handleShare}>
+                  <Share2 className="w-4 h-4 mr-1.5" /> Share
                 </Button>
                 {generatedSong.lyrics && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowLyrics(!showLyrics)}
-                  >
-                    {showLyrics ? (
-                      <ChevronUp className="w-4 h-4 mr-2" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 mr-2" />
-                    )}
+                  <Button size="sm" variant="outline" onClick={() => setShowLyrics(!showLyrics)}>
+                    {showLyrics ? <ChevronUp className="w-4 h-4 mr-1.5" /> : <ChevronDown className="w-4 h-4 mr-1.5" />}
                     {showLyrics ? "Hide" : "View"} Lyrics
                   </Button>
                 )}
                 <Link href={`/songs/${generatedSong.id}`}>
-                  <Button variant="outline">
-                    <Music className="w-4 h-4 mr-2" />
-                    Sheet Music & Chords
+                  <Button size="sm" variant="outline">
+                    <Music className="w-4 h-4 mr-1.5" /> Sheet Music
                   </Button>
                 </Link>
               </div>
             </CardContent>
           </Card>
 
-          {/* Lyrics */}
+          {/* Lyrics panel */}
           {showLyrics && generatedSong.lyrics && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  Lyrics
+                  <FileText className="w-5 h-5 text-primary" /> Lyrics
                 </CardTitle>
               </CardHeader>
               <CardContent>

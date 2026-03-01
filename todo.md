@@ -386,3 +386,12 @@
 - [x] Keep AI-generated lyrics option alongside manual entry (AI Lyrics tab)
 - [x] Write tests for custom lyrics flow (36 tests in customLyrics.test.ts)
 - [x] All 319 tests passing across 17 test files
+
+## Generator Controls UX Reorganization
+- [x] Reorganize controls into logical top-to-bottom creation flow (5 numbered steps)
+- [x] Simplify the creation mode selector (compact 3-column cards)
+- [x] Group related controls together (genre+mood in Step 3, vocals+duration in Step 4)
+- [x] Make the generate button more prominent and always visible (Step 5 with highlight border)
+- [x] Ensure all controls follow a natural step-by-step order (1→2→3→4→5)
+- [x] Remove visual clutter and unnecessary complexity (compact chips, preset buttons)
+- [x] Write/update tests for reorganized controls (all 319 tests passing)
