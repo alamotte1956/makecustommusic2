@@ -1,0 +1,30 @@
+{
+  "query": "SELECT * FROM credit_transactions ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT * FROM credit_transactions ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "30001",
+      "userId": "1",
+      "amount": "25",
+      "type": "purchase",
+      "description": "Purchased Starter Pack (25 credits)",
+      "balanceAfter": "74",
+      "relatedSongId": "NULL",
+      "createdAt": "2026-03-01 14:12:11"
+    },
+    {
+      "id": "1",
+      "userId": "1",
+      "amount": "-1",
+      "type": "generation",
+      "description": "Uploaded audio: Men of The Father's House",
+      "balanceAfter": "49",
+      "relatedSongId": "NULL",
+      "createdAt": "2026-03-01 11:18:16"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tamount\ttype\tdescription\tbalanceAfter\trelatedSongId\tcreatedAt\n30001\t1\t25\tpurchase\tPurchased Starter Pack (25 credits)\t74\tNULL\t2026-03-01 14:12:11\n1\t1\t-1\tgeneration\tUploaded audio: Men of The Father's House\t49\tNULL\t2026-03-01 11:18:16\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

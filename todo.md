@@ -558,3 +558,24 @@
 - [x] Add JSON-LD structured data (WebApplication schema with features, pricing, creator)
 - [x] Add canonical URLs
 - [ ] Guide user through Google Search Console submission
+
+## Social Media OG Banner Image
+- [ ] Generate 1200x630px banner with logo and tagline
+- [ ] Upload to CDN and update OG meta tags in index.html
+
+## Bug Fix: Credits Not Showing After Purchase
+- [x] Investigated: credits were in DB (25 purchased + 49 monthly = 74 total), UI shows them on /usage page
+- [x] Webhook fulfillment for credit packs is working correctly
+- [x] Root cause: plan was stuck as 'free' due to missing product metadata in Stripe
+
+## Bug Fix: Current Plan Not Visible in UI
+- [x] Added plan badge to navigation header (desktop + mobile) with Crown icon for paid plans
+- [x] Plan badge links to /usage page, color-coded per plan tier
+- [x] Fixed webhook handler: 3 fallback strategies (metadata → price amount → product name)
+- [x] Manually updated Albert's account to Studio plan with 5000 monthly credits
+
+## Remove TTS References from UI
+- [x] Remove TTS Previews Today card from Usage Dashboard
+- [x] Remove TTS type icon from history list
+- [x] Remove TTS credit mention from Pricing FAQ
+- [x] Note: ListenToLyricsButton.tsx has internal handleDownloadTTS function name (not user-facing, kept as-is)

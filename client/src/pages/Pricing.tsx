@@ -314,7 +314,7 @@ export default function Pricing() {
             {[
               {
                 q: "What counts as a credit?",
-                a: "Each song generation costs 1 credit. TTS voice previews cost 0.5 credits. Sheet music and chord progression generation are free on paid plans.",
+                a: "Each song generation costs 1 credit. Sheet music and chord progression generation are free on paid plans.",
               },
               {
                 q: "Do unused credits roll over?",

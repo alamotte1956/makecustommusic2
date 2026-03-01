@@ -202,10 +202,40 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const item = subscription.items.data[0];
   const priceId = item?.price?.id;
   const productMetadata = (item?.price?.product as Stripe.Product)?.metadata ?? {};
-  const planTier = getPlanFromMetadata(productMetadata) ?? getPlanFromMetadata(subscription.metadata ?? {});
+  let planTier = getPlanFromMetadata(productMetadata) ?? getPlanFromMetadata(subscription.metadata ?? {});
+
+  // Fallback: if no metadata, infer plan from price amount
+  if (!planTier && item?.price?.unit_amount) {
+    const amount = item.price.unit_amount;
+    const interval = item.price.recurring?.interval;
+    // Match against known plan prices (monthly and annual)
+    if (interval === "month") {
+      if (amount >= 3500) planTier = "studio";
+      else if (amount >= 1500) planTier = "professional";
+      else if (amount >= 500) planTier = "creator";
+    } else if (interval === "year") {
+      if (amount >= 30000) planTier = "studio";
+      else if (amount >= 15000) planTier = "professional";
+      else if (amount >= 5000) planTier = "creator";
+    }
+    if (planTier) {
+      console.log(`[Stripe Webhook] Inferred plan tier '${planTier}' from price amount ${amount} (${interval})`);
+    }
+  }
+
+  // Fallback: if still no plan tier, try to infer from product name
+  if (!planTier) {
+    const productName = ((item?.price?.product as Stripe.Product)?.name ?? "").toLowerCase();
+    if (productName.includes("studio")) planTier = "studio";
+    else if (productName.includes("professional") || productName.includes("pro")) planTier = "professional";
+    else if (productName.includes("creator")) planTier = "creator";
+    if (planTier) {
+      console.log(`[Stripe Webhook] Inferred plan tier '${planTier}' from product name '${productName}'`);
+    }
+  }
 
   if (!planTier) {
-    console.error(`[Stripe Webhook] subscription.updated: No plan tier found in metadata for subscription ${subscription.id}`);
+    console.error(`[Stripe Webhook] subscription.updated: No plan tier found for subscription ${subscription.id}. Price: ${priceId}, Amount: ${item?.price?.unit_amount}`);
     return;
   }
 

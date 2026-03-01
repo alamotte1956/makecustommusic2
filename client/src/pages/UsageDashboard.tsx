@@ -4,7 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Link, useSearch } from "wouter";
 import { getLoginUrl } from "@/const";
 import {
-  CreditCard, TrendingUp, Music, Mic, FileText, Guitar,
+  CreditCard, TrendingUp, Music, FileText, Guitar,
   ArrowUpRight, ArrowDownRight, Clock, Sparkles, ExternalLink,
   Loader2, CheckCircle2, Settings,
 } from "lucide-react";
@@ -116,7 +116,7 @@ export default function UsageDashboard() {
 
   const typeIcons: Record<string, React.ReactNode> = {
     generation: <Music className="h-4 w-4" />,
-    tts: <Mic className="h-4 w-4" />,
+
     takes: <Sparkles className="h-4 w-4" />,
     purchase: <CreditCard className="h-4 w-4" />,
     bonus: <TrendingUp className="h-4 w-4" />,
@@ -259,29 +259,7 @@ export default function UsageDashboard() {
             )}
           </div>
 
-          <div className="rounded-xl border bg-card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-muted-foreground">TTS Previews Today</span>
-              <Mic className="h-4 w-4 text-violet-600" />
-            </div>
-            <p className="text-3xl font-bold text-black">{usage?.dailyTtsGenerated ?? 0}</p>
-            {limits && limits.dailyTtsLimit > 0 && (
-              <>
-                <p className="text-xs text-muted-foreground mt-1">
-                  of {limits.dailyTtsLimit} daily limit
-                </p>
-                <div className="mt-2">
-                  <ProgressBar
-                    value={usage?.dailyTtsGenerated ?? 0}
-                    max={limits.dailyTtsLimit}
-                  />
-                </div>
-              </>
-            )}
-            {limits && limits.dailyTtsLimit === -1 && (
-              <p className="text-xs text-muted-foreground mt-1">Unlimited</p>
-            )}
-          </div>
+
         </div>
 
         {/* Monthly Usage */}

@@ -2,10 +2,11 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown } from "lucide-react";
 import { useState } from "react";
 import { useQueuePlayer } from "@/contexts/QueuePlayerContext";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import { trpc } from "@/lib/trpc";
 
 const navItems = [
   { href: "/generate", label: "Create Music", icon: Sparkles },
@@ -16,6 +17,20 @@ const navItems = [
   { href: "/upload", label: "Upload", icon: Upload },
 ];
 
+const planLabel: Record<string, string> = {
+  free: "Free",
+  creator: "Creator",
+  professional: "Pro",
+  studio: "Studio",
+};
+
+const planBadgeStyle: Record<string, string> = {
+  free: "bg-gray-100 text-gray-600 border-gray-200",
+  creator: "bg-violet-100 text-violet-700 border-violet-200",
+  professional: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  studio: "bg-amber-100 text-amber-700 border-amber-200",
+};
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
@@ -23,6 +38,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { queue } = useQueuePlayer();
   const hasQueue = queue.length > 0;
   const { startTour } = useOnboarding();
+
+  // Fetch plan info for authenticated users
+  const { data: summary } = trpc.credits.summary.useQuery(undefined, {
+    enabled: isAuthenticated,
+    staleTime: 60_000, // cache for 1 minute
+  });
+
+  const currentPlan = summary?.plan ?? "free";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -66,7 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          {/* Auth */}
+          {/* Auth + Plan Badge */}
           <div className="hidden md:flex items-center gap-3">
             <Link href="/pricing">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
@@ -78,6 +101,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
+                {/* Plan Badge */}
+                <Link href="/usage">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border no-underline transition-colors hover:opacity-80 ${planBadgeStyle[currentPlan] ?? planBadgeStyle.free}`}>
+                    {currentPlan !== "free" && <Crown className="w-3 h-3" />}
+                    {planLabel[currentPlan] ?? "Free"}
+                  </span>
+                </Link>
                 <Link href="/usage">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
                     location === "/usage" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
@@ -119,12 +149,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Mobile menu button */}
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-accent"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="md:hidden flex items-center gap-2">
+            {/* Mobile Plan Badge */}
+            {isAuthenticated && (
+              <Link href="/usage">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border no-underline ${planBadgeStyle[currentPlan] ?? planBadgeStyle.free}`}>
+                  {currentPlan !== "free" && <Crown className="w-3 h-3" />}
+                  {planLabel[currentPlan] ?? "Free"}
+                </span>
+              </Link>
+            )}
+            <button
+              className="p-2 rounded-lg hover:bg-accent"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Nav */}

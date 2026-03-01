@@ -1,0 +1,20 @@
+{
+  "query": "SELECT * FROM credit_balances ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT * FROM credit_balances ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "monthlyCredits": "49",
+      "bonusCredits": "0",
+      "purchasedCredits": "25",
+      "lastRefillAt": "2026-03-01 08:32:18",
+      "createdAt": "2026-03-01 08:32:18",
+      "updatedAt": "2026-03-01 14:12:11"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tmonthlyCredits\tbonusCredits\tpurchasedCredits\tlastRefillAt\tcreatedAt\tupdatedAt\n1\t1\t49\t0\t25\t2026-03-01 08:32:18\t2026-03-01 08:32:18\t2026-03-01 14:12:11\n",
+  "stderr": "",
+  "execution_time_ms": 122
+}
