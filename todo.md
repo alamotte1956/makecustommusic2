@@ -172,3 +172,13 @@
 - [x] Handle additional failure statuses (CREATE_TASK_FAILED, GENERATE_AUDIO_FAILED, SENSITIVE_WORD_ERROR, etc.)
 - [x] Configure SUNO_API_KEY secret for SunoAPI.org Bearer token auth
 - [x] Write/update tests for the new integration (128 tests passing)
+
+## Song Deletion
+- [x] Add deleteSong DB helper (delete song + cascade favorites + album-song relations)
+- [x] Add songs.delete tRPC route (protected, owner-only)
+- [x] Create reusable DeleteSongDialog confirmation component
+- [x] Add delete button to History page song cards (replaced inline AlertDialog)
+- [x] Add delete button to Favorites page song cards
+- [x] Add delete button to AlbumDetail page song cards
+- [x] Invalidate relevant queries after deletion (songs, favorites, albums)
+- [x] Write tests for song deletion route (131 tests passing)

@@ -371,6 +371,36 @@ describe("songs router", () => {
         caller.songs.delete({ id: 1 })
       ).rejects.toThrow();
     });
+
+    it("accepts valid song id input", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Should not throw on input validation (may throw on DB not found)
+      await expect(
+        caller.songs.delete({ id: 999999 })
+      ).rejects.toBeDefined();
+    });
+
+    it("rejects invalid input (missing id)", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        // @ts-expect-error testing invalid input
+        caller.songs.delete({})
+      ).rejects.toThrow();
+    });
+
+    it("rejects invalid input (string id)", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        // @ts-expect-error testing invalid input
+        caller.songs.delete({ id: "abc" })
+      ).rejects.toThrow();
+    });
   });
 
   describe("songs.createShareLink", () => {

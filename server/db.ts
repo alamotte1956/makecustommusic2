@@ -114,7 +114,11 @@ export async function getUserSongs(userId: number) {
 export async function deleteSong(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Remove from any albums first
+  // Verify ownership first
+  const song = await db.select().from(songs).where(and(eq(songs.id, id), eq(songs.userId, userId))).limit(1);
+  if (song.length === 0) throw new Error("Song not found or not owned by user");
+  // Cascade: remove from favorites, albums, then delete the song
+  await db.delete(favorites).where(eq(favorites.songId, id));
   await db.delete(albumSongs).where(eq(albumSongs.songId, id));
   await db.delete(songs).where(and(eq(songs.id, id), eq(songs.userId, userId)));
 }

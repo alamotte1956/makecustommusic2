@@ -7,11 +7,12 @@ import FavoriteButton from "@/components/FavoriteButton";
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
-  Heart, Download, Loader2,
+  Heart, Download, Loader2, Trash2,
   ChevronDown, ChevronUp, Play, Share2, ListMusic, Pause, Pencil
 } from "lucide-react";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import EditSongDialog from "@/components/EditSongDialog";
+import { DeleteSongDialog } from "@/components/DeleteSongDialog";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 
 export default function Favorites() {
@@ -27,6 +28,7 @@ export default function Favorites() {
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
   const [filters, setFilters] = useState<SongFilters>({ search: "", genre: "__all__", mood: "__all__" });
   const [editingSong, setEditingSong] = useState<any>(null);
+  const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
   const utils = trpc.useUtils();
 
   const filteredSongs = filterSongs(songs, filters);
@@ -285,6 +287,14 @@ export default function Favorites() {
                             <Share2 className="w-3.5 h-3.5 mr-1.5" />
                             Share
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeletingSong({ id: song.id, title: song.title })}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -303,6 +313,20 @@ export default function Favorites() {
             );
           })}
         </div>
+      )}
+
+      {/* Delete Song Dialog */}
+      {deletingSong && (
+        <DeleteSongDialog
+          songId={deletingSong.id}
+          songTitle={deletingSong.title}
+          open={!!deletingSong}
+          onOpenChange={(open) => !open && setDeletingSong(null)}
+          onDeleted={() => {
+            toast.success("Song deleted");
+            setDeletingSong(null);
+          }}
+        />
       )}
 
       {/* Edit Song Dialog */}

@@ -15,17 +15,7 @@ import EditSongDialog from "@/components/EditSongDialog";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import { getLoginUrl } from "@/const";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { DeleteSongDialog } from "@/components/DeleteSongDialog";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +35,6 @@ export default function History() {
   const { data: albums } = trpc.albums.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
-  const deleteMutation = trpc.songs.delete.useMutation();
   const addToAlbumMutation = trpc.albums.addSong.useMutation();
   const createAlbumMutation = trpc.albums.create.useMutation();
   const utils = trpc.useUtils();
@@ -63,6 +52,7 @@ export default function History() {
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
   const [filters, setFilters] = useState<SongFilters>({ search: "", genre: "__all__", mood: "__all__" });
   const [editingSong, setEditingSong] = useState<any>(null);
+  const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
 
   const filteredSongs = filterSongs(songs, filters);
 
@@ -143,16 +133,6 @@ export default function History() {
     document.body.removeChild(a);
     toast.success("Download started!");
   }, []);
-
-  const handleDelete = useCallback(async (id: number) => {
-    try {
-      await deleteMutation.mutateAsync({ id });
-      utils.songs.list.invalidate();
-      toast.success("Song deleted");
-    } catch {
-      toast.error("Failed to delete song");
-    }
-  }, [deleteMutation, utils]);
 
   const handleAddToAlbum = useCallback(async (albumId: number, songId: number) => {
     try {
@@ -385,27 +365,14 @@ export default function History() {
                           </Button>
                           <FavoriteButton songId={song.id} size="sm" />
 
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Song</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{song.title}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(song.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeletingSong({ id: song.id, title: song.title })}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -481,6 +448,20 @@ export default function History() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Song Dialog */}
+      {deletingSong && (
+        <DeleteSongDialog
+          songId={deletingSong.id}
+          songTitle={deletingSong.title}
+          open={!!deletingSong}
+          onOpenChange={(open) => !open && setDeletingSong(null)}
+          onDeleted={() => {
+            toast.success("Song deleted");
+            setDeletingSong(null);
+          }}
+        />
+      )}
 
       {/* Edit Song Dialog */}
       {editingSong && (
