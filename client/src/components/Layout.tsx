@@ -3,6 +3,7 @@ import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown } from "lucide-react";
+import NotificationCenter from "@/components/NotificationCenter";
 import { useState } from "react";
 import { useQueuePlayer } from "@/contexts/QueuePlayerContext";
 import { useOnboarding } from "@/contexts/OnboardingContext";
@@ -116,6 +117,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     Usage
                   </span>
                 </Link>
+                <NotificationCenter />
                 <span className="text-sm text-muted-foreground">
                   {user?.name || user?.email || "User"}
                 </span>
@@ -150,6 +152,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-2">
+            {/* Mobile Notification Bell */}
+            {isAuthenticated && <NotificationCenter />}
             {/* Mobile Plan Badge */}
             {isAuthenticated && (
               <Link href="/usage">

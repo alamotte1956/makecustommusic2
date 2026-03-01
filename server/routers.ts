@@ -13,7 +13,9 @@ import {
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
   reorderAlbumSongs,
   toggleFavorite, getUserFavorites, getUserFavoriteIds,
-  publishSong, unpublishSong, getPublicSongs, getPublicSongCount
+  publishSong, unpublishSong, getPublicSongs, getPublicSongCount,
+  createNotification, getUserNotifications, getUnreadNotificationCount,
+  markNotificationRead, markAllNotificationsRead, deleteNotification
 } from "./db";
 import type { ChordProgressionData } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
@@ -138,6 +140,15 @@ export const appRouter = router({
           title: `🎵 New Song Generated`,
           content: `User: ${ctx.user.name || ctx.user.email || "Unknown"}\nTitle: ${song.title}\nGenre: ${genre || "Not specified"}\nMood: ${mood || "Not specified"}\nMode: ${mode || "simple"}\nEngine: ElevenLabs`,
         }).catch(() => {}); // Fire-and-forget, don't block the response
+
+        // Create in-app notification for the user
+        createNotification({
+          userId: ctx.user.id,
+          type: "song_ready",
+          title: "Your song is ready!",
+          message: `"${song.title}" has been generated. Tap to listen and download.`,
+          songId: song.id,
+        }).catch(() => {}); // Fire-and-forget
 
         return song;
       }),
@@ -402,6 +413,15 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         notifyOwner({
           title: `🎵 New Song from Sheet Music`,
           content: `User: ${ctx.user.name || ctx.user.email || "Unknown"}\nTitle: ${analysis.title}\nGenre: ${analysis.genre}\nMood: ${analysis.mood}\nSource: Sheet Music Upload`,
+        }).catch(() => {}); // Fire-and-forget
+
+        // Create in-app notification for the user
+        createNotification({
+          userId: ctx.user.id,
+          type: "song_ready",
+          title: "Your song is ready!",
+          message: `"${analysis.title}" has been generated from sheet music. Tap to listen and download.`,
+          songId: song.id,
         }).catch(() => {}); // Fire-and-forget
 
         return { song, audioUrl: result.audioUrl };
@@ -1529,6 +1549,42 @@ RULES:
       .mutation(async ({ ctx, input }) => {
         const song = await unpublishSong(input.songId, ctx.user.id);
         return song;
+      }),
+  }),
+
+  notifications: router({
+    list: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(30) }).optional())
+      .query(async ({ ctx, input }) => {
+        const limit = input?.limit ?? 30;
+        const items = await getUserNotifications(ctx.user.id, limit);
+        return items;
+      }),
+
+    unreadCount: protectedProcedure
+      .query(async ({ ctx }) => {
+        const count = await getUnreadNotificationCount(ctx.user.id);
+        return { count };
+      }),
+
+    markRead: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await markNotificationRead(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    markAllRead: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        await markAllNotificationsRead(ctx.user.id);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteNotification(input.id, ctx.user.id);
+        return { success: true };
       }),
   }),
 });

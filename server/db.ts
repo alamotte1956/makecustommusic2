@@ -1,6 +1,6 @@
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -383,4 +383,54 @@ export async function getPublicSongCount() {
   if (!db) throw new Error("Database not available");
   const result = await db.select().from(songs).where(eq(songs.visibility, "public"));
   return result.length;
+}
+
+// ─── Notification Queries ───
+
+export async function createNotification(data: InsertNotification) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(notifications).values(data);
+  return result[0].insertId;
+}
+
+export async function getUserNotifications(userId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+}
+
+export async function getUnreadNotificationCount(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select({ count: sql<number>`count(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, 0)));
+  return result[0]?.count ?? 0;
+}
+
+export async function markNotificationRead(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(notifications)
+    .set({ isRead: 1 })
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+}
+
+export async function markAllNotificationsRead(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(notifications)
+    .set({ isRead: 1 })
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, 0)));
+}
+
+export async function deleteNotification(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(notifications)
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
 }

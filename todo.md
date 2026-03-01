@@ -541,14 +541,14 @@
 - [x] Fix logo display: reduced from 72px to 56px, increased header from 64px to 80px, added onError fallback
 
 ## Real-Time User Notification System
-- [ ] Create notifications table in database schema (id, userId, type, title, message, songId, read, createdAt)
-- [ ] Add notification DB helpers (create, list, markRead, markAllRead, getUnreadCount)
-- [ ] Add tRPC procedures for notifications (list, markRead, markAllRead, unreadCount)
-- [ ] Build notification polling hook (useNotifications) with auto-refresh
-- [ ] Build NotificationCenter UI component (bell icon with badge, dropdown panel)
-- [ ] Integrate notification triggers into song generation (notify user when their song is ready)
+- [x] Create notifications table in database schema (id, userId, type, title, message, songId, read, createdAt)
+- [x] Add notification DB helpers (create, list, markRead, markAllRead, getUnreadCount, delete)
+- [x] Add tRPC procedures for notifications (list, markRead, markAllRead, unreadCount, delete)
+- [x] Build notification polling with 15-second auto-refresh via tRPC refetchInterval
+- [x] Build NotificationCenter UI component (bell icon with unread badge, dropdown panel, mark as read, delete)
+- [x] Integrate notification triggers into song generation (notify user when their song is ready)
 - [ ] Add notification for public song discoveries (when someone favorites/shares your song)
-- [ ] Write tests for notification logic
+- [x] Write tests for notification logic (22 tests, 483 total passing across 22 test files)
 
 ## Google Search Console & SEO Setup
 - [x] Create sitemap.xml with all public routes (/, /generate, /discover, /pricing, /upload)
