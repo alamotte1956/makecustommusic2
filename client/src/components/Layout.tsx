@@ -34,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp"
               alt="MakeCustomMusic logo"
-              className="w-9 h-9 rounded-lg object-contain"
+              className="w-[4.5rem] h-[4.5rem] rounded-lg object-contain"
             />
             <span className="text-lg font-bold text-foreground">
               Make Custom Music

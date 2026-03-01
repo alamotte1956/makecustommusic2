@@ -514,3 +514,6 @@
 - [x] Investigate why subscription checkout fails (root cause: customer_creation param not allowed in subscription mode)
 - [x] Fix subscription checkout session creation (removed customer_creation for subscription mode, added allow_promotion_codes)
 - [ ] Test subscription purchase end-to-end on production
+
+## Logo Resize
+- [x] Make the logo 2x bigger in the navigation header (w-9 h-9 → w-[4.5rem] h-[4.5rem])
