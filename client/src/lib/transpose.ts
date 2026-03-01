@@ -170,6 +170,254 @@ export function transposeABC(abc: string, fromKey: string, toKey: string): strin
   return result.join("\n");
 }
 
+// ─── Capo Recommendation ───
+
+/**
+ * Open chord shapes that are easy to play on guitar.
+ * These are the "beginner-friendly" shapes that don't require barre chords.
+ * The key is the chord root + quality, the value is the "ease score" (lower = easier).
+ */
+const OPEN_CHORD_SHAPES: Record<string, number> = {
+  // Major open chords (easiest)
+  "C": 1, "A": 1, "G": 1, "E": 1, "D": 1,
+  // Minor open chords
+  "Am": 1, "Em": 1, "Dm": 2,
+  // Seventh chords in open position
+  "A7": 2, "D7": 2, "E7": 2, "G7": 2, "C7": 2, "B7": 2,
+  // Minor seventh open chords
+  "Am7": 2, "Em7": 2, "Dm7": 3,
+  // Sus chords in open position
+  "Asus2": 2, "Asus4": 2, "Dsus2": 2, "Dsus4": 2, "Esus4": 2,
+  // Add9 chords
+  "Cadd9": 3, "Gadd9": 3,
+  // Major 7
+  "Cmaj7": 3, "Fmaj7": 3, "Dmaj7": 3,
+};
+
+/**
+ * Extract the root note and quality from a chord string.
+ * e.g., "F#m7" → { root: "F#", quality: "m7" }
+ *       "Bbmaj7" → { root: "Bb", quality: "maj7" }
+ *       "Am/G" → { root: "A", quality: "m" } (ignores bass note)
+ */
+function parseChord(chord: string): { root: string; quality: string } | null {
+  // Remove bass note for slash chords
+  const mainChord = chord.split("/")[0].trim();
+  const match = mainChord.match(/^([A-G][#b]?)(.*)/)
+  if (!match) return null;
+  return { root: match[1], quality: match[2] };
+}
+
+/**
+ * Check if a chord (after transposition) maps to an easy open shape.
+ * Returns the ease score (1-3) or 0 if it's not an open chord.
+ */
+function getOpenChordScore(chordRoot: string, quality: string): number {
+  // Normalize the quality to match our lookup table
+  // Strip leading quality indicators to find the base quality
+  const baseQuality = quality.replace(/\/.*$/, ""); // Remove slash bass
+  
+  // Try exact match first (root + full quality)
+  const fullChord = chordRoot + baseQuality;
+  if (OPEN_CHORD_SHAPES[fullChord] !== undefined) {
+    return OPEN_CHORD_SHAPES[fullChord];
+  }
+  
+  // Try simplified quality (just major or minor)
+  const isMinor = baseQuality.startsWith("m") && !baseQuality.startsWith("maj");
+  const simpleChord = chordRoot + (isMinor ? "m" : "");
+  if (OPEN_CHORD_SHAPES[simpleChord] !== undefined) {
+    // Slightly higher score for extended chords that simplify to open shapes
+    return OPEN_CHORD_SHAPES[simpleChord] + 1;
+  }
+  
+  return 0; // Not an open chord shape
+}
+
+export interface CapoRecommendation {
+  /** The recommended capo fret position (0 = no capo) */
+  capoFret: number;
+  /** The original key of the song */
+  originalKey: string;
+  /** The key the shapes will be played in (with capo) */
+  capoKey: string;
+  /** The simplified chord names as played with the capo */
+  simplifiedChords: string[];
+  /** Human-readable explanation of why this capo position is recommended */
+  reason: string;
+  /** Score representing how "easy" this capo position makes the song (higher = easier) */
+  score: number;
+}
+
+/**
+ * Recommend the best capo position for a set of chords.
+ * Analyzes all 12 possible capo positions (frets 0-11) and scores each
+ * based on how many chords become easy open shapes.
+ *
+ * @param chords - Array of chord strings used in the song (e.g., ["Bb", "Eb", "F", "Gm"])
+ * @param currentKey - The current key of the song (e.g., "Bb")
+ * @returns The best capo recommendation, or null if no capo improves playability
+ */
+export function recommendCapo(chords: string[], currentKey: string): CapoRecommendation | null {
+  if (!chords || chords.length === 0) return null;
+
+  // Deduplicate chords (just the main chord, ignoring slash bass)
+  const uniqueChords = Array.from(new Set(chords.map(c => c.split("/")[0].trim())));
+  const parsedChords = uniqueChords.map(parseChord).filter(Boolean) as { root: string; quality: string }[];
+  
+  if (parsedChords.length === 0) return null;
+
+  // Score the current position (capo 0) as baseline
+  let bestResult: CapoRecommendation | null = null;
+  let bestScore = -1;
+
+  // Evaluate capo positions 0 through 9 (beyond 9 is impractical)
+  for (let capoFret = 0; capoFret <= 9; capoFret++) {
+    // When you place a capo on fret N, you transpose DOWN by N semitones
+    // to find the shapes you actually play.
+    // E.g., song in Bb with capo on fret 3: you play shapes in G (Bb - 3 semitones = G)
+    const semitonesDown = capoFret; // Transpose down to find the played shapes
+    
+    let totalScore = 0;
+    let openCount = 0;
+    const simplifiedChords: string[] = [];
+
+    for (const { root, quality } of parsedChords) {
+      const rootIdx = noteToIndex(root);
+      if (rootIdx < 0) continue;
+
+      // Transpose root down by capoFret semitones
+      const newIdx = ((rootIdx - semitonesDown) + 12) % 12;
+      const newRoot = SHARP_NOTES[newIdx];
+      const score = getOpenChordScore(newRoot, quality);
+
+      if (score > 0) {
+        openCount++;
+        totalScore += (4 - score); // Invert so easier chords score higher
+      }
+      simplifiedChords.push(newRoot + quality);
+    }
+
+    // Penalize high capo positions slightly (playing at fret 7+ is less comfortable)
+    const positionPenalty = capoFret > 5 ? (capoFret - 5) * 0.5 : 0;
+    const finalScore = totalScore - positionPenalty;
+
+    // Only consider positions where at least half the chords become open
+    const openRatio = openCount / parsedChords.length;
+    if (openRatio < 0.5) continue;
+
+    if (finalScore > bestScore) {
+      bestScore = finalScore;
+
+      // Determine the "capo key" (the key of the shapes being played)
+      const keyIdx = noteToIndex(currentKey.replace("m", ""));
+      const isMinor = currentKey.endsWith("m");
+      const capoKeyIdx = ((keyIdx - semitonesDown) + 12) % 12;
+      const capoKey = SHARP_NOTES[capoKeyIdx] + (isMinor ? "m" : "");
+
+      bestResult = {
+        capoFret,
+        originalKey: currentKey,
+        capoKey,
+        simplifiedChords,
+        score: finalScore,
+        reason: capoFret === 0
+          ? `All chords are already easy open shapes in ${currentKey}.`
+          : `Capo on fret ${capoFret} lets you play ${capoKey} shapes (${openCount} of ${parsedChords.length} chords become open). Much easier fingering!`,
+      };
+    }
+  }
+
+  // Only return a capo recommendation if it's better than no capo
+  // and the capo fret is > 0 (otherwise it's just "no capo needed")
+  if (bestResult && bestResult.capoFret === 0) {
+    // No capo needed — chords are already open
+    return bestResult;
+  }
+
+  // Check if capo actually improves over no-capo
+  if (bestResult) {
+    // Score the no-capo position
+    let noCapoScore = 0;
+    for (const { root, quality } of parsedChords) {
+      const score = getOpenChordScore(root, quality);
+      if (score > 0) noCapoScore += (4 - score);
+    }
+
+    // Only recommend capo if it meaningfully improves the score
+    if (bestResult.score <= noCapoScore) {
+      return {
+        capoFret: 0,
+        originalKey: currentKey,
+        capoKey: currentKey,
+        simplifiedChords: uniqueChords,
+        score: noCapoScore,
+        reason: `Chords are already easy to play in ${currentKey} — no capo needed.`,
+      };
+    }
+  }
+
+  return bestResult;
+}
+
+/**
+ * Get all viable capo positions ranked by score.
+ * Useful for showing the user multiple options.
+ */
+export function getAllCapoOptions(chords: string[], currentKey: string): CapoRecommendation[] {
+  if (!chords || chords.length === 0) return [];
+
+  const uniqueChords = Array.from(new Set(chords.map(c => c.split("/")[0].trim())));
+  const parsedChords = uniqueChords.map(parseChord).filter(Boolean) as { root: string; quality: string }[];
+  if (parsedChords.length === 0) return [];
+
+  const results: CapoRecommendation[] = [];
+
+  for (let capoFret = 0; capoFret <= 9; capoFret++) {
+    const semitonesDown = capoFret;
+    let totalScore = 0;
+    let openCount = 0;
+    const simplifiedChords: string[] = [];
+
+    for (const { root, quality } of parsedChords) {
+      const rootIdx = noteToIndex(root);
+      if (rootIdx < 0) continue;
+      const newIdx = ((rootIdx - semitonesDown) + 12) % 12;
+      const newRoot = SHARP_NOTES[newIdx];
+      const score = getOpenChordScore(newRoot, quality);
+      if (score > 0) {
+        openCount++;
+        totalScore += (4 - score);
+      }
+      simplifiedChords.push(newRoot + quality);
+    }
+
+    const positionPenalty = capoFret > 5 ? (capoFret - 5) * 0.5 : 0;
+    const finalScore = totalScore - positionPenalty;
+    const openRatio = openCount / parsedChords.length;
+
+    if (openRatio >= 0.4) {
+      const keyIdx = noteToIndex(currentKey.replace("m", ""));
+      const isMinor = currentKey.endsWith("m");
+      const capoKeyIdx = ((keyIdx - semitonesDown) + 12) % 12;
+      const capoKey = SHARP_NOTES[capoKeyIdx] + (isMinor ? "m" : "");
+
+      results.push({
+        capoFret,
+        originalKey: currentKey,
+        capoKey,
+        simplifiedChords,
+        score: finalScore,
+        reason: capoFret === 0
+          ? `Play open shapes in ${currentKey}.`
+          : `Capo fret ${capoFret}: play ${capoKey} shapes (${openCount}/${parsedChords.length} open).`,
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.score - a.score);
+}
+
 /**
  * Detect the key from ABC notation by reading the K: field.
  */

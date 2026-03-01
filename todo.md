@@ -479,3 +479,17 @@
 ## Professional Logo Redesign
 - [ ] Generate a professional, modern logo for MakeCustomMusic.com
 - [ ] Upload to CDN and update VITE_APP_LOGO
+
+## Capo Recommendation Feature
+- [x] Build capo recommendation algorithm (analyze chords, find optimal capo position for open chords)
+- [x] Add capo recommendation display to GuitarChordViewer UI
+- [x] Show simplified chord shapes when capo is applied
+- [x] Allow toggling capo on/off to compare original vs capo chords (Apply Capo button + key change resets)
+- [x] Include capo recommendation in PDF export
+- [x] Write tests for capo recommendation logic (31 new tests)
+
+## PDF Margin Fix
+- [x] Fix sheet music PDF export to respect proper margins (no content encroachment)
+- [x] Fix chord chart PDF export to respect proper margins (no content encroachment)
+- [x] Fix lyrics PDF export to respect proper margins (no content encroachment)
+- [x] Ensure consistent margin handling across all PDF exports (SAFE_BOTTOM + FOOTER_RESERVE system)

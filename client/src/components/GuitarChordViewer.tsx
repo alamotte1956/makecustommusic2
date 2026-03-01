@@ -2,11 +2,11 @@ import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Guitar, RefreshCw, Info } from "lucide-react";
+import { Loader2, Download, Guitar, RefreshCw, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportChordPDF, type ChordPDFData } from "@/lib/pdfExport";
-import { COMMON_KEYS, getSemitoneInterval, transposeChordWithSlash } from "@/lib/transpose";
+import { COMMON_KEYS, getSemitoneInterval, transposeChordWithSlash, recommendCapo, getAllCapoOptions, type CapoRecommendation } from "@/lib/transpose";
 
 interface ChordSection {
   section: string;
@@ -126,11 +126,114 @@ function ChordDiagramSVG({ chord }: { chord: GuitarChordDiagram }) {
   );
 }
 
+// Capo recommendation card component
+function CapoRecommendationCard({
+  recommendation,
+  allOptions,
+  onApplyCapo,
+}: {
+  recommendation: CapoRecommendation;
+  allOptions: CapoRecommendation[];
+  onApplyCapo: (capoFret: number) => void;
+}) {
+  const [showAlternatives, setShowAlternatives] = useState(false);
+
+  // Don't show the card if no capo is needed (fret 0) and there's no improvement
+  if (recommendation.capoFret === 0) {
+    return (
+      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+        <div className="flex items-center gap-2">
+          <span className="text-base">✓</span>
+          <p className="text-sm text-emerald-400">
+            Chords are already easy open shapes — no capo needed!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const alternatives = allOptions.filter(o => o.capoFret !== recommendation.capoFret && o.capoFret > 0);
+
+  return (
+    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
+      {/* Main recommendation */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🎸</span>
+            <h4 className="text-sm font-semibold text-amber-400">Capo Recommendation</h4>
+          </div>
+          <p className="text-sm text-amber-200/80">
+            Place capo on <span className="font-bold text-amber-300">fret {recommendation.capoFret}</span> to play{" "}
+            <span className="font-bold text-amber-300">{recommendation.capoKey}</span> shapes
+            (sounds as {recommendation.originalKey})
+          </p>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {recommendation.simplifiedChords.map((chord, i) => (
+              <Badge key={i} variant="outline" className="text-amber-300 border-amber-500/40 bg-amber-500/10 text-xs">
+                {chord}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-amber-500/40 text-amber-300 hover:bg-amber-500/20 shrink-0"
+          onClick={() => onApplyCapo(recommendation.capoFret)}
+        >
+          Apply Capo
+        </Button>
+      </div>
+
+      {/* Alternative positions */}
+      {alternatives.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowAlternatives(!showAlternatives)}
+            className="flex items-center gap-1 text-xs text-amber-400/70 hover:text-amber-400 transition-colors"
+          >
+            {showAlternatives ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {showAlternatives ? "Hide" : "Show"} {alternatives.length} alternative position{alternatives.length !== 1 ? "s" : ""}
+          </button>
+          {showAlternatives && (
+            <div className="mt-2 space-y-2">
+              {alternatives.slice(0, 3).map((alt) => (
+                <div key={alt.capoFret} className="flex items-center justify-between bg-amber-500/5 rounded-md px-3 py-2">
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-amber-300/80">
+                      Fret {alt.capoFret} — play {alt.capoKey} shapes
+                    </p>
+                    <div className="flex gap-1">
+                      {alt.simplifiedChords.map((c, i) => (
+                        <span key={i} className="text-[10px] text-amber-400/60">{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs text-amber-400/70 hover:text-amber-300 h-7 px-2"
+                    onClick={() => onApplyCapo(alt.capoFret)}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GuitarChordViewer({ songId, chordProgression: initialData, songTitle }: GuitarChordViewerProps) {
   const [data, setData] = useState<ChordProgressionData | null>(initialData ?? null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>("original");
+  const [appliedCapo, setAppliedCapo] = useState<number>(0);
   const generateMutation = trpc.songs.generateChordProgression.useMutation();
   const utils = trpc.useUtils();
 
@@ -166,11 +269,43 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
     }));
   }, [data?.chordDiagrams, semitones, selectedKey, originalKey]);
 
+  // Collect all unique chords from the current (possibly transposed) sections
+  const allChords = useMemo(() => {
+    const chords: string[] = [];
+    for (const section of transposedSections) {
+      chords.push(...section.chords);
+    }
+    return chords;
+  }, [transposedSections]);
+
+  // Capo recommendation based on current chords and key
+  const capoRecommendation = useMemo(() => {
+    if (!displayKey || allChords.length === 0) return null;
+    return recommendCapo(allChords, displayKey);
+  }, [allChords, displayKey]);
+
+  // All capo options for the alternatives dropdown
+  const allCapoOptions = useMemo(() => {
+    if (!displayKey || allChords.length === 0) return [];
+    return getAllCapoOptions(allChords, displayKey);
+  }, [allChords, displayKey]);
+
+  // Handle applying a capo position
+  const handleApplyCapo = useCallback((capoFret: number) => {
+    setAppliedCapo(capoFret);
+    toast.success(
+      capoFret > 0
+        ? `Capo applied on fret ${capoFret}. Chord shapes updated!`
+        : "Capo removed."
+    );
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     try {
       const result = await generateMutation.mutateAsync({ songId });
       setData(result.chordProgression);
       setSelectedKey("original");
+      setAppliedCapo(0);
       utils.songs.getById.invalidate({ id: songId });
       toast.success("Chord progression generated!");
     } catch (error: any) {
@@ -187,7 +322,8 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
 
       const pdfData: ChordPDFData = {
         key: displayKey ?? data.key,
-        capo: data.capo,
+        capo: appliedCapo > 0 ? appliedCapo : data.capo,
+        capoRecommendation: capoRecommendation && capoRecommendation.capoFret > 0 ? capoRecommendation : null,
         tempo: data.tempo,
         timeSignature: data.timeSignature,
         sections: transposedSections,
@@ -202,7 +338,7 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
     } finally {
       setExporting(false);
     }
-  }, [data, songTitle, displayKey, transposedSections, selectedKey]);
+  }, [data, songTitle, displayKey, transposedSections, selectedKey, appliedCapo, capoRecommendation]);
 
   // No data yet — show generate button
   if (!data) {
@@ -253,7 +389,7 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
           {/* Key selector */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Transpose to:</span>
-            <Select value={selectedKey} onValueChange={setSelectedKey}>
+            <Select value={selectedKey} onValueChange={(key) => { setSelectedKey(key); setAppliedCapo(0); }}>
               <SelectTrigger className="w-[100px] h-8 text-xs">
                 <SelectValue placeholder="Key" />
               </SelectTrigger>
@@ -304,7 +440,12 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
         {/* Song metadata */}
         <div className="flex flex-wrap gap-2">
           <Badge variant="default" className="bg-indigo-600">Key: {displayKey}</Badge>
-          {data.capo > 0 && <Badge variant="secondary">Capo: Fret {data.capo}</Badge>}
+          {(appliedCapo > 0 || data.capo > 0) && (
+            <Badge variant="secondary" className={appliedCapo > 0 ? "bg-amber-600 text-white" : ""}>
+              Capo: Fret {appliedCapo > 0 ? appliedCapo : data.capo}
+              {appliedCapo > 0 && " (recommended)"}
+            </Badge>
+          )}
           <Badge variant="secondary">{data.tempo} BPM</Badge>
           <Badge variant="secondary">{data.timeSignature}</Badge>
           {selectedKey !== "original" && (
@@ -313,6 +454,15 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
             </Badge>
           )}
         </div>
+
+        {/* Capo Recommendation */}
+        {capoRecommendation && (
+          <CapoRecommendationCard
+            recommendation={capoRecommendation}
+            allOptions={allCapoOptions}
+            onApplyCapo={handleApplyCapo}
+          />
+        )}
 
         {/* Chord diagrams */}
         {transposedDiagrams && transposedDiagrams.length > 0 && (
