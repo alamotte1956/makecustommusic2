@@ -630,3 +630,11 @@
 - [x] Verify all pricing pages show correct plan details
 - [x] Remove all credit pack UI and logic
 - [x] All 495 tests passing across 24 test files
+
+## Upload Song Preview Before Finalizing
+- [x] Add audio preview player to Upload page after file is selected
+- [x] Show play/pause button with progress bar and seek functionality for the selected file
+- [x] Display file metadata (name, size, duration) before upload
+- [x] Allow users to remove/replace the selected file before finalizing
+- [x] Ensure preview works with all supported audio formats (MP3, WAV, FLAC, OGG, M4A, AAC)
+- [x] Write tests for the upload preview functionality (27 tests, 522 total passing across 25 files)

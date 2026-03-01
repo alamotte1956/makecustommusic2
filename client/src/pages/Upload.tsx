@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Upload as UploadIcon, Music, FileMusic, Image, X, Loader2,
-  CheckCircle2, AlertCircle, Wand2, ArrowRight,
+  CheckCircle2, AlertCircle, Wand2, ArrowRight, Play, Pause, Volume2,
 } from "lucide-react";
 
 type UploadMode = "audio" | "sheet-music";
@@ -36,10 +36,86 @@ export default function UploadPage() {
   const [vocalType, setVocalType] = useState<"none" | "male" | "female" | "mixed">("none");
   const [duration, setDuration] = useState(60);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
+
+  // Clean up preview URL and audio when file changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [previewUrl]);
 
   const uploadAudio = trpc.songs.uploadAudio.useMutation();
   const analyzeSheet = trpc.songs.analyzeSheetMusic.useMutation();
   const generateFromSheet = trpc.songs.generateFromSheetMusic.useMutation();
+
+  const stopPreview = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.removeEventListener("timeupdate", () => {});
+      audioRef.current.removeEventListener("ended", () => {});
+      audioRef.current = null;
+    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setAudioDuration(0);
+  }, [previewUrl]);
+
+  const setupPreview = useCallback((f: File) => {
+    stopPreview();
+    if (AUDIO_TYPES.some(t => f.type === t)) {
+      const url = URL.createObjectURL(f);
+      setPreviewUrl(url);
+      const audio = new Audio(url);
+      audio.addEventListener("loadedmetadata", () => {
+        setAudioDuration(audio.duration);
+      });
+      audio.addEventListener("timeupdate", () => {
+        setCurrentTime(audio.currentTime);
+      });
+      audio.addEventListener("ended", () => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+      });
+      audioRef.current = audio;
+    }
+  }, [stopPreview]);
+
+  const togglePlayPause = useCallback(() => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  }, [isPlaying]);
+
+  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !progressRef.current || !audioDuration) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audioRef.current.currentTime = pct * audioDuration;
+    setCurrentTime(audioRef.current.currentTime);
+  }, [audioDuration]);
+
+  const formatTime = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   const validateAndSetFile = useCallback((f: File) => {
     const validTypes = mode === "audio" ? AUDIO_TYPES : SHEET_TYPES;
@@ -57,7 +133,8 @@ export default function UploadPage() {
     setFile(f);
     if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ""));
     setAnalysis(null);
-  }, [mode, title]);
+    if (mode === "audio") setupPreview(f);
+  }, [mode, title, setupPreview]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -193,7 +270,7 @@ export default function UploadPage() {
         {/* Mode Selector */}
         <div className="grid grid-cols-2 gap-3 mb-8">
           <button
-            onClick={() => { setMode("audio"); setFile(null); setAnalysis(null); }}
+            onClick={() => { setMode("audio"); stopPreview(); setFile(null); setAnalysis(null); }}
             className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
               mode === "audio"
                 ? "border-violet-500 bg-violet-50 shadow-sm"
@@ -207,7 +284,7 @@ export default function UploadPage() {
             </div>
           </button>
           <button
-            onClick={() => { setMode("sheet-music"); setFile(null); setAnalysis(null); }}
+            onClick={() => { setMode("sheet-music"); stopPreview(); setFile(null); setAnalysis(null); }}
             className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
               mode === "sheet-music"
                 ? "border-violet-500 bg-violet-50 shadow-sm"
@@ -248,20 +325,64 @@ export default function UploadPage() {
           />
 
           {file ? (
-            <div className="flex items-center justify-center gap-3">
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
-              <div className="text-left">
-                <p className="font-semibold text-black">{file.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {(file.size / (1024 * 1024)).toFixed(1)} MB
-                </p>
+            <div className="space-y-0">
+              <div className="flex items-center justify-center gap-3">
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+                <div className="text-left">
+                  <p className="font-semibold text-black">{file.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(file.size / (1024 * 1024)).toFixed(1)} MB
+                    {audioDuration > 0 && ` · ${formatTime(audioDuration)}`}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); stopPreview(); setFile(null); setAnalysis(null); }}
+                  className="ml-4 p-1 rounded-full hover:bg-gray-200"
+                >
+                  <X className="h-5 w-5 text-muted-foreground" />
+                </button>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); setFile(null); setAnalysis(null); }}
-                className="ml-4 p-1 rounded-full hover:bg-gray-200"
-              >
-                <X className="h-5 w-5 text-muted-foreground" />
-              </button>
+
+              {/* Audio Preview Player */}
+              {mode === "audio" && previewUrl && (
+                <div
+                  className="mt-4 bg-white/80 rounded-xl border border-violet-200 p-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={togglePlayPause}
+                      className="flex-shrink-0 w-10 h-10 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-colors shadow-sm"
+                    >
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      <div
+                        ref={progressRef}
+                        onClick={handleSeek}
+                        className="relative h-2 bg-violet-100 rounded-full cursor-pointer group"
+                      >
+                        <div
+                          className="absolute inset-y-0 left-0 bg-violet-500 rounded-full transition-all"
+                          style={{ width: audioDuration ? `${(currentTime / audioDuration) * 100}%` : "0%" }}
+                        />
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-violet-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ left: audioDuration ? `calc(${(currentTime / audioDuration) * 100}% - 7px)` : "0" }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-xs text-muted-foreground font-mono">{formatTime(currentTime)}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{formatTime(audioDuration)}</span>
+                      </div>
+                    </div>
+
+                    <Volume2 className="h-4 w-4 text-violet-400 flex-shrink-0" />
+                  </div>
+                  <p className="text-xs text-violet-600 mt-2 text-center font-medium">Preview your audio before uploading</p>
+                </div>
+              )}
             </div>
           ) : (
             <>
