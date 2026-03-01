@@ -236,3 +236,34 @@
 
 ## API Key Issue
 - [ ] ElevenLabs API key returns 401 (unauthorized) — user needs to provide a valid/active key
+
+## ElevenLabs Voice Settings & TTS UI Integration
+- [x] Add voice_settings (stability, similarity_boost) to elevenLabsApi.ts TTS function
+- [x] Update ttsPreview backend route to accept voice_settings parameters
+- [x] Build VoiceSelector component with ElevenLabs voice dropdown
+- [x] Add "Listen to Lyrics" TTS button on History page song cards
+- [x] Add "Listen to Lyrics" TTS button on Favorites page song cards
+- [x] Add "Listen to Lyrics" TTS button on AlbumDetail page song cards
+- [x] Add inline TTS audio playback with loading state
+- [x] Update tests for voice_settings changes
+
+## Server-Side API Key Security
+- [x] Verify ELEVENLABS_API_KEY is registered in server/_core/env.ts (server-only)
+- [x] Verify key is NOT exposed via any VITE_ prefixed env var
+- [x] Verify all ElevenLabs API calls happen exclusively in server code
+- [x] Verify no frontend code directly accesses the API key
+- [x] Add test to confirm key is available server-side
+
+## Full ElevenLabs TTS Integration (User Architecture Guide)
+- [x] Add Express POST /api/generate-voice endpoint for direct audio streaming (arraybuffer response)
+- [x] Use voice_settings (stability: 0.4, similarity_boost: 0.75) in all TTS calls
+- [x] Add rate limiting middleware to voice generation endpoints
+- [x] Add auth guard to /api/generate-voice endpoint
+- [x] Build frontend generateSong() flow: fetch → blob → Audio playback
+- [x] Add "Listen to Lyrics" button on History page song cards
+- [x] Add "Listen to Lyrics" button on Favorites page song cards
+- [x] Add "Listen to Lyrics" button on AlbumDetail page song cards
+- [x] Add voice selector dropdown component (ElevenLabs voices)
+- [x] Upload generated TTS audio to S3 for persistent URLs
+- [x] Write tests for /api/generate-voice endpoint
+- [x] Write tests for rate limiting

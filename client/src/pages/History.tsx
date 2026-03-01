@@ -16,6 +16,7 @@ import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/Song
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import { getLoginUrl } from "@/const";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
+import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import {
   Dialog,
   DialogContent,
@@ -363,6 +364,9 @@ export default function History() {
                             <Pencil className="w-3.5 h-3.5 mr-1.5" />
                             Edit
                           </Button>
+                          {song.lyrics && (
+                            <ListenToLyricsButton lyrics={song.lyrics} size="sm" />
+                          )}
                           <FavoriteButton songId={song.id} size="sm" />
 
                           <Button

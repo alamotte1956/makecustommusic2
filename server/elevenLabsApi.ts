@@ -29,6 +29,13 @@ export type ElevenLabsVoice = {
   preview_url?: string;
 };
 
+export type VoiceSettings = {
+  stability?: number; // 0.0 - 1.0, default 0.4
+  similarity_boost?: number; // 0.0 - 1.0, default 0.75
+  style?: number; // 0.0 - 1.0, default 0.0
+  use_speaker_boost?: boolean; // default true
+};
+
 export type MusicGenerateParams = {
   prompt: string;
   durationMs?: number; // 3000-600000 (3s to 10min)
@@ -39,6 +46,7 @@ export type TTSParams = {
   text: string;
   voiceId: string;
   modelId?: string;
+  voiceSettings?: VoiceSettings;
 };
 
 export type MusicResult = {
@@ -50,6 +58,12 @@ export type MusicResult = {
 export type TTSResult = {
   audioUrl: string;
   audioKey: string;
+};
+
+// Default voice settings matching the user's preferred configuration
+const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
+  stability: 0.4,
+  similarity_boost: 0.75,
 };
 
 // ─── Music Generation ───
@@ -106,6 +120,7 @@ export async function generateMusic(
 
 /**
  * Convert text to speech using a specific voice.
+ * Supports voice_settings for fine-tuning stability and similarity.
  * Returns the audio URL after uploading to S3.
  */
 export async function textToSpeech(
@@ -117,12 +132,24 @@ export async function textToSpeech(
   }
 
   const apiKey = getApiKey();
+  const voiceSettings = {
+    ...DEFAULT_VOICE_SETTINGS,
+    ...params.voiceSettings,
+  };
 
   const response = await axios.post(
     `${ELEVENLABS_API_BASE}/v1/text-to-speech/${params.voiceId}`,
     {
       text: params.text,
       model_id: params.modelId ?? "eleven_multilingual_v2",
+      voice_settings: {
+        stability: voiceSettings.stability,
+        similarity_boost: voiceSettings.similarity_boost,
+        ...(voiceSettings.style !== undefined && { style: voiceSettings.style }),
+        ...(voiceSettings.use_speaker_boost !== undefined && {
+          use_speaker_boost: voiceSettings.use_speaker_boost,
+        }),
+      },
     },
     {
       headers: {

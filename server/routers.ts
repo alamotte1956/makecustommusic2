@@ -184,10 +184,19 @@ export const appRouter = router({
       .input(z.object({
         text: z.string().min(1).max(5000),
         voiceId: z.string().min(1),
+        stability: z.number().min(0).max(1).optional(),
+        similarityBoost: z.number().min(0).max(1).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const result = await textToSpeech(
-          { text: input.text, voiceId: input.voiceId },
+          {
+            text: input.text,
+            voiceId: input.voiceId,
+            voiceSettings: {
+              stability: input.stability ?? 0.4,
+              similarity_boost: input.similarityBoost ?? 0.75,
+            },
+          },
           ctx.user.id
         );
         return { audioUrl: result.audioUrl };
@@ -200,6 +209,8 @@ export const appRouter = router({
         text: z.string().min(1).max(2000),
         voiceId: z.string().min(1),
         type: z.enum(["intro", "outro"]),
+        stability: z.number().min(0).max(1).optional(),
+        similarityBoost: z.number().min(0).max(1).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const song = await getSongById(input.songId);
@@ -208,7 +219,14 @@ export const appRouter = router({
         }
 
         const result = await textToSpeech(
-          { text: input.text, voiceId: input.voiceId },
+          {
+            text: input.text,
+            voiceId: input.voiceId,
+            voiceSettings: {
+              stability: input.stability ?? 0.4,
+              similarity_boost: input.similarityBoost ?? 0.75,
+            },
+          },
           ctx.user.id
         );
 
@@ -225,6 +243,8 @@ export const appRouter = router({
         songId: z.number(),
         lyrics: z.string().min(1).max(10000),
         voiceId: z.string().min(1),
+        stability: z.number().min(0).max(1).optional(),
+        similarityBoost: z.number().min(0).max(1).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const song = await getSongById(input.songId);
@@ -233,7 +253,14 @@ export const appRouter = router({
         }
 
         const result = await textToSpeech(
-          { text: input.lyrics, voiceId: input.voiceId },
+          {
+            text: input.lyrics,
+            voiceId: input.voiceId,
+            voiceSettings: {
+              stability: input.stability ?? 0.4,
+              similarity_boost: input.similarityBoost ?? 0.75,
+            },
+          },
           ctx.user.id
         );
 

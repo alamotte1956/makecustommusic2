@@ -13,6 +13,7 @@ import {
 import FavoriteButton from "@/components/FavoriteButton";
 import EditSongDialog from "@/components/EditSongDialog";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
+import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import {
   DndContext,
@@ -154,6 +155,9 @@ function SortableSongCard({
                     )}
                     Lyrics
                   </Button>
+                )}
+                {song.lyrics && (
+                  <ListenToLyricsButton lyrics={song.lyrics} size="sm" />
                 )}
                 <Button variant="outline" size="sm" onClick={() => onEdit(song)}>
                   <Pencil className="w-3.5 h-3.5 mr-1.5" />
