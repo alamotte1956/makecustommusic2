@@ -364,3 +364,25 @@
 - [x] Add Stripe status check endpoint (credits.stripeStatus)
 - [x] Write tests for Stripe integration (23 tests in stripe.test.ts)
 - [x] All 283 tests passing across 16 test files
+
+## First-Time User Onboarding Walkthrough
+- [ ] Create OnboardingContext to track walkthrough state (step, active, completed)
+- [ ] Persist onboarding completion status in localStorage
+- [ ] Build OnboardingOverlay component with spotlight highlight, tooltip, and step navigation
+- [ ] Add walkthrough steps for Generator page (describe music, select options, generate)
+- [ ] Add walkthrough steps for SongDetail page (view sheet music, explore tabs)
+- [ ] Add welcome modal for first-time users with option to start or skip walkthrough
+- [ ] Integrate walkthrough into Generator page with step-specific highlights
+- [ ] Integrate walkthrough into SongDetail page with sheet music guidance
+- [ ] Add "Restart Tour" button in navigation or settings for returning users
+- [ ] Write tests for onboarding logic
+
+## Custom Lyrics UX Improvement
+- [x] Make "Write Your Own Lyrics" a first-class option on the Generator page (three-tab creation mode selector)
+- [x] Add a dedicated lyrics textarea that's always visible when lyrics mode is selected (12-row textarea with mono font)
+- [x] Add clear helper text and placeholder guiding users on how to format lyrics (section markers, example lyrics)
+- [x] Add song structure templates (Love Song, Story Song, Hip Hop/Rap, Simple Verse-Chorus)
+- [x] Ensure lyrics are passed correctly to the backend and stored with the song
+- [x] Keep AI-generated lyrics option alongside manual entry (AI Lyrics tab)
+- [x] Write tests for custom lyrics flow (36 tests in customLyrics.test.ts)
+- [x] All 319 tests passing across 17 test files
