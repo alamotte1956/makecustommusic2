@@ -19,8 +19,9 @@ describe("Upload Audio Preview", () => {
       expect(uploadPageContent).toContain("Pause");
     });
 
-    it("imports Volume2 icon for the preview player", () => {
+    it("imports Volume2 and VolumeX icons for volume control", () => {
       expect(uploadPageContent).toContain("Volume2");
+      expect(uploadPageContent).toContain("VolumeX");
     });
 
     it("imports useEffect for cleanup", () => {
@@ -122,6 +123,66 @@ describe("Upload Audio Preview", () => {
 
     it("shows audio duration in file info when available", () => {
       expect(uploadPageContent).toContain("audioDuration > 0");
+    });
+  });
+
+  describe("Volume control", () => {
+    it("declares volume state", () => {
+      expect(uploadPageContent).toContain("volume");
+      expect(uploadPageContent).toContain("setVolume");
+    });
+
+    it("declares isMuted state", () => {
+      expect(uploadPageContent).toContain("isMuted");
+      expect(uploadPageContent).toContain("setIsMuted");
+    });
+
+    it("has a prevVolumeRef to restore volume after unmute", () => {
+      expect(uploadPageContent).toContain("prevVolumeRef");
+    });
+
+    it("defines handleVolumeChange function", () => {
+      expect(uploadPageContent).toContain("handleVolumeChange");
+    });
+
+    it("defines toggleMute function", () => {
+      expect(uploadPageContent).toContain("toggleMute");
+    });
+
+    it("clamps volume between 0 and 1", () => {
+      expect(uploadPageContent).toContain("Math.max(0, Math.min(1, newVolume))");
+    });
+
+    it("syncs volume to the audio element", () => {
+      expect(uploadPageContent).toContain("audioRef.current.volume");
+    });
+
+    it("renders mute toggle button with correct icon", () => {
+      expect(uploadPageContent).toContain("<VolumeX");
+      expect(uploadPageContent).toContain("<Volume2");
+    });
+
+    it("renders volume range slider with correct attributes", () => {
+      expect(uploadPageContent).toContain('type="range"');
+      expect(uploadPageContent).toContain("handleVolumeChange");
+      expect(uploadPageContent).toContain('step={0.01}');
+    });
+
+    it("shows volume percentage in slider title", () => {
+      expect(uploadPageContent).toContain("Volume:");
+    });
+
+    it("shows Unmute/Mute tooltip on the toggle button", () => {
+      expect(uploadPageContent).toContain('"Unmute"');
+      expect(uploadPageContent).toContain('"Mute"');
+    });
+
+    it("sets initial audio volume when creating preview", () => {
+      expect(uploadPageContent).toContain("audio.volume = volume");
+    });
+
+    it("restores previous volume when unmuting", () => {
+      expect(uploadPageContent).toContain("prevVolumeRef.current > 0 ? prevVolumeRef.current : 1");
     });
   });
 

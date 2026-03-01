@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Upload as UploadIcon, Music, FileMusic, Image, X, Loader2,
-  CheckCircle2, AlertCircle, Wand2, ArrowRight, Play, Pause, Volume2,
+  CheckCircle2, AlertCircle, Wand2, ArrowRight, Play, Pause, Volume2, VolumeX,
 } from "lucide-react";
 
 type UploadMode = "audio" | "sheet-music";
@@ -41,6 +41,9 @@ export default function UploadPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const prevVolumeRef = useRef(1);
   const progressRef = useRef<HTMLDivElement>(null);
 
   // Clean up preview URL and audio when file changes or component unmounts
@@ -88,9 +91,10 @@ export default function UploadPage() {
         setIsPlaying(false);
         setCurrentTime(0);
       });
+      audio.volume = volume;
       audioRef.current = audio;
     }
-  }, [stopPreview]);
+  }, [stopPreview, volume]);
 
   const togglePlayPause = useCallback(() => {
     if (!audioRef.current) return;
@@ -110,6 +114,28 @@ export default function UploadPage() {
     audioRef.current.currentTime = pct * audioDuration;
     setCurrentTime(audioRef.current.currentTime);
   }, [audioDuration]);
+
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    const clamped = Math.max(0, Math.min(1, newVolume));
+    setVolume(clamped);
+    setIsMuted(clamped === 0);
+    if (audioRef.current) audioRef.current.volume = clamped;
+    if (clamped > 0) prevVolumeRef.current = clamped;
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    if (isMuted) {
+      const restored = prevVolumeRef.current > 0 ? prevVolumeRef.current : 1;
+      setVolume(restored);
+      setIsMuted(false);
+      if (audioRef.current) audioRef.current.volume = restored;
+    } else {
+      prevVolumeRef.current = volume;
+      setVolume(0);
+      setIsMuted(true);
+      if (audioRef.current) audioRef.current.volume = 0;
+    }
+  }, [isMuted, volume]);
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -378,7 +404,30 @@ export default function UploadPage() {
                       </div>
                     </div>
 
-                    <Volume2 className="h-4 w-4 text-violet-400 flex-shrink-0" />
+                    {/* Volume Control */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={toggleMute}
+                        className="p-1 rounded-full hover:bg-violet-100 transition-colors"
+                        title={isMuted ? "Unmute" : "Mute"}
+                      >
+                        {isMuted || volume === 0 ? (
+                          <VolumeX className="h-4 w-4 text-violet-400" />
+                        ) : (
+                          <Volume2 className="h-4 w-4 text-violet-400" />
+                        )}
+                      </button>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={isMuted ? 0 : volume}
+                        onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                        className="w-16 h-1.5 accent-violet-500 cursor-pointer"
+                        title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
+                      />
+                    </div>
                   </div>
                   <p className="text-xs text-violet-600 mt-2 text-center font-medium">Preview your audio before uploading</p>
                 </div>

@@ -638,3 +638,10 @@
 - [x] Allow users to remove/replace the selected file before finalizing
 - [x] Ensure preview works with all supported audio formats (MP3, WAV, FLAC, OGG, M4A, AAC)
 - [x] Write tests for the upload preview functionality (27 tests, 522 total passing across 25 files)
+
+## Volume Control for Upload Preview Player
+- [x] Add volume state and muted state to Upload page
+- [x] Add mute/unmute toggle button with Volume2/VolumeX icons
+- [x] Add volume slider (range input) next to the mute button
+- [x] Sync volume and mute state with the audio element
+- [x] Update tests for volume control functionality (40 tests passing, 13 new volume tests)
