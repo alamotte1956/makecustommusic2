@@ -80,7 +80,7 @@ export default function Terms() {
             The Service offers multiple subscription tiers, each providing a monthly
             allocation of generation credits. Credits are consumed each time you generate
             a song. Unused monthly credits do not roll over to the next billing period.
-            Additional credit packs may be purchased separately and do not expire.
+            Upgrade to a higher plan for more credits.
           </p>
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
@@ -95,17 +95,17 @@ export default function Terms() {
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Free</td>
                   <td className="px-4 py-2.5 text-foreground/70">$0/mo</td>
-                  <td className="px-4 py-2.5 text-foreground/70">3 credits</td>
+                  <td className="px-4 py-2.5 text-foreground/70">2 credits</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Creator</td>
                   <td className="px-4 py-2.5 text-foreground/70">$8/mo</td>
-                  <td className="px-4 py-2.5 text-foreground/70">100 credits</td>
+                  <td className="px-4 py-2.5 text-foreground/70">250 credits</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Professional</td>
                   <td className="px-4 py-2.5 text-foreground/70">$19/mo</td>
-                  <td className="px-4 py-2.5 text-foreground/70">500 credits</td>
+                  <td className="px-4 py-2.5 text-foreground/70">1,000 credits</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Studio</td>

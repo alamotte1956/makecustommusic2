@@ -7,11 +7,10 @@ describe("Credits Module", () => {
     it("returns correct limits for free plan", () => {
       const limits = getPlanLimits("free");
       expect(limits).toEqual(PLAN_LIMITS.free);
-      expect(limits.monthlyCredits).toBe(5);
-      expect(limits.dailySongLimit).toBe(3);
-      expect(limits.dailyTtsLimit).toBe(2);
-      expect(limits.takesPerSong).toBe(1);
-      expect(limits.stemDownloads).toBe(false);
+      expect(limits.monthlyCredits).toBe(2);
+      expect(limits.dailySongLimit).toBe(2);
+      expect(limits.dailySheetMusicLimit).toBe(1);
+      expect(limits.audioQuality).toBe("128kbps");
     });
 
     it("returns correct limits for creator plan", () => {
@@ -19,8 +18,7 @@ describe("Credits Module", () => {
       expect(limits).toEqual(PLAN_LIMITS.creator);
       expect(limits.monthlyCredits).toBe(250);
       expect(limits.dailySongLimit).toBe(30);
-      expect(limits.takesPerSong).toBe(2);
-      expect(limits.stemDownloads).toBe("partial");
+      expect(limits.audioQuality).toBe("192kbps");
     });
 
     it("returns correct limits for professional plan", () => {
@@ -28,7 +26,6 @@ describe("Credits Module", () => {
       expect(limits).toEqual(PLAN_LIMITS.professional);
       expect(limits.monthlyCredits).toBe(1000);
       expect(limits.dailySongLimit).toBe(-1);
-      expect(limits.takesPerSong).toBe(3);
     });
 
     it("returns correct limits for studio plan", () => {
@@ -36,7 +33,6 @@ describe("Credits Module", () => {
       expect(limits).toEqual(PLAN_LIMITS.studio);
       expect(limits.monthlyCredits).toBe(5000);
       expect(limits.dailySongLimit).toBe(-1); // unlimited
-      expect(limits.takesPerSong).toBe(3);
     });
   });
 
@@ -61,10 +57,9 @@ describe("Credits Module", () => {
   describe("PLAN_LIMITS structure", () => {
     it("all plans have required fields", () => {
       const requiredFields = [
-        "monthlyCredits", "dailySongLimit", "dailyTtsLimit",
-        "dailySheetMusicLimit", "dailyChordLimit", "takesPerSong",
-        "stemDownloads", "vocalMixing",
-        "commercialUse", "addOnCreditsPerDollar",
+        "monthlyCredits", "dailySongLimit",
+        "dailySheetMusicLimit", "dailyChordLimit",
+        "commercialUse", "audioQuality",
       ];
 
       for (const plan of ["free", "creator", "professional", "studio"] as const) {
@@ -91,12 +86,14 @@ describe("Credits Module", () => {
       expect(PLAN_LIMITS.studio.commercialUse).toBeTruthy();
     });
 
-    it("free plan has no add-on credits", () => {
-      expect(PLAN_LIMITS.free.addOnCreditsPerDollar).toBe(0);
+    it("free plan has lower audio quality", () => {
+      expect(PLAN_LIMITS.free.audioQuality).toBe("128kbps");
     });
 
-    it("studio plan has best add-on rate", () => {
-      expect(PLAN_LIMITS.studio.addOnCreditsPerDollar).toBeGreaterThan(PLAN_LIMITS.creator.addOnCreditsPerDollar);
+    it("paid plans have higher audio quality", () => {
+      expect(PLAN_LIMITS.creator.audioQuality).toBe("192kbps");
+      expect(PLAN_LIMITS.professional.audioQuality).toBe("192kbps");
+      expect(PLAN_LIMITS.studio.audioQuality).toBe("192kbps");
     });
   });
 });

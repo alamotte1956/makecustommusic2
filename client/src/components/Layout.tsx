@@ -270,8 +270,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/terms">
               <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Terms of Service</span>
             </Link>
+            <span className="text-border">|</span>
+            <Link href="/faq">
+              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">FAQ</span>
+            </Link>
           </div>
-          <p>© 2026 A. LaMotte Music</p>
+          <p>© 2026 MakeCustomMusic.com</p>
         </div>
       </footer>
     </div>

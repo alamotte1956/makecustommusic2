@@ -335,11 +335,11 @@ export async function getDailyUsage(userId: number, type: "generation" | "tts" |
 
 export async function checkDailyLimit(
   userId: number,
-  type: "generation" | "tts",
+  type: "generation",
   plan: PlanName
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
   const limits = getPlanLimits(plan);
-  const dailyLimit = type === "generation" ? limits.dailySongLimit : limits.dailyTtsLimit;
+  const dailyLimit = limits.dailySongLimit;
 
   if (dailyLimit === -1) return { allowed: true, used: 0, limit: -1 };
 
@@ -375,17 +375,6 @@ export async function getUsageSummary(userId: number) {
       )
     );
 
-  const [dailyTts] = await db
-    .select({ total: sql<number>`COALESCE(COUNT(*), 0)` })
-    .from(creditTransactions)
-    .where(
-      and(
-        eq(creditTransactions.userId, userId),
-        eq(creditTransactions.type, "tts"),
-        gte(creditTransactions.createdAt, today)
-      )
-    );
-
   const [monthlyTotal] = await db
     .select({ total: sql<number>`COALESCE(SUM(ABS(${creditTransactions.amount})), 0)` })
     .from(creditTransactions)
@@ -404,7 +393,6 @@ export async function getUsageSummary(userId: number) {
     subscription: sub,
     usage: {
       dailySongsGenerated: dailyGen?.total ?? 0,
-      dailyTtsGenerated: dailyTts?.total ?? 0,
       monthlyCreditsUsed: monthlyTotal?.total ?? 0,
     },
   };

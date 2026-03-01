@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 // ─── stripeProducts.ts tests ────────────────────────────────────────────────
 
@@ -43,50 +43,6 @@ describe("stripeProducts", () => {
     expect(STRIPE_PLANS.studio.prices.monthly).toBe(3900);
   });
 
-  it("should export all three credit packs", async () => {
-    const { CREDIT_PACKS } = await import("./stripeProducts");
-    expect(CREDIT_PACKS).toHaveProperty("starter");
-    expect(CREDIT_PACKS).toHaveProperty("creator_pack");
-    expect(CREDIT_PACKS).toHaveProperty("studio_pack");
-  });
-
-  it("credit packs should have valid prices and credits", async () => {
-    const { CREDIT_PACKS } = await import("./stripeProducts");
-    for (const pack of Object.values(CREDIT_PACKS)) {
-      expect(pack.priceInCents).toBeGreaterThan(0);
-      expect(pack.credits).toBeGreaterThan(0);
-      expect(pack.metadata.pack_type).toBe("credits");
-      expect(parseInt(pack.metadata.credits)).toBe(pack.credits);
-    }
-  });
-
-  it("starter pack should be 25 credits for $2.99", async () => {
-    const { CREDIT_PACKS } = await import("./stripeProducts");
-    expect(CREDIT_PACKS.starter.credits).toBe(25);
-    expect(CREDIT_PACKS.starter.priceInCents).toBe(299);
-  });
-
-  it("creator pack should be 100 credits for $8.99", async () => {
-    const { CREDIT_PACKS } = await import("./stripeProducts");
-    expect(CREDIT_PACKS.creator_pack.credits).toBe(100);
-    expect(CREDIT_PACKS.creator_pack.priceInCents).toBe(899);
-  });
-
-  it("studio pack should be 500 credits for $29.99", async () => {
-    const { CREDIT_PACKS } = await import("./stripeProducts");
-    expect(CREDIT_PACKS.studio_pack.credits).toBe(500);
-    expect(CREDIT_PACKS.studio_pack.priceInCents).toBe(2999);
-  });
-
-  it("larger packs should have better per-credit pricing", async () => {
-    const { CREDIT_PACKS } = await import("./stripeProducts");
-    const starterRate = CREDIT_PACKS.starter.priceInCents / CREDIT_PACKS.starter.credits;
-    const creatorRate = CREDIT_PACKS.creator_pack.priceInCents / CREDIT_PACKS.creator_pack.credits;
-    const studioRate = CREDIT_PACKS.studio_pack.priceInCents / CREDIT_PACKS.studio_pack.credits;
-    expect(creatorRate).toBeLessThan(starterRate);
-    expect(studioRate).toBeLessThan(creatorRate);
-  });
-
   describe("getPlanFromMetadata", () => {
     it("should return plan ID from valid metadata", async () => {
       const { getPlanFromMetadata } = await import("./stripeProducts");
@@ -105,23 +61,6 @@ describe("stripeProducts", () => {
     it("should not match free plan", async () => {
       const { getPlanFromMetadata } = await import("./stripeProducts");
       expect(getPlanFromMetadata({ plan_tier: "free" })).toBeNull();
-    });
-  });
-
-  describe("getCreditPackFromMetadata", () => {
-    it("should return credit pack from valid metadata", async () => {
-      const { getCreditPackFromMetadata } = await import("./stripeProducts");
-      const pack = getCreditPackFromMetadata({ pack_type: "credits", credits: "25" });
-      expect(pack).not.toBeNull();
-      expect(pack?.id).toBe("starter");
-      expect(pack?.credits).toBe(25);
-    });
-
-    it("should return null for invalid metadata", async () => {
-      const { getCreditPackFromMetadata } = await import("./stripeProducts");
-      expect(getCreditPackFromMetadata({ pack_type: "other", credits: "10" })).toBeNull();
-      expect(getCreditPackFromMetadata({})).toBeNull();
-      expect(getCreditPackFromMetadata({ pack_type: "credits", credits: "999" })).toBeNull();
     });
   });
 });
@@ -171,12 +110,5 @@ describe("Stripe-credits integration", () => {
     expect(parseInt(STRIPE_PLANS.professional.metadata.monthly_credits)).toBe(PLAN_LIMITS.professional.monthlyCredits);
     // Studio: 5000 credits
     expect(parseInt(STRIPE_PLANS.studio.metadata.monthly_credits)).toBe(PLAN_LIMITS.studio.monthlyCredits);
-  });
-
-  it("credit pack credits should match metadata", async () => {
-    const { CREDIT_PACKS } = await import("./stripeProducts");
-    for (const pack of Object.values(CREDIT_PACKS)) {
-      expect(parseInt(pack.metadata.credits)).toBe(pack.credits);
-    }
   });
 });

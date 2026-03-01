@@ -31,7 +31,7 @@ import {
   getUserSubscription,
 } from "./credits";
 import { PLAN_LIMITS, type PlanName } from "../drizzle/schema";
-import { STRIPE_PLANS, CREDIT_PACKS, type StripePlanId, type CreditPackId } from "./stripeProducts";
+import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
@@ -1246,9 +1246,8 @@ RULES:
             annualPrice: 0,
             limits: PLAN_LIMITS.free,
             features: [
-              "5 songs per month",
-              "2 TTS previews per day",
-              "2 sheet music per day",
+              "2 songs per month",
+              "1 sheet music per month",
               "128kbps MP3 quality",
               "Personal use only",
             ],
@@ -1263,14 +1262,9 @@ RULES:
             limits: PLAN_LIMITS.creator,
             features: [
               "250 songs per month",
-              "50 TTS previews per day",
               "Unlimited sheet music & chords",
-              "All 5 mastering presets",
-              "2 vocal takes per song",
-              "Instrumental + Full Mix stems",
               "192kbps MP3 quality",
               "Commercial use (personal & social)",
-              "Add-on: 25 songs for $2.99",
             ],
           },
           {
@@ -1282,16 +1276,9 @@ RULES:
             limits: PLAN_LIMITS.professional,
             features: [
               "1,000 songs per month",
-              "Unlimited TTS previews",
               "Unlimited sheet music & chords",
-              "All 5 mastering presets",
-              "3 vocal takes per song",
-              "All stems (instrumental, vocal, mix)",
-              "Full vocal-instrumental mixing",
-              "192kbps MP3 + WAV export",
+              "192kbps MP3 quality",
               "Full commercial rights",
-              "Priority generation queue",
-              "Add-on: 100 songs for $8.99",
             ],
           },
           {
@@ -1303,16 +1290,9 @@ RULES:
             limits: PLAN_LIMITS.studio,
             features: [
               "5,000 songs per month",
-              "Unlimited everything",
-              "3 vocal takes per song",
-              "All stems unlimited",
-              "Full studio production suite",
-              "192kbps MP3 + WAV + FLAC",
+              "Unlimited sheet music & chords",
+              "192kbps MP3 quality",
               "Full commercial + sync licensing",
-              "Priority queue (10 concurrent)",
-              "API access",
-              "White-label option",
-              "Add-on: 500 songs for $29.99",
             ],
           },
         ],
@@ -1391,64 +1371,6 @@ RULES:
         return { url: session.url, sessionId: session.id };
       }),
 
-    // Create a Stripe Checkout session for a one-time credit pack purchase
-    buyCredits: protectedProcedure
-      .input(z.object({
-        packId: z.enum(["starter", "creator_pack", "studio_pack"]),
-        successUrl: z.string().url(),
-        cancelUrl: z.string().url(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const stripe = getStripe();
-        if (!stripe) throw new Error("Stripe is not configured. Please set STRIPE_SECRET_KEY.");
-
-        const pack = CREDIT_PACKS[input.packId as CreditPackId];
-        if (!pack) throw new Error(`Invalid credit pack: ${input.packId}`);
-
-        const existingSub = await getUserSubscription(ctx.user.id);
-
-        const sessionParams: Stripe.Checkout.SessionCreateParams = {
-          mode: "payment",
-          client_reference_id: String(ctx.user.id),
-          metadata: {
-            user_id: String(ctx.user.id),
-            pack_type: "credits",
-            pack_name: pack.name,
-            credits: String(pack.credits),
-          },
-          line_items: [
-            {
-              price_data: {
-                currency: "usd",
-                product_data: {
-                  name: pack.name,
-                  description: pack.description,
-                },
-                unit_amount: pack.priceInCents,
-              },
-              quantity: 1,
-            },
-          ],
-          success_url: input.successUrl,
-          cancel_url: input.cancelUrl,
-        };
-
-        if (existingSub?.stripeCustomerId) {
-          sessionParams.customer = existingSub.stripeCustomerId;
-        } else {
-          sessionParams.customer_creation = "always";
-          if (ctx.user.email) {
-            sessionParams.customer_email = ctx.user.email;
-          }
-        }
-
-        // Allow promotion codes for discounts
-        sessionParams.allow_promotion_codes = true;
-
-        const session = await stripe.checkout.sessions.create(sessionParams);
-        return { url: session.url, sessionId: session.id };
-      }),
-
     // Create a Stripe Customer Portal session for billing management
     createPortalSession: protectedProcedure
       .input(z.object({
@@ -1471,18 +1393,6 @@ RULES:
         return { url: session.url };
       }),
 
-    // Get available credit packs for purchase
-    creditPacks: publicProcedure.query(() => {
-      return Object.values(CREDIT_PACKS).map(pack => ({
-        id: pack.id,
-        name: pack.name,
-        description: pack.description,
-        price: pack.priceInCents / 100,
-        credits: pack.credits,
-        pricePerCredit: (pack.priceInCents / 100 / pack.credits).toFixed(2),
-      }));
-    }),
-
     // Check if Stripe is configured
     stripeStatus: publicProcedure.query(() => {
       return {
@@ -1492,7 +1402,7 @@ RULES:
 
     // Check if user can perform an action (used before generation)
     canPerform: protectedProcedure
-      .input(z.object({ action: z.enum(["generation", "tts"]) }))
+      .input(z.object({ action: z.enum(["generation"]) }))
       .query(async ({ ctx, input }) => {
         const plan = await getUserPlan(ctx.user.id);
         const balance = await getCreditBalance(ctx.user.id);

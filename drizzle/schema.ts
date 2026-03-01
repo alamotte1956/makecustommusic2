@@ -189,64 +189,36 @@ export type InsertCreditTransaction = typeof creditTransactions.$inferInsert;
 // Plan limits configuration (used in code, not DB)
 export const PLAN_LIMITS = {
   free: {
-    monthlyCredits: 5,
-    dailySongLimit: 3,
-    dailyTtsLimit: 2,
-    dailySheetMusicLimit: 2,
-    dailyChordLimit: 2,
-    takesPerSong: 1,
-    stemDownloads: false,
-    studioMastering: false,
-    vocalMixing: false,
+    monthlyCredits: 2,
+    dailySongLimit: 2,
+    dailySheetMusicLimit: 1,
+    dailyChordLimit: 1,
     commercialUse: false,
     audioQuality: "128kbps",
-    concurrentGenerations: 1,
-    addOnCreditsPerDollar: 0,
   },
   creator: {
     monthlyCredits: 250,
     dailySongLimit: 30,
-    dailyTtsLimit: 50,
     dailySheetMusicLimit: -1, // unlimited
     dailyChordLimit: -1,
-    takesPerSong: 2,
-    stemDownloads: "partial", // instrumental + full mix only
-    studioMastering: true,
-    vocalMixing: false,
     commercialUse: "personal", // personal + social media
     audioQuality: "192kbps",
-    concurrentGenerations: 3,
-    addOnCreditsPerDollar: 8.36, // 25 songs for $2.99
   },
   professional: {
     monthlyCredits: 1000,
     dailySongLimit: -1,
-    dailyTtsLimit: -1,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
-    takesPerSong: 3,
-    stemDownloads: "full",
-    studioMastering: true,
-    vocalMixing: true,
     commercialUse: "full",
-    audioQuality: "192kbps+wav",
-    concurrentGenerations: 5,
-    addOnCreditsPerDollar: 11.12, // 100 songs for $8.99
+    audioQuality: "192kbps",
   },
   studio: {
     monthlyCredits: 5000,
     dailySongLimit: -1,
-    dailyTtsLimit: -1,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
-    takesPerSong: 3,
-    stemDownloads: "full",
-    studioMastering: true,
-    vocalMixing: true,
     commercialUse: "full+sync",
-    audioQuality: "192kbps+wav+flac",
-    concurrentGenerations: 10,
-    addOnCreditsPerDollar: 16.67, // 500 songs for $29.99
+    audioQuality: "192kbps",
   },
 } as const;
 

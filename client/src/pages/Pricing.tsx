@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
-import { Check, Sparkles, Zap, Crown, Building2, ArrowRight, Loader2, CreditCard } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -11,12 +11,10 @@ export default function Pricing() {
   const { user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [loadingPack, setLoadingPack] = useState<string | null>(null);
 
   const { data: plansData, isLoading } = trpc.credits.allPlans.useQuery();
   const { data: summary } = trpc.credits.summary.useQuery(undefined, { enabled: !!user });
   const { data: stripeStatus } = trpc.credits.stripeStatus.useQuery();
-  const { data: creditPacks } = trpc.credits.creditPacks.useQuery();
 
   const createCheckout = trpc.credits.createCheckout.useMutation({
     onSuccess: (data) => {
@@ -27,18 +25,6 @@ export default function Pricing() {
     onError: (err) => {
       toast.error(err.message || "Failed to create checkout session");
       setLoadingPlan(null);
-    },
-  });
-
-  const buyCredits = trpc.credits.buyCredits.useMutation({
-    onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    },
-    onError: (err) => {
-      toast.error(err.message || "Failed to create checkout session");
-      setLoadingPack(null);
     },
   });
 
@@ -79,26 +65,6 @@ export default function Pricing() {
     });
   };
 
-  const handleBuyCredits = (packId: string) => {
-    if (!user) {
-      window.location.href = getLoginUrl();
-      return;
-    }
-
-    if (!stripeStatus?.configured) {
-      toast.error("Payment system is not yet configured. Please try again later.");
-      return;
-    }
-
-    setLoadingPack(packId);
-    const origin = window.location.origin;
-    buyCredits.mutate({
-      packId: packId as "starter" | "creator_pack" | "studio_pack",
-      successUrl: `${origin}/usage?checkout=success&pack=${packId}`,
-      cancelUrl: `${origin}/pricing?checkout=canceled`,
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -108,12 +74,6 @@ export default function Pricing() {
   }
 
   const plans = plansData?.plans ?? [];
-
-  const packIdMap: Record<number, string> = {
-    25: "starter",
-    100: "creator_pack",
-    500: "studio_pack",
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,53 +220,6 @@ export default function Pricing() {
           })}
         </div>
 
-        {/* Add-on Credits Section */}
-        <div className="mt-16 text-center">
-          <h2 className="text-2xl font-bold text-black">Need More Credits?</h2>
-          <p className="mt-2 text-muted-foreground max-w-xl mx-auto">
-            Purchase additional song credits anytime. Credits never expire and stack on top of your monthly allowance.
-          </p>
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {(creditPacks ?? [
-              { id: "starter", name: "Starter Pack", credits: 25, price: 2.99, pricePerCredit: "0.12" },
-              { id: "creator_pack", name: "Creator Pack", credits: 100, price: 8.99, pricePerCredit: "0.09" },
-              { id: "studio_pack", name: "Studio Pack", credits: 500, price: 29.99, pricePerCredit: "0.06" },
-            ]).map((pack: any) => {
-              const isPopular = pack.id === "creator_pack";
-              return (
-                <div
-                  key={pack.id}
-                  className={`rounded-xl border p-5 ${
-                    isPopular ? "border-violet-500 bg-violet-50/50 shadow-sm" : "bg-card"
-                  }`}
-                >
-                  <p className="font-semibold text-black">{pack.name}</p>
-                  <p className="text-3xl font-bold text-black mt-2">${pack.price}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {pack.credits} songs &middot; ${pack.pricePerCredit}/song
-                  </p>
-                  <Button
-                    variant={isPopular ? "default" : "outline"}
-                    size="sm"
-                    className={`w-full mt-4 ${isPopular ? "bg-violet-600 hover:bg-violet-700 text-white" : ""}`}
-                    disabled={loadingPack === pack.id}
-                    onClick={() => handleBuyCredits(pack.id)}
-                  >
-                    {loadingPack === pack.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                        Buy Now
-                      </>
-                    )}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* FAQ */}
         <div className="mt-20 max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-black text-center mb-8">Frequently Asked Questions</h2>
@@ -318,7 +231,7 @@ export default function Pricing() {
               },
               {
                 q: "Do unused credits roll over?",
-                a: "Monthly credits reset each billing cycle. Purchased credits never expire and carry over indefinitely.",
+                a: "Monthly credits reset each billing cycle. Upgrade to a higher plan for more credits.",
               },
               {
                 q: "Can I use the music commercially?",
@@ -326,7 +239,7 @@ export default function Pricing() {
               },
               {
                 q: "What audio formats are supported?",
-                a: "Free and Creator plans export MP3 at 192kbps. Professional adds WAV export. Studio includes MP3, WAV, and FLAC formats.",
+                a: "Free plan exports MP3 at 128kbps. All paid plans export MP3 at 192kbps.",
               },
               {
                 q: "Can I cancel anytime?",

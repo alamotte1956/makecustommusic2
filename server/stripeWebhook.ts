@@ -1,8 +1,8 @@
 import express from "express";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
-import { upsertSubscription, getUserSubscription, refillMonthlyCredits, addPurchasedCredits } from "./credits";
-import { getPlanFromMetadata, getCreditPackFromMetadata } from "./stripeProducts";
+import { upsertSubscription, getUserSubscription, refillMonthlyCredits } from "./credits";
+import { getPlanFromMetadata } from "./stripeProducts";
 import { getDb } from "./db";
 import { eq } from "drizzle-orm";
 import { users, userSubscriptions } from "../drizzle/schema";
@@ -154,27 +154,6 @@ async function processCheckout(userId: number, session: Stripe.Checkout.Session)
           plan: existing?.plan as PlanName ?? "free",
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId ?? undefined,
-        });
-      }
-    }
-  } else if (session.mode === "payment") {
-    // One-time payment — credit pack purchase
-    const packMeta = session.metadata ?? {};
-    const credits = parseInt(packMeta.credits ?? "0", 10);
-
-    if (credits > 0) {
-      const packName = packMeta.pack_name ?? "Credit Pack";
-      await addPurchasedCredits(userId, credits, `Purchased ${packName} (${credits} credits)`);
-      console.log(`[Stripe Webhook] Added ${credits} purchased credits for user ${userId}`);
-    }
-
-    // Link customer ID if not already linked
-    if (customerId) {
-      const existing = await getUserSubscription(userId);
-      if (existing && !existing.stripeCustomerId) {
-        await upsertSubscription(userId, {
-          plan: existing.plan as PlanName,
-          stripeCustomerId: customerId,
         });
       }
     }

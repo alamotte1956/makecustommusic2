@@ -604,3 +604,29 @@
 - [x] Add dedicated contact email to Privacy Policy contact section
 - [x] Add dedicated contact email to Terms of Service contact section
 - [x] Update tests to verify email presence (11 tests passing)
+
+## FAQ Page
+- [x] Create FAQ page with categorized accordion Q&A (Getting Started, Plans & Credits, Audio & Quality, Sheet Music & Chords, Licensing, Account & Support)
+- [x] Register /faq route in App.tsx
+- [x] Add FAQ link to footer navigation
+
+## Remove Deprecated Capabilities
+- [x] Simplify PLAN_LIMITS in schema.ts (remove TTS, takes, stems, mastering, vocal mixing, concurrent, add-on fields)
+- [x] Update Free plan to 2 credits/month, 128kbps, personal use only
+- [x] Remove credit packs from stripeProducts.ts, routers.ts, stripeWebhook.ts, Pricing page
+- [x] Update all plan features in routers.ts allPlans procedure
+- [x] Simplify credits.ts (remove TTS daily limit, simplify types)
+- [x] Update Pricing page FAQ (remove WAV/FLAC, credit packs, purchased credits rollover)
+- [x] Update Terms page subscription table (2 credits free, 250 creator, 1,000 professional)
+- [x] Update StudioProducer text (remove mastering/stems references)
+- [x] Update all tests (credits.test.ts, stripe.test.ts) to match simplified structure
+
+## White-Label Manus Branding
+- [x] Replace "Login with Manus" with "Log In" in ManusDialog
+- [x] Replace "Manus OAuth" with "OAuth Provider" in Privacy page
+- [x] Update copyright to "© 2026 MakeCustomMusic.com" in footer
+
+## Comprehensive Pricing Audit
+- [x] Verify all pricing pages show correct plan details
+- [x] Remove all credit pack UI and logic
+- [x] All 495 tests passing across 24 test files

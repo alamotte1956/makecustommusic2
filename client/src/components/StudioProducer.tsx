@@ -250,7 +250,7 @@ export default function StudioProducer({ song }: Props) {
 
               {isGenerating && (
                 <p className="text-xs text-muted-foreground animate-pulse">
-                  Generating vocals, mixing, and mastering... This may take 30-60 seconds per take.
+                  Generating vocals and mixing... This may take 30-60 seconds.
                 </p>
               )}
             </>
@@ -417,7 +417,7 @@ export default function StudioProducer({ song }: Props) {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Generate a vocal mix first to access individual stems for download.
+              Generate a vocal mix first to access the audio for download.
             </p>
           )}
         </CardContent>

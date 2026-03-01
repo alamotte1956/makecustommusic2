@@ -127,7 +127,7 @@ export default function Privacy() {
                   <td className="px-4 py-2.5 text-foreground/70">Cloud storage for generated audio files</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-2.5 font-medium">Manus OAuth</td>
+                  <td className="px-4 py-2.5 font-medium">OAuth Provider</td>
                   <td className="px-4 py-2.5 text-foreground/70">Authentication and identity management</td>
                 </tr>
               </tbody>

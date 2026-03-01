@@ -286,9 +286,8 @@ export default function UsageDashboard() {
               <p className="text-2xl font-bold text-black">{120}s</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Vocal Takes</p>
-              <p className="text-2xl font-bold text-black">{limits?.takesPerSong ?? 1}</p>
-              <p className="text-xs text-muted-foreground">per song</p>
+              <p className="text-sm text-muted-foreground">Audio Quality</p>
+              <p className="text-lg font-bold text-black">{limits?.audioQuality ?? "128kbps"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">License</p>
@@ -306,7 +305,7 @@ export default function UsageDashboard() {
               <div>
                 <h2 className="font-semibold text-black">Want more songs?</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Upgrade to Creator for 100 songs/month, studio mastering, and commercial rights.
+                  Upgrade to Creator for 250 songs/month, unlimited sheet music, and commercial rights.
                 </p>
               </div>
               <Link href="/pricing">
