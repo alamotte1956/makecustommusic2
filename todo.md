@@ -158,3 +158,17 @@
 - [x] Add edit button to AlbumDetail page song cards
 - [x] Optimistic UI updates after editing (invalidate on save)
 - [x] Write tests for song update route (116 tests passing)
+
+## Play All on History Page
+- [x] Add Play All button to History page header
+- [x] Integrate queue player context into History page
+- [x] Highlight currently playing song in the History list
+- [x] Allow clicking individual songs to start queue from that position
+
+## SunoAPI.org Integration
+- [x] Review current Suno API integration code
+- [x] Update API endpoint to SunoAPI.org (https://api.sunoapi.org)
+- [x] Update request/response format to match SunoAPI.org docs (same format, added streamAudioUrl)
+- [x] Handle additional failure statuses (CREATE_TASK_FAILED, GENERATE_AUDIO_FAILED, SENSITIVE_WORD_ERROR, etc.)
+- [x] Configure SUNO_API_KEY secret for SunoAPI.org Bearer token auth
+- [x] Write/update tests for the new integration (128 tests passing)

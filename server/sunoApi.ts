@@ -1,12 +1,12 @@
 /**
- * Suno API Integration
+ * Suno API Integration via SunoAPI.org
  * Supports both Simple Mode (prompt-based) and Custom Mode (lyrics + style tags)
  * API docs: https://docs.sunoapi.org/
  */
 
 import axios from "axios";
 
-const SUNO_API_BASE = "https://apibox.erweima.ai";
+const SUNO_API_BASE = "https://api.sunoapi.org";
 
 function getSunoApiKey(): string {
   return process.env.SUNO_API_KEY ?? "";
@@ -45,8 +45,10 @@ export type SunoSongData = {
   id: string;
   title: string;
   audioUrl: string;
+  streamAudioUrl?: string;
   imageUrl?: string;
   lyric?: string;
+  prompt?: string;
   modelName?: string;
   tags?: string;
   duration?: number;
@@ -58,16 +60,32 @@ type SunoStatusResponse = {
   code: number;
   msg: string;
   data: {
-    status: string; // "SUCCESS", "PENDING", "TEXT_SUCCESS", "FIRST_SUCCESS", "FAILED"
+    taskId: string;
+    parentMusicId?: string;
+    param?: string;
+    status: string; // "SUCCESS", "PENDING", "TEXT_SUCCESS", "FIRST_SUCCESS", failure statuses
+    type?: string;
+    errorCode?: string | null;
+    errorMessage?: string | null;
     response?: {
+      taskId?: string;
       sunoData?: SunoSongData[];
     };
     failReason?: string;
   };
 };
 
+// Failure statuses from SunoAPI.org
+const FAILURE_STATUSES = [
+  "FAILED",
+  "CREATE_TASK_FAILED",
+  "GENERATE_AUDIO_FAILED",
+  "CALLBACK_EXCEPTION",
+  "SENSITIVE_WORD_ERROR",
+];
+
 /**
- * Submit a music generation task to Suno API
+ * Submit a music generation task to Suno API via SunoAPI.org
  */
 export async function sunoGenerate(params: SunoGenerateParams): Promise<string> {
   if (!isSunoAvailable()) {
@@ -82,7 +100,7 @@ export async function sunoGenerate(params: SunoGenerateParams): Promise<string> 
     requestBody = {
       title: params.title,
       prompt: params.lyrics, // In custom mode, "prompt" is the lyrics
-      tags: params.style, // Style tags like "pop, male vocals, upbeat"
+      style: params.style, // Style tags like "pop, male vocals, upbeat"
       customMode: true,
       instrumental: false,
       model: "V5",
@@ -172,8 +190,9 @@ export async function sunoGenerateAndWait(
       return songs[0];
     }
 
-    if (status.status === "FAILED") {
-      throw new Error(`Suno generation failed: ${status.failReason || "Unknown reason"}`);
+    if (FAILURE_STATUSES.includes(status.status)) {
+      const reason = status.errorMessage || status.failReason || status.status;
+      throw new Error(`Suno generation failed: ${reason}`);
     }
 
     // PENDING, TEXT_SUCCESS, FIRST_SUCCESS — keep polling

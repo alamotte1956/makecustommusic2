@@ -164,8 +164,7 @@ export default function Favorites() {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        filteredSongs.length === 0 ? (
+      ) : filteredSongs.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No songs match your filters</p>
@@ -304,7 +303,7 @@ export default function Favorites() {
             );
           })}
         </div>
-      ))}
+      )}
 
       {/* Edit Song Dialog */}
       {editingSong && (

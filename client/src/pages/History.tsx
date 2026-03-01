@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AudioPlayer from "@/components/AudioPlayer";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pencil
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
 import EditSongDialog from "@/components/EditSongDialog";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
+import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import { getLoginUrl } from "@/const";
 import {
   AlertDialog,
@@ -49,6 +50,10 @@ export default function History() {
   const createAlbumMutation = trpc.albums.create.useMutation();
   const utils = trpc.useUtils();
 
+  const {
+    loadQueue, currentSong, isPlaying, togglePlay, queueName,
+  } = useQueuePlayer();
+
   const [playingSong, setPlayingSong] = useState<number | null>(null);
   const [albumDialogSongId, setAlbumDialogSongId] = useState<number | null>(null);
   const [newAlbumTitle, setNewAlbumTitle] = useState("");
@@ -60,6 +65,53 @@ export default function History() {
   const [editingSong, setEditingSong] = useState<any>(null);
 
   const filteredSongs = filterSongs(songs, filters);
+
+  const historyQueueName = "My Songs";
+  const isHistoryQueue = queueName === historyQueueName;
+
+  const toQueueSongs = useCallback((list: any[]): QueueSong[] => {
+    return list
+      .filter((s) => s.audioUrl || s.mp3Url)
+      .map((s) => ({
+        id: s.id,
+        title: s.title,
+        keywords: s.keywords,
+        genre: s.genre,
+        mood: s.mood,
+        tempo: s.tempo,
+        engine: s.engine,
+        vocalType: s.vocalType,
+        audioUrl: s.audioUrl,
+        mp3Url: s.mp3Url ?? null,
+      }));
+  }, []);
+
+  const playableSongs = useMemo(() => {
+    return filteredSongs.filter((s) => s.audioUrl || s.mp3Url);
+  }, [filteredSongs]);
+
+  const handlePlayAll = useCallback(
+    (startIndex = 0) => {
+      if (playableSongs.length === 0) {
+        toast.error("No playable songs");
+        return;
+      }
+      loadQueue(toQueueSongs(playableSongs), startIndex, historyQueueName);
+    },
+    [playableSongs, loadQueue, toQueueSongs, historyQueueName]
+  );
+
+  const handlePlaySong = useCallback(
+    (song: any) => {
+      const idx = playableSongs.findIndex((s) => s.id === song.id);
+      if (isHistoryQueue && currentSong?.id === song.id) {
+        togglePlay();
+      } else {
+        handlePlayAll(idx >= 0 ? idx : 0);
+      }
+    },
+    [playableSongs, isHistoryQueue, currentSong, togglePlay, handlePlayAll]
+  );
 
   const getAudioUrl = (song: any): string | null => {
     return song.audioUrl || song.mp3Url || null;
@@ -162,12 +214,33 @@ export default function History() {
             {songs && filteredSongs.length !== songs.length && ` · ${filteredSongs.length} shown`}
           </p>
         </div>
-        {selectedSongs.size > 0 && (
-          <Button onClick={() => setShowBulkAlbumDialog(true)}>
-            <Disc3 className="w-4 h-4 mr-2" />
-            Create Album ({selectedSongs.size} songs)
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {playableSongs.length > 0 && (
+            <Button
+              onClick={() => handlePlayAll(0)}
+              size="sm"
+              className="gap-2"
+            >
+              {isHistoryQueue && isPlaying ? (
+                <>
+                  <ListMusic className="w-3.5 h-3.5" />
+                  Now Playing
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5" />
+                  Play All
+                </>
+              )}
+            </Button>
+          )}
+          {selectedSongs.size > 0 && (
+            <Button onClick={() => setShowBulkAlbumDialog(true)} size="sm" variant="outline">
+              <Disc3 className="w-4 h-4 mr-2" />
+              Create Album ({selectedSongs.size} songs)
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -207,7 +280,14 @@ export default function History() {
           {filteredSongs.map((song) => {
             const audioUrl = getAudioUrl(song);
             return (
-              <Card key={song.id} className="overflow-hidden">
+              <Card
+                key={song.id}
+                className={`overflow-hidden transition-all ${
+                  isHistoryQueue && currentSong?.id === song.id
+                    ? "ring-2 ring-primary/50 bg-primary/5"
+                    : ""
+                }`}
+              >
                 <CardContent className="p-0">
                   <div className="p-4 sm:p-5">
                     <div className="flex items-start gap-3">
@@ -254,10 +334,14 @@ export default function History() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handlePlay(song)}
+                                onClick={() => handlePlaySong(song)}
                               >
-                                <Play className="w-3.5 h-3.5 mr-1.5" />
-                                Play
+                                {isHistoryQueue && currentSong?.id === song.id && isPlaying ? (
+                                  <Pause className="w-3.5 h-3.5 mr-1.5" />
+                                ) : (
+                                  <Play className="w-3.5 h-3.5 mr-1.5" />
+                                )}
+                                {isHistoryQueue && currentSong?.id === song.id ? (isPlaying ? "Pause" : "Resume") : "Play"}
                               </Button>
                               <Button
                                 variant="outline"
