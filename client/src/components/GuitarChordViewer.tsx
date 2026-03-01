@@ -1,10 +1,12 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Guitar, RefreshCw, Info } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportChordPDF, type ChordPDFData } from "@/lib/pdfExport";
+import { COMMON_KEYS, getSemitoneInterval, transposeChordWithSlash } from "@/lib/transpose";
 
 interface ChordSection {
   section: string;
@@ -128,13 +130,47 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
   const [data, setData] = useState<ChordProgressionData | null>(initialData ?? null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string>("original");
   const generateMutation = trpc.songs.generateChordProgression.useMutation();
   const utils = trpc.useUtils();
+
+  // Original key from the chord progression data
+  const originalKey = data?.key ?? null;
+
+  // Calculate semitone interval for transposition
+  const semitones = useMemo(() => {
+    if (!originalKey || selectedKey === "original") return 0;
+    return getSemitoneInterval(originalKey, selectedKey);
+  }, [originalKey, selectedKey]);
+
+  // The display key label
+  const displayKey = selectedKey === "original" ? originalKey : selectedKey;
+
+  // Transposed sections
+  const transposedSections = useMemo(() => {
+    if (!data?.sections || semitones === 0) return data?.sections ?? [];
+    const targetKey = selectedKey === "original" ? (originalKey ?? "C") : selectedKey;
+    return data.sections.map((section) => ({
+      ...section,
+      chords: section.chords.map((chord) => transposeChordWithSlash(chord, semitones, targetKey)),
+    }));
+  }, [data?.sections, semitones, selectedKey, originalKey]);
+
+  // Transposed chord diagrams (just names — diagrams are approximate)
+  const transposedDiagrams = useMemo(() => {
+    if (!data?.chordDiagrams || semitones === 0) return data?.chordDiagrams ?? [];
+    const targetKey = selectedKey === "original" ? (originalKey ?? "C") : selectedKey;
+    return data.chordDiagrams.map((diagram) => ({
+      ...diagram,
+      name: transposeChordWithSlash(diagram.name, semitones, targetKey),
+    }));
+  }, [data?.chordDiagrams, semitones, selectedKey, originalKey]);
 
   const handleGenerate = useCallback(async () => {
     try {
       const result = await generateMutation.mutateAsync({ songId });
       setData(result.chordProgression);
+      setSelectedKey("original");
       utils.songs.getById.invalidate({ id: songId });
       toast.success("Chord progression generated!");
     } catch (error: any) {
@@ -146,27 +182,27 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
     if (!data) return;
     setExporting(true);
     try {
-      // Collect SVG elements from the chord diagrams
       const svgs = contentRef.current?.querySelectorAll("svg");
       const diagramSvgs = svgs ? Array.from(svgs) as SVGElement[] : undefined;
 
       const pdfData: ChordPDFData = {
-        key: data.key,
+        key: displayKey ?? data.key,
         capo: data.capo,
         tempo: data.tempo,
         timeSignature: data.timeSignature,
-        sections: data.sections,
+        sections: transposedSections,
         notes: data.notes,
       };
 
-      exportChordPDF(pdfData, songTitle, diagramSvgs);
+      const keyLabel = selectedKey !== "original" ? ` (Key: ${selectedKey})` : "";
+      exportChordPDF(pdfData, songTitle + keyLabel, diagramSvgs);
       toast.success("Chord chart PDF downloaded!");
     } catch {
       toast.error("Failed to export chord chart PDF");
     } finally {
       setExporting(false);
     }
-  }, [data, songTitle]);
+  }, [data, songTitle, displayKey, transposedSections, selectedKey]);
 
   // No data yet — show generate button
   if (!data) {
@@ -203,12 +239,36 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
   return (
     <div className="space-y-4">
       {/* Action bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <Guitar className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">Acoustic Guitar</span>
+          {originalKey && (
+            <span className="text-xs text-muted-foreground">
+              (Original: {originalKey})
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Key selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Transpose to:</span>
+            <Select value={selectedKey} onValueChange={setSelectedKey}>
+              <SelectTrigger className="w-[100px] h-8 text-xs">
+                <SelectValue placeholder="Key" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="original">
+                  Original{originalKey ? ` (${originalKey})` : ""}
+                </SelectItem>
+                {COMMON_KEYS.map((key) => (
+                  <SelectItem key={key} value={key} disabled={key === originalKey}>
+                    {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -243,29 +303,39 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
       <div ref={contentRef} className="space-y-6">
         {/* Song metadata */}
         <div className="flex flex-wrap gap-2">
-          <Badge variant="default" className="bg-indigo-600">Key: {data.key}</Badge>
+          <Badge variant="default" className="bg-indigo-600">Key: {displayKey}</Badge>
           {data.capo > 0 && <Badge variant="secondary">Capo: Fret {data.capo}</Badge>}
           <Badge variant="secondary">{data.tempo} BPM</Badge>
           <Badge variant="secondary">{data.timeSignature}</Badge>
+          {selectedKey !== "original" && (
+            <Badge variant="outline" className="text-amber-600 border-amber-300">
+              Transposed from {originalKey}
+            </Badge>
+          )}
         </div>
 
         {/* Chord diagrams */}
-        {data.chordDiagrams && data.chordDiagrams.length > 0 && (
+        {transposedDiagrams && transposedDiagrams.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">Chord Diagrams</p>
             <div className="flex flex-wrap gap-3 justify-start">
-              {data.chordDiagrams.map((chord, i) => (
+              {transposedDiagrams.map((chord, i) => (
                 <div key={i} className="bg-card border border-border rounded-lg p-2">
                   <ChordDiagramSVG chord={chord} />
                 </div>
               ))}
             </div>
+            {semitones !== 0 && (
+              <p className="text-xs text-muted-foreground italic">
+                Note: Chord diagram fingerings are approximate after transposition. Verify positions for best playability.
+              </p>
+            )}
           </div>
         )}
 
         {/* Sections */}
         <div className="space-y-4">
-          {data.sections.map((section, i) => (
+          {transposedSections.map((section, i) => (
             <div key={i} className="bg-card border border-border rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-primary">{section.section}</h4>

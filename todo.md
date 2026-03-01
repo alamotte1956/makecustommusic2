@@ -444,3 +444,14 @@
 
 ## SEO Fixes
 - [x] Reduce homepage keywords from 10 to 6 focused keywords
+
+## Studio Section Removal
+- [x] Remove Studio tab from SongDetail page
+- [x] Remove StudioProducer import from SongDetail
+- [ ] StudioProducer component file kept (not imported anywhere now)
+- [ ] Studio plan/pricing kept as requested (only tab removed)
+
+## Key Transposition Before Print
+- [x] Add key selector dropdown to SheetMusicViewer (transpose ABC notation before PDF export)
+- [x] Add key selector dropdown to GuitarChordViewer (transpose chord progression before PDF export)
+- [x] Build transposition utility for notes and chords (client/src/lib/transpose.ts)

@@ -11,11 +11,10 @@ import FavoriteButton from "@/components/FavoriteButton";
 import SheetMusicViewer from "@/components/SheetMusicViewer";
 import GuitarChordViewer from "@/components/GuitarChordViewer";
 import ListenToLyricsButton from "@/components/ListenToLyricsButton";
-import StudioProducer from "@/components/StudioProducer";
 import { exportLyricsPDF } from "@/lib/pdfExport";
 import {
   Music, FileText, Guitar, Download, Share2, ArrowLeft,
-  Clock, Gauge, Tag, Mic, Loader2, SlidersHorizontal
+  Clock, Gauge, Tag, Mic, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -208,9 +207,9 @@ export default function SongDetail() {
         </CardContent>
       </Card>
 
-      {/* Tabs: Lyrics / Sheet Music / Guitar Chords / Studio */}
+      {/* Tabs: Lyrics / Sheet Music / Guitar Chords */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="lyrics" className="gap-1.5">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Lyrics</span>
@@ -222,10 +221,6 @@ export default function SongDetail() {
           <TabsTrigger value="guitar" className="gap-1.5">
             <Guitar className="w-4 h-4" />
             <span className="hidden sm:inline">Guitar</span>
-          </TabsTrigger>
-          <TabsTrigger value="studio" className="gap-1.5">
-            <SlidersHorizontal className="w-4 h-4" />
-            <span className="hidden sm:inline">Studio</span>
           </TabsTrigger>
         </TabsList>
 
@@ -303,9 +298,6 @@ export default function SongDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="studio">
-          <StudioProducer song={song as any} />
-        </TabsContent>
       </Tabs>
     </div>
   );
