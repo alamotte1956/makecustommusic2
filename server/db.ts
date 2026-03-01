@@ -228,6 +228,18 @@ export async function getAlbumSongs(albumId: number) {
   return relations.map(r => songMap.get(r.songId)).filter(Boolean);
 }
 
+export async function reorderAlbumSongs(albumId: number, songIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Update trackOrder for each song in the new order
+  const updates = songIds.map((songId, index) =>
+    db.update(albumSongs)
+      .set({ trackOrder: index })
+      .where(and(eq(albumSongs.albumId, albumId), eq(albumSongs.songId, songId)))
+  );
+  await Promise.all(updates);
+}
+
 export async function getAlbumSongCount(albumId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

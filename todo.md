@@ -190,3 +190,11 @@
 - [x] Add "Download All" button to AlbumDetail page header
 - [x] Show loading state during ZIP generation/download ("Preparing ZIP...")
 - [x] Write tests for ZIP download endpoint (142 tests passing)
+
+## Album Song Reordering (Drag & Drop)
+- [x] Add reorderAlbumSongs DB helper to update trackOrder for all songs in an album
+- [x] Add albums.reorderSongs tRPC route (protected, owner-only)
+- [x] Install and integrate @dnd-kit for drag-and-drop on AlbumDetail page
+- [x] Add drag handles to song cards with visual feedback during drag
+- [x] Persist new order to backend after drop (optimistic update)
+- [x] Write tests for reorder route (147 tests passing)

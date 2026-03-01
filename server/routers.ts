@@ -9,6 +9,7 @@ import {
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
+  reorderAlbumSongs,
   toggleFavorite, getUserFavorites, getUserFavoriteIds
 } from "./db";
 import { generateImage } from "./_core/imageGeneration";
@@ -383,6 +384,21 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         await removeSongFromAlbum(input.albumId, input.songId);
+        return { success: true };
+      }),
+
+    // Reorder songs within an album
+    reorderSongs: protectedProcedure
+      .input(z.object({
+        albumId: z.number(),
+        songIds: z.array(z.number()).min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const album = await getAlbumById(input.albumId);
+        if (!album || album.userId !== ctx.user.id) {
+          throw new Error("Album not found");
+        }
+        await reorderAlbumSongs(input.albumId, input.songIds);
         return { success: true };
       }),
 

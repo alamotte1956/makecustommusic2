@@ -3,18 +3,200 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useRoute, Link } from "wouter";
 import {
-  Disc3, Music, Download, Loader2, Trash2, FolderDown,
+  Disc3, Music, Download, Loader2, Trash2, FolderDown, GripVertical,
   ArrowLeft, Play, Pause, X, ChevronDown, ChevronUp, ImagePlus, Sparkles, ListMusic, Pencil
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
 import EditSongDialog from "@/components/EditSongDialog";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
+// ─── Sortable Song Card ───
+function SortableSongCard({
+  song,
+  index,
+  isCurrentlyPlaying,
+  isPlaying,
+  expandedLyrics,
+  onPlaySong,
+  onDownload,
+  onToggleLyrics,
+  onEdit,
+  onRemove,
+  onDelete,
+}: {
+  song: any;
+  index: number;
+  isCurrentlyPlaying: boolean;
+  isPlaying: boolean;
+  expandedLyrics: number | null;
+  onPlaySong: (song: any) => void;
+  onDownload: (song: any) => void;
+  onToggleLyrics: (id: number) => void;
+  onEdit: (song: any) => void;
+  onRemove: (songId: number) => void;
+  onDelete: (song: { id: number; title: string }) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: song.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  const audioUrl = song.audioUrl || song.mp3Url;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card
+        className={`overflow-hidden transition-all ${
+          isCurrentlyPlaying ? "ring-2 ring-primary/50 bg-primary/5" : ""
+        } ${isDragging ? "shadow-xl ring-2 ring-primary/30" : ""}`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            {/* Drag handle */}
+            <button
+              {...attributes}
+              {...listeners}
+              className="w-6 h-9 flex items-center justify-center shrink-0 mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+              aria-label="Drag to reorder"
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+
+            {/* Play button */}
+            <button
+              onClick={() => onPlaySong(song)}
+              disabled={!audioUrl}
+              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                isCurrentlyPlaying
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-primary/10 text-muted-foreground hover:text-primary"
+              } ${!audioUrl ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              {isCurrentlyPlaying && isPlaying ? (
+                <Pause className="w-3.5 h-3.5" />
+              ) : (
+                <Play className="w-3.5 h-3.5 ml-0.5" />
+              )}
+            </button>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className={`font-semibold truncate ${isCurrentlyPlaying ? "text-primary" : "text-foreground"}`}>
+                    {song.title}
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {isCurrentlyPlaying && (
+                      <Badge variant="default" className="text-xs bg-primary animate-pulse">
+                        Now Playing
+                      </Badge>
+                    )}
+                    <Badge variant="default" className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600">
+                      Suno V5
+                    </Badge>
+                    {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
+                    {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
+                    {song.vocalType && song.vocalType !== "none" && (
+                      <Badge variant="outline" className="text-xs capitalize">{song.vocalType} Vocals</Badge>
+                    )}
+                    {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {audioUrl && (
+                  <Button variant="outline" size="sm" onClick={() => onDownload(song)}>
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                    MP3
+                  </Button>
+                )}
+                {song.lyrics && (
+                  <Button variant="outline" size="sm" onClick={() => onToggleLyrics(song.id)}>
+                    {expandedLyrics === song.id ? (
+                      <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    Lyrics
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => onEdit(song)}>
+                  <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                  Edit
+                </Button>
+                <FavoriteButton songId={song.id} size="sm" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => onRemove(song.id)}
+                >
+                  <X className="w-3.5 h-3.5 mr-1.5" />
+                  Remove
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => onDelete({ id: song.id, title: song.title })}
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Expanded Lyrics */}
+          {expandedLyrics === song.id && song.lyrics && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
+                {song.lyrics}
+              </pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Main Component ───
 export default function AlbumDetail() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const [, params] = useRoute("/albums/:id");
@@ -26,6 +208,7 @@ export default function AlbumDetail() {
   );
   const removeSongMutation = trpc.albums.removeSong.useMutation();
   const generateCoverMutation = trpc.albums.generateCover.useMutation();
+  const reorderMutation = trpc.albums.reorderSongs.useMutation();
   const utils = trpc.useUtils();
 
   const {
@@ -37,6 +220,57 @@ export default function AlbumDetail() {
   const [editingSong, setEditingSong] = useState<any>(null);
   const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Song IDs for sortable context
+  const songIds = useMemo(
+    () => (album?.songs ?? []).map((s: any) => s.id),
+    [album?.songs]
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id || !album?.songs) return;
+
+      const oldIndex = album.songs.findIndex((s: any) => s.id === active.id);
+      const newIndex = album.songs.findIndex((s: any) => s.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const newOrder = arrayMove(album.songs, oldIndex, newIndex);
+      const newSongIds = newOrder.map((s: any) => s.id);
+
+      // Optimistic update
+      utils.albums.getById.setData({ id: albumId }, (prev: any) => {
+        if (!prev) return prev;
+        return { ...prev, songs: newOrder };
+      });
+
+      // Persist to backend
+      reorderMutation.mutate(
+        { albumId, songIds: newSongIds },
+        {
+          onError: () => {
+            toast.error("Failed to reorder songs");
+            utils.albums.getById.invalidate({ id: albumId });
+          },
+          onSuccess: () => {
+            toast.success("Track order updated");
+          },
+        }
+      );
+    },
+    [album, albumId, reorderMutation, utils]
+  );
 
   const handleDownloadAll = useCallback(async () => {
     if (!album) return;
@@ -236,6 +470,11 @@ export default function AlbumDetail() {
           )}
           <p className="text-sm text-muted-foreground">
             {album.songs?.length ?? 0} song{(album.songs?.length ?? 0) !== 1 ? "s" : ""}
+            {(album.songs?.length ?? 0) > 1 && (
+              <span className="ml-2 text-xs text-muted-foreground/70">
+                <GripVertical className="w-3 h-3 inline -mt-0.5" /> Drag to reorder
+              </span>
+            )}
           </p>
           <div className="flex flex-wrap gap-2 mt-2">
             {playableSongs.length > 0 && (
@@ -306,131 +545,35 @@ export default function AlbumDetail() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {album.songs.map((song: any, index: number) => {
-            const audioUrl = song.audioUrl || song.mp3Url;
-            const isCurrentlyPlaying = isAlbumQueue && currentSong?.id === song.id;
-            return (
-              <Card
-                key={song.id}
-                className={`overflow-hidden transition-all ${
-                  isCurrentlyPlaying ? "ring-2 ring-primary/50 bg-primary/5" : ""
-                }`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    {/* Play button / track number */}
-                    <button
-                      onClick={() => handlePlaySong(song)}
-                      disabled={!audioUrl}
-                      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                        isCurrentlyPlaying
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted hover:bg-primary/10 text-muted-foreground hover:text-primary"
-                      } ${!audioUrl ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      {isCurrentlyPlaying && isPlaying ? (
-                        <Pause className="w-3.5 h-3.5" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5 ml-0.5" />
-                      )}
-                    </button>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className={`font-semibold truncate ${isCurrentlyPlaying ? "text-primary" : "text-foreground"}`}>
-                            {song.title}
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {isCurrentlyPlaying && (
-                              <Badge variant="default" className="text-xs bg-primary animate-pulse">
-                                Now Playing
-                              </Badge>
-                            )}
-                            <Badge variant="default" className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600">
-                              Suno V5
-                            </Badge>
-                            {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
-                            {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
-                            {song.vocalType && song.vocalType !== "none" && (
-                              <Badge variant="outline" className="text-xs capitalize">{song.vocalType} Vocals</Badge>
-                            )}
-                            {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {audioUrl && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(song)}
-                          >
-                            <Download className="w-3.5 h-3.5 mr-1.5" />
-                            MP3
-                          </Button>
-                        )}
-                        {song.lyrics && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setExpandedLyrics(expandedLyrics === song.id ? null : song.id)}
-                          >
-                            {expandedLyrics === song.id ? (
-                              <ChevronUp className="w-3.5 h-3.5 mr-1.5" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                            )}
-                            Lyrics
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingSong(song)}
-                        >
-                          <Pencil className="w-3.5 h-3.5 mr-1.5" />
-                          Edit
-                        </Button>
-                        <FavoriteButton songId={song.id} size="sm" />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemoveSong(song.id)}
-                        >
-                          <X className="w-3.5 h-3.5 mr-1.5" />
-                          Remove
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeletingSong({ id: song.id, title: song.title })}
-                        >
-                          <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Lyrics */}
-                  {expandedLyrics === song.id && song.lyrics && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
-                        {song.lyrics}
-                      </pre>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={songIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {album.songs.map((song: any, index: number) => {
+                const isCurrentlyPlaying = isAlbumQueue && currentSong?.id === song.id;
+                return (
+                  <SortableSongCard
+                    key={song.id}
+                    song={song}
+                    index={index}
+                    isCurrentlyPlaying={isCurrentlyPlaying}
+                    isPlaying={isPlaying}
+                    expandedLyrics={expandedLyrics}
+                    onPlaySong={handlePlaySong}
+                    onDownload={handleDownload}
+                    onToggleLyrics={(id) => setExpandedLyrics(expandedLyrics === id ? null : id)}
+                    onEdit={setEditingSong}
+                    onRemove={handleRemoveSong}
+                    onDelete={(s) => setDeletingSong(s)}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Delete Song Dialog */}
