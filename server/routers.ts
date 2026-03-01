@@ -32,6 +32,7 @@ import { PLAN_LIMITS, type PlanName } from "../drizzle/schema";
 import { STRIPE_PLANS, CREDIT_PACKS, type StripePlanId, type CreditPackId } from "./stripeProducts";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
+import { notifyOwner } from "./_core/notification";
 
 function getStripe(): Stripe | null {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -131,6 +132,12 @@ export const appRouter = router({
           externalSongId: null,
           imageUrl: null,
         });
+
+        // Notify owner about new song generation
+        notifyOwner({
+          title: `🎵 New Song Generated`,
+          content: `User: ${ctx.user.name || ctx.user.email || "Unknown"}\nTitle: ${song.title}\nGenre: ${genre || "Not specified"}\nMood: ${mood || "Not specified"}\nMode: ${mode || "simple"}\nEngine: ElevenLabs`,
+        }).catch(() => {}); // Fire-and-forget, don't block the response
 
         return song;
       }),
@@ -390,6 +397,13 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         });
 
         await deductCredits(ctx.user.id, 1, "generation", `Generated from sheet music: ${analysis.title}`);
+
+        // Notify owner about new song from sheet music
+        notifyOwner({
+          title: `🎵 New Song from Sheet Music`,
+          content: `User: ${ctx.user.name || ctx.user.email || "Unknown"}\nTitle: ${analysis.title}\nGenre: ${analysis.genre}\nMood: ${analysis.mood}\nSource: Sheet Music Upload`,
+        }).catch(() => {}); // Fire-and-forget
+
         return { song, audioUrl: result.audioUrl };
       }),
 

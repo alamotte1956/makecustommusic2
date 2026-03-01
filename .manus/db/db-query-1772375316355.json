@@ -1,0 +1,115 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'songs' AND TABLE_SCHEMA = DATABASE() ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'songs' AND TABLE_SCHEMA = DATABASE() ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "userId"
+    },
+    {
+      "COLUMN_NAME": "title"
+    },
+    {
+      "COLUMN_NAME": "keywords"
+    },
+    {
+      "COLUMN_NAME": "abcNotation"
+    },
+    {
+      "COLUMN_NAME": "musicDescription"
+    },
+    {
+      "COLUMN_NAME": "mp3Url"
+    },
+    {
+      "COLUMN_NAME": "mp3Key"
+    },
+    {
+      "COLUMN_NAME": "duration"
+    },
+    {
+      "COLUMN_NAME": "tempo"
+    },
+    {
+      "COLUMN_NAME": "keySignature"
+    },
+    {
+      "COLUMN_NAME": "timeSignature"
+    },
+    {
+      "COLUMN_NAME": "genre"
+    },
+    {
+      "COLUMN_NAME": "mood"
+    },
+    {
+      "COLUMN_NAME": "instruments"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "updatedAt"
+    },
+    {
+      "COLUMN_NAME": "audioUrl"
+    },
+    {
+      "COLUMN_NAME": "engine"
+    },
+    {
+      "COLUMN_NAME": "vocalType"
+    },
+    {
+      "COLUMN_NAME": "lyrics"
+    },
+    {
+      "COLUMN_NAME": "styleTags"
+    },
+    {
+      "COLUMN_NAME": "shareToken"
+    },
+    {
+      "COLUMN_NAME": "imageUrl"
+    },
+    {
+      "COLUMN_NAME": "externalSongId"
+    },
+    {
+      "COLUMN_NAME": "sheetMusicAbc"
+    },
+    {
+      "COLUMN_NAME": "chordProgression"
+    },
+    {
+      "COLUMN_NAME": "instrumentalUrl"
+    },
+    {
+      "COLUMN_NAME": "vocalUrl"
+    },
+    {
+      "COLUMN_NAME": "mixedUrl"
+    },
+    {
+      "COLUMN_NAME": "takes"
+    },
+    {
+      "COLUMN_NAME": "selectedTakeIndex"
+    },
+    {
+      "COLUMN_NAME": "postProcessPreset"
+    },
+    {
+      "COLUMN_NAME": "visibility"
+    },
+    {
+      "COLUMN_NAME": "publishedAt"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nuserId\ntitle\nkeywords\nabcNotation\nmusicDescription\nmp3Url\nmp3Key\nduration\ntempo\nkeySignature\ntimeSignature\ngenre\nmood\ninstruments\ncreatedAt\nupdatedAt\naudioUrl\nengine\nvocalType\nlyrics\nstyleTags\nshareToken\nimageUrl\nexternalSongId\nsheetMusicAbc\nchordProgression\ninstrumentalUrl\nvocalUrl\nmixedUrl\ntakes\nselectedTakeIndex\npostProcessPreset\nvisibility\npublishedAt\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

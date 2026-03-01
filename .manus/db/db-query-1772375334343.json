@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, title, genre, mood, createdAt FROM songs ORDER BY createdAt ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, genre, mood, createdAt FROM songs ORDER BY createdAt ASC;",
+  "rows": [
+    {
+      "id": "210009",
+      "title": "Shame No More",
+      "genre": "Folk",
+      "mood": "Uplifting",
+      "createdAt": "2026-03-01 09:36:32"
+    },
+    {
+      "id": "210013",
+      "title": "I am Wonderfully Made by Him",
+      "genre": "Folk",
+      "mood": "Calm",
+      "createdAt": "2026-03-01 10:24:19"
+    },
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "genre": "Christian praise",
+      "mood": "Upbeat Worship",
+      "createdAt": "2026-03-01 11:18:16"
+    },
+    {
+      "id": "210044",
+      "title": "My Custom Song",
+      "genre": "NULL",
+      "mood": "NULL",
+      "createdAt": "2026-03-01 12:29:40"
+    },
+    {
+      "id": "240001",
+      "title": "test",
+      "genre": "NULL",
+      "mood": "NULL",
+      "createdAt": "2026-03-01 14:22:09"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tgenre\tmood\tcreatedAt\n210009\tShame No More\tFolk\tUplifting\t2026-03-01 09:36:32\n210013\tI am Wonderfully Made by Him\tFolk\tCalm\t2026-03-01 10:24:19\n210035\tMen of The Father's House\tChristian praise\tUpbeat Worship\t2026-03-01 11:18:16\n210044\tMy Custom Song\tNULL\tNULL\t2026-03-01 12:29:40\n240001\ttest\tNULL\tNULL\t2026-03-01 14:22:09\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}

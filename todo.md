@@ -517,3 +517,8 @@
 
 ## Logo Resize
 - [x] Make the logo 2x bigger in the navigation header (w-9 h-9 → w-[4.5rem] h-[4.5rem])
+
+## Owner Notification on New Song Generation
+- [x] Add notifyOwner call when a new song is generated (both standard and sheet music flows)
+- [x] Include song title, genre, mood, user name, and generation mode in notification
+- [x] Fire-and-forget pattern so notifications don't block song delivery
