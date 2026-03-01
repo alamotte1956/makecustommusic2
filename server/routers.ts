@@ -127,9 +127,10 @@ export const appRouter = router({
         genre: z.string().max(100).optional(),
         mood: z.string().max(100).optional(),
         vocalType: z.enum(["none", "male", "female", "mixed"]).optional(),
+        length: z.enum(["standard", "extended"]).default("standard"),
       }))
       .mutation(async ({ input }) => {
-        const { subject, genre, mood, vocalType } = input;
+        const { subject, genre, mood, vocalType, length } = input;
 
         let styleHints = "";
         if (genre) styleHints += ` in a ${genre} style`;
@@ -139,11 +140,17 @@ export const appRouter = router({
           styleHints += `, written for ${vocalDesc}`;
         }
 
+        const isExtended = length === "extended";
+        const wordRange = isExtended ? "500-800" : "150-400";
+        const structureHint = isExtended
+          ? "Include at least 3 verses, a pre-chorus, a chorus, a bridge, and an outro. Make the lyrics rich with imagery, storytelling, and emotional depth."
+          : "Include verses, a chorus, and optionally a bridge.";
+
         const response = await invokeLLM({
           messages: [
             {
               role: "system",
-              content: `You are a professional songwriter. Write original song lyrics based on the user's subject. Format the lyrics with section markers like [Verse 1], [Chorus], [Verse 2], [Bridge], etc. The lyrics should be creative, emotionally resonant, and ready to be set to music. Keep lyrics between 150-400 words. Do not include any explanation or commentary — output only the lyrics.`,
+              content: `You are a professional songwriter. Write original song lyrics based on the user's subject. Format the lyrics with section markers like [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro], etc. The lyrics should be creative, emotionally resonant, and ready to be set to music. ${structureHint} Keep lyrics between ${wordRange} words. Do not include any explanation or commentary — output only the lyrics.`,
             },
             {
               role: "user",

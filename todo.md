@@ -198,3 +198,67 @@
 - [x] Add drag handles to song cards with visual feedback during drag
 - [x] Persist new order to backend after drop (optimistic update)
 - [x] Write tests for reorder route (147 tests passing)
+
+## ElevenLabs Integration
+### Setup
+- [ ] Configure ELEVENLABS_API_KEY secret
+- [ ] Create ElevenLabs server-side helper (text-to-speech, voice list)
+- [ ] Add backend tRPC routes for all three features
+
+### Feature 1: Text-to-Speech Lyrics Preview
+- [ ] Add tRPC route to convert lyrics text to speech audio
+- [ ] Add "Listen to Lyrics" button on song cards (History, Favorites, AlbumDetail)
+- [ ] Play TTS audio inline with loading state
+
+### Feature 2: Voice Narration Intros/Outros
+- [ ] Add tRPC route to generate narration audio from custom text
+- [ ] Add UI on Generator/song detail to create intro/outro narration
+- [ ] Save narration audio to S3 and associate with song
+
+### Feature 3: AI Vocal Generation
+- [ ] Add tRPC route to generate singing/vocal track from lyrics
+- [ ] Add "Generate Vocals" button on song cards
+- [ ] Save vocal audio to S3 and associate with song
+
+### Common
+- [ ] Add voice selector dropdown (ElevenLabs voices)
+- [ ] Write tests for ElevenLabs routes
+
+## Longer Lyrics Generation
+- [ ] Update LLM system prompt to generate longer lyrics (400-800 words)
+- [ ] Increase lyrics max length validation (5000 → 10000 chars)
+- [ ] Add lyrics length option (standard / extended) to Generator UI
+
+## Replace Suno with ElevenLabs
+### Removal
+- [ ] Remove sunoApi.ts and all Suno references from server
+- [ ] Remove SUNO_API_KEY secret usage
+- [ ] Remove sunoApi.test.ts
+
+### ElevenLabs Setup
+- [ ] Configure ELEVENLABS_API_KEY secret
+- [ ] Create ElevenLabs server-side helper (TTS, voice list, sound generation)
+- [ ] Research ElevenLabs API for music/sound generation capabilities
+
+### Backend Routes
+- [ ] Replace songs.generate with ElevenLabs-based generation
+- [ ] Add TTS lyrics preview route
+- [ ] Add voice narration route (intros/outros)
+- [ ] Add AI vocal generation route
+- [ ] Add voice list route
+
+### Frontend
+- [ ] Update Generator page to use ElevenLabs instead of Suno
+- [ ] Add voice selector for TTS/narration/vocals
+- [ ] Add TTS lyrics preview button on song cards
+- [ ] Add narration intro/outro UI
+- [ ] Add vocal generation UI
+
+### Tests
+- [ ] Write tests for all ElevenLabs routes
+- [ ] Remove Suno-specific tests
+
+## SEO Fixes for Home Page
+- [x] Add keywords meta tag to home page (10 relevant keywords)
+- [x] Update title to 30-60 characters using document.title (49 chars)
+- [x] Add meta description (50-160 characters, 155 chars)

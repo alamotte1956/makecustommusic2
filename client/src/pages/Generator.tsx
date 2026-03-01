@@ -86,6 +86,7 @@ export default function Generator() {
 
   // Lyrics generation state
   const [lyricsSubject, setLyricsSubject] = useState("");
+  const [lyricsLength, setLyricsLength] = useState<"standard" | "extended">("standard");
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const generateLyricsMutation = trpc.songs.generateLyrics.useMutation();
 
@@ -289,6 +290,31 @@ export default function Generator() {
                 <p className="text-xs text-muted-foreground">
                   Enter a subject or topic and let AI write lyrics for you. The generated lyrics will fill the field below.
                 </p>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-muted-foreground">Length:</span>
+                  <button
+                    type="button"
+                    onClick={() => setLyricsLength("standard")}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      lyricsLength === "standard"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLyricsLength("extended")}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      lyricsLength === "extended"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    Extended (3+ verses, bridge, outro)
+                  </button>
+                </div>
                 <div className="flex gap-2">
                   <Input
                     placeholder="e.g., falling in love on a summer night, overcoming challenges, road trip with friends..."
@@ -311,6 +337,7 @@ export default function Generator() {
                           genre: selectedGenre || undefined,
                           mood: selectedMood || undefined,
                           vocalType,
+                          length: lyricsLength,
                         });
                         setCustomLyrics(result.lyrics);
                         toast.success("Lyrics generated! Review and edit them below.");

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -39,6 +40,10 @@ const features = [
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    document.title = "Make Custom Music - AI Music Generator & Composer";
+  }, []);
 
   return (
     <div>
