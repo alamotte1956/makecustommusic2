@@ -305,7 +305,7 @@ export default function UsageDashboard() {
               <div>
                 <h2 className="font-semibold text-black">Want more songs?</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Upgrade to Creator for 250 songs/month, unlimited sheet music, and commercial rights.
+                  Upgrade to Creator for 125 songs/month, unlimited sheet music, and commercial rights.
                 </p>
               </div>
               <Link href="/pricing">

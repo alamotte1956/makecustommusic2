@@ -104,11 +104,11 @@ describe("Stripe-credits integration", () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
     const { PLAN_LIMITS } = await import("../drizzle/schema");
 
-    // Creator: 250 credits
+    // Creator: 125 credits
     expect(parseInt(STRIPE_PLANS.creator.metadata.monthly_credits)).toBe(PLAN_LIMITS.creator.monthlyCredits);
-    // Professional: 1000 credits
+    // Professional: 500 credits
     expect(parseInt(STRIPE_PLANS.professional.metadata.monthly_credits)).toBe(PLAN_LIMITS.professional.monthlyCredits);
-    // Studio: 5000 credits
+    // Studio: 2500 credits
     expect(parseInt(STRIPE_PLANS.studio.metadata.monthly_credits)).toBe(PLAN_LIMITS.studio.monthlyCredits);
   });
 });

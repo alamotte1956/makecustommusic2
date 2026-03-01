@@ -100,17 +100,17 @@ export default function Terms() {
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Creator</td>
                   <td className="px-4 py-2.5 text-foreground/70">$8/mo</td>
-                  <td className="px-4 py-2.5 text-foreground/70">250 credits</td>
+                  <td className="px-4 py-2.5 text-foreground/70">125 credits</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Professional</td>
                   <td className="px-4 py-2.5 text-foreground/70">$19/mo</td>
-                  <td className="px-4 py-2.5 text-foreground/70">1,000 credits</td>
+                  <td className="px-4 py-2.5 text-foreground/70">500 credits</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Studio</td>
                   <td className="px-4 py-2.5 text-foreground/70">$39/mo</td>
-                  <td className="px-4 py-2.5 text-foreground/70">5,000 credits</td>
+                  <td className="px-4 py-2.5 text-foreground/70">2,500 credits</td>
                 </tr>
               </tbody>
             </table>

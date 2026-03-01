@@ -40,7 +40,7 @@ const faqCategories = [
       },
       {
         q: "What are the paid plans?",
-        a: "We offer three paid tiers: Creator ($8/mo) with 250 songs and commercial use for social media, Professional ($19/mo) with 1,000 songs and full commercial rights, and Studio ($39/mo) with 5,000 songs and full commercial + sync licensing. All paid plans include unlimited sheet music and 192kbps MP3 quality.",
+        a: "We offer three paid tiers: Creator ($8/mo) with 125 songs and commercial use for social media, Professional ($19/mo) with 500 songs and full commercial rights, and Studio ($39/mo) with 2,500 songs and full commercial + sync licensing. All paid plans include unlimited sheet music and 192kbps MP3 quality.",
       },
       {
         q: "What counts as a credit?",

@@ -45,7 +45,7 @@ export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
     },
     metadata: {
       plan_tier: "creator",
-      monthly_credits: "250",
+      monthly_credits: "125",
     },
   },
   professional: {
@@ -58,7 +58,7 @@ export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
     },
     metadata: {
       plan_tier: "professional",
-      monthly_credits: "1000",
+      monthly_credits: "500",
     },
   },
   studio: {
@@ -71,7 +71,7 @@ export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
     },
     metadata: {
       plan_tier: "studio",
-      monthly_credits: "5000",
+      monthly_credits: "2500",
     },
   },
 };

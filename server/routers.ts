@@ -1261,7 +1261,7 @@ RULES:
             popular: true,
             limits: PLAN_LIMITS.creator,
             features: [
-              "250 songs per month",
+              "125 songs per month",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Commercial use (personal & social)",
@@ -1275,7 +1275,7 @@ RULES:
             annualPrice: 180,
             limits: PLAN_LIMITS.professional,
             features: [
-              "1,000 songs per month",
+              "500 songs per month",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Full commercial rights",
@@ -1289,7 +1289,7 @@ RULES:
             annualPrice: 348,
             limits: PLAN_LIMITS.studio,
             features: [
-              "5,000 songs per month",
+              "2,500 songs per month",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Full commercial + sync licensing",

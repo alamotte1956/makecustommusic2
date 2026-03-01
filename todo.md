@@ -645,3 +645,9 @@
 - [x] Add volume slider (range input) next to the mute button
 - [x] Sync volume and mute state with the audio element
 - [x] Update tests for volume control functionality (40 tests passing, 13 new volume tests)
+
+## Halve Paid Plan Credits
+- [x] Update PLAN_LIMITS in drizzle/schema.ts: Creator 250→125, Professional 1000→500, Studio 5000→2500
+- [x] Update plan features text in server/routers.ts allPlans procedure
+- [x] Update all hardcoded credit values in Pricing, FAQ, Terms, UsageDashboard, and stripeProducts.ts
+- [x] Update tests to reflect new credit values (535 tests passing across 25 files)
