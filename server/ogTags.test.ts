@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { injectOgTags } from "./ogTags";
+import { injectOgTags, buildMusicRecordingJsonLd } from "./ogTags";
 
 const SAMPLE_HTML = `<!doctype html>
 <html lang="en">
@@ -83,6 +83,30 @@ describe("OG Tag Injection", () => {
     expect(result).toContain("<!doctype html>");
     expect(result).toContain("</html>");
   });
+
+  it("should inject JSON-LD script tag before </head>", () => {
+    const jsonLd = { "@context": "https://schema.org", "@type": "MusicRecording", name: "Test Song" };
+    const result = injectOgTags(SAMPLE_HTML, { ...ogTags, jsonLd });
+    expect(result).toContain('<script type="application/ld+json">');
+    expect(result).toContain('"@type":"MusicRecording"');
+    expect(result).toContain('"name":"Test Song"');
+    // Should appear before </head>
+    const scriptIndex = result.indexOf('application/ld+json');
+    const headCloseIndex = result.indexOf('</head>');
+    expect(scriptIndex).toBeLessThan(headCloseIndex);
+  });
+
+  it("should not inject JSON-LD when jsonLd is undefined", () => {
+    const result = injectOgTags(SAMPLE_HTML, ogTags);
+    expect(result).not.toContain('application/ld+json');
+  });
+
+  it("should only have one JSON-LD script tag", () => {
+    const jsonLd = { "@context": "https://schema.org", "@type": "MusicRecording", name: "Test" };
+    const result = injectOgTags(SAMPLE_HTML, { ...ogTags, jsonLd });
+    const matches = result.match(/application\/ld\+json/g);
+    expect(matches).toHaveLength(1);
+  });
 });
 
 describe("OG Tag Description Building", () => {
@@ -148,6 +172,138 @@ describe("usePageMeta descriptions", () => {
       expect(desc.length).toBeGreaterThanOrEqual(50);
       expect(desc.length).toBeLessThanOrEqual(160);
     }
+  });
+});
+
+describe("buildMusicRecordingJsonLd", () => {
+  it("should build a complete MusicRecording JSON-LD object", () => {
+    const song = {
+      title: "Midnight Dreams",
+      genre: "jazz",
+      mood: "melancholic",
+      duration: 185,
+      tempo: 90,
+      keySignature: "Cm",
+      audioUrl: "https://cdn.example.com/audio/midnight.mp3",
+      mp3Url: null,
+      imageUrl: "https://cdn.example.com/covers/midnight.jpg",
+      createdAt: new Date("2026-01-15T10:30:00Z"),
+    };
+
+    const result = buildMusicRecordingJsonLd(song, "https://makecustommusic.com/share/abc123");
+
+    expect(result["@context"]).toBe("https://schema.org");
+    expect(result["@type"]).toBe("MusicRecording");
+    expect(result.name).toBe("Midnight Dreams");
+    expect(result.url).toBe("https://makecustommusic.com/share/abc123");
+    expect(result.genre).toBe("jazz");
+    expect(result.duration).toBe("PT3M5S");
+    expect(result.musicalKey).toBe("Cm");
+    expect(result.image).toBe("https://cdn.example.com/covers/midnight.jpg");
+    expect(result.audio).toEqual({
+      "@type": "AudioObject",
+      contentUrl: "https://cdn.example.com/audio/midnight.mp3",
+      encodingFormat: "audio/mpeg",
+    });
+    expect(result.tempo).toEqual({
+      "@type": "QuantitativeValue",
+      value: 90,
+      unitText: "BPM",
+    });
+    expect(result.dateCreated).toBe("2026-01-15T10:30:00.000Z");
+    expect(result.creator).toEqual({
+      "@type": "Organization",
+      name: "Make Custom Music",
+      url: "https://makecustommusic.com",
+    });
+  });
+
+  it("should handle minimal song data gracefully", () => {
+    const song = {
+      title: "Untitled Track",
+      genre: null,
+      mood: null,
+      duration: null,
+      tempo: null,
+      keySignature: null,
+      audioUrl: null,
+      mp3Url: null,
+      imageUrl: null,
+      createdAt: null,
+    };
+
+    const result = buildMusicRecordingJsonLd(song, "https://makecustommusic.com/share/xyz789");
+
+    expect(result["@context"]).toBe("https://schema.org");
+    expect(result["@type"]).toBe("MusicRecording");
+    expect(result.name).toBe("Untitled Track");
+    expect(result.url).toBe("https://makecustommusic.com/share/xyz789");
+    // Should use default image when imageUrl is null
+    expect(result.image).toContain("cloudfront.net");
+    // Optional fields should be absent
+    expect(result.genre).toBeUndefined();
+    expect(result.duration).toBeUndefined();
+    expect(result.audio).toBeUndefined();
+    expect(result.musicalKey).toBeUndefined();
+    expect(result.tempo).toBeUndefined();
+    expect(result.dateCreated).toBeUndefined();
+    // Creator should always be present
+    expect(result.creator).toBeDefined();
+  });
+
+  it("should prefer audioUrl over mp3Url", () => {
+    const song = {
+      title: "Test",
+      audioUrl: "https://cdn.example.com/audio.mp3",
+      mp3Url: "https://cdn.example.com/fallback.mp3",
+    };
+
+    const result = buildMusicRecordingJsonLd(song, "https://makecustommusic.com/share/test");
+    expect(result.audio.contentUrl).toBe("https://cdn.example.com/audio.mp3");
+  });
+
+  it("should fall back to mp3Url when audioUrl is null", () => {
+    const song = {
+      title: "Test",
+      audioUrl: null,
+      mp3Url: "https://cdn.example.com/fallback.mp3",
+    };
+
+    const result = buildMusicRecordingJsonLd(song, "https://makecustommusic.com/share/test");
+    expect(result.audio.contentUrl).toBe("https://cdn.example.com/fallback.mp3");
+  });
+
+  it("should format duration correctly for various lengths", () => {
+    // Exactly 1 minute
+    const r1 = buildMusicRecordingJsonLd({ title: "T", duration: 60 }, "url");
+    expect(r1.duration).toBe("PT1M0S");
+
+    // Under 1 minute
+    const r2 = buildMusicRecordingJsonLd({ title: "T", duration: 45 }, "url");
+    expect(r2.duration).toBe("PT0M45S");
+
+    // Over 5 minutes
+    const r3 = buildMusicRecordingJsonLd({ title: "T", duration: 330 }, "url");
+    expect(r3.duration).toBe("PT5M30S");
+  });
+
+  it("should produce valid JSON when serialized", () => {
+    const song = {
+      title: 'Song with "quotes" & <special> chars',
+      genre: "rock & roll",
+      duration: 120,
+      audioUrl: "https://cdn.example.com/audio.mp3",
+      imageUrl: "https://cdn.example.com/cover.jpg",
+      createdAt: new Date("2026-02-01"),
+    };
+
+    const result = buildMusicRecordingJsonLd(song, "https://makecustommusic.com/share/test");
+    const json = JSON.stringify(result);
+    const parsed = JSON.parse(json);
+
+    expect(parsed["@type"]).toBe("MusicRecording");
+    expect(parsed.name).toBe('Song with "quotes" & <special> chars');
+    expect(parsed.genre).toBe("rock & roll");
   });
 });
 

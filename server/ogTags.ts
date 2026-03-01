@@ -51,13 +51,60 @@ export function registerOgTagsMiddleware(app: Express) {
       const ogTitle = escapeHtml(truncate(`${song.title} — ${SITE_NAME}`, 70));
       const ogDesc = escapeHtml(truncate(description, 160));
 
-      // Store the OG data in res.locals for the Vite/static handler to inject
+      // Build JSON-LD structured data for MusicRecording
+      const jsonLd: Record<string, any> = {
+        "@context": "https://schema.org",
+        "@type": "MusicRecording",
+        name: song.title,
+        url: ogUrl,
+        description: description,
+        image: ogImage,
+      };
+
+      if (song.genre) {
+        jsonLd.genre = song.genre;
+      }
+      if (song.duration) {
+        // Convert seconds to ISO 8601 duration
+        const mins = Math.floor(song.duration / 60);
+        const secs = song.duration % 60;
+        jsonLd.duration = `PT${mins}M${secs}S`;
+      }
+      if (song.audioUrl || song.mp3Url) {
+        jsonLd.audio = {
+          "@type": "AudioObject",
+          contentUrl: song.audioUrl || song.mp3Url,
+          encodingFormat: "audio/mpeg",
+        };
+      }
+      if (song.keySignature) {
+        jsonLd.musicalKey = song.keySignature;
+      }
+      if (song.tempo) {
+        jsonLd.tempo = {
+          "@type": "QuantitativeValue",
+          value: song.tempo,
+          unitText: "BPM",
+        };
+      }
+      if (song.createdAt) {
+        jsonLd.dateCreated = new Date(song.createdAt).toISOString();
+      }
+      // Creator is the platform itself for AI-generated music
+      jsonLd.creator = {
+        "@type": "Organization",
+        name: SITE_NAME,
+        url: BASE_URL,
+      };
+
+      // Store the OG data and JSON-LD in res.locals for the Vite/static handler to inject
       res.locals.ogTags = {
         title: ogTitle,
         description: ogDesc,
         image: ogImage,
         url: ogUrl,
         type: "music.song",
+        jsonLd,
       };
 
       return next();
@@ -78,6 +125,7 @@ export function injectOgTags(html: string, ogTags?: {
   image: string;
   url: string;
   type: string;
+  jsonLd?: Record<string, any>;
 }): string {
   if (!ogTags) return html;
 
@@ -150,5 +198,72 @@ export function injectOgTags(html: string, ogTags?: {
     `<link rel="canonical" href="${url}" />`
   );
 
+  // Inject JSON-LD structured data if available
+  if (ogTags.jsonLd) {
+    const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(ogTags.jsonLd)}</script>`;
+    result = result.replace("</head>", `${jsonLdScript}\n</head>`);
+  }
+
   return result;
+}
+
+/**
+ * Builds a MusicRecording JSON-LD object from song data.
+ * Exported for testing purposes.
+ */
+export function buildMusicRecordingJsonLd(song: {
+  title: string;
+  genre?: string | null;
+  mood?: string | null;
+  duration?: number | null;
+  tempo?: number | null;
+  keySignature?: string | null;
+  audioUrl?: string | null;
+  mp3Url?: string | null;
+  imageUrl?: string | null;
+  createdAt?: Date | string | null;
+}, shareUrl: string): Record<string, any> {
+  const jsonLd: Record<string, any> = {
+    "@context": "https://schema.org",
+    "@type": "MusicRecording",
+    name: song.title,
+    url: shareUrl,
+    image: song.imageUrl || DEFAULT_IMAGE,
+  };
+
+  if (song.genre) {
+    jsonLd.genre = song.genre;
+  }
+  if (song.duration) {
+    const mins = Math.floor(song.duration / 60);
+    const secs = song.duration % 60;
+    jsonLd.duration = `PT${mins}M${secs}S`;
+  }
+  if (song.audioUrl || song.mp3Url) {
+    jsonLd.audio = {
+      "@type": "AudioObject",
+      contentUrl: song.audioUrl || song.mp3Url,
+      encodingFormat: "audio/mpeg",
+    };
+  }
+  if (song.keySignature) {
+    jsonLd.musicalKey = song.keySignature;
+  }
+  if (song.tempo) {
+    jsonLd.tempo = {
+      "@type": "QuantitativeValue",
+      value: song.tempo,
+      unitText: "BPM",
+    };
+  }
+  if (song.createdAt) {
+    jsonLd.dateCreated = new Date(song.createdAt).toISOString();
+  }
+  jsonLd.creator = {
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: BASE_URL,
+  };
+
+  return jsonLd;
 }

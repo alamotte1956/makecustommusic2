@@ -736,3 +736,9 @@
 - [x] Include song cover image, title, and description in OG tags
 - [x] Add Twitter Card meta tags for shared songs
 - [x] Test OG tags render correctly for crawlers (server-side HTML)
+
+## JSON-LD Structured Data for Shared Songs
+- [x] Add MusicRecording JSON-LD schema generation from song metadata
+- [x] Inject JSON-LD script tag server-side in /share/:token HTML
+- [x] Include song title, genre, duration, creator, image, and audio URL
+- [x] Write tests for JSON-LD generation and injection
