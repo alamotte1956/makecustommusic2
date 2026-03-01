@@ -18,6 +18,8 @@ import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import { getLoginUrl } from "@/const";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
 import ListenToLyricsButton from "@/components/ListenToLyricsButton";
+import GenerateCoverButton from "@/components/GenerateCoverButton";
+import SongCoverImage from "@/components/SongCoverImage";
 import {
   Dialog,
   DialogContent,
@@ -312,6 +314,9 @@ export default function History() {
                         className="mt-1.5 h-4 w-4 rounded border-border accent-primary"
                       />
 
+                      {/* Song cover image */}
+                      <SongCoverImage imageUrl={song.imageUrl} title={song.title} size="sm" />
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
@@ -406,6 +411,7 @@ export default function History() {
                             </Button>
                           </Link>
                           <FavoriteButton songId={song.id} size="sm" />
+                          <GenerateCoverButton songId={song.id} hasImage={!!song.imageUrl} size="sm" />
                           <PublishToggle songId={song.id} visibility={song.visibility} />
 
                           <Button

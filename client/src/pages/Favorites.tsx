@@ -16,6 +16,8 @@ import EditSongDialog from "@/components/EditSongDialog";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
 import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
+import GenerateCoverButton from "@/components/GenerateCoverButton";
+import SongCoverImage from "@/components/SongCoverImage";
 
 export default function Favorites() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
@@ -211,6 +213,9 @@ export default function Favorites() {
                         )}
                       </button>
 
+                      {/* Song cover image */}
+                      <SongCoverImage imageUrl={song.imageUrl} title={song.title} size="sm" />
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
@@ -292,6 +297,7 @@ export default function Favorites() {
                             <Share2 className="w-3.5 h-3.5 mr-1.5" />
                             Share
                           </Button>
+                          <GenerateCoverButton songId={song.id} hasImage={!!song.imageUrl} size="sm" />
                           <Button
                             variant="ghost"
                             size="sm"

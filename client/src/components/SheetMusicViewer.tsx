@@ -11,14 +11,17 @@ interface SheetMusicViewerProps {
   songId: number;
   abcNotation?: string | null;
   songTitle: string;
+  songKeySignature?: string | null;
 }
 
-export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle }: SheetMusicViewerProps) {
+export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature }: SheetMusicViewerProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
   const [isRendered, setIsRendered] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>("original");
+  // Key to generate sheet music in (before generation)
+  const [generateInKey, setGenerateInKey] = useState<string>("auto");
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
 
@@ -36,7 +39,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
   const handleGenerate = useCallback(async () => {
     try {
-      const result = await generateMutation.mutateAsync({ songId });
+      const keyParam = generateInKey === "auto" ? undefined : generateInKey;
+      const result = await generateMutation.mutateAsync({ songId, key: keyParam });
       setAbc(result.abcNotation);
       setSelectedKey("original");
       utils.songs.getById.invalidate({ id: songId });
@@ -44,7 +48,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     } catch (error: any) {
       toast.error(error.message || "Failed to generate sheet music");
     }
-  }, [songId, generateMutation, utils]);
+  }, [songId, generateInKey, generateMutation, utils]);
 
   // Render ABC notation using abcjs
   useEffect(() => {
@@ -93,10 +97,10 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [songTitle, selectedKey, originalKey]);
 
-  // No ABC notation yet — show generate button
+  // No ABC notation yet — show key picker + generate button
   if (!abc) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+      <div className="flex flex-col items-center justify-center py-12 space-y-6">
         <Music className="w-12 h-12 text-muted-foreground/40" />
         <div className="text-center space-y-1">
           <p className="text-sm font-medium text-foreground">No sheet music yet</p>
@@ -104,6 +108,36 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             Generate a professional lead sheet with melody notation and chord symbols
           </p>
         </div>
+
+        {/* Key selection before generation */}
+        <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+          <div className="flex items-center gap-2 w-full">
+            <label className="text-sm font-medium text-foreground whitespace-nowrap">Key:</label>
+            <Select value={generateInKey} onValueChange={setGenerateInKey}>
+              <SelectTrigger className="flex-1 h-9">
+                <SelectValue placeholder="Select key" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">
+                  Auto{songKeySignature ? ` (${songKeySignature})` : ""}
+                </SelectItem>
+                {COMMON_KEYS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            {generateInKey === "auto"
+              ? songKeySignature
+                ? `Will generate in the song's original key (${songKeySignature})`
+                : "The AI will choose the best key for this song"
+              : `Will generate sheet music in ${generateInKey}`}
+          </p>
+        </div>
+
         <Button
           onClick={handleGenerate}
           disabled={generateMutation.isPending}
@@ -172,6 +206,26 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             )}
             Download PDF
           </Button>
+
+          {/* Regenerate with key selection */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Regenerate in:</span>
+            <Select value={generateInKey} onValueChange={setGenerateInKey}>
+              <SelectTrigger className="w-[100px] h-8 text-xs">
+                <SelectValue placeholder="Key" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">
+                  Auto{songKeySignature ? ` (${songKeySignature})` : ""}
+                </SelectItem>
+                {COMMON_KEYS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             variant="ghost"
             size="sm"

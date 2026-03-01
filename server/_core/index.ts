@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerAlbumZipRoute } from "../albumZip";
 import { registerGenerateVoiceRoute } from "../generateVoice";
 import { registerStripeWebhookRoute } from "../stripeWebhook";
+import { registerSitemapRoute } from "../sitemap";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -44,6 +45,8 @@ async function startServer() {
   registerAlbumZipRoute(app);
   // ElevenLabs TTS voice generation (direct audio streaming)
   registerGenerateVoiceRoute(app);
+  // Dynamic sitemap.xml
+  registerSitemapRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",

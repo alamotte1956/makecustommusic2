@@ -184,6 +184,12 @@ export async function updateSongPostProcessPreset(id: number, preset: string) {
   await db.update(songs).set({ postProcessPreset: preset }).where(eq(songs.id, id));
 }
 
+export async function updateSongImageUrl(id: number, imageUrl: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ imageUrl }).where(eq(songs.id, id));
+}
+
 export async function updateSong(
   id: number,
   userId: number,

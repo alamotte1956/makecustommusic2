@@ -284,6 +284,7 @@ export default function SongDetail() {
                 songId={song.id}
                 abcNotation={song.sheetMusicAbc}
                 songTitle={song.title}
+                songKeySignature={song.keySignature}
               />
             </CardContent>
           </Card>

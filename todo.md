@@ -684,3 +684,39 @@
 
 ## SEO Fix - Meta Description
 - [x] Shorten homepage meta description to under 160 characters
+
+## Dynamic Sitemap.xml
+- [x] Create server-side GET /sitemap.xml endpoint
+- [x] Include static routes (/, /pricing, /faq, /privacy, /terms)
+- [x] Query database for all publicly shared songs (with shareToken)
+- [x] Generate /share/:token URLs for each shared song
+- [x] Include lastmod timestamps from song creation/update dates
+- [x] Set proper XML content type and cache headers
+- [x] Remove old static sitemap.xml from client/public
+- [x] Write tests for sitemap endpoint
+
+## Bug Fix - Redirect URL Not Set
+- [ ] Investigate and fix "redirect URL is not set" error
+
+## Safari Compatibility - OAuth Redirect Fix
+- [ ] Audit OAuth login URL construction for Safari btoa/atob edge cases
+- [ ] Audit OAuth callback state decoding for Safari compatibility
+- [ ] Audit cookie settings (SameSite, Secure, Partitioned) for Safari
+- [ ] Add Safari-safe encoding/decoding for OAuth state parameter
+- [ ] Test and verify OAuth flow works in Safari
+
+## Song & Album Cover Image Generation
+- [x] Add song cover generation tRPC route (songs.generateCover)
+- [x] Build image prompt from song title, genre, mood, and keywords
+- [x] Store generated cover URL in songs.imageUrl field
+- [x] Add "Generate Cover" button on song cards (History, Favorites, AlbumDetail)
+- [x] Add "Generate Cover" button on Generator result card
+- [x] Display song cover images on song cards across all pages
+- [x] Support regenerating song covers
+- [x] Verify existing album cover generation still works
+- [x] Write tests for song cover generation
+
+## Key Selection Before Sheet Music Generation
+- [x] Add key parameter to songs.generateSheetMusic tRPC route
+- [x] Add key selector UI in SheetMusicViewer component before generation
+- [x] Pass selected key to the LLM prompt for ABC notation generation

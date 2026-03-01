@@ -39,6 +39,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import GenerateCoverButton from "@/components/GenerateCoverButton";
+import SongCoverImage from "@/components/SongCoverImage";
 
 // ─── Sortable Song Card ───
 function SortableSongCard({
@@ -120,6 +122,9 @@ function SortableSongCard({
               )}
             </button>
 
+            {/* Song cover image */}
+            <SongCoverImage imageUrl={song.imageUrl} title={song.title} size="sm" />
+
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -171,6 +176,7 @@ function SortableSongCard({
                   Edit
                 </Button>
                 <FavoriteButton songId={song.id} size="sm" />
+                <GenerateCoverButton songId={song.id} hasImage={!!song.imageUrl} size="sm" />
                 <Button
                   variant="ghost"
                   size="sm"

@@ -8,7 +8,7 @@ import {
   createSong, getSongById, getUserSongs, deleteSong, updateSong, updateSongMp3,
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
   updateSongSheetMusic, updateSongChordProgression,
-  updateSongStems, updateSongTakes, updateSongPostProcessPreset,
+  updateSongStems, updateSongTakes, updateSongPostProcessPreset, updateSongImageUrl,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
   reorderAlbumSongs,
@@ -656,23 +656,26 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
 
     // Generate professional sheet music (ABC notation) from song data
     generateSheetMusic: protectedProcedure
-      .input(z.object({ songId: z.number() }))
+      .input(z.object({ songId: z.number(), key: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         const song = await getSongById(input.songId);
         if (!song || song.userId !== ctx.user.id) {
           throw new Error("Song not found");
         }
 
-        // If already generated, return cached
-        if (song.sheetMusicAbc) {
+        // If already generated and no specific key requested, return cached
+        if (song.sheetMusicAbc && !input.key) {
           return { abcNotation: song.sheetMusicAbc };
         }
+
+        // Use the requested key, or fall back to the song's key signature
+        const requestedKey = input.key || song.keySignature;
 
         const songContext = [
           `Title: ${song.title}`,
           song.genre ? `Genre: ${song.genre}` : null,
           song.mood ? `Mood: ${song.mood}` : null,
-          song.keySignature ? `Key: ${song.keySignature}` : null,
+          requestedKey ? `Key: ${requestedKey}` : null,
           song.timeSignature ? `Time Signature: ${song.timeSignature}` : null,
           song.tempo ? `Tempo: ${song.tempo} BPM` : null,
           song.lyrics ? `Lyrics:\n${song.lyrics}` : null,
@@ -690,7 +693,8 @@ RULES:
 - Include the X: (reference number), T: (title), M: (meter), L: (default note length), Q: (tempo), K: (key) headers
 - Write a singable melody line that matches the lyrics and genre
 - Align lyrics under notes using w: lines
-- Use appropriate key signature for the genre (e.g., minor keys for dark/melancholic, major for happy/uplifting)
+- If a specific key is provided in the song info, you MUST use that exact key for the K: header and write all melody and chords in that key
+- If no key is specified, choose an appropriate key signature for the genre (e.g., minor keys for dark/melancholic, major for happy/uplifting)
 - Include dynamics and expression marks where appropriate
 - For songs without lyrics, write an instrumental melody
 - Keep the notation clean and professional — this will be rendered as printable sheet music
@@ -1034,6 +1038,36 @@ RULES:
           mixedUrl: song.mixedUrl || null,
           hasStems: !!vocalUrl,
         };
+      }),
+
+    // Generate AI cover art for a song
+    generateCover: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+
+        const genre = song.genre || "eclectic";
+        const mood = song.mood || "expressive";
+        const instruments = Array.isArray(song.instruments) ? song.instruments.slice(0, 5).join(", ") : "";
+
+        const prompt = `Create a stunning, professional single cover art for a song titled "${song.title}". ` +
+          `The music style is ${genre} with a ${mood} atmosphere. ` +
+          (instruments ? `Featured instruments include ${instruments}. ` : "") +
+          (song.keywords ? `Inspired by: ${song.keywords}. ` : "") +
+          `The design should be artistic, visually striking, and suitable as a square song cover. ` +
+          `Use rich colors, abstract or symbolic imagery that evokes the music's mood. ` +
+          `No text or typography on the image. Professional quality, high detail.`;
+
+        const { url } = await generateImage({ prompt });
+
+        if (url) {
+          await updateSongImageUrl(input.songId, url);
+        }
+
+        return { imageUrl: url };
       }),
   }),
 

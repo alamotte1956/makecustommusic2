@@ -21,6 +21,7 @@ import { getLoginUrl } from "@/const";
 import { copyToClipboard } from "@/lib/clipboard";
 import { Link } from "wouter";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import GenerateCoverButton from "@/components/GenerateCoverButton";
 
 type GeneratedSong = {
   id: number;
@@ -919,6 +920,13 @@ export default function Generator() {
                     {showLyrics ? "Hide" : "View"} Lyrics
                   </Button>
                 )}
+                <GenerateCoverButton
+                  songId={generatedSong.id}
+                  hasImage={!!generatedSong.imageUrl}
+                  size="sm"
+                  variant="outline"
+                  onGenerated={(url) => setGeneratedSong(prev => prev ? { ...prev, imageUrl: url } : prev)}
+                />
                 <Link href={`/songs/${generatedSong.id}`}>
                   <Button size="sm" variant="outline">
                     <Music className="w-4 h-4 mr-1.5" /> Sheet Music
