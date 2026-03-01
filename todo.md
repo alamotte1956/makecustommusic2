@@ -535,3 +535,7 @@
 - [x] Add Pricing link to mobile navigation menu
 - [x] Add Usage link to mobile navigation menu (authenticated only)
 - [x] Add Guided Tour button to mobile navigation menu
+
+## Bug Fix: Logo Not Displaying Correctly on All Pages
+- [x] Find all logo references across the codebase (only in Layout.tsx header)
+- [x] Fix logo display: reduced from 72px to 56px, increased header from 64px to 80px, added onError fallback
