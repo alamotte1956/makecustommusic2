@@ -99,6 +99,13 @@
       "when": 1772339890952,
       "tag": "0013_sudden_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1772376969974,
+      "tag": "0014_right_blindfold",
+      "breakpoints": true
     }
   ]
 }

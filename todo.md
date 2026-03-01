@@ -539,3 +539,22 @@
 ## Bug Fix: Logo Not Displaying Correctly on All Pages
 - [x] Find all logo references across the codebase (only in Layout.tsx header)
 - [x] Fix logo display: reduced from 72px to 56px, increased header from 64px to 80px, added onError fallback
+
+## Real-Time User Notification System
+- [ ] Create notifications table in database schema (id, userId, type, title, message, songId, read, createdAt)
+- [ ] Add notification DB helpers (create, list, markRead, markAllRead, getUnreadCount)
+- [ ] Add tRPC procedures for notifications (list, markRead, markAllRead, unreadCount)
+- [ ] Build notification polling hook (useNotifications) with auto-refresh
+- [ ] Build NotificationCenter UI component (bell icon with badge, dropdown panel)
+- [ ] Integrate notification triggers into song generation (notify user when their song is ready)
+- [ ] Add notification for public song discoveries (when someone favorites/shares your song)
+- [ ] Write tests for notification logic
+
+## Google Search Console & SEO Setup
+- [x] Create sitemap.xml with all public routes (/, /generate, /discover, /pricing, /upload)
+- [x] Create robots.txt allowing crawling with sitemap reference
+- [x] Add Open Graph meta tags (og:title, og:description, og:image, og:url)
+- [x] Add Twitter Card meta tags (summary_large_image)
+- [x] Add JSON-LD structured data (WebApplication schema with features, pricing, creator)
+- [x] Add canonical URLs
+- [ ] Guide user through Google Search Console submission

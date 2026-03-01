@@ -255,3 +255,20 @@ export type PlanName = keyof typeof PLAN_LIMITS;
 // Commercial license types stored on songs
 export const licenseTypes = ["personal", "commercial_social", "commercial_full", "commercial_sync"] as const;
 export type LicenseType = typeof licenseTypes[number];
+
+// ─── Notifications ───
+
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  type: mysqlEnum("type", ["song_ready", "song_favorited", "song_shared", "credit_added", "system"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  songId: int("songId"),
+  actorName: varchar("actorName", { length: 255 }),
+  isRead: int("isRead").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
