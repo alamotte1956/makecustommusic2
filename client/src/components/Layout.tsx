@@ -2,12 +2,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe } from "lucide-react";
 import { useState } from "react";
 import { useQueuePlayer } from "@/contexts/QueuePlayerContext";
 
 const navItems = [
   { href: "/generate", label: "Create Music", icon: Sparkles },
+  { href: "/discover", label: "Discover", icon: Globe },
   { href: "/history", label: "My Songs", icon: History },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/albums", label: "Albums", icon: Disc3 },
@@ -58,8 +59,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Auth */}
           <div className="hidden md:flex items-center gap-3">
+            <Link href="/pricing">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
+                location === "/pricing" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+              }`}>
+                <CreditCard className="w-3.5 h-3.5" />
+                Pricing
+              </span>
+            </Link>
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
+                <Link href="/usage">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
+                    location === "/usage" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+                  }`}>
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    Usage
+                  </span>
+                </Link>
                 <span className="text-sm text-muted-foreground">
                   {user?.name || user?.email || "User"}
                 </span>

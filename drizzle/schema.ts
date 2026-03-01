@@ -63,6 +63,9 @@ export const songs = mysqlTable("songs", {
   takes: json("takes").$type<SongTake[]>(),
   selectedTakeIndex: int("selectedTakeIndex").default(0),
   postProcessPreset: varchar("postProcessPreset", { length: 50 }).default("radio-ready"),
+  // Community / Discover visibility
+  visibility: mysqlEnum("visibility", ["private", "public"]).default("private").notNull(),
+  publishedAt: timestamp("publishedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -130,3 +133,125 @@ export const favorites = mysqlTable("favorites", {
 
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
+
+// Subscription plans
+export const subscriptionPlans = mysqlEnum("plan", ["free", "creator", "professional", "studio"]);
+
+export const userSubscriptions = mysqlTable("user_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  plan: mysqlEnum("plan", ["free", "creator", "professional", "studio"]).default("free").notNull(),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  stripePriceId: varchar("stripePriceId", { length: 255 }),
+  status: mysqlEnum("status", ["active", "canceled", "past_due", "trialing", "incomplete"]).default("active").notNull(),
+  billingCycle: mysqlEnum("billingCycle", ["monthly", "annual"]).default("monthly").notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  cancelAtPeriodEnd: int("cancelAtPeriodEnd").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
+
+// Credit balances
+export const creditBalances = mysqlTable("credit_balances", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  monthlyCredits: int("monthlyCredits").default(0).notNull(),
+  bonusCredits: int("bonusCredits").default(0).notNull(),
+  purchasedCredits: int("purchasedCredits").default(0).notNull(),
+  lastRefillAt: timestamp("lastRefillAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CreditBalance = typeof creditBalances.$inferSelect;
+export type InsertCreditBalance = typeof creditBalances.$inferInsert;
+
+// Credit transactions (audit log)
+export const creditTransactions = mysqlTable("credit_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  amount: int("amount").notNull(), // positive = credit, negative = debit
+  type: mysqlEnum("type", ["subscription_refill", "purchase", "bonus", "generation", "tts", "takes", "refund", "admin"]).notNull(),
+  description: text("description"),
+  balanceAfter: int("balanceAfter").notNull(),
+  relatedSongId: int("relatedSongId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type InsertCreditTransaction = typeof creditTransactions.$inferInsert;
+
+// Plan limits configuration (used in code, not DB)
+export const PLAN_LIMITS = {
+  free: {
+    monthlyCredits: 50,
+    dailySongLimit: 5,
+    dailyTtsLimit: 3,
+    dailySheetMusicLimit: 2,
+    dailyChordLimit: 2,
+    takesPerSong: 1,
+    stemDownloads: false,
+    studioMastering: false,
+    vocalMixing: false,
+    commercialUse: false,
+    audioQuality: "128kbps",
+    concurrentGenerations: 1,
+    addOnCreditsPerDollar: 0,
+  },
+  creator: {
+    monthlyCredits: 100,
+    dailySongLimit: 20,
+    dailyTtsLimit: 50,
+    dailySheetMusicLimit: -1, // unlimited
+    dailyChordLimit: -1,
+    takesPerSong: 2,
+    stemDownloads: "partial", // instrumental + full mix only
+    studioMastering: true,
+    vocalMixing: false,
+    commercialUse: "personal", // personal + social media
+    audioQuality: "192kbps",
+    concurrentGenerations: 3,
+    addOnCreditsPerDollar: 5, // 10 songs for $2
+  },
+  professional: {
+    monthlyCredits: 500,
+    dailySongLimit: -1,
+    dailyTtsLimit: -1,
+    dailySheetMusicLimit: -1,
+    dailyChordLimit: -1,
+    takesPerSong: 3,
+    stemDownloads: "full",
+    studioMastering: true,
+    vocalMixing: true,
+    commercialUse: "full",
+    audioQuality: "192kbps+wav",
+    concurrentGenerations: 5,
+    addOnCreditsPerDollar: 6.67, // 10 songs for $1.50
+  },
+  studio: {
+    monthlyCredits: 2000,
+    dailySongLimit: -1,
+    dailyTtsLimit: -1,
+    dailySheetMusicLimit: -1,
+    dailyChordLimit: -1,
+    takesPerSong: 3,
+    stemDownloads: "full",
+    studioMastering: true,
+    vocalMixing: true,
+    commercialUse: "full+sync",
+    audioQuality: "192kbps+wav+flac",
+    concurrentGenerations: 10,
+    addOnCreditsPerDollar: 10, // 10 songs for $1
+  },
+} as const;
+
+export type PlanName = keyof typeof PLAN_LIMITS;
+
+// Commercial license types stored on songs
+export const licenseTypes = ["personal", "commercial_social", "commercial_full", "commercial_sync"] as const;
+export type LicenseType = typeof licenseTypes[number];

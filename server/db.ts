@@ -320,3 +320,50 @@ export async function getUserFavoriteIds(userId: number): Promise<number[]> {
     .where(eq(favorites.userId, userId));
   return favs.map(f => f.songId);
 }
+
+// ─── Community / Discover Queries ───
+
+export async function publishSong(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const song = await db.select().from(songs).where(and(eq(songs.id, id), eq(songs.userId, userId))).limit(1);
+  if (song.length === 0) throw new Error("Song not found or not owned by user");
+  await db.update(songs).set({ visibility: "public", publishedAt: new Date() }).where(eq(songs.id, id));
+  return getSongById(id);
+}
+
+export async function unpublishSong(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const song = await db.select().from(songs).where(and(eq(songs.id, id), eq(songs.userId, userId))).limit(1);
+  if (song.length === 0) throw new Error("Song not found or not owned by user");
+  await db.update(songs).set({ visibility: "private", publishedAt: null }).where(eq(songs.id, id));
+  return getSongById(id);
+}
+
+export async function getPublicSongs(limit = 50, offset = 0) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const publicSongs = await db.select({
+    song: songs,
+    creator: {
+      id: users.id,
+      name: users.name,
+      openId: users.openId,
+    },
+  })
+    .from(songs)
+    .innerJoin(users, eq(songs.userId, users.id))
+    .where(eq(songs.visibility, "public"))
+    .orderBy(desc(songs.publishedAt))
+    .limit(limit)
+    .offset(offset);
+  return publicSongs;
+}
+
+export async function getPublicSongCount() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(songs).where(eq(songs.visibility, "public"));
+  return result.length;
+}

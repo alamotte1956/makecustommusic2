@@ -8,7 +8,7 @@ import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic, FileText
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic, FileText, Globe, Lock
 } from "lucide-react";
 import { Link } from "wouter";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -57,6 +57,32 @@ export default function History() {
   const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
 
   const filteredSongs = filterSongs(songs, filters);
+
+  const publishMutation = trpc.community.publish.useMutation({
+    onSuccess: () => { utils.songs.list.invalidate(); toast.success("Song published to community!"); },
+    onError: () => toast.error("Failed to publish song"),
+  });
+  const unpublishMutation = trpc.community.unpublish.useMutation({
+    onSuccess: () => { utils.songs.list.invalidate(); toast.success("Song set to private"); },
+    onError: () => toast.error("Failed to unpublish song"),
+  });
+
+  function PublishToggle({ songId, visibility }: { songId: number; visibility?: string | null }) {
+    const isPublic = visibility === "public";
+    const isPending = publishMutation.isPending || unpublishMutation.isPending;
+    return (
+      <Button
+        variant={isPublic ? "default" : "outline"}
+        size="sm"
+        disabled={isPending}
+        onClick={() => isPublic ? unpublishMutation.mutate({ songId }) : publishMutation.mutate({ songId })}
+        title={isPublic ? "Make private" : "Share with community"}
+      >
+        {isPublic ? <Globe className="w-3.5 h-3.5 mr-1.5" /> : <Lock className="w-3.5 h-3.5 mr-1.5" />}
+        {isPublic ? "Public" : "Private"}
+      </Button>
+    );
+  }
 
   const historyQueueName = "My Songs";
   const isHistoryQueue = queueName === historyQueueName;
@@ -375,6 +401,7 @@ export default function History() {
                             </Button>
                           </Link>
                           <FavoriteButton songId={song.id} size="sm" />
+                          <PublishToggle songId={song.id} visibility={song.visibility} />
 
                           <Button
                             variant="ghost"

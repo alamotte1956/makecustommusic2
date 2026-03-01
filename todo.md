@@ -325,3 +325,24 @@
 - [x] Store stem URLs in database (instrumentalUrl, vocalUrl, mixedUrl)
 - [x] Add stem download buttons on song detail page
 - [x] Build Studio tab in SongDetail with mastering presets, mixing controls, and stem downloads
+
+## Competitive Features & Pricing Strategy
+- [x] Research all major competitors (Suno, Udio, AIVA, Soundraw, Boomy) pricing and features
+- [x] Create comprehensive pricing strategy document with package recommendations
+- [x] Design credit system schema (credits, usage tracking, plan tiers)
+- [x] Build pricing page UI with plan comparison
+- [x] Build credit system backend (credit balance, deduction per action, refill on subscription)
+- [x] Prepare Stripe-ready architecture (plan IDs, webhook handlers, checkout flow)
+- [x] Add competitive features identified from gap analysis
+- [x] Write tests for credit system
+
+## Community Song Pool (Discover)
+- [x] Add visibility field (private/public) to songs database schema
+- [x] Add publishedAt timestamp field for sorting public songs
+- [x] Create backend routes: publishSong, unpublishSong, getPublicSongs
+- [x] Add publish/unpublish toggle button on song cards (History)
+- [x] Build Discover page with public song feed (grid layout, play, like)
+- [x] Add Discover link to main navigation
+- [x] Ensure private songs are never returned in public queries
+- [x] Add creator name/avatar display on public song cards
+- [x] Write tests for visibility and public song routes

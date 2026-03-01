@@ -12,7 +12,8 @@ import {
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
   reorderAlbumSongs,
-  toggleFavorite, getUserFavorites, getUserFavoriteIds
+  toggleFavorite, getUserFavorites, getUserFavoriteIds,
+  publishSong, unpublishSong, getPublicSongs, getPublicSongCount
 } from "./db";
 import type { ChordProgressionData } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
@@ -22,6 +23,11 @@ import { isElevenLabsAvailable, generateMusic, textToSpeech, getVoices } from ".
 import { getGenreGuidance, getMoodGuidance, buildProductionPrompt } from "./songwritingHelpers";
 import { postProcessAudio, mixVocalInstrumental, prepareStemDownloads, getPresets, type ProcessingPreset } from "./audioProcessor";
 import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssmlBuilder";
+import {
+  getUserPlan, getCreditBalance, deductCredits, getUsageSummary,
+  getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
+} from "./credits";
+import { PLAN_LIMITS, type PlanName } from "../drizzle/schema";
 
 export const appRouter = router({
   system: systemRouter,
@@ -958,6 +964,180 @@ RULES:
         }
 
         return { coverImageUrl: url };
+      }),
+  }),
+
+  // ─── Credits & Subscription ─────────────────────────────────────────────
+  credits: router({
+    // Get current user's plan, balance, and usage summary
+    summary: protectedProcedure.query(async ({ ctx }) => {
+      return getUsageSummary(ctx.user.id);
+    }),
+
+    // Get credit balance only
+    balance: protectedProcedure.query(async ({ ctx }) => {
+      return getCreditBalance(ctx.user.id);
+    }),
+
+    // Get transaction history
+    history: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional())
+      .query(async ({ ctx, input }) => {
+        return getTransactionHistory(ctx.user.id, input?.limit ?? 50);
+      }),
+
+    // Get plan limits for display
+    planLimits: publicProcedure
+      .input(z.object({ plan: z.enum(["free", "creator", "professional", "studio"]) }))
+      .query(({ input }) => {
+        return getPlanLimits(input.plan as PlanName);
+      }),
+
+    // Get all plan details for pricing page
+    allPlans: publicProcedure.query(() => {
+      return {
+        plans: [
+          {
+            id: "free",
+            name: "Free",
+            tagline: "Get started with AI music",
+            monthlyPrice: 0,
+            annualPrice: 0,
+            limits: PLAN_LIMITS.free,
+            features: [
+              "5 songs per day",
+              "3 TTS previews per day",
+              "2 sheet music generations per day",
+              "2 chord progressions per day",
+              "128kbps MP3 quality",
+              "Personal use only",
+            ],
+          },
+          {
+            id: "creator",
+            name: "Creator",
+            tagline: "For content creators & hobbyists",
+            monthlyPrice: 9,
+            annualPrice: 84,
+            popular: true,
+            limits: PLAN_LIMITS.creator,
+            features: [
+              "100 songs per month",
+              "50 TTS previews per month",
+              "Unlimited sheet music & chords",
+              "All 5 mastering presets",
+              "2 vocal takes per song",
+              "Instrumental + Full Mix stems",
+              "192kbps MP3 quality",
+              "Commercial use (personal & social)",
+              "Add-on: 10 songs for $2",
+            ],
+          },
+          {
+            id: "professional",
+            name: "Professional",
+            tagline: "For serious musicians & businesses",
+            monthlyPrice: 22,
+            annualPrice: 216,
+            limits: PLAN_LIMITS.professional,
+            features: [
+              "500 songs per month",
+              "Unlimited TTS previews",
+              "Unlimited sheet music & chords",
+              "All 5 mastering presets",
+              "3 vocal takes per song",
+              "All stems (instrumental, vocal, mix)",
+              "Full vocal-instrumental mixing",
+              "192kbps MP3 + WAV export",
+              "Full commercial rights",
+              "Priority generation queue",
+              "Add-on: 10 songs for $1.50",
+            ],
+          },
+          {
+            id: "studio",
+            name: "Studio",
+            tagline: "For studios, agencies & power users",
+            monthlyPrice: 49,
+            annualPrice: 468,
+            limits: PLAN_LIMITS.studio,
+            features: [
+              "2,000 songs per month",
+              "Unlimited everything",
+              "3 vocal takes per song",
+              "All stems unlimited",
+              "Full studio production suite",
+              "192kbps MP3 + WAV + FLAC",
+              "Full commercial + sync licensing",
+              "Priority queue (10 concurrent)",
+              "API access",
+              "White-label option",
+              "Add-on: 10 songs for $1",
+            ],
+          },
+        ],
+      };
+    }),
+
+    // Check if user can perform an action (used before generation)
+    canPerform: protectedProcedure
+      .input(z.object({ action: z.enum(["generation", "tts"]) }))
+      .query(async ({ ctx, input }) => {
+        const plan = await getUserPlan(ctx.user.id);
+        const balance = await getCreditBalance(ctx.user.id);
+        const dailyCheck = await checkDailyLimit(ctx.user.id, input.action, plan);
+        const limits = getPlanLimits(plan);
+        return {
+          allowed: dailyCheck.allowed && balance.totalCredits > 0,
+          plan,
+          balance,
+          dailyUsage: dailyCheck,
+          limits,
+          license: getLicenseType(plan),
+        };
+      }),
+  }),
+
+  // ─── Community / Discover ───
+  community: router({
+    // Get public songs for the Discover page (no auth required)
+    discover: publicProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).default(24),
+        offset: z.number().min(0).default(0),
+      }).optional())
+      .query(async ({ input }) => {
+        const limit = input?.limit ?? 24;
+        const offset = input?.offset ?? 0;
+        const [publicSongs, totalCount] = await Promise.all([
+          getPublicSongs(limit, offset),
+          getPublicSongCount(),
+        ]);
+        return {
+          songs: publicSongs.map(({ song, creator }) => ({
+            ...song,
+            creatorName: creator.name || "Anonymous",
+            creatorId: creator.id,
+          })),
+          totalCount,
+          hasMore: offset + limit < totalCount,
+        };
+      }),
+
+    // Publish a song to the community pool
+    publish: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await publishSong(input.songId, ctx.user.id);
+        return song;
+      }),
+
+    // Unpublish a song (make it private again)
+    unpublish: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await unpublishSong(input.songId, ctx.user.id);
+        return song;
       }),
   }),
 });

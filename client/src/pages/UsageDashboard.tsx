@@ -1,0 +1,254 @@
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Link } from "wouter";
+import { getLoginUrl } from "@/const";
+import {
+  CreditCard, TrendingUp, Music, Mic, FileText, Guitar,
+  ArrowUpRight, ArrowDownRight, Clock, Sparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+function ProgressBar({ value, max, color = "bg-violet-600" }: { value: number; max: number; color?: string }) {
+  const pct = max <= 0 ? 0 : Math.min(100, (value / max) * 100);
+  return (
+    <div className="h-2 bg-muted rounded-full overflow-hidden">
+      <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+export default function UsageDashboard() {
+  const { user, loading } = useAuth();
+  const { data: summary, isLoading: summaryLoading } = trpc.credits.summary.useQuery(undefined, { enabled: !!user });
+  const { data: history, isLoading: historyLoading } = trpc.credits.history.useQuery({ limit: 30 }, { enabled: !!user });
+
+  if (loading || summaryLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">Sign in to view your usage dashboard</p>
+        <a href={getLoginUrl()}>
+          <Button>Sign In</Button>
+        </a>
+      </div>
+    );
+  }
+
+  const plan = summary?.plan ?? "free";
+  const limits = summary?.limits;
+  const balance = summary?.balance;
+  const usage = summary?.usage;
+
+  const planLabel: Record<string, string> = {
+    free: "Free",
+    creator: "Creator",
+    professional: "Professional",
+    studio: "Studio",
+  };
+
+  const planColor: Record<string, string> = {
+    free: "bg-gray-100 text-gray-700",
+    creator: "bg-violet-100 text-violet-700",
+    professional: "bg-violet-200 text-violet-800",
+    studio: "bg-gray-900 text-white",
+  };
+
+  const typeIcons: Record<string, React.ReactNode> = {
+    generation: <Music className="h-4 w-4" />,
+    tts: <Mic className="h-4 w-4" />,
+    takes: <Sparkles className="h-4 w-4" />,
+    purchase: <CreditCard className="h-4 w-4" />,
+    bonus: <TrendingUp className="h-4 w-4" />,
+    subscription_refill: <Clock className="h-4 w-4" />,
+    refund: <ArrowUpRight className="h-4 w-4" />,
+    admin: <ArrowUpRight className="h-4 w-4" />,
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-5xl mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-black">Usage Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Track your credits and generation history</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${planColor[plan]}`}>
+              {planLabel[plan]} Plan
+            </span>
+            <Link href="/pricing">
+              <Button variant="outline" size="sm">
+                {plan === "free" ? "Upgrade" : "Manage Plan"}
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Credit Balance Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">Total Credits</span>
+              <CreditCard className="h-4 w-4 text-violet-600" />
+            </div>
+            <p className="text-3xl font-bold text-black">{balance?.totalCredits ?? 0}</p>
+            <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+              <div className="flex justify-between">
+                <span>Monthly</span>
+                <span>{balance?.monthlyCredits ?? 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Bonus</span>
+                <span>{balance?.bonusCredits ?? 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Purchased</span>
+                <span>{balance?.purchasedCredits ?? 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">Songs Today</span>
+              <Music className="h-4 w-4 text-violet-600" />
+            </div>
+            <p className="text-3xl font-bold text-black">{usage?.dailySongsGenerated ?? 0}</p>
+            {limits && limits.dailySongLimit > 0 && (
+              <>
+                <p className="text-xs text-muted-foreground mt-1">
+                  of {limits.dailySongLimit} daily limit
+                </p>
+                <div className="mt-2">
+                  <ProgressBar
+                    value={usage?.dailySongsGenerated ?? 0}
+                    max={limits.dailySongLimit}
+                  />
+                </div>
+              </>
+            )}
+            {limits && limits.dailySongLimit === -1 && (
+              <p className="text-xs text-muted-foreground mt-1">Unlimited</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">TTS Previews Today</span>
+              <Mic className="h-4 w-4 text-violet-600" />
+            </div>
+            <p className="text-3xl font-bold text-black">{usage?.dailyTtsGenerated ?? 0}</p>
+            {limits && limits.dailyTtsLimit > 0 && (
+              <>
+                <p className="text-xs text-muted-foreground mt-1">
+                  of {limits.dailyTtsLimit} daily limit
+                </p>
+                <div className="mt-2">
+                  <ProgressBar
+                    value={usage?.dailyTtsGenerated ?? 0}
+                    max={limits.dailyTtsLimit}
+                  />
+                </div>
+              </>
+            )}
+            {limits && limits.dailyTtsLimit === -1 && (
+              <p className="text-xs text-muted-foreground mt-1">Unlimited</p>
+            )}
+          </div>
+        </div>
+
+        {/* Monthly Usage */}
+        <div className="rounded-xl border bg-card p-5 mb-8">
+          <h2 className="font-semibold text-black mb-4">Monthly Usage</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Credits Used</p>
+              <p className="text-2xl font-bold text-black">{usage?.monthlyCreditsUsed ?? 0}</p>
+              {limits && (
+                <div className="mt-2">
+                  <ProgressBar
+                    value={usage?.monthlyCreditsUsed ?? 0}
+                    max={limits.monthlyCredits}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    of {limits.monthlyCredits} monthly
+                  </p>
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Max Song Length</p>
+              <p className="text-2xl font-bold text-black">{120}s</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Vocal Takes</p>
+              <p className="text-2xl font-bold text-black">{limits?.takesPerSong ?? 1}</p>
+              <p className="text-xs text-muted-foreground">per song</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">License</p>
+              <p className="text-lg font-bold text-black capitalize">
+                {plan === "free" ? "Personal" : plan === "creator" ? "Social" : "Commercial"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Transaction History */}
+        <div className="rounded-xl border bg-card">
+          <div className="p-5 border-b">
+            <h2 className="font-semibold text-black">Recent Transactions</h2>
+          </div>
+          {historyLoading ? (
+            <div className="p-8 text-center text-muted-foreground animate-pulse">Loading...</div>
+          ) : !history || history.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">No transactions yet</p>
+              <Link href="/generator">
+                <Button variant="outline" size="sm" className="mt-3">
+                  Create Your First Song
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y max-h-96 overflow-y-auto">
+              {history.map((tx: any) => (
+                <div key={tx.id} className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
+                  <div className={`p-2 rounded-lg ${tx.amount > 0 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                    {tx.amount > 0 ? (
+                      <ArrowUpRight className="h-4 w-4" />
+                    ) : (
+                      <ArrowDownRight className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-black truncate">{tx.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(tx.createdAt).toLocaleDateString()} &middot; {tx.type.replace("_", " ")}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-semibold ${tx.amount > 0 ? "text-green-600" : "text-red-600"}`}>
+                      {tx.amount > 0 ? "+" : ""}{tx.amount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      bal: {tx.balanceAfter}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

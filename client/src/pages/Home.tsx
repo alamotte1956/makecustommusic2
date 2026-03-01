@@ -57,7 +57,7 @@ export default function Home() {
               Make Custom Music
             </div>
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground leading-tight">
-              Change Your Ideas into{" "}
+              Transform Your Ideas into{" "}
               <span className="text-primary">Songs</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
