@@ -182,3 +182,11 @@
 - [x] Add delete button to AlbumDetail page song cards
 - [x] Invalidate relevant queries after deletion (songs, favorites, albums)
 - [x] Write tests for song deletion route (131 tests passing)
+
+## Bulk Album ZIP Download
+- [x] Add backend Express endpoint (GET /api/albums/:albumId/download) to generate ZIP
+- [x] Fetch audio files from URLs and stream them into a ZIP archive
+- [x] Sanitize filenames (track number + title) for the ZIP entries
+- [x] Add "Download All" button to AlbumDetail page header
+- [x] Show loading state during ZIP generation/download ("Preparing ZIP...")
+- [x] Write tests for ZIP download endpoint (142 tests passing)

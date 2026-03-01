@@ -7,7 +7,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useRoute, Link } from "wouter";
 import {
-  Disc3, Music, Download, Loader2, Trash2,
+  Disc3, Music, Download, Loader2, Trash2, FolderDown,
   ArrowLeft, Play, Pause, X, ChevronDown, ChevronUp, ImagePlus, Sparkles, ListMusic, Pencil
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -36,6 +36,35 @@ export default function AlbumDetail() {
   const [generatingCover, setGeneratingCover] = useState(false);
   const [editingSong, setEditingSong] = useState<any>(null);
   const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
+  const [downloadingZip, setDownloadingZip] = useState(false);
+
+  const handleDownloadAll = useCallback(async () => {
+    if (!album) return;
+    setDownloadingZip(true);
+    try {
+      const response = await fetch(`/api/albums/${albumId}/download`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Download failed" }));
+        throw new Error(err.error || "Download failed");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${album.title || "Album"}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Album downloaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to download album");
+    } finally {
+      setDownloadingZip(false);
+    }
+  }, [album, albumId]);
 
   const albumQueueName = album ? `Album: ${album.title}` : "";
   const isAlbumQueue = queueName === albumQueueName && albumQueueName !== "";
@@ -226,6 +255,21 @@ export default function AlbumDetail() {
                     Play All
                   </>
                 )}
+              </Button>
+            )}
+            {playableSongs.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadAll}
+                disabled={downloadingZip}
+              >
+                {downloadingZip ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <FolderDown className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                {downloadingZip ? "Preparing ZIP..." : "Download All"}
               </Button>
             )}
             {!album.coverImageUrl && (album.songs?.length ?? 0) > 0 && (
