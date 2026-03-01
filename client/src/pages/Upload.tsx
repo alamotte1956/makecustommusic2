@@ -11,6 +11,7 @@ import {
   Upload as UploadIcon, Music, FileMusic, Image, X, Loader2,
   CheckCircle2, AlertCircle, Wand2, ArrowRight, Play, Pause, Volume2, VolumeX,
 } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type UploadMode = "audio" | "sheet-music";
 
@@ -21,6 +22,10 @@ const SHEET_ACCEPT = ".png,.jpg,.jpeg,.webp,.pdf,.xml,.musicxml";
 
 export default function UploadPage() {
   // ─── ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP ───
+  usePageMeta({
+    title: "Upload",
+    description: "Upload your own audio or sheet music to Make Custom Music. Import MP3, WAV, or FLAC files and add them to your collection.",
+  });
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<UploadMode>("audio");

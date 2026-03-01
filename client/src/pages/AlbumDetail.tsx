@@ -225,6 +225,7 @@ export default function AlbumDetail() {
   );
   const removeSongMutation = trpc.albums.removeSong.useMutation();
   const generateCoverMutation = trpc.albums.generateCover.useMutation();
+  const generateAllSongCoversMutation = trpc.albums.generateAllSongCovers.useMutation();
   const reorderMutation = trpc.albums.reorderSongs.useMutation();
   const addSongMutation = trpc.albums.addSong.useMutation();
   const utils = trpc.useUtils();
@@ -240,6 +241,7 @@ export default function AlbumDetail() {
 
   const [expandedLyrics, setExpandedLyrics] = useState<number | null>(null);
   const [generatingCover, setGeneratingCover] = useState(false);
+  const [generatingAllCovers, setGeneratingAllCovers] = useState(false);
   const [editingSong, setEditingSong] = useState<any>(null);
   const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
@@ -415,6 +417,23 @@ export default function AlbumDetail() {
     }
   }, [albumId, generateCoverMutation, utils]);
 
+  const handleGenerateAllSongCovers = useCallback(async () => {
+    setGeneratingAllCovers(true);
+    try {
+      const result = await generateAllSongCoversMutation.mutateAsync({ albumId });
+      utils.albums.getById.invalidate({ id: albumId });
+      if (result.generated === 0) {
+        toast.info("All songs already have cover art!");
+      } else {
+        toast.success(`Generated covers for ${result.generated} song${result.generated !== 1 ? "s" : ""}!`);
+      }
+    } catch {
+      toast.error("Failed to generate song covers");
+    } finally {
+      setGeneratingAllCovers(false);
+    }
+  }, [albumId, generateAllSongCoversMutation, utils]);
+
   const handleAddSong = useCallback(async (songId: number) => {
     setAddingSongId(songId);
     try {
@@ -586,6 +605,21 @@ export default function AlbumDetail() {
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                 )}
                 Generate AI Cover Art
+              </Button>
+            )}
+            {(album.songs?.length ?? 0) > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAllSongCovers}
+                disabled={generatingAllCovers}
+              >
+                {generatingAllCovers ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                {generatingAllCovers ? "Generating..." : "Generate All Covers"}
               </Button>
             )}
             <Button

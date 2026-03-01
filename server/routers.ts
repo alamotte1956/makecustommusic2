@@ -1241,6 +1241,51 @@ RULES:
 
         return { coverImageUrl: url };
       }),
+
+    generateAllSongCovers: protectedProcedure
+      .input(z.object({ albumId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const album = await getAlbumById(input.albumId);
+        if (!album || album.userId !== ctx.user.id) {
+          throw new Error("Album not found");
+        }
+
+        const songList = await getAlbumSongs(input.albumId);
+        const songsWithoutCovers = songList.filter((s: any) => !s.imageUrl);
+
+        if (songsWithoutCovers.length === 0) {
+          return { generated: 0, total: songList.length };
+        }
+
+        let generated = 0;
+        for (const s of songsWithoutCovers) {
+          const song = s as any;
+          if (!song) continue;
+          try {
+            const genre = song.genre || "eclectic";
+            const mood = song.mood || "expressive";
+            const instruments = Array.isArray(song.instruments) ? song.instruments.slice(0, 5).join(", ") : "";
+
+            const prompt = `Create a stunning, professional single cover art for a song titled "${song.title}". ` +
+              `The music style is ${genre} with a ${mood} atmosphere. ` +
+              (instruments ? `Featured instruments include ${instruments}. ` : "") +
+              (song.keywords ? `Inspired by: ${song.keywords}. ` : "") +
+              `The design should be artistic, visually striking, and suitable as a square song cover. ` +
+              `Use rich colors, abstract or symbolic imagery that evokes the music's mood. ` +
+              `No text or typography on the image. Professional quality, high detail.`;
+
+            const { url } = await generateImage({ prompt });
+            if (url) {
+              await updateSongImageUrl(song.id, url);
+              generated++;
+            }
+          } catch (err) {
+            console.error(`[Albums] Failed to generate cover for song ${song.id}:`, err);
+          }
+        }
+
+        return { generated, total: songList.length };
+      }),
   }),
 
   // ─── Credits & Subscription ─────────────────────────────────────────────

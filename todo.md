@@ -720,3 +720,19 @@
 - [x] Add key parameter to songs.generateSheetMusic tRPC route
 - [x] Add key selector UI in SheetMusicViewer component before generation
 - [x] Pass selected key to the LLM prompt for ABC notation generation
+
+## Page-Level Meta Descriptions
+- [x] Create usePageMeta hook or helper to set document title and meta description per route
+- [x] Add meta descriptions to /pricing, /faq, /referrals, /discover, /upload pages
+- [x] Ensure meta tags update on route change (SPA-friendly)
+
+## Batch Album Cover Generation
+- [x] Add albums.generateAllSongCovers tRPC route to generate covers for all songs without one
+- [x] Add "Generate All Covers" button on AlbumDetail page
+- [x] Show progress/loading state during batch generation
+
+## Open Graph Meta Tags for Shared Songs
+- [x] Add server-side OG meta tag injection for /share/:token pages
+- [x] Include song cover image, title, and description in OG tags
+- [x] Add Twitter Card meta tags for shared songs
+- [x] Test OG tags render correctly for crawlers (server-side HTML)

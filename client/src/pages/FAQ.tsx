@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { HelpCircle, Music, CreditCard, Shield, Headphones, FileText } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import {
   Accordion,
   AccordionContent,
@@ -139,6 +140,10 @@ const faqCategories = [
 ];
 
 export default function FAQ() {
+  usePageMeta({
+    title: "FAQ",
+    description: "Frequently asked questions about Make Custom Music. Learn about AI music generation, pricing, downloads, and account management.",
+  });
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}

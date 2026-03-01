@@ -8,6 +8,7 @@ import { registerAlbumZipRoute } from "../albumZip";
 import { registerGenerateVoiceRoute } from "../generateVoice";
 import { registerStripeWebhookRoute } from "../stripeWebhook";
 import { registerSitemapRoute } from "../sitemap";
+import { registerOgTagsMiddleware } from "../ogTags";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -47,6 +48,8 @@ async function startServer() {
   registerGenerateVoiceRoute(app);
   // Dynamic sitemap.xml
   registerSitemapRoute(app);
+  // OG meta tag injection for shared song pages
+  registerOgTagsMiddleware(app);
   // tRPC API
   app.use(
     "/api/trpc",

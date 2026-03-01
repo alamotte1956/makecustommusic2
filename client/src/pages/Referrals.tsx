@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 function RankIcon({ rank }: { rank: number }) {
   if (rank === 1) return <Crown className="h-5 w-5 text-yellow-500" />;
@@ -132,6 +133,10 @@ function LeaderboardSection({ userId }: { userId: number }) {
 }
 
 export default function Referrals() {
+  usePageMeta({
+    title: "Invite Friends",
+    description: "Invite friends to Make Custom Music and earn free credits. Share your referral link and get rewarded when they sign up.",
+  });
   const { user, loading } = useAuth();
   const [copied, setCopied] = useState(false);
 

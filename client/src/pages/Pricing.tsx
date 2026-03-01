@@ -6,8 +6,13 @@ import { Link } from "wouter";
 import { Check, Sparkles, Zap, Crown, Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Pricing() {
+  usePageMeta({
+    title: "Pricing",
+    description: "Choose a plan for AI music generation. Free, Pro, and Enterprise tiers with credits for song creation, MP3 downloads, and more.",
+  });
   const { user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);

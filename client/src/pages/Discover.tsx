@@ -12,8 +12,13 @@ import {
   Headphones, Sparkles, User, Loader2
 } from "lucide-react";
 import { Link } from "wouter";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Discover() {
+  usePageMeta({
+    title: "Discover",
+    description: "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Make Custom Music.",
+  });
   const { user } = useAuth();
   const { currentSong, isPlaying, togglePlay, loadQueue } = useQueuePlayer();
   const [offset, setOffset] = useState(0);
