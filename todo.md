@@ -441,3 +441,6 @@
 - [x] Add shared PDF generation utility (client/src/lib/pdfExport.ts)
 - [x] Add lyrics Download PDF button to SongDetail lyrics tab
 - [x] Test all PDF downloads for readability (338 tests passing across 18 test files)
+
+## SEO Fixes
+- [x] Reduce homepage keywords from 10 to 6 focused keywords
