@@ -31,7 +31,7 @@ import {
   getUserSubscription,
 } from "./credits";
 import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName } from "../drizzle/schema";
-import { ensureReferralCode, getReferralStats, getReferralHistory, getUserByReferralCode, processReferral } from "./referrals";
+import { ensureReferralCode, getReferralStats, getReferralHistory, getUserByReferralCode, processReferral, getLeaderboard } from "./referrals";
 import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
@@ -1525,6 +1525,13 @@ RULES:
 
         const result = await processReferral(referrer.id, ctx.user.id, input.code);
         return { success: result, reason: result ? null : "already_referred" };
+      }),
+
+    leaderboard: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+      .query(async ({ ctx, input }) => {
+        const userId = ctx.user?.id;
+        return getLeaderboard(input?.limit ?? 20, userId);
       }),
   }),
 });

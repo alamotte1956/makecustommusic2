@@ -17,6 +17,7 @@ const navItems = [
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/albums", label: "Albums", icon: Disc3 },
   { href: "/upload", label: "Upload", icon: Upload },
+  { href: "/referrals", label: "Invite Friends", icon: Gift },
 ];
 
 const planLabel: Record<string, string> = {

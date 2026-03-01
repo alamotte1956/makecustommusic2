@@ -215,16 +215,125 @@ describe("Referral route registration", () => {
   });
 });
 
+// ─── Leaderboard tests ─────────────────────────────────────────────────────
+
+describe("Referral leaderboard", () => {
+  it("should have getLeaderboard function in referrals.ts", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("server/referrals.ts", "utf-8");
+    expect(content).toContain("export async function getLeaderboard");
+    expect(content).toContain("limit");
+    expect(content).toContain("currentUserId");
+  });
+
+  it("should anonymize names for non-current users", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("server/referrals.ts", "utf-8");
+    expect(content).toContain('"***"');
+    expect(content).toContain("Anonymous");
+  });
+
+  it("should show full name for current user", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("server/referrals.ts", "utf-8");
+    expect(content).toContain("isCurrentUser");
+    expect(content).toContain('row.name ?? "You"');
+  });
+
+  it("should order by referral count descending", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("server/referrals.ts", "utf-8");
+    expect(content).toContain("COUNT(*) DESC");
+  });
+
+  it("should find current user rank when not in top list", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("server/referrals.ts", "utf-8");
+    expect(content).toContain("currentUserRank");
+    expect(content).toContain("COUNT(DISTINCT");
+  });
+
+  it("should have leaderboard tRPC procedure as publicProcedure", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("server/routers.ts", "utf-8");
+    expect(content).toContain("leaderboard: publicProcedure");
+  });
+
+  it("should limit leaderboard to max 50 entries", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("server/routers.ts", "utf-8");
+    expect(content).toContain("z.number().min(1).max(50).default(20)");
+  });
+});
+
+// ─── Leaderboard UI tests ──────────────────────────────────────────────────
+
+describe("Leaderboard UI", () => {
+  it("should have LeaderboardSection component in Referrals page", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Referrals.tsx", "utf-8");
+    expect(content).toContain("LeaderboardSection");
+    expect(content).toContain("trpc.referrals.leaderboard.useQuery");
+  });
+
+  it("should have rank icons for top 3 positions", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Referrals.tsx", "utf-8");
+    expect(content).toContain("Crown");
+    expect(content).toContain("Medal");
+    expect(content).toContain("Trophy");
+  });
+
+  it("should highlight current user row", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Referrals.tsx", "utf-8");
+    expect(content).toContain("isCurrentUser");
+    expect(content).toContain("bg-violet-50");
+  });
+
+  it("should show current user rank when not in top list", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Referrals.tsx", "utf-8");
+    expect(content).toContain("currentUserRank");
+    expect(content).toContain("border-dashed");
+  });
+
+  it("should have empty state for no referrals", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Referrals.tsx", "utf-8");
+    expect(content).toContain("No referrals yet");
+    expect(content).toContain("claim the top spot");
+  });
+
+  it("should display rank, referrer name, referral count, and credits", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Referrals.tsx", "utf-8");
+    expect(content).toContain("Rank");
+    expect(content).toContain("Referrer");
+    expect(content).toContain("Referrals");
+    expect(content).toContain("Credits Earned");
+  });
+
+  it("should use color-coded avatars for top 3 ranks", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Referrals.tsx", "utf-8");
+    expect(content).toContain("bg-yellow-100"); // gold for #1
+    expect(content).toContain("bg-gray-100");   // silver for #2
+    expect(content).toContain("bg-amber-100");  // bronze for #3
+  });
+});
+
 // ─── Server-side referral procedures tests ──────────────────────────────────
 
 describe("Referral tRPC procedures", () => {
-  it("routers.ts should have referrals router with getInfo, getHistory, and claim", async () => {
+  it("routers.ts should have referrals router with getInfo, getHistory, claim, and leaderboard", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync("server/routers.ts", "utf-8");
     expect(content).toContain("referrals:");
     expect(content).toContain("getInfo:");
     expect(content).toContain("getHistory:");
     expect(content).toContain("claim:");
+    expect(content).toContain("leaderboard:");
   });
 
   it("claim procedure should validate code length", async () => {

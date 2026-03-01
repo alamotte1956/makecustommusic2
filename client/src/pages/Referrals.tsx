@@ -5,11 +5,131 @@ import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import {
   Gift, Users, CreditCard, Copy, Check, Share2,
-  ArrowRight, Sparkles, ExternalLink,
+  ArrowRight, Sparkles, ExternalLink, Trophy, Medal, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
+
+function RankIcon({ rank }: { rank: number }) {
+  if (rank === 1) return <Crown className="h-5 w-5 text-yellow-500" />;
+  if (rank === 2) return <Medal className="h-5 w-5 text-gray-400" />;
+  if (rank === 3) return <Medal className="h-5 w-5 text-amber-600" />;
+  return <span className="text-sm font-bold text-muted-foreground w-5 text-center">{rank}</span>;
+}
+
+function LeaderboardSection({ userId }: { userId: number }) {
+  const { data, isLoading } = trpc.referrals.leaderboard.useQuery(undefined);
+
+  return (
+    <div className="rounded-xl border bg-card p-6 mb-8">
+      <div className="flex items-center gap-2 mb-5">
+        <Trophy className="h-5 w-5 text-yellow-500" />
+        <h2 className="font-semibold text-foreground">Top Referrers</h2>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground animate-pulse">Loading leaderboard...</div>
+      ) : !data?.leaderboard || data.leaderboard.length === 0 ? (
+        <div className="text-center py-10">
+          <Trophy className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground">No referrals yet</p>
+          <p className="text-sm text-muted-foreground mt-1">Be the first to invite a friend and claim the top spot!</p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="pb-3 font-medium text-muted-foreground w-12">Rank</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Referrer</th>
+                  <th className="pb-3 font-medium text-muted-foreground text-center">Referrals</th>
+                  <th className="pb-3 font-medium text-muted-foreground text-right">Credits Earned</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.leaderboard.map((entry) => (
+                  <tr
+                    key={entry.userId}
+                    className={`border-b last:border-0 transition-colors ${
+                      entry.isCurrentUser
+                        ? "bg-violet-50 dark:bg-violet-950/30"
+                        : "hover:bg-muted/30"
+                    }`}
+                  >
+                    <td className="py-3">
+                      <div className="flex items-center justify-center">
+                        <RankIcon rank={entry.rank} />
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                          entry.rank === 1
+                            ? "bg-yellow-100 text-yellow-700"
+                            : entry.rank === 2
+                            ? "bg-gray-100 text-gray-600"
+                            : entry.rank === 3
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-violet-100 text-violet-700"
+                        }`}>
+                          {entry.displayName[0]?.toUpperCase()}
+                        </div>
+                        <span className={`font-medium ${
+                          entry.isCurrentUser ? "text-violet-600" : "text-foreground"
+                        }`}>
+                          {entry.displayName}
+                          {entry.isCurrentUser && (
+                            <span className="ml-1.5 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">You</span>
+                          )}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className={`font-semibold ${
+                        entry.rank <= 3 ? "text-foreground" : "text-muted-foreground"
+                      }`}>
+                        {entry.totalReferrals}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                        +{entry.totalCreditsEarned} <Sparkles className="h-3 w-3" />
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Current user rank if not in top list */}
+          {data.currentUserRank && (
+            <div className="mt-4 pt-4 border-t border-dashed">
+              <div className="flex items-center gap-3 bg-violet-50 dark:bg-violet-950/30 rounded-lg px-4 py-3">
+                <span className="text-sm font-bold text-muted-foreground">#{data.currentUserRank.rank}</span>
+                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700">
+                  {data.currentUserRank.displayName[0]?.toUpperCase()}
+                </div>
+                <span className="font-medium text-violet-600">
+                  {data.currentUserRank.displayName}
+                  <span className="ml-1.5 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">You</span>
+                </span>
+                <span className="ml-auto text-sm text-muted-foreground">
+                  {data.currentUserRank.totalReferrals} referrals
+                </span>
+                <span className="inline-flex items-center gap-1 text-green-600 font-medium text-sm">
+                  +{data.currentUserRank.totalCreditsEarned} <Sparkles className="h-3 w-3" />
+                </span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function Referrals() {
   const { user, loading } = useAuth();
@@ -148,6 +268,9 @@ export default function Referrals() {
             <p className="text-xs text-muted-foreground mt-1">Credits per friend who signs up</p>
           </div>
         </div>
+
+        {/* Leaderboard */}
+        <LeaderboardSection userId={user.id} />
 
         {/* How It Works */}
         <div className="rounded-xl border bg-card p-6 mb-8">

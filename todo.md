@@ -670,3 +670,17 @@
 - [x] Ensure navigator.share graceful fallback with AbortError handling
 - [x] Verify URL constructor and replaceState work in Safari
 - [x] Test referral flow end-to-end in Safari-compatible patterns (31 referral tests passing)
+
+## Referral Leaderboard
+- [x] Add getLeaderboard DB helper (top referrers by count with anonymized names)
+- [x] Add tRPC procedure referrals.leaderboard (public)
+- [x] Build leaderboard UI section on Referrals page with rank, name, referrals, credits
+- [x] Highlight current user's position on the leaderboard
+- [x] Add trophy/medal icons for top 3 positions
+- [x] Write tests for leaderboard logic (13 new tests)
+
+## Referral Link in Top Nav
+- [x] Add referral/invite link to the top navigation bar
+
+## SEO Fix - Meta Description
+- [x] Shorten homepage meta description to under 160 characters
