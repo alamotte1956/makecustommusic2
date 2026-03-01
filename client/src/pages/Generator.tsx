@@ -166,6 +166,11 @@ export default function Generator() {
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const generateLyricsMutation = trpc.songs.generateLyrics.useMutation();
 
+  // AI Lyrics Refinement
+  const [refineMode, setRefineMode] = useState<"polish" | "rhyme" | "restructure" | "rewrite">("polish");
+  const [isRefining, setIsRefining] = useState(false);
+  const refineLyricsMutation = trpc.songs.refineLyrics.useMutation();
+
   // Step 3: Style
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
@@ -214,6 +219,28 @@ export default function Generator() {
       setIsGeneratingLyrics(false);
     }
   }, [lyricsSubject, selectedGenre, selectedMood, vocalType, lyricsLength, generateLyricsMutation]);
+
+  const handleRefineLyrics = useCallback(async () => {
+    if (!customLyrics.trim()) {
+      toast.error("Please enter lyrics first");
+      return;
+    }
+    try {
+      setIsRefining(true);
+      const result = await refineLyricsMutation.mutateAsync({
+        lyrics: customLyrics.trim(),
+        mode: refineMode,
+        genre: selectedGenre || undefined,
+        mood: selectedMood || undefined,
+      });
+      setCustomLyrics(result.lyrics);
+      toast.success(`Lyrics ${refineMode === "polish" ? "polished" : refineMode === "rhyme" ? "rhyme-enhanced" : refineMode === "restructure" ? "restructured" : "rewritten"}!`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to refine lyrics");
+    } finally {
+      setIsRefining(false);
+    }
+  }, [customLyrics, refineMode, selectedGenre, selectedMood, refineLyricsMutation]);
 
   const handleGenerate = useCallback(async () => {
     if (creationMode === "describe" && !keywords.trim()) {
@@ -457,6 +484,44 @@ export default function Generator() {
                   <p className="text-[11px] text-muted-foreground text-right">{customLyrics.length}/5000</p>
                 </div>
 
+                {/* AI Refine Panel — shown when lyrics exist */}
+                {customLyrics.trim().length > 20 && (
+                  <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="w-3.5 h-3.5 text-violet-600" />
+                      <span className="text-xs font-semibold text-violet-700">AI Refine</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(["polish", "rhyme", "restructure", "rewrite"] as const).map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setRefineMode(m)}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors capitalize ${
+                            refineMode === m
+                              ? "bg-violet-600 text-white border-violet-600"
+                              : "bg-white text-violet-700 border-violet-200 hover:border-violet-400"
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={handleRefineLyrics}
+                      disabled={isRefining || isGenerating}
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-1.5 text-xs h-8 border-violet-300 text-violet-700 hover:bg-violet-100"
+                    >
+                      {isRefining ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refining...</>
+                      ) : (
+                        <><Wand2 className="w-3.5 h-3.5" /> Refine with AI ({refineMode})</>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
                 {/* Templates — only when lyrics area is empty */}
                 {!customLyrics && (
                   <div className="space-y-2">
@@ -573,6 +638,44 @@ export default function Generator() {
                   />
                   <p className="text-[11px] text-muted-foreground text-right">{customLyrics.length}/5000</p>
                 </div>
+
+                {/* AI Refine Panel — shown when lyrics exist */}
+                {customLyrics.trim().length > 20 && (
+                  <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="w-3.5 h-3.5 text-violet-600" />
+                      <span className="text-xs font-semibold text-violet-700">AI Refine</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(["polish", "rhyme", "restructure", "rewrite"] as const).map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setRefineMode(m)}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors capitalize ${
+                            refineMode === m
+                              ? "bg-violet-600 text-white border-violet-600"
+                              : "bg-white text-violet-700 border-violet-200 hover:border-violet-400"
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={handleRefineLyrics}
+                      disabled={isRefining || isGenerating}
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-1.5 text-xs h-8 border-violet-300 text-violet-700 hover:bg-violet-100"
+                    >
+                      {isRefining ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refining...</>
+                      ) : (
+                        <><Wand2 className="w-3.5 h-3.5" /> Refine with AI ({refineMode})</>
+                      )}
+                    </Button>
+                  </div>
+                )}
 
                 {/* Style tags */}
                 <div className="space-y-1.5">

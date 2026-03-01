@@ -110,9 +110,9 @@ export default function Pricing() {
   const plans = plansData?.plans ?? [];
 
   const packIdMap: Record<number, string> = {
-    10: "starter",
-    50: "creator_pack",
-    200: "studio_pack",
+    25: "starter",
+    100: "creator_pack",
+    500: "studio_pack",
   };
 
   return (
@@ -149,7 +149,7 @@ export default function Pricing() {
               }`}
             >
               Annual
-              <span className="ml-1.5 text-xs text-violet-600 font-semibold">Save 20%</span>
+              <span className="ml-1.5 text-xs text-violet-600 font-semibold">Save up to 26%</span>
             </button>
           </div>
         </div>
@@ -268,9 +268,9 @@ export default function Pricing() {
           </p>
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
             {(creditPacks ?? [
-              { id: "starter", name: "Starter Pack", credits: 10, price: 2, pricePerCredit: "0.20" },
-              { id: "creator_pack", name: "Creator Pack", credits: 50, price: 8, pricePerCredit: "0.16" },
-              { id: "studio_pack", name: "Studio Pack", credits: 200, price: 25, pricePerCredit: "0.13" },
+              { id: "starter", name: "Starter Pack", credits: 25, price: 2.99, pricePerCredit: "0.12" },
+              { id: "creator_pack", name: "Creator Pack", credits: 100, price: 8.99, pricePerCredit: "0.09" },
+              { id: "studio_pack", name: "Studio Pack", credits: 500, price: 29.99, pricePerCredit: "0.06" },
             ]).map((pack: any) => {
               const isPopular = pack.id === "creator_pack";
               return (

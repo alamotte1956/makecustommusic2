@@ -14,6 +14,8 @@ import SongDetail from "./pages/SongDetail";
 import Pricing from "./pages/Pricing";
 import UsageDashboard from "./pages/UsageDashboard";
 import Discover from "./pages/Discover";
+import Upload from "./pages/Upload";
+import SharedSong from "./pages/SharedSong";
 import Layout from "./components/Layout";
 import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
@@ -31,6 +33,8 @@ function Router() {
       <Route path={"/pricing"} component={Pricing} />
       <Route path={"/usage"} component={UsageDashboard} />
       <Route path={"/discover"} component={Discover} />
+      <Route path={"/upload"} component={Upload} />
+      <Route path={"/share/:token"} component={SharedSong} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

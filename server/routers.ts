@@ -215,6 +215,184 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         return { lyrics };
       }),
 
+    // AI Lyrics Refinement: polish, enhance rhymes, restructure, or rewrite user lyrics
+    refineLyrics: protectedProcedure
+      .input(z.object({
+        lyrics: z.string().min(1).max(10000),
+        mode: z.enum(["polish", "rhyme", "restructure", "rewrite"]).default("polish"),
+        genre: z.string().max(100).optional(),
+        mood: z.string().max(100).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const modeInstructions: Record<string, string> = {
+          polish: "Gently polish these lyrics: fix awkward phrasing, improve word choices, tighten rhythm, and enhance emotional impact. Keep the original meaning, structure, and voice intact. Make subtle improvements, not wholesale changes.",
+          rhyme: "Enhance the rhyme scheme of these lyrics: improve end rhymes, add internal rhymes and slant rhymes where natural, strengthen rhythmic flow. Keep the original meaning and structure but make it more musically satisfying to sing.",
+          restructure: "Restructure these lyrics into proper song format with clear sections ([Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], etc.). Organize the ideas into a compelling emotional arc. Improve transitions between sections. Keep the core ideas and best lines.",
+          rewrite: "Completely rewrite these lyrics while keeping the same theme, subject matter, and emotional core. Elevate the writing to professional quality with vivid imagery, strong hooks, and singable phrasing. The result should feel like a hit song.",
+        };
+
+        let contextHints = "";
+        if (input.genre) contextHints += `\nGenre: ${input.genre}`;
+        if (input.mood) contextHints += `\nMood: ${input.mood}`;
+
+        const response = await invokeLLM({
+          model: "claude-sonnet-4-20250514",
+          messages: [
+            {
+              role: "system",
+              content: `You are an elite songwriter and lyric editor. ${modeInstructions[input.mode]}\n\nRULES:\n- Output ONLY the refined lyrics with section markers\n- NO explanations, NO commentary, NO notes\n- Keep section markers like [Verse 1], [Chorus], etc.\n- Ensure every line is singable and rhythmically tight\n- Maintain the original language and cultural context${contextHints}`,
+            },
+            {
+              role: "user",
+              content: `Please refine these lyrics (mode: ${input.mode}):\n\n${input.lyrics}`,
+            },
+          ],
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        const refined = typeof rawContent === "string" ? rawContent.trim() : null;
+        if (!refined) throw new Error("Failed to refine lyrics. Please try again.");
+        return { lyrics: refined, mode: input.mode };
+      }),
+
+    // Upload audio file for remastering
+    uploadAudio: protectedProcedure
+      .input(z.object({
+        fileName: z.string().min(1).max(255),
+        fileData: z.string().min(1), // base64 encoded
+        mimeType: z.string().refine(t => ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"].includes(t), "Unsupported audio format"),
+        title: z.string().min(1).max(200).optional(),
+        genre: z.string().max(100).optional(),
+        mood: z.string().max(100).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const plan = await getUserPlan(ctx.user.id);
+        const balance = await getCreditBalance(ctx.user.id);
+        if (balance.totalCredits < 1) throw new Error("Insufficient credits. Please upgrade or purchase more credits.");
+
+        // Decode base64 and upload to S3
+        const buffer = Buffer.from(input.fileData, "base64");
+        if (buffer.length > 50 * 1024 * 1024) throw new Error("File too large. Maximum size is 50MB.");
+
+        const ext = input.mimeType.split("/")[1] === "mpeg" ? "mp3" : input.mimeType.split("/")[1];
+        const fileKey = `uploads/${ctx.user.id}/${nanoid()}.${ext}`;
+        const { url: audioUrl } = await storagePut(fileKey, buffer, input.mimeType);
+
+        const title = input.title || input.fileName.replace(/\.[^/.]+$/, "");
+        const song = await createSong({
+          userId: ctx.user.id,
+          title,
+          keywords: `uploaded: ${title}`,
+          genre: input.genre || "uploaded",
+          mood: input.mood || "original",
+          audioUrl,
+          engine: "upload",
+          vocalType: "none",
+          duration: 0,
+        });
+
+        await deductCredits(ctx.user.id, 1, "generation", `Uploaded audio: ${title}`);
+        return { song, audioUrl };
+      }),
+
+    // Analyze uploaded sheet music (image or MusicXML)
+    analyzeSheetMusic: protectedProcedure
+      .input(z.object({
+        fileData: z.string().min(1), // base64 encoded
+        fileName: z.string().min(1),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const balance = await getCreditBalance(ctx.user.id);
+        if (balance.totalCredits < 1) throw new Error("Insufficient credits.");
+
+        const buffer = Buffer.from(input.fileData, "base64");
+        if (buffer.length > 20 * 1024 * 1024) throw new Error("File too large. Maximum 20MB.");
+
+        const { analyzeSheetMusicImage, analyzeMusicXML } = await import("./sheetMusicAnalyzer");
+
+        // For images/PDFs, upload to S3 first then use the URL for vision
+        if (input.mimeType.startsWith("image/") || input.mimeType === "application/pdf") {
+          const ext = input.mimeType.split("/")[1];
+          const fileKey = `sheet-music/${ctx.user.id}/${nanoid()}.${ext}`;
+          const { url } = await storagePut(fileKey, buffer, input.mimeType);
+          const analysis = await analyzeSheetMusicImage(url);
+          return { analysis, sourceUrl: url };
+        }
+
+        // For MusicXML text files
+        if (input.mimeType.includes("xml") || input.fileName.endsWith(".xml") || input.fileName.endsWith(".musicxml")) {
+          const xmlContent = buffer.toString("utf-8");
+          const analysis = await analyzeMusicXML(xmlContent);
+          return { analysis, sourceUrl: null };
+        }
+
+        throw new Error("Unsupported file format. Please upload an image (PNG, JPG), PDF, or MusicXML file.");
+      }),
+
+    // Generate a song from analyzed sheet music
+    generateFromSheetMusic: protectedProcedure
+      .input(z.object({
+        analysis: z.object({
+          title: z.string(),
+          key: z.string(),
+          timeSignature: z.string(),
+          tempo: z.number(),
+          genre: z.string(),
+          mood: z.string(),
+          instruments: z.array(z.string()),
+          description: z.string(),
+          styleTags: z.string(),
+          chordProgression: z.array(z.string()),
+        }),
+        lyrics: z.string().optional(),
+        vocalType: z.enum(["none", "male", "female", "mixed"]).default("none"),
+        duration: z.number().min(15).max(300).default(60),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const plan = await getUserPlan(ctx.user.id);
+        const balance = await getCreditBalance(ctx.user.id);
+        if (balance.totalCredits < 1) throw new Error("Insufficient credits.");
+
+        if (!isElevenLabsAvailable()) throw new Error("Music generation service unavailable.");
+
+        const { analysis, vocalType, duration, lyrics } = input;
+
+        // Build a rich production prompt from the analysis
+        const prompt = [
+          `${analysis.description}`,
+          `Key: ${analysis.key}, Time: ${analysis.timeSignature}, Tempo: ${analysis.tempo} BPM`,
+          `Instruments: ${analysis.instruments.join(", ")}`,
+          `Chord progression: ${analysis.chordProgression.join(" - ")}`,
+          `Style: ${analysis.styleTags}`,
+          vocalType !== "none" ? `Vocals: ${vocalType}` : "Instrumental only",
+        ].join(". ");
+
+        // Include lyrics in the prompt if provided
+        const fullPrompt = lyrics ? `${prompt}. Lyrics:\n${lyrics}` : prompt;
+        const result = await generateMusic({
+          prompt: fullPrompt,
+          durationMs: duration * 1000,
+        }, ctx.user.id);
+
+        const song = await createSong({
+          userId: ctx.user.id,
+          title: analysis.title,
+          keywords: `sheet music: ${analysis.title}`,
+          genre: analysis.genre,
+          mood: analysis.mood,
+          audioUrl: result.audioUrl,
+          engine: "elevenlabs",
+          vocalType,
+          duration,
+          styleTags: analysis.styleTags,
+          lyrics: lyrics || null,
+        });
+
+        await deductCredits(ctx.user.id, 1, "generation", `Generated from sheet music: ${analysis.title}`);
+        return { song, audioUrl: result.audioUrl };
+      }),
+
     // Text-to-Speech: preview lyrics as spoken audio
     ttsPreview: protectedProcedure
       .input(z.object({
@@ -1010,15 +1188,14 @@ RULES:
           {
             id: "free",
             name: "Free",
-            tagline: "Get started with AI music",
+            tagline: "Try AI music creation",
             monthlyPrice: 0,
             annualPrice: 0,
             limits: PLAN_LIMITS.free,
             features: [
-              "5 songs per day",
-              "3 TTS previews per day",
-              "2 sheet music generations per day",
-              "2 chord progressions per day",
+              "5 songs per month",
+              "2 TTS previews per day",
+              "2 sheet music per day",
               "128kbps MP3 quality",
               "Personal use only",
             ],
@@ -1027,31 +1204,31 @@ RULES:
             id: "creator",
             name: "Creator",
             tagline: "For content creators & hobbyists",
-            monthlyPrice: 9,
-            annualPrice: 84,
+            monthlyPrice: 8,
+            annualPrice: 72,
             popular: true,
             limits: PLAN_LIMITS.creator,
             features: [
-              "100 songs per month",
-              "50 TTS previews per month",
+              "250 songs per month",
+              "50 TTS previews per day",
               "Unlimited sheet music & chords",
               "All 5 mastering presets",
               "2 vocal takes per song",
               "Instrumental + Full Mix stems",
               "192kbps MP3 quality",
               "Commercial use (personal & social)",
-              "Add-on: 10 songs for $2",
+              "Add-on: 25 songs for $2.99",
             ],
           },
           {
             id: "professional",
             name: "Professional",
             tagline: "For serious musicians & businesses",
-            monthlyPrice: 22,
-            annualPrice: 216,
+            monthlyPrice: 19,
+            annualPrice: 180,
             limits: PLAN_LIMITS.professional,
             features: [
-              "500 songs per month",
+              "1,000 songs per month",
               "Unlimited TTS previews",
               "Unlimited sheet music & chords",
               "All 5 mastering presets",
@@ -1061,18 +1238,18 @@ RULES:
               "192kbps MP3 + WAV export",
               "Full commercial rights",
               "Priority generation queue",
-              "Add-on: 10 songs for $1.50",
+              "Add-on: 100 songs for $8.99",
             ],
           },
           {
             id: "studio",
             name: "Studio",
             tagline: "For studios, agencies & power users",
-            monthlyPrice: 49,
-            annualPrice: 468,
+            monthlyPrice: 39,
+            annualPrice: 348,
             limits: PLAN_LIMITS.studio,
             features: [
-              "2,000 songs per month",
+              "5,000 songs per month",
               "Unlimited everything",
               "3 vocal takes per song",
               "All stems unlimited",
@@ -1082,7 +1259,7 @@ RULES:
               "Priority queue (10 concurrent)",
               "API access",
               "White-label option",
-              "Add-on: 10 songs for $1",
+              "Add-on: 500 songs for $29.99",
             ],
           },
         ],

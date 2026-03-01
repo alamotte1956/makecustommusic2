@@ -395,3 +395,49 @@
 - [x] Ensure all controls follow a natural step-by-step order (1→2→3→4→5)
 - [x] Remove visual clutter and unnecessary complexity (compact chips, preset buttons)
 - [x] Write/update tests for reorganized controls (all 319 tests passing)
+
+## Competitive Pricing & Stripe Checkout
+- [x] Update stripeProducts.ts with competitive pricing (based on Suno/Udio/Soundraw research)
+- [x] Update PLAN_LIMITS in schema.ts to match new credit allocations
+- [x] Update Pricing page to reflect new prices
+- [x] Ensure all purchase flows route through Stripe Checkout
+
+## AI Lyrics Refinement Feature
+- [x] Add refineLyrics tRPC endpoint (polish, improve rhymes, tighten structure)
+- [x] Add refine mode selector (Polish, Rhyme Enhance, Restructure, Full Rewrite)
+- [x] Add "AI Refine" button in Write Lyrics and AI Lyrics modes on Generator page
+
+## Audio Upload & Remastering
+- [x] Add uploadAudio tRPC endpoint (base64 upload to S3, create song record)
+- [x] Build Upload & Remaster page with drag-and-drop file picker
+- [x] Add copyright acknowledgment checkbox
+- [x] Add Upload nav item to Layout
+
+## Sheet Music Upload & MP3 Generation
+- [x] Create sheetMusicAnalyzer.ts (LLM vision for image/PDF, XML parser for MusicXML)
+- [x] Add analyzeSheetMusic tRPC endpoint
+- [x] Add generateFromSheetMusic tRPC endpoint
+- [x] Build Sheet Music Upload page UI (integrated into Upload page)
+
+## Sheet Music & Chord Display Formatting
+- [x] Fix chord chart layout to prevent overlapping text and symbols
+- [x] Add print-friendly CSS styles for clean printed output
+- [x] Improve SheetMusicViewer with better spacing and PDF export
+- [x] Improve GuitarChordViewer with clean grid layout and print styles
+
+## Song Production Quality Improvements
+- [x] Enhance buildProductionPrompt with richer arrangement instructions
+- [x] Add instrument layering and mastering descriptors
+- [x] Increase default duration for more complete song structures
+
+## Bug Fixes
+- [x] Fix 404 error when opening shared song links from email (created SharedSong page and route)
+
+## PDF Document Formatting
+- [x] Ensure all downloadable documents export as PDF (not PNG/text) using jsPDF
+- [x] Fix sheet music PDF: proper page breaks, margins, no content overflow
+- [x] Fix chord chart PDF: proper layout, no overlapping diagrams
+- [x] Fix lyrics PDF: clean formatting with proper pagination
+- [x] Add shared PDF generation utility (client/src/lib/pdfExport.ts)
+- [x] Add lyrics Download PDF button to SongDetail lyrics tab
+- [x] Test all PDF downloads for readability (338 tests passing across 18 test files)

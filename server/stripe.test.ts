@@ -28,19 +28,19 @@ describe("stripeProducts", () => {
     }
   });
 
-  it("creator plan should cost $9/mo", async () => {
+  it("creator plan should cost $8/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(900);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(800);
   });
 
-  it("professional plan should cost $22/mo", async () => {
+  it("professional plan should cost $19/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2200);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(1900);
   });
 
-  it("studio plan should cost $49/mo", async () => {
+  it("studio plan should cost $39/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.studio.prices.monthly).toBe(4900);
+    expect(STRIPE_PLANS.studio.prices.monthly).toBe(3900);
   });
 
   it("should export all three credit packs", async () => {
@@ -60,22 +60,22 @@ describe("stripeProducts", () => {
     }
   });
 
-  it("starter pack should be 10 credits for $2", async () => {
+  it("starter pack should be 25 credits for $2.99", async () => {
     const { CREDIT_PACKS } = await import("./stripeProducts");
-    expect(CREDIT_PACKS.starter.credits).toBe(10);
-    expect(CREDIT_PACKS.starter.priceInCents).toBe(200);
+    expect(CREDIT_PACKS.starter.credits).toBe(25);
+    expect(CREDIT_PACKS.starter.priceInCents).toBe(299);
   });
 
-  it("creator pack should be 50 credits for $8", async () => {
+  it("creator pack should be 100 credits for $8.99", async () => {
     const { CREDIT_PACKS } = await import("./stripeProducts");
-    expect(CREDIT_PACKS.creator_pack.credits).toBe(50);
-    expect(CREDIT_PACKS.creator_pack.priceInCents).toBe(800);
+    expect(CREDIT_PACKS.creator_pack.credits).toBe(100);
+    expect(CREDIT_PACKS.creator_pack.priceInCents).toBe(899);
   });
 
-  it("studio pack should be 200 credits for $25", async () => {
+  it("studio pack should be 500 credits for $29.99", async () => {
     const { CREDIT_PACKS } = await import("./stripeProducts");
-    expect(CREDIT_PACKS.studio_pack.credits).toBe(200);
-    expect(CREDIT_PACKS.studio_pack.priceInCents).toBe(2500);
+    expect(CREDIT_PACKS.studio_pack.credits).toBe(500);
+    expect(CREDIT_PACKS.studio_pack.priceInCents).toBe(2999);
   });
 
   it("larger packs should have better per-credit pricing", async () => {
@@ -111,10 +111,10 @@ describe("stripeProducts", () => {
   describe("getCreditPackFromMetadata", () => {
     it("should return credit pack from valid metadata", async () => {
       const { getCreditPackFromMetadata } = await import("./stripeProducts");
-      const pack = getCreditPackFromMetadata({ pack_type: "credits", credits: "10" });
+      const pack = getCreditPackFromMetadata({ pack_type: "credits", credits: "25" });
       expect(pack).not.toBeNull();
       expect(pack?.id).toBe("starter");
-      expect(pack?.credits).toBe(10);
+      expect(pack?.credits).toBe(25);
     });
 
     it("should return null for invalid metadata", async () => {
@@ -165,11 +165,11 @@ describe("Stripe-credits integration", () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
     const { PLAN_LIMITS } = await import("../drizzle/schema");
 
-    // Creator: 100 credits
+    // Creator: 250 credits
     expect(parseInt(STRIPE_PLANS.creator.metadata.monthly_credits)).toBe(PLAN_LIMITS.creator.monthlyCredits);
-    // Professional: 500 credits
+    // Professional: 1000 credits
     expect(parseInt(STRIPE_PLANS.professional.metadata.monthly_credits)).toBe(PLAN_LIMITS.professional.monthlyCredits);
-    // Studio: 2000 credits
+    // Studio: 5000 credits
     expect(parseInt(STRIPE_PLANS.studio.metadata.monthly_credits)).toBe(PLAN_LIMITS.studio.monthlyCredits);
   });
 

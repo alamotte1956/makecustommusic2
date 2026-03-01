@@ -222,6 +222,32 @@ export function getMoodGuidance(mood: string | null): string {
 
 // ─── Production Prompt Builder ───
 
+// ─── Arrangement Templates ───
+
+const ARRANGEMENT_TEMPLATES: Record<string, string> = {
+  short: `Arrangement: 4-bar intro → verse → chorus → short outro. Keep it tight and punchy.`,
+  medium: `Arrangement: 4-bar intro with signature hook → verse 1 (build tension) → pre-chorus (lift) → chorus (full energy, all instruments) → verse 2 (add new element) → chorus 2 (bigger, add harmonies) → bridge (strip back, then build) → final chorus (biggest, double everything) → outro (callback to intro hook, fade or hard stop).`,
+  long: `Arrangement: Cinematic intro with atmospheric build (8 bars) → verse 1 (intimate, sparse) → pre-chorus (rising energy) → chorus 1 (full production) → post-chorus hook → verse 2 (new melodic element, fuller) → pre-chorus 2 (more intense) → chorus 2 (add vocal harmonies, bigger drums) → bridge (breakdown to rebuild, key change optional) → final chorus (maximum energy, layered vocals, all instruments firing) → extended outro with melodic callback and natural decay.`,
+};
+
+function getArrangementTemplate(duration: number): string {
+  if (duration <= 30) return ARRANGEMENT_TEMPLATES.short;
+  if (duration <= 90) return ARRANGEMENT_TEMPLATES.medium;
+  return ARRANGEMENT_TEMPLATES.long;
+}
+
+// ─── Vocal Production Details ───
+
+const VOCAL_PRODUCTION: Record<string, string> = {
+  male: "male vocals with chest resonance and warmth, double-tracked in choruses, subtle pitch correction, de-essed and compressed for presence, reverb plate with pre-delay for depth, ad-libs and vocal runs in final chorus",
+  female: "female vocals with clarity and airiness, layered harmonies in choruses, subtle pitch correction, de-essed with bright EQ presence, lush reverb with stereo widening, melodic ad-libs and runs in final chorus",
+  mixed: "male and female vocal duet with call-and-response verses, layered harmonies in choruses, both voices double-tracked, blended reverb spaces, trading lines in the bridge, powerful unison in final chorus",
+};
+
+// ─── Mastering Chain Description ───
+
+const MASTERING_CHAIN = "Mastering chain: multiband compression for balanced frequency response, stereo widening on mids and highs, harmonic saturation for analog warmth, brick-wall limiter at -1dB true peak, LUFS targeting -14 for streaming platforms. The final master should be loud, clear, and competitive with commercial releases.";
+
 const GENRE_PRODUCTION: Record<string, { bpm: string; instruments: string; production: string }> = {
   pop: {
     bpm: "118-128",
@@ -316,14 +342,15 @@ export function buildProductionPrompt(params: {
 }): { prompt: string; forceInstrumental: boolean } {
   const { keywords, genre, mood, vocalType, duration, mode, customTitle, customLyrics, customStyle } = params;
 
-  let forceInstrumental = vocalType === "none";
+   let forceInstrumental = vocalType === "none";
+  const arrangement = getArrangementTemplate(duration);
 
   if (mode === "custom" && customLyrics && customStyle) {
     // Custom Mode: build a detailed production prompt from lyrics + style + metadata
     const genreProd = genre ? GENRE_PRODUCTION[genre.toLowerCase()] : null;
     const moodProd = mood ? MOOD_PRODUCTION[mood.toLowerCase()] : null;
 
-    let prompt = `Create a professionally produced, radio-ready song titled "${customTitle || "Untitled"}".`;
+    let prompt = `Create a professionally produced, radio-ready song titled "${customTitle || "Untitled"}"`
     prompt += `\n\nStyle: ${customStyle}.`;
 
     if (genre) {
@@ -343,16 +370,15 @@ export function buildProductionPrompt(params: {
     }
 
     if (vocalType && vocalType !== "none") {
-      const vocalDesc = vocalType === "mixed"
-        ? "male and female vocals harmonizing, duet arrangement with call-and-response"
-        : `${vocalType} vocals, expressive and emotionally connected delivery, modern and polished`;
-      prompt += ` Vocals: ${vocalDesc}.`;
+      const vocalProd = VOCAL_PRODUCTION[vocalType] || VOCAL_PRODUCTION.male;
+      prompt += `\nVocals: ${vocalProd}.`;
     } else if (forceInstrumental) {
-      prompt += " Instrumental only, no vocals.";
+      prompt += "\nInstrumental only — no vocals. Fill the vocal frequency range with melodic lead instruments, synth leads, or guitar melodies to maintain fullness.";
     }
 
-    prompt += ` Duration: ${duration} seconds.`;
-    prompt += `\n\nProduction notes: Professional mixing with clear separation between instruments, punchy transients, controlled dynamics, and a polished master that sounds radio-ready. The arrangement should have a clear intro, build, peak, and resolution. Every element should feel intentional and polished.`;
+    prompt += `\nDuration: ${duration} seconds.`;
+    prompt += `\n\n${arrangement}`;
+    prompt += `\n\nProduction notes: Professional mixing with clear separation between instruments. Use sidechain compression on bass elements against the kick. Apply parallel compression on drums for punch and sustain. Create width with stereo delays and panned elements. Use automation for dynamic builds — filter sweeps, volume rides, reverb throws on key phrases. ${MASTERING_CHAIN}`;
     prompt += `\n\nLyrics:\n${customLyrics}`;
 
     return { prompt: prompt.substring(0, 4100), forceInstrumental };
@@ -381,16 +407,15 @@ export function buildProductionPrompt(params: {
   }
 
   if (forceInstrumental) {
-    prompt += "\nInstrumental only, no vocals.";
+    prompt += "\nInstrumental only — no vocals. Use melodic lead instruments to fill the vocal frequency range and maintain a full, rich arrangement.";
   } else if (vocalType) {
-    const vocalDesc = vocalType === "mixed"
-      ? "male and female vocals, duet arrangement with harmonies and call-and-response"
-      : `${vocalType} vocals, emotionally expressive, modern delivery, polished and radio-ready`;
-    prompt += `\nVocals: ${vocalDesc}.`;
+    const vocalProd = VOCAL_PRODUCTION[vocalType] || VOCAL_PRODUCTION.male;
+    prompt += `\nVocals: ${vocalProd}.`;
   }
 
   prompt += `\nDuration: ${duration} seconds.`;
-  prompt += `\n\nProduction quality: Professional, radio-ready mix. Clear instrument separation, punchy low-end, crisp highs, warm mids. Dynamic arrangement with intro, build, peak, and resolution. Modern production standards — this should sound like it belongs on a major streaming playlist. Mastered for loudness and clarity.`;
+  prompt += `\n\n${arrangement}`;
+  prompt += `\n\nProduction quality: Professional, radio-ready mix. Clear instrument separation with each element occupying its own frequency space. Punchy low-end with tight kick and sub bass. Crisp highs with shimmer and air. Warm, full mids. Use sidechain compression, parallel processing, and automation for dynamic movement. Build tension and release throughout the arrangement. ${MASTERING_CHAIN}`;
 
   return { prompt: prompt.substring(0, 4100), forceInstrumental };
 }

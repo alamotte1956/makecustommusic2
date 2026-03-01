@@ -1,7 +1,9 @@
 /**
  * Stripe Products & Prices Configuration
  * 
- * Defines all subscription plans and one-time credit packs.
+ * Competitively priced against Suno ($10/$30), Udio ($10/$30),
+ * Soundraw ($20), and other AI music generators.
+ * 
  * Price IDs will be created dynamically on first use if they don't exist,
  * or you can hardcode them after creating products in the Stripe Dashboard.
  */
@@ -36,82 +38,94 @@ export interface CreditPack {
   };
 }
 
-// Subscription plans (recurring)
+// ─── Subscription Plans (recurring) ─────────────────────────────────────────
+//
+// Competitive positioning:
+//   Suno Pro = $10/mo (2,500 credits), Premier = $30/mo
+//   Udio Standard = $10/mo (1,200 credits), Pro = $30/mo
+//   Soundraw Creator = $20/mo
+//
+// Our edge: lower entry price, generous credits, annual savings up to 25%
+
 export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
   creator: {
     id: "creator",
-    name: "Creator Plan",
-    description: "100 songs/month, studio mastering, commercial use for social media",
+    name: "Creator",
+    description: "250 songs/month, studio mastering, commercial use for social media",
     prices: {
-      monthly: 900,  // $9/mo
-      annual: 8400,   // $84/yr ($7/mo)
+      monthly: 800,    // $8/mo
+      annual: 7200,    // $72/yr ($6/mo — 25% savings)
     },
     metadata: {
       plan_tier: "creator",
-      monthly_credits: "100",
+      monthly_credits: "250",
     },
   },
   professional: {
     id: "professional",
-    name: "Professional Plan",
-    description: "500 songs/month, full studio suite, full commercial rights",
+    name: "Professional",
+    description: "1,000 songs/month, full studio suite, full commercial rights, stems",
     prices: {
-      monthly: 2200,  // $22/mo
-      annual: 21600,   // $216/yr ($18/mo)
+      monthly: 1900,   // $19/mo
+      annual: 18000,   // $180/yr ($15/mo — 21% savings)
     },
     metadata: {
       plan_tier: "professional",
-      monthly_credits: "500",
+      monthly_credits: "1000",
     },
   },
   studio: {
     id: "studio",
-    name: "Studio Plan",
-    description: "2,000 songs/month, unlimited everything, sync licensing, API access",
+    name: "Studio",
+    description: "5,000 songs/month, unlimited features, sync licensing, API access, priority",
     prices: {
-      monthly: 4900,  // $49/mo
-      annual: 46800,   // $468/yr (~$39/mo)
+      monthly: 3900,   // $39/mo
+      annual: 34800,   // $348/yr ($29/mo — 26% savings)
     },
     metadata: {
       plan_tier: "studio",
-      monthly_credits: "2000",
+      monthly_credits: "5000",
     },
   },
 };
 
-// One-time credit packs
+// ─── One-Time Credit Packs ──────────────────────────────────────────────────
+//
+// Priced to give better per-song value at higher tiers.
+// Starter: $0.12/song, Creator: $0.09/song, Studio: $0.06/song
+
 export const CREDIT_PACKS: Record<CreditPackId, CreditPack> = {
   starter: {
     id: "starter",
     name: "Starter Pack",
-    description: "10 additional song credits",
-    priceInCents: 200, // $2
-    credits: 10,
+    description: "25 additional song credits",
+    priceInCents: 299,  // $2.99
+    credits: 25,
     metadata: {
       pack_type: "credits",
-      credits: "10",
+      credits: "25",
     },
   },
   creator_pack: {
     id: "creator_pack",
     name: "Creator Pack",
-    description: "50 additional song credits",
-    priceInCents: 800, // $8
-    credits: 50,
+    description: "100 additional song credits",
+    priceInCents: 899,  // $8.99
+    credits: 100,
     metadata: {
       pack_type: "credits",
-      credits: "50",
+      credits: "100",
     },
   },
   studio_pack: {
     id: "studio_pack",
     name: "Studio Pack",
-    description: "200 additional song credits",
-    priceInCents: 2500, // $25
-    credits: 200,
+    description: "500 additional song credits",
+    priceInCents: 2999, // $29.99
+    credits: 500,
     metadata: {
       pack_type: "credits",
-      credits: "200",
+      credits: "500",
     },
   },
 };

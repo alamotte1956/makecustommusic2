@@ -7,9 +7,9 @@ describe("Credits Module", () => {
     it("returns correct limits for free plan", () => {
       const limits = getPlanLimits("free");
       expect(limits).toEqual(PLAN_LIMITS.free);
-      expect(limits.monthlyCredits).toBe(50);
-      expect(limits.dailySongLimit).toBe(5);
-      expect(limits.dailyTtsLimit).toBe(3);
+      expect(limits.monthlyCredits).toBe(5);
+      expect(limits.dailySongLimit).toBe(3);
+      expect(limits.dailyTtsLimit).toBe(2);
       expect(limits.takesPerSong).toBe(1);
       expect(limits.stemDownloads).toBe(false);
     });
@@ -17,8 +17,8 @@ describe("Credits Module", () => {
     it("returns correct limits for creator plan", () => {
       const limits = getPlanLimits("creator");
       expect(limits).toEqual(PLAN_LIMITS.creator);
-      expect(limits.monthlyCredits).toBe(100);
-      expect(limits.dailySongLimit).toBe(20);
+      expect(limits.monthlyCredits).toBe(250);
+      expect(limits.dailySongLimit).toBe(30);
       expect(limits.takesPerSong).toBe(2);
       expect(limits.stemDownloads).toBe("partial");
     });
@@ -26,7 +26,7 @@ describe("Credits Module", () => {
     it("returns correct limits for professional plan", () => {
       const limits = getPlanLimits("professional");
       expect(limits).toEqual(PLAN_LIMITS.professional);
-      expect(limits.monthlyCredits).toBe(500);
+      expect(limits.monthlyCredits).toBe(1000);
       expect(limits.dailySongLimit).toBe(-1);
       expect(limits.takesPerSong).toBe(3);
     });
@@ -34,7 +34,7 @@ describe("Credits Module", () => {
     it("returns correct limits for studio plan", () => {
       const limits = getPlanLimits("studio");
       expect(limits).toEqual(PLAN_LIMITS.studio);
-      expect(limits.monthlyCredits).toBe(2000);
+      expect(limits.monthlyCredits).toBe(5000);
       expect(limits.dailySongLimit).toBe(-1); // unlimited
       expect(limits.takesPerSong).toBe(3);
     });

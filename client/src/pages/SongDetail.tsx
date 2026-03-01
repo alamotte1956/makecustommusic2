@@ -12,6 +12,7 @@ import SheetMusicViewer from "@/components/SheetMusicViewer";
 import GuitarChordViewer from "@/components/GuitarChordViewer";
 import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import StudioProducer from "@/components/StudioProducer";
+import { exportLyricsPDF } from "@/lib/pdfExport";
 import {
   Music, FileText, Guitar, Download, Share2, ArrowLeft,
   Clock, Gauge, Tag, Mic, Loader2, SlidersHorizontal
@@ -232,9 +233,39 @@ export default function SongDetail() {
           <Card>
             <CardContent className="pt-6">
               {song.lyrics ? (
-                <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
-                  {song.lyrics}
-                </pre>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">Song Lyrics</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => {
+                        try {
+                          exportLyricsPDF(song.lyrics!, song.title, {
+                            genre: song.genre ?? undefined,
+                            mood: song.mood ?? undefined,
+                            key: song.keySignature ?? undefined,
+                            tempo: song.tempo ?? undefined,
+                            vocalType: song.vocalType ?? undefined,
+                          });
+                          toast.success("Lyrics PDF downloaded!");
+                        } catch {
+                          toast.error("Failed to export lyrics PDF");
+                        }
+                      }}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download PDF
+                    </Button>
+                  </div>
+                  <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
+                    {song.lyrics}
+                  </pre>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 space-y-2">
                   <FileText className="w-12 h-12 text-muted-foreground/40" />

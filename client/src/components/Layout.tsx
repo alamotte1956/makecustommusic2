@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload } from "lucide-react";
 import { useState } from "react";
 import { useQueuePlayer } from "@/contexts/QueuePlayerContext";
 
@@ -12,6 +12,7 @@ const navItems = [
   { href: "/history", label: "My Songs", icon: History },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/albums", label: "Albums", icon: Disc3 },
+  { href: "/upload", label: "Upload", icon: Upload },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

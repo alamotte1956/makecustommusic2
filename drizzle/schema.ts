@@ -189,9 +189,9 @@ export type InsertCreditTransaction = typeof creditTransactions.$inferInsert;
 // Plan limits configuration (used in code, not DB)
 export const PLAN_LIMITS = {
   free: {
-    monthlyCredits: 50,
-    dailySongLimit: 5,
-    dailyTtsLimit: 3,
+    monthlyCredits: 5,
+    dailySongLimit: 3,
+    dailyTtsLimit: 2,
     dailySheetMusicLimit: 2,
     dailyChordLimit: 2,
     takesPerSong: 1,
@@ -204,8 +204,8 @@ export const PLAN_LIMITS = {
     addOnCreditsPerDollar: 0,
   },
   creator: {
-    monthlyCredits: 100,
-    dailySongLimit: 20,
+    monthlyCredits: 250,
+    dailySongLimit: 30,
     dailyTtsLimit: 50,
     dailySheetMusicLimit: -1, // unlimited
     dailyChordLimit: -1,
@@ -216,10 +216,10 @@ export const PLAN_LIMITS = {
     commercialUse: "personal", // personal + social media
     audioQuality: "192kbps",
     concurrentGenerations: 3,
-    addOnCreditsPerDollar: 5, // 10 songs for $2
+    addOnCreditsPerDollar: 8.36, // 25 songs for $2.99
   },
   professional: {
-    monthlyCredits: 500,
+    monthlyCredits: 1000,
     dailySongLimit: -1,
     dailyTtsLimit: -1,
     dailySheetMusicLimit: -1,
@@ -231,10 +231,10 @@ export const PLAN_LIMITS = {
     commercialUse: "full",
     audioQuality: "192kbps+wav",
     concurrentGenerations: 5,
-    addOnCreditsPerDollar: 6.67, // 10 songs for $1.50
+    addOnCreditsPerDollar: 11.12, // 100 songs for $8.99
   },
   studio: {
-    monthlyCredits: 2000,
+    monthlyCredits: 5000,
     dailySongLimit: -1,
     dailyTtsLimit: -1,
     dailySheetMusicLimit: -1,
@@ -246,7 +246,7 @@ export const PLAN_LIMITS = {
     commercialUse: "full+sync",
     audioQuality: "192kbps+wav+flac",
     concurrentGenerations: 10,
-    addOnCreditsPerDollar: 10, // 10 songs for $1
+    addOnCreditsPerDollar: 16.67, // 500 songs for $29.99
   },
 } as const;
 

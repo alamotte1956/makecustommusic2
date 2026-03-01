@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Guitar, RefreshCw, Info } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { exportChordPDF, type ChordPDFData } from "@/lib/pdfExport";
 
 interface ChordSection {
   section: string;
@@ -94,7 +95,6 @@ function ChordDiagramSVG({ chord }: { chord: GuitarChordDiagram }) {
         {chord.frets.map((fret, i) => {
           const x = stringX(i);
           if (fret === -1) {
-            // Muted string
             return (
               <text key={`dot-${i}`} x={x} y={startY - 6} textAnchor="middle" className="fill-current" fontSize="10" fontWeight="bold">
                 ×
@@ -102,12 +102,10 @@ function ChordDiagramSVG({ chord }: { chord: GuitarChordDiagram }) {
             );
           }
           if (fret === 0) {
-            // Open string
             return (
               <circle key={`dot-${i}`} cx={x} cy={startY - 8} r="4" fill="none" stroke="currentColor" strokeWidth="1.5" />
             );
           }
-          // Fretted note
           const adjustedFret = chord.baseFret > 1 ? fret - (chord.baseFret - 1) : fret;
           const y = fretY(adjustedFret) - fretSpacing / 2;
           return (
@@ -129,6 +127,7 @@ function ChordDiagramSVG({ chord }: { chord: GuitarChordDiagram }) {
 export default function GuitarChordViewer({ songId, chordProgression: initialData, songTitle }: GuitarChordViewerProps) {
   const [data, setData] = useState<ChordProgressionData | null>(initialData ?? null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
   const generateMutation = trpc.songs.generateChordProgression.useMutation();
   const utils = trpc.useUtils();
 
@@ -143,60 +142,31 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
     }
   }, [songId, generateMutation, utils]);
 
-  const handlePrint = useCallback(() => {
-    if (!contentRef.current) return;
+  const handleDownloadPDF = useCallback(() => {
+    if (!data) return;
+    setExporting(true);
+    try {
+      // Collect SVG elements from the chord diagrams
+      const svgs = contentRef.current?.querySelectorAll("svg");
+      const diagramSvgs = svgs ? Array.from(svgs) as SVGElement[] : undefined;
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("Please allow popups to print");
-      return;
+      const pdfData: ChordPDFData = {
+        key: data.key,
+        capo: data.capo,
+        tempo: data.tempo,
+        timeSignature: data.timeSignature,
+        sections: data.sections,
+        notes: data.notes,
+      };
+
+      exportChordPDF(pdfData, songTitle, diagramSvgs);
+      toast.success("Chord chart PDF downloaded!");
+    } catch {
+      toast.error("Failed to export chord chart PDF");
+    } finally {
+      setExporting(false);
     }
-
-    // Clone the content and build a print-friendly page
-    const content = contentRef.current.innerHTML;
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${songTitle} - Guitar Chords</title>
-        <style>
-          @page { size: A4; margin: 1.5cm; }
-          body { margin: 0; padding: 20px; font-family: 'Georgia', serif; color: #1a1a1a; }
-          h1 { text-align: center; font-size: 24px; margin-bottom: 5px; }
-          .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 20px; }
-          .meta { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
-          .meta-item { background: #f3f4f6; padding: 4px 12px; border-radius: 6px; font-size: 13px; }
-          .section { margin-bottom: 20px; page-break-inside: avoid; }
-          .section-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #4f46e5; }
-          .chords { font-size: 18px; font-weight: bold; letter-spacing: 2px; margin-bottom: 4px; font-family: monospace; }
-          .strum { font-size: 13px; color: #666; }
-          .chord-diagrams { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin: 24px 0; }
-          .notes { background: #f9fafb; padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; margin-top: 20px; }
-          .notes-title { font-weight: bold; margin-bottom: 4px; }
-          .footer { text-align: center; color: #999; font-size: 10px; margin-top: 30px; }
-          svg { color: #1a1a1a; }
-          svg text { fill: #1a1a1a; }
-          svg line, svg circle, svg rect { stroke: #1a1a1a; }
-          @media print { .no-print { display: none; } }
-        </style>
-      </head>
-      <body>
-        <h1>${songTitle}</h1>
-        <div class="subtitle">Acoustic Guitar Chords &bull; Generated by AI Music Generator</div>
-        ${content}
-        <div class="footer">Generated with AI Music Generator &bull; makecustommusic.com</div>
-        <div class="no-print" style="text-align:center;margin-top:20px;">
-          <button onclick="window.print()" style="padding:10px 24px;font-size:16px;cursor:pointer;background:#6366f1;color:white;border:none;border-radius:8px;">
-            Print / Save as PDF
-          </button>
-        </div>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    toast.success("Chord sheet ready for print/download!");
-  }, [songTitle]);
+  }, [data, songTitle]);
 
   // No data yet — show generate button
   if (!data) {
@@ -239,9 +209,19 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
           <span className="text-sm font-medium">Acoustic Guitar</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
-            <Download className="w-3.5 h-3.5" />
-            Print / PDF
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPDF}
+            disabled={exporting}
+            className="gap-1.5"
+          >
+            {exporting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            Download PDF
           </Button>
           <Button
             variant="ghost"
@@ -294,7 +274,7 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
                 )}
               </div>
               <div className="font-mono text-lg font-bold tracking-wider text-foreground">
-                {section.chords.join("  →  ")}
+                {section.chords.join("  \u2192  ")}
               </div>
               {section.strummingPattern && (
                 <div className="text-sm text-muted-foreground">
