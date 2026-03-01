@@ -13,9 +13,9 @@ function makeSong(overrides: Partial<QueueSong> & { id: number }): QueueSong {
     genre: null,
     mood: null,
     tempo: 120,
-    engine: "suno",
+    engine: "elevenlabs",
     vocalType: null,
-    audioUrl: "https://cdn.suno.ai/test.mp3",
+    audioUrl: "https://example.com/test.mp3",
     mp3Url: null,
     ...overrides,
   };
@@ -30,13 +30,13 @@ describe("QueueSong type", () => {
     expect(song.audioUrl).toBeTruthy();
   });
 
-  it("allows audioUrl for Suno songs", () => {
+  it("allows audioUrl for ElevenLabs songs", () => {
     const song = makeSong({
       id: 2,
-      engine: "suno",
-      audioUrl: "https://cdn.suno.ai/test.mp3",
+      engine: "elevenlabs",
+      audioUrl: "https://example.com/test.mp3",
     });
-    expect(song.audioUrl).toBe("https://cdn.suno.ai/test.mp3");
+    expect(song.audioUrl).toBe("https://example.com/test.mp3");
   });
 
   it("allows mp3Url as alternative audio source", () => {
@@ -194,8 +194,8 @@ describe("Queue state logic", () => {
       return null;
     };
 
-    const sunoSong = makeSong({ id: 1, audioUrl: "https://suno.ai/song.mp3", mp3Url: "https://alt.mp3" });
-    expect(resolveSource(sunoSong)).toBe("https://suno.ai/song.mp3");
+    const elSong = makeSong({ id: 1, audioUrl: "https://example.com/song.mp3", mp3Url: "https://alt.mp3" });
+    expect(resolveSource(elSong)).toBe("https://example.com/song.mp3");
 
     const mp3Song = makeSong({ id: 2, audioUrl: null, mp3Url: "https://alt.mp3" });
     expect(resolveSource(mp3Song)).toBe("https://alt.mp3");

@@ -37,7 +37,7 @@ export const songs = mysqlTable("songs", {
   lyrics: text("lyrics"),
   styleTags: varchar("styleTags", { length: 500 }),
   shareToken: varchar("shareToken", { length: 64 }),
-  sunoSongId: varchar("sunoSongId", { length: 100 }),
+  externalSongId: varchar("externalSongId", { length: 100 }),
   imageUrl: text("imageUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

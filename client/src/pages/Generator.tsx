@@ -69,8 +69,8 @@ function formatDuration(seconds: number): string {
 export default function Generator() {
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
 
-  // Suno mode state
-  const [sunoMode, setSunoMode] = useState<"simple" | "custom">("simple");
+  // Mode state
+  const [mode, setMode] = useState<"simple" | "custom">("simple");
 
   // Common fields
   const [keywords, setKeywords] = useState("");
@@ -79,7 +79,7 @@ export default function Generator() {
   const [vocalType, setVocalType] = useState<"none" | "male" | "female" | "mixed">("none");
   const [duration, setDuration] = useState(30);
 
-  // Suno Custom Mode fields
+  // Custom Mode fields
   const [customTitle, setCustomTitle] = useState("");
   const [customLyrics, setCustomLyrics] = useState("");
   const [customStyle, setCustomStyle] = useState("");
@@ -103,16 +103,16 @@ export default function Generator() {
   const shareMutation = trpc.songs.createShareLink.useMutation();
   const utils = trpc.useUtils();
 
-  const isSunoAvailable = enginesQuery.data?.suno ?? false;
+  const isElevenLabsAvailable = enginesQuery.data?.elevenlabs ?? false;
 
   const handleGenerate = useCallback(async () => {
-    if (!keywords.trim() && !(sunoMode === "custom" && customLyrics.trim())) {
+    if (!keywords.trim() && !(mode === "custom" && customLyrics.trim())) {
       toast.error("Please enter keywords or lyrics to describe your music");
       return;
     }
 
-    if (!isSunoAvailable) {
-      toast.error("Suno engine is not available. Please configure the SUNO_API_KEY in Settings.");
+    if (!isElevenLabsAvailable) {
+      toast.error("ElevenLabs engine is not available. Please configure the ELEVENLABS_API_KEY in Settings.");
       return;
     }
 
@@ -121,20 +121,20 @@ export default function Generator() {
 
     try {
       setIsGenerating(true);
-      setProgressMessage("Suno V5 is creating your music... (this may take 30-60 seconds)");
+      setProgressMessage("ElevenLabs is composing your music... (this may take 30-120 seconds)");
       setProgress(15);
 
       const song = await generateMutation.mutateAsync({
-        keywords: keywords.trim() || (sunoMode === "custom" ? customTitle || "Custom Song" : ""),
-        engine: "suno",
+        keywords: keywords.trim() || (mode === "custom" ? customTitle || "Custom Song" : ""),
+        engine: "elevenlabs",
         genre: selectedGenre || undefined,
         mood: selectedMood || undefined,
         vocalType,
         duration,
-        sunoMode,
-        customTitle: sunoMode === "custom" ? customTitle : undefined,
-        customLyrics: sunoMode === "custom" ? customLyrics : undefined,
-        customStyle: sunoMode === "custom" ? customStyle : undefined,
+        mode,
+        customTitle: mode === "custom" ? customTitle : undefined,
+        customLyrics: mode === "custom" ? customLyrics : undefined,
+        customStyle: mode === "custom" ? customStyle : undefined,
       });
 
       if (!song) throw new Error("Failed to generate song");
@@ -143,7 +143,7 @@ export default function Generator() {
       setProgress(100);
       setProgressMessage("Done!");
       utils.songs.list.invalidate();
-      toast.success("Music generated with Suno V5!");
+      toast.success("Music generated with ElevenLabs!");
     } catch (error: any) {
       toast.error(error.message || "Failed to generate music");
       setProgress(0);
@@ -151,7 +151,7 @@ export default function Generator() {
     } finally {
       setIsGenerating(false);
     }
-  }, [keywords, sunoMode, selectedGenre, selectedMood, vocalType, duration, customTitle, customLyrics, customStyle, generateMutation, utils, isSunoAvailable]);
+  }, [keywords, mode, selectedGenre, selectedMood, vocalType, duration, customTitle, customLyrics, customStyle, generateMutation, utils, isElevenLabsAvailable]);
 
   const handleRegenerate = useCallback(() => {
     handleGenerate();
@@ -209,7 +209,7 @@ export default function Generator() {
           Create Music
         </h1>
         <p className="text-muted-foreground">
-          Describe the music you want and let Suno V5 compose it for you
+          Describe the music you want and let ElevenLabs compose it for you
         </p>
       </div>
 
@@ -222,22 +222,22 @@ export default function Generator() {
               <Crown className="w-5 h-5 text-amber-500" />
               <div>
                 <div className="font-medium text-foreground flex items-center gap-2">
-                  Suno V5
+                  ElevenLabs
                   <Badge variant="default" className="text-xs bg-amber-500 hover:bg-amber-600">Pro</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isSunoAvailable
-                    ? "Studio-quality music with real vocals, lyrics, and production."
-                    : "Add SUNO_API_KEY in Settings to unlock."}
+                  {isElevenLabsAvailable
+                    ? "Studio-quality AI music with vocals, lyrics, and production."
+                    : "Add ELEVENLABS_API_KEY in Settings to unlock."}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Suno Mode Toggle */}
+          {/* Mode Toggle */}
           <div className="space-y-3">
             <label className="text-sm font-medium text-foreground">Mode</label>
-            <Tabs value={sunoMode} onValueChange={(v) => setSunoMode(v as "simple" | "custom")}>
+            <Tabs value={mode} onValueChange={(v) => setMode(v as "simple" | "custom")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="simple" className="gap-2">
                   <Sparkles className="w-4 h-4" />
@@ -250,14 +250,14 @@ export default function Generator() {
               </TabsList>
             </Tabs>
             <p className="text-xs text-muted-foreground">
-              {sunoMode === "simple"
-                ? "Describe your music and Suno creates everything — melody, lyrics, and production."
+              {mode === "simple"
+                ? "Describe your music and ElevenLabs creates everything — melody, lyrics, and production."
                 : "Write your own lyrics, set style tags, and name your track for full creative control."}
             </p>
           </div>
 
           {/* Keywords / Prompt (shown for simple mode) */}
-          {sunoMode !== "custom" && (
+          {mode !== "custom" && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 Describe your music
@@ -277,9 +277,8 @@ export default function Generator() {
             </div>
           )}
 
-          {/* Suno Custom Mode Fields */}
-      
-          {sunoMode === "custom" && (
+          {/* Custom Mode Fields */}
+          {mode === "custom" && (
             <div className="space-y-4">
               {/* AI Lyrics Generator */}
               <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
@@ -370,7 +369,8 @@ export default function Generator() {
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Music className="w-4 h-4" />
                   Song Title
-                </label>              <Input
+                </label>
+                <Input
                   placeholder="e.g., Midnight in Paris"
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
@@ -535,7 +535,7 @@ export default function Generator() {
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating || !isSunoAvailable || (!keywords.trim() && !(sunoMode === "custom" && customLyrics.trim()))}
+              disabled={isGenerating || !isElevenLabsAvailable || (!keywords.trim() && !(mode === "custom" && customLyrics.trim()))}
               size="lg"
               className="flex-1 sm:flex-none"
             >
@@ -547,13 +547,13 @@ export default function Generator() {
               ) : (
                 <>
                   <Crown className="w-5 h-5 mr-2" />
-                  Generate with Suno V5
+                  Generate with ElevenLabs
                 </>
               )}
             </Button>
-            {!isSunoAvailable && (
+            {!isElevenLabsAvailable && (
               <p className="text-sm text-destructive self-center">
-                Suno API key required. Add it in Settings to start creating.
+                ElevenLabs API key required. Add it in Settings to start creating.
               </p>
             )}
           </div>
@@ -572,7 +572,7 @@ export default function Generator() {
       </Card>
 
       {/* Suggestion chips (only when no result and not working, for simple mode) */}
-      {!generatedSong && !isGenerating && sunoMode !== "custom" && (
+      {!generatedSong && !isGenerating && mode !== "custom" && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted-foreground">Try these ideas:</p>
           <div className="flex flex-wrap gap-2">
@@ -614,8 +614,8 @@ export default function Generator() {
                     {generatedSong.musicDescription}
                   </p>
                 </div>
-                <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">
-                  Suno V5
+                <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">
+                  ElevenLabs
                 </Badge>
               </div>
             </CardHeader>

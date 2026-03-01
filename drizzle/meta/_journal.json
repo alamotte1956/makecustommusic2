@@ -64,6 +64,13 @@
       "when": 1772309347084,
       "tag": "0008_round_baron_strucker",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1772331533787,
+      "tag": "0009_right_patch",
+      "breakpoints": true
     }
   ]
 }

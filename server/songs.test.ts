@@ -53,8 +53,8 @@ describe("songs router", () => {
       const caller = appRouter.createCaller(ctx);
 
       const result = await caller.songs.engines();
-      expect(result).toHaveProperty("suno");
-      expect(typeof result.suno).toBe("boolean");
+      expect(result).toHaveProperty("elevenlabs");
+      expect(typeof result.elevenlabs).toBe("boolean");
     });
 
     it("does not include free engine", async () => {
@@ -116,9 +116,9 @@ describe("songs router", () => {
       const caller = appRouter.createCaller(ctx);
 
       // Valid engine should pass input validation and attempt generation
-      // It may succeed or fail (Suno API call), but should NOT throw a Zod error
+      // It may succeed or fail (ElevenLabs API call), but should NOT throw a Zod error
       try {
-        await caller.songs.generate({ keywords: "test", engine: "suno" });
+        await caller.songs.generate({ keywords: "test", engine: "elevenlabs" });
       } catch (e: any) {
         // Should not be a Zod validation error
         expect(e.message).not.toMatch(/invalid_enum_value/i);
@@ -151,7 +151,7 @@ describe("songs router", () => {
       try {
         await caller.songs.generate({
           keywords: "test music",
-          engine: "suno",
+          engine: "elevenlabs",
           genre: "Jazz",
           mood: "Happy",
           vocalType: "male",
@@ -182,22 +182,22 @@ describe("songs router", () => {
       ).rejects.toThrow();
     });
 
-    it("accepts Suno custom mode fields", async () => {
+    it("accepts custom mode fields", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
 
       // Input validation should accept custom mode fields
       const promise = caller.songs.generate({
         keywords: "custom song",
-        engine: "suno",
-        sunoMode: "custom",
+        engine: "elevenlabs",
+        mode: "custom",
         customTitle: "My Custom Song",
         customLyrics: "[Verse 1]\nHello world\n[Chorus]\nLa la la",
         customStyle: "pop, female vocals, upbeat",
         duration: 60,
       });
 
-      // Should not throw a Zod validation error (may throw Suno API error)
+      // Should not throw a Zod validation error (may throw ElevenLabs API error)
       await expect(promise).rejects.not.toThrow(/invalid_type/i);
     });
 
@@ -208,9 +208,9 @@ describe("songs router", () => {
       await expect(
         caller.songs.generate({
           keywords: "test",
-          engine: "suno",
-          sunoMode: "custom",
-          customLyrics: "a".repeat(5001),
+          engine: "elevenlabs",
+          mode: "custom",
+          customLyrics: "a".repeat(10001),
           customStyle: "pop",
         })
       ).rejects.toThrow();
@@ -228,15 +228,15 @@ describe("songs router", () => {
       ).rejects.toThrow();
     });
 
-    it("validates sunoMode enum values", async () => {
+    it("validates mode enum values", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
 
       await expect(
         caller.songs.generate({
           keywords: "test",
-          engine: "suno",
-          sunoMode: "advanced" as any,
+          engine: "elevenlabs",
+          mode: "advanced" as any,
         })
       ).rejects.toThrow();
     });
@@ -499,6 +499,119 @@ describe("songs router", () => {
         // LLM may fail in test env, but should not be a validation error
         expect(e.message).not.toMatch(/invalid_type/i);
       }
+    }, 30000);
+  });
+
+  describe("songs.ttsPreview", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.ttsPreview({ text: "Hello world", voiceId: "test-voice" })
+      ).rejects.toThrow();
+    });
+
+    it("validates empty text", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.ttsPreview({ text: "", voiceId: "test-voice" })
+      ).rejects.toThrow();
+    });
+
+    it("validates text max length", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.ttsPreview({ text: "a".repeat(5001), voiceId: "test-voice" })
+      ).rejects.toThrow();
+    });
+
+    it("validates empty voiceId", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.ttsPreview({ text: "Hello", voiceId: "" })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("songs.narration", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.narration({ songId: 1, text: "Welcome", voiceId: "v1", type: "intro" })
+      ).rejects.toThrow();
+    });
+
+    it("validates type enum", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.narration({ songId: 1, text: "Welcome", voiceId: "v1", type: "middle" as any })
+      ).rejects.toThrow();
+    });
+
+    it("throws for non-existent song", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.narration({ songId: 999999, text: "Welcome", voiceId: "v1", type: "intro" })
+      ).rejects.toThrow("Song not found");
+    });
+  });
+
+  describe("songs.generateVocals", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generateVocals({ songId: 1, lyrics: "La la la", voiceId: "v1" })
+      ).rejects.toThrow();
+    });
+
+    it("validates empty lyrics", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generateVocals({ songId: 1, lyrics: "", voiceId: "v1" })
+      ).rejects.toThrow();
+    });
+
+    it("throws for non-existent song", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.songs.generateVocals({ songId: 999999, lyrics: "La la la", voiceId: "v1" })
+      ).rejects.toThrow("Song not found");
+    });
+  });
+
+  describe("songs.voices", () => {
+    it("requires authentication", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(caller.songs.voices()).rejects.toThrow();
+    });
+
+    it("returns array for authenticated user", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.songs.voices();
+      expect(Array.isArray(result)).toBe(true);
     }, 30000);
   });
 

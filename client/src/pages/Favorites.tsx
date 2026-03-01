@@ -234,8 +234,8 @@ export default function Favorites() {
                               Now Playing
                             </Badge>
                           )}
-                          <Badge variant="default" className="text-xs bg-gradient-to-r from-purple-600 to-indigo-600">
-                            Suno V5
+                          <Badge variant="default" className="text-xs bg-gradient-to-r from-violet-600 to-indigo-600">
+                            ElevenLabs
                           </Badge>
                           {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
                           {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}

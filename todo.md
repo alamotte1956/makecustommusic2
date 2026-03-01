@@ -34,20 +34,19 @@
 - [x] Unit tests for backend routes (38 tests passing)
 - [x] Test music generation flow
 
-## Suno V5 Custom Mode
-- [x] Add Custom Mode toggle when Suno engine is selected
+## Custom Mode
+- [x] Add Custom Mode toggle when ElevenLabs engine is selected
 - [x] Add separate lyrics textarea field for custom lyrics input
 - [x] Add style tags field for genre/style control (e.g., "synthwave, male vocals, slow tempo")
 - [x] Add custom title field for song naming
-- [x] Update backend Suno API integration to send custom mode parameters
+- [x] Update backend ElevenLabs API integration to send custom mode parameters
 - [x] Update database schema to store custom lyrics if provided
 - [x] Maintain existing simple prompt mode as default
 - [x] Update tests for Custom Mode
 
 ## Vocal Type Enhancement
 - [x] Ensure Male Singer, Female Singer, and Both Singers options are prominent card-style in the UI
-- [x] Verify vocal type is passed correctly to Suno API in both Simple and Custom modes
-- [x] Fix stale TS watcher issue with sunoApiKey in env.ts (use process.env directly)
+- [x] Verify vocal type is passed correctly to ElevenLabs API in both Simple and Custom modes
 
 ## Album Cover Image Generation
 - [x] Add coverImageUrl column to albums table in database schema
@@ -76,11 +75,6 @@
 - [x] Pass duration to backend for all engines
 - [x] Display selected duration with formatted label
 
-## Engine Selector
-- [x] Three engines: Built-in AI (free), Replicate MusicGen (premium), Suno V5 (pro)
-- [x] Engine availability check based on configured API keys
-- [x] Engine selector UI with descriptions and availability badges
-
 ## App Rename
 - [x] Rename app to "Make Custom Music" across all UI elements (header, footer, page title, hero badge)
 
@@ -89,7 +83,6 @@
 - [x] Generate waveform data from audio buffer using Web Audio API (with fallback)
 - [x] Render animated waveform bars that respond to playback position
 - [x] Support click-to-seek on the waveform with hover preview
-- [x] Ensure waveform works for both Suno (URL-based) and free engine (blob-based) audio
 - [x] Smooth animation and color-coded played/unplayed/hover sections
 
 ## Personal Favorites
@@ -106,7 +99,7 @@
 ## Sequential Playback / Queue Player
 - [x] Create QueuePlayer React context to manage playlist state (queue, current index, play/pause)
 - [x] Build persistent bottom player bar with song info, waveform, next/previous/play-pause controls
-- [x] Handle audio source resolution for both Suno (URL-based) and free engine (ABC synthesis) songs
+- [x] Handle audio source resolution for ElevenLabs (URL-based) songs
 - [x] Add "Play All" button to Favorites page that loads all favorited songs into the queue
 - [x] Add "Play All" button to AlbumDetail page that loads all album songs into the queue
 - [x] Auto-advance to next song when current song ends
@@ -165,14 +158,6 @@
 - [x] Highlight currently playing song in the History list
 - [x] Allow clicking individual songs to start queue from that position
 
-## SunoAPI.org Integration
-- [x] Review current Suno API integration code
-- [x] Update API endpoint to SunoAPI.org (https://api.sunoapi.org)
-- [x] Update request/response format to match SunoAPI.org docs (same format, added streamAudioUrl)
-- [x] Handle additional failure statuses (CREATE_TASK_FAILED, GENERATE_AUDIO_FAILED, SENSITIVE_WORD_ERROR, etc.)
-- [x] Configure SUNO_API_KEY secret for SunoAPI.org Bearer token auth
-- [x] Write/update tests for the new integration (128 tests passing)
-
 ## Song Deletion
 - [x] Add deleteSong DB helper (delete song + cascade favorites + album-song relations)
 - [x] Add songs.delete tRPC route (protected, owner-only)
@@ -199,66 +184,55 @@
 - [x] Persist new order to backend after drop (optimistic update)
 - [x] Write tests for reorder route (147 tests passing)
 
-## ElevenLabs Integration
-### Setup
-- [ ] Configure ELEVENLABS_API_KEY secret
-- [ ] Create ElevenLabs server-side helper (text-to-speech, voice list)
-- [ ] Add backend tRPC routes for all three features
+## Replace Suno with ElevenLabs (Full Replacement)
+### Backend
+- [x] Create server/elevenLabsApi.ts with music generation, TTS, and voice list helpers
+- [x] Replace songs.generate in routers.ts to use ElevenLabs music API
+- [x] Replace isSunoAvailable with isElevenLabsAvailable in routers.ts
+- [x] Update engines query to return elevenlabs instead of suno
+- [x] Add TTS preview, narration, vocal generation, and voices routes
+- [x] Delete server/sunoApi.ts
+- [x] Delete server/sunoApi.test.ts
 
+### Schema
+- [x] Rename sunoSongId column to externalSongId in drizzle/schema.ts (migration pushed)
+
+### Frontend
+- [x] Replace all Suno references in Generator.tsx with ElevenLabs
+- [x] Replace Suno badges in AlbumDetail.tsx and Favorites.tsx
+- [x] Update engine name from 'suno' to 'elevenlabs' throughout
+
+### Tests
+- [x] Update songs.test.ts to remove Suno references and add ElevenLabs tests
+- [x] Create elevenLabsApi.test.ts with mocked unit tests (11 tests)
+- [x] Update elevenlabs.test.ts for API key validation
+- [x] Update QueuePlayerContext.test.ts to remove Suno references
+- [x] All 161 tests passing
+
+## ElevenLabs Features (Backend routes ready, frontend integration pending)
 ### Feature 1: Text-to-Speech Lyrics Preview
-- [ ] Add tRPC route to convert lyrics text to speech audio
+- [x] Add tRPC route (songs.ttsPreview) to convert lyrics text to speech audio
 - [ ] Add "Listen to Lyrics" button on song cards (History, Favorites, AlbumDetail)
 - [ ] Play TTS audio inline with loading state
 
 ### Feature 2: Voice Narration Intros/Outros
-- [ ] Add tRPC route to generate narration audio from custom text
+- [x] Add tRPC route (songs.narration) to generate narration audio from custom text
 - [ ] Add UI on Generator/song detail to create intro/outro narration
 - [ ] Save narration audio to S3 and associate with song
 
 ### Feature 3: AI Vocal Generation
-- [ ] Add tRPC route to generate singing/vocal track from lyrics
+- [x] Add tRPC route (songs.generateVocals) to generate singing/vocal track from lyrics
 - [ ] Add "Generate Vocals" button on song cards
 - [ ] Save vocal audio to S3 and associate with song
 
 ### Common
-- [ ] Add voice selector dropdown (ElevenLabs voices)
-- [ ] Write tests for ElevenLabs routes
-
-## Longer Lyrics Generation
-- [ ] Update LLM system prompt to generate longer lyrics (400-800 words)
-- [ ] Increase lyrics max length validation (5000 → 10000 chars)
-- [ ] Add lyrics length option (standard / extended) to Generator UI
-
-## Replace Suno with ElevenLabs
-### Removal
-- [ ] Remove sunoApi.ts and all Suno references from server
-- [ ] Remove SUNO_API_KEY secret usage
-- [ ] Remove sunoApi.test.ts
-
-### ElevenLabs Setup
-- [ ] Configure ELEVENLABS_API_KEY secret
-- [ ] Create ElevenLabs server-side helper (TTS, voice list, sound generation)
-- [ ] Research ElevenLabs API for music/sound generation capabilities
-
-### Backend Routes
-- [ ] Replace songs.generate with ElevenLabs-based generation
-- [ ] Add TTS lyrics preview route
-- [ ] Add voice narration route (intros/outros)
-- [ ] Add AI vocal generation route
-- [ ] Add voice list route
-
-### Frontend
-- [ ] Update Generator page to use ElevenLabs instead of Suno
-- [ ] Add voice selector for TTS/narration/vocals
-- [ ] Add TTS lyrics preview button on song cards
-- [ ] Add narration intro/outro UI
-- [ ] Add vocal generation UI
-
-### Tests
-- [ ] Write tests for all ElevenLabs routes
-- [ ] Remove Suno-specific tests
+- [x] Add voices route (songs.voices) to list ElevenLabs voices
+- [ ] Add voice selector dropdown (ElevenLabs voices) to UI
 
 ## SEO Fixes for Home Page
 - [x] Add keywords meta tag to home page (10 relevant keywords)
 - [x] Update title to 30-60 characters using document.title (49 chars)
 - [x] Add meta description (50-160 characters, 155 chars)
+
+## API Key Issue
+- [ ] ElevenLabs API key returns 401 (unauthorized) — user needs to provide a valid/active key

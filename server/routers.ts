@@ -15,7 +15,7 @@ import {
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
-import { isSunoAvailable, sunoGenerateAndWait } from "./sunoApi";
+import { isElevenLabsAvailable, generateMusic, textToSpeech, getVoices } from "./elevenLabsApi";
 
 export const appRouter = router({
   system: systemRouter,
@@ -32,92 +32,103 @@ export const appRouter = router({
     // Check which engines are available
     engines: publicProcedure.query(() => {
       return {
-        suno: isSunoAvailable(),
+        elevenlabs: isElevenLabsAvailable(),
       };
     }),
 
-    // Generate music with Suno (simple or custom mode)
+    // Generate music with ElevenLabs (simple or custom mode)
     generate: protectedProcedure
       .input(z.object({
         keywords: z.string().min(1).max(500),
-        engine: z.enum(["suno"]).default("suno"),
+        engine: z.enum(["elevenlabs"]).default("elevenlabs"),
         genre: z.string().max(100).optional(),
         mood: z.string().max(100).optional(),
         vocalType: z.enum(["none", "male", "female", "mixed"]).optional(),
         duration: z.number().min(15).max(240).optional(),
-        // Suno Custom Mode fields
-        sunoMode: z.enum(["simple", "custom"]).optional(),
+        // Custom Mode fields
+        mode: z.enum(["simple", "custom"]).optional(),
         customTitle: z.string().max(255).optional(),
-        customLyrics: z.string().max(5000).optional(),
+        customLyrics: z.string().max(10000).optional(),
         customStyle: z.string().max(500).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const {
-          keywords, engine, genre, mood, vocalType, duration,
-          sunoMode, customTitle, customLyrics, customStyle
+          keywords, genre, mood, vocalType, duration,
+          mode, customTitle, customLyrics, customStyle
         } = input;
 
-        // ─── SUNO ENGINE ───
-        if (engine === "suno") {
-          if (!isSunoAvailable()) {
-            throw new Error("Suno engine is not available. Please configure the SUNO_API_KEY.");
-          }
-
-          let sunoResult;
-
-          if (sunoMode === "custom" && customLyrics && customStyle) {
-            // Suno Custom Mode: user provides lyrics, style tags, and title
-            sunoResult = await sunoGenerateAndWait({
-              mode: "custom",
-              title: customTitle || "Untitled",
-              lyrics: customLyrics,
-              style: customStyle,
-              duration: duration,
-            });
-          } else {
-            // Suno Simple Mode: build a rich prompt from keywords + genre + mood + vocal
-            let prompt = keywords;
-            if (genre) prompt += `, ${genre} style`;
-            if (mood) prompt += `, ${mood} mood`;
-            if (vocalType && vocalType !== "none") {
-              prompt += `, with ${vocalType} vocals`;
-            }
-            if (duration) prompt += `, ${duration} seconds long`;
-
-            sunoResult = await sunoGenerateAndWait({
-              mode: "simple",
-              prompt,
-              duration,
-            });
-          }
-
-          // Save to database
-          const song = await createSong({
-            userId: ctx.user.id,
-            title: sunoResult.title || customTitle || "Suno Track",
-            keywords,
-            abcNotation: null,
-            musicDescription: `Generated with Suno V5${sunoMode === "custom" ? " (Custom Mode)" : ""}`,
-            audioUrl: sunoResult.audioUrl,
-            tempo: null,
-            keySignature: null,
-            timeSignature: null,
-            genre: genre || sunoResult.tags || null,
-            mood: mood || null,
-            instruments: null,
-            duration: sunoResult.duration ? Math.round(sunoResult.duration) : (duration || 30),
-            engine: "suno",
-            vocalType: vocalType || null,
-            lyrics: sunoResult.lyric || customLyrics || null,
-            styleTags: customStyle || sunoResult.tags || null,
-            sunoSongId: sunoResult.id || null,
-            imageUrl: sunoResult.imageUrl || null,
-          });
-
-          return song;
+        if (!isElevenLabsAvailable()) {
+          throw new Error("ElevenLabs engine is not available. Please configure the ELEVENLABS_API_KEY.");
         }
 
-        throw new Error("Suno engine is not available. Please configure the SUNO_API_KEY.");
+        // Build the prompt for ElevenLabs music generation
+        let prompt: string;
+        let forceInstrumental = false;
+
+        if (mode === "custom" && customLyrics && customStyle) {
+          // Custom Mode: build a detailed prompt from lyrics + style + title
+          prompt = `Create a song titled "${customTitle || "Untitled"}" in the style of ${customStyle}.`;
+          if (genre) prompt += ` Genre: ${genre}.`;
+          if (mood) prompt += ` Mood: ${mood}.`;
+          if (vocalType && vocalType !== "none") {
+            prompt += ` Vocals: ${vocalType}.`;
+          }
+          prompt += `\n\nLyrics:\n${customLyrics}`;
+        } else {
+          // Simple Mode: build a rich prompt from keywords + genre + mood + vocal
+          prompt = keywords;
+          if (genre) prompt += `, ${genre} style`;
+          if (mood) prompt += `, ${mood} mood`;
+          if (vocalType === "none") {
+            forceInstrumental = true;
+          } else if (vocalType) {
+            prompt += `, with ${vocalType} vocals`;
+          }
+          if (duration) prompt += `, ${duration} seconds long`;
+        }
+
+        // Truncate prompt to ElevenLabs limit (4100 chars)
+        if (prompt.length > 4100) {
+          prompt = prompt.substring(0, 4100);
+        }
+
+        const durationMs = (duration ?? 30) * 1000;
+
+        const result = await generateMusic(
+          {
+            prompt,
+            durationMs,
+            forceInstrumental,
+          },
+          ctx.user.id
+        );
+
+        // Save to database
+        const song = await createSong({
+          userId: ctx.user.id,
+          title: customTitle || keywords.substring(0, 100) || "ElevenLabs Track",
+          keywords,
+          abcNotation: null,
+          musicDescription: `Generated with ElevenLabs${mode === "custom" ? " (Custom Mode)" : ""}`,
+          audioUrl: result.audioUrl,
+          mp3Url: result.audioUrl,
+          mp3Key: result.audioKey,
+          tempo: null,
+          keySignature: null,
+          timeSignature: null,
+          genre: genre || null,
+          mood: mood || null,
+          instruments: null,
+          duration: result.duration,
+          engine: "elevenlabs",
+          vocalType: vocalType || null,
+          lyrics: customLyrics || null,
+          styleTags: customStyle || null,
+          externalSongId: null,
+          imageUrl: null,
+        });
+
+        return song;
       }),
 
     // Generate lyrics from a subject/topic using LLM
@@ -168,6 +179,82 @@ export const appRouter = router({
         return { lyrics };
       }),
 
+    // Text-to-Speech: preview lyrics as spoken audio
+    ttsPreview: protectedProcedure
+      .input(z.object({
+        text: z.string().min(1).max(5000),
+        voiceId: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await textToSpeech(
+          { text: input.text, voiceId: input.voiceId },
+          ctx.user.id
+        );
+        return { audioUrl: result.audioUrl };
+      }),
+
+    // Voice narration: generate intro/outro narration for a song
+    narration: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        text: z.string().min(1).max(2000),
+        voiceId: z.string().min(1),
+        type: z.enum(["intro", "outro"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+
+        const result = await textToSpeech(
+          { text: input.text, voiceId: input.voiceId },
+          ctx.user.id
+        );
+
+        return {
+          audioUrl: result.audioUrl,
+          type: input.type,
+          songId: input.songId,
+        };
+      }),
+
+    // AI Vocal generation: generate vocals from lyrics using TTS
+    generateVocals: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        lyrics: z.string().min(1).max(10000),
+        voiceId: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+
+        const result = await textToSpeech(
+          { text: input.lyrics, voiceId: input.voiceId },
+          ctx.user.id
+        );
+
+        return {
+          audioUrl: result.audioUrl,
+          songId: input.songId,
+        };
+      }),
+
+    // Get available ElevenLabs voices
+    voices: protectedProcedure.query(async () => {
+      if (!isElevenLabsAvailable()) {
+        return [];
+      }
+      try {
+        return await getVoices();
+      } catch {
+        return [];
+      }
+    }),
+
     // Save synthesized audio to S3
     saveMp3: protectedProcedure
       .input(z.object({
@@ -212,7 +299,6 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const song = await getSongByShareToken(input.shareToken);
         if (!song) return null;
-        // Return limited info for public view
         return {
           id: song.id,
           title: song.title,
@@ -254,7 +340,7 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         title: z.string().min(1).max(255).optional(),
-        lyrics: z.string().max(5000).nullable().optional(),
+        lyrics: z.string().max(10000).nullable().optional(),
         genre: z.string().max(100).nullable().optional(),
         mood: z.string().max(100).nullable().optional(),
         styleTags: z.string().max(500).nullable().optional(),
@@ -265,7 +351,6 @@ export const appRouter = router({
         if (!song || song.userId !== ctx.user.id) {
           throw new Error("Song not found");
         }
-        // Filter out undefined fields
         const updateData: Record<string, any> = {};
         if (data.title !== undefined) updateData.title = data.title;
         if (data.lyrics !== undefined) updateData.lyrics = data.lyrics;
@@ -289,7 +374,6 @@ export const appRouter = router({
   }),
 
   favorites: router({
-    // Toggle favorite status for a song
     toggle: protectedProcedure
       .input(z.object({ songId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -297,12 +381,10 @@ export const appRouter = router({
         return { isFavorited };
       }),
 
-    // List all favorited songs
     list: protectedProcedure.query(async ({ ctx }) => {
       return getUserFavorites(ctx.user.id);
     }),
 
-    // Get IDs of all favorited songs (for checking favorite status)
     ids: protectedProcedure.query(async ({ ctx }) => {
       return getUserFavoriteIds(ctx.user.id);
     }),
@@ -394,7 +476,6 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Reorder songs within an album
     reorderSongs: protectedProcedure
       .input(z.object({
         albumId: z.number(),
@@ -409,7 +490,6 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Generate album cover image based on album's songs
     generateCover: protectedProcedure
       .input(z.object({ albumId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -418,15 +498,12 @@ export const appRouter = router({
           throw new Error("Album not found");
         }
 
-        // Get the album's songs to extract genres and moods
         const songList = await getAlbumSongs(input.albumId);
 
-        // Collect unique genres and moods from songs
         const genres = Array.from(new Set(songList.map((s: any) => s?.genre).filter(Boolean)));
         const moods = Array.from(new Set(songList.map((s: any) => s?.mood).filter(Boolean)));
         const instruments = Array.from(new Set(songList.flatMap((s: any) => s?.instruments || []).filter(Boolean)));
 
-        // Build a rich prompt for album cover generation
         const genreStr = genres.length > 0 ? genres.join(", ") : "eclectic";
         const moodStr = moods.length > 0 ? moods.join(" and ") : "expressive";
         const instrumentStr = instruments.length > 0 ? instruments.slice(0, 5).join(", ") : "";
