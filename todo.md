@@ -509,3 +509,8 @@
 - [x] Investigate upload page PDF processing flow (root cause: PDFs sent as image_url instead of file_url to LLM)
 - [x] Fix PDF upload — now uses file_url content type for PDFs, with better error messages for empty/corrupted files
 - [x] Test PDF upload end-to-end (verified server correctly sends file_url for PDFs)
+
+## Bug Fix: Subscription Checkout Failing
+- [x] Investigate why subscription checkout fails (root cause: customer_creation param not allowed in subscription mode)
+- [x] Fix subscription checkout session creation (removed customer_creation for subscription mode, added allow_promotion_codes)
+- [ ] Test subscription purchase end-to-end on production

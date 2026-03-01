@@ -1306,8 +1306,6 @@ RULES:
 
         // Check if user already has a Stripe customer ID
         const existingSub = await getUserSubscription(ctx.user.id);
-        const customerOptions: Stripe.Checkout.SessionCreateParams.CustomerCreation = "always";
-
         const sessionParams: Stripe.Checkout.SessionCreateParams = {
           mode: "subscription",
           client_reference_id: String(ctx.user.id),
@@ -1345,11 +1343,15 @@ RULES:
         if (existingSub?.stripeCustomerId) {
           sessionParams.customer = existingSub.stripeCustomerId;
         } else {
-          sessionParams.customer_creation = customerOptions;
+          // Note: customer_creation is NOT allowed in subscription mode
+          // Stripe automatically creates a customer for subscription checkouts
           if (ctx.user.email) {
             sessionParams.customer_email = ctx.user.email;
           }
         }
+
+        // Allow promotion codes for discounts
+        sessionParams.allow_promotion_codes = true;
 
         const session = await stripe.checkout.sessions.create(sessionParams);
         return { url: session.url, sessionId: session.id };
@@ -1405,6 +1407,9 @@ RULES:
             sessionParams.customer_email = ctx.user.email;
           }
         }
+
+        // Allow promotion codes for discounts
+        sessionParams.allow_promotion_codes = true;
 
         const session = await stripe.checkout.sessions.create(sessionParams);
         return { url: session.url, sessionId: session.id };
