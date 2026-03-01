@@ -95,6 +95,20 @@ describe("Legal Pages – Content Integrity", () => {
     }
   });
 
+  it("Privacy page contains contact email", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Privacy.tsx", "utf-8");
+    expect(content).toContain("support@makecustommusic.com");
+    expect(content).toContain("mailto:support@makecustommusic.com");
+  });
+
+  it("Terms page contains contact email", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("client/src/pages/Terms.tsx", "utf-8");
+    expect(content).toContain("support@makecustommusic.com");
+    expect(content).toContain("mailto:support@makecustommusic.com");
+  });
+
   it("Privacy page cross-links to Terms", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync("client/src/pages/Privacy.tsx", "utf-8");

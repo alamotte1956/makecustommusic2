@@ -599,3 +599,8 @@
 - [x] Integrate banner into Layout at the bottom of the page
 - [x] Add slide-up animation for smooth appearance
 - [x] Write tests for the cookie consent component (10 tests passing)
+
+## Contact Email in Legal Pages
+- [x] Add dedicated contact email to Privacy Policy contact section
+- [x] Add dedicated contact email to Terms of Service contact section
+- [x] Update tests to verify email presence (11 tests passing)

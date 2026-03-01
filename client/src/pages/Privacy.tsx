@@ -223,6 +223,12 @@ export default function Privacy() {
           <div className="mt-3 p-4 rounded-lg bg-muted/50 border">
             <p className="font-medium text-foreground">A. LaMotte Music</p>
             <p className="text-foreground/70 mt-1">
+              Email:{" "}
+              <a href="mailto:support@makecustommusic.com" className="text-violet-600 hover:underline">
+                support@makecustommusic.com
+              </a>
+            </p>
+            <p className="text-foreground/70 mt-1">
               Website:{" "}
               <a href="https://makecustommusic.com" className="text-violet-600 hover:underline">
                 makecustommusic.com
