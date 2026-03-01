@@ -592,3 +592,10 @@
 - [x] Register /privacy and /terms routes in App.tsx
 - [x] Add Privacy Policy and Terms of Service links to footer
 - [x] Write tests for both pages (9 tests, 492 total passing across 23 files)
+
+## Cookie Consent Banner
+- [x] Create CookieConsent component with accept/decline buttons and Privacy Policy link
+- [x] Persist consent choice in localStorage so banner only shows for first-time visitors
+- [x] Integrate banner into Layout at the bottom of the page
+- [x] Add slide-up animation for smooth appearance
+- [x] Write tests for the cookie consent component (10 tests passing)

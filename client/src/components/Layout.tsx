@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
+import CookieConsent from "@/components/CookieConsent";
 import { useState } from "react";
 import { useQueuePlayer } from "@/contexts/QueuePlayerContext";
 import { useOnboarding } from "@/contexts/OnboardingContext";
@@ -254,6 +255,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">
         {children}
       </main>
+
+      {/* Cookie Consent Banner */}
+      <CookieConsent />
 
       {/* Footer */}
       <footer className={`border-t border-border py-6 mt-auto ${hasQueue ? "pb-24" : ""}`}>
