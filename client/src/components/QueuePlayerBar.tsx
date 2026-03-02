@@ -231,7 +231,7 @@ export default function QueuePlayerBar() {
                   </span>
                 )}
               </span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowQueue(false)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowQueue(false)} aria-label="Close queue">
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -306,6 +306,7 @@ export default function QueuePlayerBar() {
                 className="h-9 w-9"
                 onClick={previous}
                 disabled={!hasPrevious && currentTime < 3}
+                aria-label="Previous"
               >
                 <SkipBack className="w-4 h-4" />
               </Button>
@@ -315,6 +316,7 @@ export default function QueuePlayerBar() {
                 className="h-9 w-9 rounded-full"
                 onClick={togglePlay}
                 disabled={isLoading}
+                aria-label={isPlaying ? "Pause" : "Play"}
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -330,6 +332,7 @@ export default function QueuePlayerBar() {
                 className="h-9 w-9"
                 onClick={next}
                 disabled={!hasNext}
+                aria-label="Next"
               >
                 <SkipForward className="w-4 h-4" />
               </Button>
@@ -338,6 +341,7 @@ export default function QueuePlayerBar() {
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => setExpanded(!expanded)}
+                aria-label={expanded ? "Collapse player" : "Expand player"}
               >
                 {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
               </Button>
@@ -375,6 +379,7 @@ export default function QueuePlayerBar() {
                     size="icon"
                     className={`h-8 w-8 ${isShuffled ? "text-primary" : ""}`}
                     onClick={toggleShuffle}
+                    aria-label={isShuffled ? "Disable shuffle" : "Enable shuffle"}
                   >
                     <Shuffle className="w-4 h-4" />
                   </Button>
@@ -383,6 +388,7 @@ export default function QueuePlayerBar() {
                     size="icon"
                     className="h-8 w-8"
                     onClick={toggleMute}
+                    aria-label={isMuted ? "Unmute" : "Mute"}
                   >
                     {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                   </Button>
@@ -400,6 +406,7 @@ export default function QueuePlayerBar() {
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => setShowQueue(!showQueue)}
+                    aria-label="Show queue"
                   >
                     <ListMusic className="w-4 h-4" />
                   </Button>
@@ -408,6 +415,7 @@ export default function QueuePlayerBar() {
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     onClick={clearQueue}
+                    aria-label="Close player"
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -451,6 +459,7 @@ export default function QueuePlayerBar() {
                   className={`h-8 w-8 ${isShuffled ? "text-primary" : ""}`}
                   onClick={toggleShuffle}
                   title={isShuffled ? "Disable shuffle" : "Enable shuffle"}
+                  aria-label={isShuffled ? "Disable shuffle" : "Enable shuffle"}
                 >
                   <Shuffle className="w-4 h-4" />
                   {isShuffled && (
@@ -463,6 +472,7 @@ export default function QueuePlayerBar() {
                   className="h-8 w-8"
                   onClick={previous}
                   disabled={!hasPrevious && currentTime < 3}
+                  aria-label="Previous"
                 >
                   <SkipBack className="w-4 h-4" />
                 </Button>
@@ -472,8 +482,9 @@ export default function QueuePlayerBar() {
                   className="h-9 w-9 rounded-full"
                   onClick={togglePlay}
                   disabled={isLoading}
+                  aria-label={isPlaying ? "Pause" : "Play"}
                 >
-                  {isLoading ? (
+                {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : isPlaying ? (
                     <Pause className="w-4 h-4" />
@@ -487,6 +498,7 @@ export default function QueuePlayerBar() {
                   className="h-8 w-8"
                   onClick={next}
                   disabled={!hasNext}
+                  aria-label="Next"
                 >
                   <SkipForward className="w-4 h-4" />
                 </Button>
@@ -514,6 +526,7 @@ export default function QueuePlayerBar() {
                 size="icon"
                 className="h-8 w-8"
                 onClick={toggleMute}
+                aria-label={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </Button>
@@ -530,6 +543,7 @@ export default function QueuePlayerBar() {
                 className="h-8 w-8 ml-1"
                 onClick={() => setShowQueue(!showQueue)}
                 title="Show queue"
+                aria-label="Show queue"
               >
                 <ListMusic className="w-4 h-4" />
               </Button>
@@ -539,6 +553,7 @@ export default function QueuePlayerBar() {
                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
                 onClick={clearQueue}
                 title="Close player"
+                aria-label="Close player"
               >
                 <X className="w-4 h-4" />
               </Button>

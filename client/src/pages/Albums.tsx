@@ -191,7 +191,7 @@ export default function Albums() {
                   </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" aria-label="Delete album">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </AlertDialogTrigger>

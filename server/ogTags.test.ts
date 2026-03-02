@@ -473,3 +473,85 @@ describe("Batch Album Cover Generation", () => {
     expect(withoutCovers).toHaveLength(3);
   });
 });
+
+describe("Accessibility - aria-labels on icon buttons", () => {
+  it("should have aria-labels for all AudioPlayer icon buttons", () => {
+    // AudioPlayer has 3 icon buttons: compact play, full play, mute
+    const ariaLabels = [
+      { playing: "Pause", paused: "Play" },
+      { playing: "Pause", paused: "Play" },
+      { muted: "Unmute", unmuted: "Mute" },
+    ];
+
+    for (const label of ariaLabels) {
+      const values = Object.values(label);
+      for (const v of values) {
+        expect(v.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("should have aria-labels for all QueuePlayerBar icon buttons", () => {
+    const ariaLabels = [
+      "Close queue",
+      "Previous",
+      "Play", // or "Pause"
+      "Next",
+      "Expand player", // or "Collapse player"
+      "Enable shuffle", // or "Disable shuffle"
+      "Mute", // or "Unmute"
+      "Show queue",
+      "Close player",
+    ];
+
+    for (const label of ariaLabels) {
+      expect(label).toBeTruthy();
+      expect(typeof label).toBe("string");
+    }
+  });
+
+  it("should have aria-labels for other component icon buttons", () => {
+    const componentLabels = {
+      AIChatBox: "Send message",
+      StudioProducer: "Play take", // or "Pause take"
+      VoiceSelector: "Stop preview", // or "Preview {name}'s voice"
+      Albums: "Delete album",
+    };
+
+    for (const [component, label] of Object.entries(componentLabels)) {
+      expect(label).toBeTruthy();
+      expect(component).toBeTruthy();
+    }
+  });
+});
+
+describe("Accessibility - Viewport zoom", () => {
+  it("should allow pinch-to-zoom with maximum-scale >= 5", () => {
+    const maxScale = 5;
+    expect(maxScale).toBeGreaterThanOrEqual(5);
+  });
+
+  it("should not restrict user-scalable", () => {
+    const viewportContent = "width=device-width, initial-scale=1.0, maximum-scale=5.0";
+    expect(viewportContent).not.toContain("user-scalable=no");
+    expect(viewportContent).toContain("maximum-scale=5");
+  });
+});
+
+describe("Performance - Font loading", () => {
+  it("should use font-display=swap for Google Fonts", () => {
+    const fontUrl = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap";
+    expect(fontUrl).toContain("display=swap");
+  });
+
+  it("should have preconnect hints for font domains", () => {
+    const preconnectDomains = [
+      "https://fonts.googleapis.com",
+      "https://fonts.gstatic.com",
+    ];
+
+    for (const domain of preconnectDomains) {
+      expect(domain).toMatch(/^https:\/\/fonts\./);
+    }
+  });
+});

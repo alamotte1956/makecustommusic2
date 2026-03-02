@@ -284,6 +284,7 @@ export default function StudioProducer({ song }: Props) {
                     size="icon"
                     className="shrink-0"
                     onClick={() => handlePlayTake(idx, take.mixedUrl)}
+                    aria-label={playingTake === idx ? "Pause take" : "Play take"}
                   >
                     {playingTake === idx ? (
                       <Pause className="w-4 h-4" />

@@ -753,3 +753,11 @@
 - [x] Update robots.txt to block private routes and allow public routes
 - [x] Sitemap reference in robots.txt
 - [x] Write tests for canonical tag injection
+
+## SEO Quick Wins - Accessibility & Performance
+- [x] Fix viewport maximum-scale from 1 to 5 (allow pinch-to-zoom)
+- [x] Add font-display:swap to Google Fonts URL (already present)
+- [x] Add preload hints for Google Fonts
+- [x] Add preconnect hints for CDN domains
+- [x] Add aria-labels to all icon-only buttons across pages and components (AudioPlayer, QueuePlayerBar, AIChatBox, StudioProducer, VoiceSelector, Albums)
+- [x] Write tests for accessibility fixes

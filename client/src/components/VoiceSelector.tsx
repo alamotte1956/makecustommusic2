@@ -166,6 +166,11 @@ export default function VoiceSelector({
               ? "Stop preview"
               : `Preview ${selectedVoice.name}'s voice`
           }
+          aria-label={
+            previewingVoiceId === selectedVoice.voice_id
+              ? "Stop preview"
+              : `Preview ${selectedVoice.name}'s voice`
+          }
         >
           {previewLoading && previewingVoiceId === selectedVoice.voice_id ? (
             <Loader2 className="w-4 h-4 animate-spin" />

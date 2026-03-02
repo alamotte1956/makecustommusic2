@@ -341,6 +341,7 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
           size="icon"
           className="h-8 w-8 shrink-0"
           onClick={togglePlay}
+          aria-label={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </Button>
@@ -389,6 +390,7 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
           size="icon"
           className="h-10 w-10 rounded-full"
           onClick={togglePlay}
+          aria-label={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
         </Button>
@@ -399,6 +401,7 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
             size="icon"
             className="h-8 w-8"
             onClick={() => setIsMuted(!isMuted)}
+            aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </Button>
