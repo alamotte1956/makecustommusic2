@@ -1,57 +1,77 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-import Generator from "./pages/Generator";
-import History from "./pages/History";
-import Albums from "./pages/Albums";
-import AlbumDetail from "./pages/AlbumDetail";
-import Favorites from "./pages/Favorites";
-import SongDetail from "./pages/SongDetail";
-import Pricing from "./pages/Pricing";
-import UsageDashboard from "./pages/UsageDashboard";
-import Discover from "./pages/Discover";
-import Upload from "./pages/Upload";
-import SharedSong from "./pages/SharedSong";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import FAQ from "./pages/FAQ";
-import Referrals from "./pages/Referrals";
-import Blog from "./pages/Blog";
-import BlogArticle from "./pages/BlogArticle";
 import Layout from "./components/Layout";
 import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
 import TourTooltip from "./components/TourTooltip";
 import { useReferral } from "./hooks/useReferral";
+import { lazy, Suspense } from "react";
+
+// ─── Route-level code splitting ───
+// Home is eagerly loaded (landing page / LCP critical)
+import Home from "./pages/Home";
+
+// All other pages are lazily loaded to reduce initial bundle size
+const Generator = lazy(() => import("./pages/Generator"));
+const History = lazy(() => import("./pages/History"));
+const Albums = lazy(() => import("./pages/Albums"));
+const AlbumDetail = lazy(() => import("./pages/AlbumDetail"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const SongDetail = lazy(() => import("./pages/SongDetail"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const UsageDashboard = lazy(() => import("./pages/UsageDashboard"));
+const Discover = lazy(() => import("./pages/Discover"));
+const Upload = lazy(() => import("./pages/Upload"));
+const SharedSong = lazy(() => import("./pages/SharedSong"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Referrals = lazy(() => import("./pages/Referrals"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogArticle = lazy(() => import("./pages/BlogArticle"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+/** Minimal loading spinner for lazy route transitions */
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[40vh]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <span className="text-sm text-muted-foreground">Loading...</span>
+      </div>
+    </div>
+  );
+}
 
 function Router() {
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/generate"} component={Generator} />
-      <Route path={"/history"} component={History} />
-      <Route path={"/albums"} component={Albums} />
-      <Route path={"/albums/:id"} component={AlbumDetail} />
-      <Route path={"/favorites"} component={Favorites} />
-      <Route path={"/songs/:id"} component={SongDetail} />
-      <Route path={"/pricing"} component={Pricing} />
-      <Route path={"/usage"} component={UsageDashboard} />
-      <Route path={"/discover"} component={Discover} />
-      <Route path={"/upload"} component={Upload} />
-      <Route path={"/share/:token"} component={SharedSong} />
-      <Route path={"/privacy"} component={Privacy} />
-      <Route path={"/terms"} component={Terms} />
-      <Route path={"/faq"} component={FAQ} />
-      <Route path={"/referrals"} component={Referrals} />
-      <Route path={"/blog"} component={Blog} />
-      <Route path={"/blog/:slug"} component={BlogArticle} />
-      <Route path={"/404"} component={NotFound} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<PageLoader />}>
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/generate"} component={Generator} />
+        <Route path={"/history"} component={History} />
+        <Route path={"/albums"} component={Albums} />
+        <Route path={"/albums/:id"} component={AlbumDetail} />
+        <Route path={"/favorites"} component={Favorites} />
+        <Route path={"/songs/:id"} component={SongDetail} />
+        <Route path={"/pricing"} component={Pricing} />
+        <Route path={"/usage"} component={UsageDashboard} />
+        <Route path={"/discover"} component={Discover} />
+        <Route path={"/upload"} component={Upload} />
+        <Route path={"/share/:token"} component={SharedSong} />
+        <Route path={"/privacy"} component={Privacy} />
+        <Route path={"/terms"} component={Terms} />
+        <Route path={"/faq"} component={FAQ} />
+        <Route path={"/referrals"} component={Referrals} />
+        <Route path={"/blog"} component={Blog} />
+        <Route path={"/blog/:slug"} component={BlogArticle} />
+        <Route path={"/404"} component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 

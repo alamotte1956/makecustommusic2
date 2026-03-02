@@ -797,3 +797,10 @@
 - [x] Add FAQPage JSON-LD to articles that contain FAQ-style content
 - [x] Add article images to blog data for structured data thumbnails
 - [x] Update tests for enhanced structured data
+
+## Performance Optimization (Lighthouse)
+- [x] Add route-level code splitting with React.lazy and Suspense to reduce unused JS (~277 KiB savings)
+- [x] Add font-display: swap to Google Fonts for faster text rendering
+- [x] Add explicit width/height to image elements to reduce CLS
+- [x] Optimize font loading: removed unused weights (300, 800), JetBrains Mono; non-blocking load with media=print trick
+- [x] Preload critical fonts and defer non-critical CSS

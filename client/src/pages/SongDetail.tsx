@@ -136,7 +136,7 @@ export default function SongDetail() {
           {/* Cover image */}
           {song.imageUrl && (
             <div className="rounded-lg overflow-hidden w-full max-w-xs">
-              <img src={song.imageUrl} alt={song.title} className="w-full h-auto" />
+              <img src={song.imageUrl} alt={song.title} width={320} height={320} className="w-full h-auto" />
             </div>
           )}
 
