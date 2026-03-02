@@ -1,6 +1,6 @@
 import { useParams, Link, Redirect } from "wouter";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { getArticleBySlug, getAllArticles } from "../../../shared/blogArticles";
+import { getArticleBySlug, getAllArticles, type BlogArticle } from "../../../shared/blogArticles";
 import { Calendar, Clock, ArrowLeft, ArrowRight, Tag, User, BookOpen } from "lucide-react";
 import { useEffect } from "react";
 import CommentSection from "@/components/CommentSection";
@@ -51,35 +51,114 @@ function renderMarkdown(md: string): string {
   return html;
 }
 
-/** Build JSON-LD Article structured data */
-function buildArticleJsonLd(article: {
-  title: string;
-  excerpt: string;
-  author: string;
-  publishedAt: string;
-  slug: string;
-}) {
+const BASE_URL = "https://makecustommusic.com";
+const PUBLISHER_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp";
+
+/** Estimate word count from markdown content */
+function estimateWordCount(content: string): number {
+  return content.replace(/[#*\[\]()\-_`>]/g, "").split(/\s+/).filter(Boolean).length;
+}
+
+/** Build enhanced JSON-LD Article structured data */
+function buildArticleJsonLd(article: BlogArticle) {
+  const wordCount = estimateWordCount(article.content);
+  const articleUrl = `${BASE_URL}/blog/${article.slug}`;
+
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: article.title,
     description: article.excerpt,
+    image: article.coverImage || PUBLISHER_LOGO,
+    wordCount,
+    articleSection: article.tags[0] || "AI Music",
+    keywords: article.tags.join(", "),
+    inLanguage: "en-US",
     author: {
       "@type": "Organization",
       name: article.author,
-      url: "https://makecustommusic.com",
+      url: BASE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: PUBLISHER_LOGO,
+      },
     },
     publisher: {
       "@type": "Organization",
       name: "Make Custom Music",
-      url: "https://makecustommusic.com",
+      url: BASE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: PUBLISHER_LOGO,
+        width: 1080,
+        height: 1080,
+      },
     },
     datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://makecustommusic.com/blog/${article.slug}`,
+      "@id": articleUrl,
     },
+    url: articleUrl,
+    isAccessibleForFree: true,
   };
+}
+
+/** Build BreadcrumbList JSON-LD */
+function buildBreadcrumbJsonLd(article: BlogArticle) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: BASE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: `${BASE_URL}/blog`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: article.title,
+        item: `${BASE_URL}/blog/${article.slug}`,
+      },
+    ],
+  };
+}
+
+/** Build FAQPage JSON-LD from article FAQ data */
+function buildFaqJsonLd(faq: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+/** Build all structured data scripts for an article */
+function buildAllStructuredData(article: BlogArticle): object[] {
+  const schemas: object[] = [
+    buildArticleJsonLd(article),
+    buildBreadcrumbJsonLd(article),
+  ];
+  if (article.faq && article.faq.length > 0) {
+    schemas.push(buildFaqJsonLd(article.faq));
+  }
+  return schemas;
 }
 
 export default function BlogArticle() {
@@ -95,17 +174,25 @@ export default function BlogArticle() {
     canonicalPath: article ? `/blog/${article.slug}` : "/blog",
   });
 
-  // Inject JSON-LD structured data
+  // Inject JSON-LD structured data (Article + BreadcrumbList + FAQPage)
   useEffect(() => {
     if (!article) return;
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.id = "blog-article-jsonld";
-    script.textContent = JSON.stringify(buildArticleJsonLd(article));
-    document.head.appendChild(script);
+    const schemas = buildAllStructuredData(article);
+    const scriptIds: string[] = [];
+    schemas.forEach((schema, i) => {
+      const id = `blog-jsonld-${i}`;
+      scriptIds.push(id);
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.id = id;
+      script.textContent = JSON.stringify(schema);
+      document.head.appendChild(script);
+    });
     return () => {
-      const existing = document.getElementById("blog-article-jsonld");
-      if (existing) existing.remove();
+      scriptIds.forEach((id) => {
+        const existing = document.getElementById(id);
+        if (existing) existing.remove();
+      });
     };
   }, [article]);
 

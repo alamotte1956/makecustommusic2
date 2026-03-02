@@ -2,8 +2,58 @@ import { Link } from "wouter";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { getAllArticles } from "../../../shared/blogArticles";
 import { Calendar, Clock, ArrowRight, BookOpen, Tag } from "lucide-react";
+import { useEffect } from "react";
 
+const BASE_URL = "https://makecustommusic.com";
 const articles = getAllArticles();
+
+/** Build CollectionPage JSON-LD for the blog listing */
+function buildBlogListingJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "AI Music Blog - Tips, Guides & News",
+    description:
+      "Read expert guides on AI music generation, songwriting tips, licensing advice, and creative tutorials for content creators and musicians.",
+    url: `${BASE_URL}/blog`,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Make Custom Music",
+      url: BASE_URL,
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: articles.map((article, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${BASE_URL}/blog/${article.slug}`,
+        name: article.title,
+      })),
+    },
+  };
+}
+
+/** Build BreadcrumbList JSON-LD for the blog listing */
+function buildBlogBreadcrumbJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: BASE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: `${BASE_URL}/blog`,
+      },
+    ],
+  };
+}
 
 export default function Blog() {
   usePageMeta({
@@ -12,6 +62,27 @@ export default function Blog() {
       "Read expert guides on AI music generation, songwriting tips, licensing advice, and creative tutorials for content creators and musicians.",
     canonicalPath: "/blog",
   });
+
+  // Inject CollectionPage + BreadcrumbList JSON-LD
+  useEffect(() => {
+    const schemas = [buildBlogListingJsonLd(), buildBlogBreadcrumbJsonLd()];
+    const scriptIds: string[] = [];
+    schemas.forEach((schema, i) => {
+      const id = `blog-listing-jsonld-${i}`;
+      scriptIds.push(id);
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.id = id;
+      script.textContent = JSON.stringify(schema);
+      document.head.appendChild(script);
+    });
+    return () => {
+      scriptIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+      });
+    };
+  }, []);
 
   return (
     <div>

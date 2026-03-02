@@ -171,57 +171,251 @@ describe("Blog SEO", () => {
   });
 });
 
-// ─── Blog JSON-LD Structured Data Tests ───
+// ─── Enhanced Blog JSON-LD Structured Data Tests ───
 
-describe("Blog JSON-LD Structured Data", () => {
-  it("should build valid Article schema for each article", () => {
+const BASE_URL = "https://makecustommusic.com";
+const PUBLISHER_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp";
+
+function estimateWordCount(content: string): number {
+  return content.replace(/[#*\[\]()\-_`>]/g, "").split(/\s+/).filter(Boolean).length;
+}
+
+function buildArticleJsonLd(article: (typeof blogArticles)[0]) {
+  const wordCount = estimateWordCount(article.content);
+  const articleUrl = `${BASE_URL}/blog/${article.slug}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt,
+    image: article.coverImage || PUBLISHER_LOGO,
+    wordCount,
+    articleSection: article.tags[0] || "AI Music",
+    keywords: article.tags.join(", "),
+    inLanguage: "en-US",
+    author: { "@type": "Organization", name: article.author, url: BASE_URL, logo: { "@type": "ImageObject", url: PUBLISHER_LOGO } },
+    publisher: { "@type": "Organization", name: "Make Custom Music", url: BASE_URL, logo: { "@type": "ImageObject", url: PUBLISHER_LOGO, width: 1080, height: 1080 } },
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
+    url: articleUrl,
+    isAccessibleForFree: true,
+  };
+}
+
+function buildBreadcrumbJsonLd(article: (typeof blogArticles)[0]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: article.title, item: `${BASE_URL}/blog/${article.slug}` },
+    ],
+  };
+}
+
+function buildFaqJsonLd(faq: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}
+
+describe("Enhanced Article JSON-LD", () => {
+  it("should build valid Article schema with all required fields", () => {
     for (const article of blogArticles) {
-      const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        headline: article.title,
-        description: article.excerpt,
-        author: {
-          "@type": "Organization",
-          name: article.author,
-          url: "https://makecustommusic.com",
-        },
-        publisher: {
-          "@type": "Organization",
-          name: "Make Custom Music",
-          url: "https://makecustommusic.com",
-        },
-        datePublished: article.publishedAt,
-        mainEntityOfPage: {
-          "@type": "WebPage",
-          "@id": `https://makecustommusic.com/blog/${article.slug}`,
-        },
-      };
-
+      const jsonLd = buildArticleJsonLd(article);
       expect(jsonLd["@context"]).toBe("https://schema.org");
       expect(jsonLd["@type"]).toBe("Article");
       expect(jsonLd.headline).toBe(article.title);
       expect(jsonLd.description).toBe(article.excerpt);
-      expect(jsonLd.author["@type"]).toBe("Organization");
-      expect(jsonLd.publisher.name).toBe("Make Custom Music");
+      expect(jsonLd.image).toBeTruthy();
+      expect(jsonLd.wordCount).toBeGreaterThan(0);
+      expect(jsonLd.articleSection).toBeTruthy();
+      expect(jsonLd.keywords).toContain(article.tags[0]);
+      expect(jsonLd.inLanguage).toBe("en-US");
       expect(jsonLd.datePublished).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(jsonLd.mainEntityOfPage["@id"]).toContain("/blog/");
+      expect(jsonLd.dateModified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(jsonLd.url).toBe(`${BASE_URL}/blog/${article.slug}`);
+      expect(jsonLd.isAccessibleForFree).toBe(true);
+    }
+  });
+
+  it("should have publisher with logo ImageObject", () => {
+    for (const article of blogArticles) {
+      const jsonLd = buildArticleJsonLd(article);
+      expect(jsonLd.publisher["@type"]).toBe("Organization");
+      expect(jsonLd.publisher.logo["@type"]).toBe("ImageObject");
+      expect(jsonLd.publisher.logo.url).toContain("http");
+      expect(jsonLd.publisher.logo.width).toBe(1080);
+      expect(jsonLd.publisher.logo.height).toBe(1080);
+    }
+  });
+
+  it("should have author with logo ImageObject", () => {
+    for (const article of blogArticles) {
+      const jsonLd = buildArticleJsonLd(article);
+      expect(jsonLd.author["@type"]).toBe("Organization");
+      expect(jsonLd.author.logo["@type"]).toBe("ImageObject");
     }
   });
 
   it("should produce valid JSON when stringified", () => {
     for (const article of blogArticles) {
-      const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        headline: article.title,
-        description: article.excerpt,
-        datePublished: article.publishedAt,
-      };
-
-      const json = JSON.stringify(jsonLd);
+      const json = JSON.stringify(buildArticleJsonLd(article));
       expect(() => JSON.parse(json)).not.toThrow();
     }
+  });
+
+  it("should have accurate word count estimation", () => {
+    for (const article of blogArticles) {
+      const wc = estimateWordCount(article.content);
+      // Each article should have at least 200 words
+      expect(wc).toBeGreaterThan(200);
+    }
+  });
+});
+
+describe("BreadcrumbList JSON-LD", () => {
+  it("should build valid BreadcrumbList with 3 items for each article", () => {
+    for (const article of blogArticles) {
+      const jsonLd = buildBreadcrumbJsonLd(article);
+      expect(jsonLd["@context"]).toBe("https://schema.org");
+      expect(jsonLd["@type"]).toBe("BreadcrumbList");
+      expect(jsonLd.itemListElement).toHaveLength(3);
+      expect(jsonLd.itemListElement[0].name).toBe("Home");
+      expect(jsonLd.itemListElement[0].item).toBe(BASE_URL);
+      expect(jsonLd.itemListElement[1].name).toBe("Blog");
+      expect(jsonLd.itemListElement[1].item).toBe(`${BASE_URL}/blog`);
+      expect(jsonLd.itemListElement[2].name).toBe(article.title);
+      expect(jsonLd.itemListElement[2].item).toBe(`${BASE_URL}/blog/${article.slug}`);
+    }
+  });
+
+  it("should have sequential positions starting from 1", () => {
+    const article = blogArticles[0];
+    const jsonLd = buildBreadcrumbJsonLd(article);
+    jsonLd.itemListElement.forEach((item: any, i: number) => {
+      expect(item.position).toBe(i + 1);
+    });
+  });
+
+  it("should produce valid JSON when stringified", () => {
+    const json = JSON.stringify(buildBreadcrumbJsonLd(blogArticles[0]));
+    expect(() => JSON.parse(json)).not.toThrow();
+  });
+});
+
+describe("FAQPage JSON-LD", () => {
+  it("should have FAQ data on all articles", () => {
+    for (const article of blogArticles) {
+      expect(article.faq).toBeDefined();
+      expect(article.faq!.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("should build valid FAQPage schema from article FAQ data", () => {
+    for (const article of blogArticles) {
+      if (!article.faq || article.faq.length === 0) continue;
+      const jsonLd = buildFaqJsonLd(article.faq);
+      expect(jsonLd["@context"]).toBe("https://schema.org");
+      expect(jsonLd["@type"]).toBe("FAQPage");
+      expect(jsonLd.mainEntity.length).toBe(article.faq.length);
+      for (const entity of jsonLd.mainEntity) {
+        expect(entity["@type"]).toBe("Question");
+        expect(entity.name.length).toBeGreaterThan(0);
+        expect(entity.acceptedAnswer["@type"]).toBe("Answer");
+        expect(entity.acceptedAnswer.text.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("should have non-empty questions and answers", () => {
+    for (const article of blogArticles) {
+      if (!article.faq) continue;
+      for (const item of article.faq) {
+        expect(item.question.endsWith("?")).toBe(true);
+        expect(item.answer.length).toBeGreaterThan(20);
+      }
+    }
+  });
+
+  it("should produce valid JSON when stringified", () => {
+    const article = blogArticles.find((a) => a.faq && a.faq.length > 0);
+    expect(article).toBeDefined();
+    const json = JSON.stringify(buildFaqJsonLd(article!.faq!));
+    expect(() => JSON.parse(json)).not.toThrow();
+  });
+});
+
+describe("CollectionPage JSON-LD (Blog Listing)", () => {
+  it("should build valid CollectionPage schema", () => {
+    const articles = getAllArticles();
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "AI Music Blog - Tips, Guides & News",
+      url: `${BASE_URL}/blog`,
+      isPartOf: { "@type": "WebSite", name: "Make Custom Music", url: BASE_URL },
+      mainEntity: {
+        "@type": "ItemList",
+        itemListElement: articles.map((a, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${BASE_URL}/blog/${a.slug}`,
+          name: a.title,
+        })),
+      },
+    };
+    expect(jsonLd["@context"]).toBe("https://schema.org");
+    expect(jsonLd["@type"]).toBe("CollectionPage");
+    expect(jsonLd.url).toBe(`${BASE_URL}/blog`);
+    expect(jsonLd.isPartOf["@type"]).toBe("WebSite");
+    expect(jsonLd.mainEntity["@type"]).toBe("ItemList");
+    expect(jsonLd.mainEntity.itemListElement.length).toBe(articles.length);
+  });
+
+  it("should have sequential positions in ItemList", () => {
+    const articles = getAllArticles();
+    articles.forEach((_, i) => {
+      expect(i + 1).toBeGreaterThan(0);
+    });
+  });
+
+  it("should include all article URLs in the ItemList", () => {
+    const articles = getAllArticles();
+    const items = articles.map((a, i) => ({
+      position: i + 1,
+      url: `${BASE_URL}/blog/${a.slug}`,
+      name: a.title,
+    }));
+    for (const article of articles) {
+      const found = items.find((item) => item.url.includes(article.slug));
+      expect(found).toBeDefined();
+    }
+  });
+});
+
+describe("Blog Listing BreadcrumbList JSON-LD", () => {
+  it("should build valid BreadcrumbList with 2 items for blog listing", () => {
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${BASE_URL}/blog` },
+      ],
+    };
+    expect(jsonLd["@type"]).toBe("BreadcrumbList");
+    expect(jsonLd.itemListElement).toHaveLength(2);
+    expect(jsonLd.itemListElement[0].name).toBe("Home");
+    expect(jsonLd.itemListElement[1].name).toBe("Blog");
   });
 });
 

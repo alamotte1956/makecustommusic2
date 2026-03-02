@@ -7,6 +7,9 @@ export interface BlogArticle {
   publishedAt: string; // ISO date string
   tags: string[];
   readingTime: number; // minutes
+  coverImage?: string; // URL to article cover image
+  /** FAQ pairs extracted from the article for FAQPage schema */
+  faq?: { question: string; answer: string }[];
 }
 
 export const blogArticles: BlogArticle[] = [
@@ -14,6 +17,12 @@ export const blogArticles: BlogArticle[] = [
     slug: "how-to-create-ai-music-2026",
     title: "How to Create AI Music in 2026: A Complete Beginner's Guide",
     excerpt: "Learn how to generate original songs using AI music tools. From text prompts to full compositions, discover the step-by-step process for creating music with artificial intelligence.",
+    coverImage: "https://makecustommusic.com/og-image.png",
+    faq: [
+      { question: "What is AI music generation?", answer: "AI music generation uses machine learning models trained on vast libraries of music to compose original songs from text descriptions. You provide a prompt and the AI produces a complete musical composition, often including vocals, instruments, and production effects." },
+      { question: "How do I create my first AI song?", answer: "Describe your music using a text prompt specifying mood, genre, and instruments. Choose your settings like genre, mood, vocal type, and duration. Click generate, iterate on the results, then download your song as an MP3." },
+      { question: "What can AI music generators produce?", answer: "Modern AI music generators can produce full songs with vocals and instrumentation, instrumental tracks for background music, sound effects and ambient audio, and vocal performances in various styles and languages." },
+    ],
     content: `## Introduction
 
 Artificial intelligence has transformed the way we create music. What once required years of musical training, expensive studio equipment, and professional producers can now be accomplished in seconds with the right AI tools. In 2026, AI music generation has reached a level of quality that makes it accessible to everyone — from content creators needing background tracks to songwriters looking for fresh inspiration.
@@ -90,6 +99,11 @@ Ready to create your first AI song? [Make Custom Music](https://makecustommusic.
   },
   {
     slug: "best-ai-music-generators-compared",
+    coverImage: "https://makecustommusic.com/og-image.png",
+    faq: [
+      { question: "What is the best AI music generator in 2026?", answer: "The best AI music generator depends on your needs. For beginners and content creators, Make Custom Music offers the best balance of quality, ease of use, and features including MP3 download, sheet music, and album creation." },
+      { question: "Are AI-generated songs royalty-free?", answer: "Licensing varies by platform. Most AI music generators offer royalty-free licenses for personal use, while commercial use may require a paid plan. Always check the specific platform's licensing terms before using AI music commercially." },
+    ],
     title: "Best AI Music Generators in 2026: Features, Pricing, and Quality Compared",
     excerpt: "A detailed comparison of the top AI music generation platforms in 2026. Discover which tools offer the best sound quality, customization options, and value for creators.",
     content: `## The AI Music Generation Landscape in 2026
@@ -156,6 +170,11 @@ The AI music generation space is evolving rapidly, with new features and improve
   },
   {
     slug: "ai-music-for-youtube-videos",
+    coverImage: "https://makecustommusic.com/og-image.png",
+    faq: [
+      { question: "Can I use AI-generated music on YouTube?", answer: "Yes, AI-generated music can be used on YouTube. Most AI music platforms provide royalty-free licenses that cover YouTube usage. However, always verify the licensing terms of your specific platform and plan to ensure commercial use is permitted." },
+      { question: "Will AI music trigger a YouTube copyright claim?", answer: "AI-generated music from reputable platforms should not trigger copyright claims since the compositions are original. However, if the AI closely mimics a copyrighted style, there is a small risk. Using platforms with clear licensing like Make Custom Music minimizes this risk." },
+    ],
     title: "How to Use AI Music for YouTube Videos: Royalty-Free Tracks in Minutes",
     excerpt: "Stop searching for stock music. Learn how AI music generators can create custom, royalty-free background tracks perfectly tailored to your YouTube content.",
     content: `## The Problem with Stock Music
@@ -239,6 +258,11 @@ AI music generation is becoming an essential tool for YouTube creators. It saves
   },
   {
     slug: "ai-songwriting-tips-better-lyrics",
+    coverImage: "https://makecustommusic.com/og-image.png",
+    faq: [
+      { question: "Can AI write song lyrics?", answer: "Yes, AI can generate song lyrics from simple text prompts. Modern AI songwriting tools can produce lyrics in various styles, moods, and genres. You can provide a subject or theme and the AI will craft verses, choruses, and bridges." },
+      { question: "How do I write better AI music prompts?", answer: "Be specific about instruments, describe the energy arc of the song, reference familiar musical styles, experiment with combining unexpected moods, and iterate on your prompts. The more detailed your description, the better the AI output." },
+    ],
     title: "AI Songwriting: 10 Tips for Writing Better Lyrics with AI Assistance",
     excerpt: "Combine human creativity with AI power to write compelling song lyrics. Learn techniques for using AI as a songwriting partner while keeping your unique artistic voice.",
     content: `## AI as Your Songwriting Partner
@@ -320,6 +344,12 @@ AI songwriting tools are powerful allies for musicians at every level. By combin
   },
   {
     slug: "ai-music-commercial-use-licensing-guide",
+    coverImage: "https://makecustommusic.com/og-image.png",
+    faq: [
+      { question: "Can I use AI-generated music commercially?", answer: "Yes, but licensing terms vary by platform and plan. Most AI music generators offer commercial licenses through paid subscriptions. Free tiers typically allow personal use only. Always review the specific terms before using AI music in commercial projects." },
+      { question: "Do I own the copyright to AI-generated music?", answer: "Copyright ownership of AI-generated music is an evolving legal area. Most platforms grant you a license to use the generated music but may retain certain rights. Check your platform's terms of service for specific ownership details." },
+      { question: "Do I need to credit the AI when using generated music?", answer: "Attribution requirements depend on the platform and license tier. Some free plans require attribution while paid commercial licenses typically do not. Check your specific license terms for attribution requirements." },
+    ],
     title: "Can You Use AI Music Commercially? A 2026 Licensing and Copyright Guide",
     excerpt: "Understand the legal landscape of AI-generated music. Learn about commercial licensing, copyright ownership, and how to safely use AI music in your projects.",
     content: `## The Legal Landscape of AI Music

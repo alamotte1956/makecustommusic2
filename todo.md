@@ -789,3 +789,11 @@
 - [x] Add server-side redirect from www to non-www
 - [x] Ensure sitemap uses consistent non-www URLs
 - [x] Verify canonical tag on homepage and all pages
+
+## Blog Structured Data Enhancement (SEO)
+- [x] Enhance Article JSON-LD with image, wordCount, articleSection, keywords, dateModified
+- [x] Add BreadcrumbList JSON-LD to each blog article page
+- [x] Add Blog/CollectionPage JSON-LD to the /blog listing page
+- [x] Add FAQPage JSON-LD to articles that contain FAQ-style content
+- [x] Add article images to blog data for structured data thumbnails
+- [x] Update tests for enhanced structured data
