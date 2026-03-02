@@ -35,6 +35,18 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Redirect www to non-www for canonical URL consistency
+  app.use((req, res, next) => {
+    const host = req.headers.host || "";
+    if (host.startsWith("www.")) {
+      const nonWwwHost = host.replace(/^www\./, "");
+      const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
+      return res.redirect(301, `${protocol}://${nonWwwHost}${req.originalUrl}`);
+    }
+    next();
+  });
+
   // Stripe webhook MUST be registered before body parsers (needs raw body)
   registerStripeWebhookRoute(app);
   // Configure body parser with larger size limit for file uploads

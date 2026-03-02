@@ -68,7 +68,7 @@ export function usePageMeta({ title, description, canonicalPath }: PageMeta) {
       if (canonicalLink && prevCanonical !== null) {
         canonicalLink.setAttribute("href", prevCanonical);
       } else if (canonicalLink) {
-        canonicalLink.setAttribute("href", `${BASE_URL}/`);
+        canonicalLink.setAttribute("href", BASE_URL);
       }
       // Restore og:url and twitter:url
       if (ogUrl && prevOgUrl !== null) {

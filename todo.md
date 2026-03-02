@@ -783,3 +783,9 @@
 - [x] Handle authentication state (prompt sign-in for unauthenticated users)
 - [x] Add time-ago formatting for comment timestamps
 - [x] Write tests for blog comment features
+
+## Canonical URL Fix (SEO)
+- [x] Fix rel=canonical tags to use absolute URLs with https://makecustommusic.com
+- [x] Add server-side redirect from www to non-www
+- [x] Ensure sitemap uses consistent non-www URLs
+- [x] Verify canonical tag on homepage and all pages
