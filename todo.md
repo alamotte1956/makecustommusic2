@@ -773,3 +773,13 @@
 - [x] Allow blog routes in robots.txt
 - [x] Add JSON-LD Article structured data to blog posts
 - [x] Write tests for blog features
+
+## Blog Comment Section
+- [x] Create blogComments database table (id, articleSlug, userId, content, createdAt, updatedAt)
+- [x] Push database migration for blogComments table
+- [x] Create tRPC routes for comments (list by slug, create, delete own comment)
+- [x] Build CommentSection UI component with comment list, form, and delete
+- [x] Integrate CommentSection into BlogArticle page
+- [x] Handle authentication state (prompt sign-in for unauthenticated users)
+- [x] Add time-ago formatting for comment timestamps
+- [x] Write tests for blog comment features

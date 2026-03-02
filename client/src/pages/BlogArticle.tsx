@@ -3,6 +3,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { getArticleBySlug, getAllArticles } from "../../../shared/blogArticles";
 import { Calendar, Clock, ArrowLeft, ArrowRight, Tag, User, BookOpen } from "lucide-react";
 import { useEffect } from "react";
+import CommentSection from "@/components/CommentSection";
 
 /** Minimal Markdown-to-HTML renderer for blog content */
 function renderMarkdown(md: string): string {
@@ -189,6 +190,9 @@ export default function BlogArticle() {
             className="prose-custom"
             dangerouslySetInnerHTML={{ __html: contentHtml }}
           />
+
+          {/* Comment Section */}
+          <CommentSection articleSlug={article.slug} />
 
           {/* Internal CTA */}
           <div className="mt-12 p-6 rounded-xl border border-primary/20 bg-primary/5 text-center space-y-3">

@@ -15,7 +15,8 @@ import {
   toggleFavorite, getUserFavorites, getUserFavoriteIds,
   publishSong, unpublishSong, getPublicSongs, getPublicSongCount,
   createNotification, getUserNotifications, getUnreadNotificationCount,
-  markNotificationRead, markAllNotificationsRead, deleteNotification
+  markNotificationRead, markAllNotificationsRead, deleteNotification,
+  getBlogComments, createBlogComment, deleteBlogComment, getBlogCommentCount
 } from "./db";
 import type { ChordProgressionData } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
@@ -31,6 +32,7 @@ import {
   getUserSubscription,
 } from "./credits";
 import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName } from "../drizzle/schema";
+import { getArticleBySlug } from "../shared/blogArticles";
 import { ensureReferralCode, getReferralStats, getReferralHistory, getUserByReferralCode, processReferral, getLeaderboard } from "./referrals";
 import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
 import Stripe from "stripe";
@@ -1611,6 +1613,63 @@ RULES:
       .query(async ({ ctx, input }) => {
         const userId = ctx.user?.id;
         return getLeaderboard(input?.limit ?? 20, userId);
+      }),
+  }),
+
+  // ─── Blog Comments ─────────────────────────────────────────────────────────
+  blogComments: router({
+    // List comments for an article (public)
+    list: publicProcedure
+      .input(z.object({
+        articleSlug: z.string().min(1).max(255),
+        limit: z.number().min(1).max(100).default(50),
+      }))
+      .query(async ({ input }) => {
+        const comments = await getBlogComments(input.articleSlug, input.limit);
+        return comments.map((c) => ({
+          id: c.id,
+          articleSlug: c.articleSlug,
+          userId: c.userId,
+          content: c.content,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+          userName: c.userName || "Anonymous",
+        }));
+      }),
+
+    // Get comment count for an article (public)
+    count: publicProcedure
+      .input(z.object({ articleSlug: z.string().min(1).max(255) }))
+      .query(async ({ input }) => {
+        const count = await getBlogCommentCount(input.articleSlug);
+        return { count };
+      }),
+
+    // Create a comment (authenticated)
+    create: protectedProcedure
+      .input(z.object({
+        articleSlug: z.string().min(1).max(255),
+        content: z.string().min(1).max(2000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Validate that the article exists
+        const article = getArticleBySlug(input.articleSlug);
+        if (!article) throw new Error("Article not found");
+
+        const result = await createBlogComment({
+          articleSlug: input.articleSlug,
+          userId: ctx.user.id,
+          content: input.content.trim(),
+        });
+        return { id: result.id, success: true };
+      }),
+
+    // Delete own comment (authenticated)
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteBlogComment(input.id, ctx.user.id);
+        return { success: true };
       }),
   }),
 });

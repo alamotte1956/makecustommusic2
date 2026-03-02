@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -439,4 +439,56 @@ export async function deleteNotification(id: number, userId: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(notifications)
     .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+}
+
+
+// ─── Blog Comments ───
+
+export async function getBlogComments(articleSlug: string, limit = 100) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const comments = await db
+    .select({
+      id: blogComments.id,
+      articleSlug: blogComments.articleSlug,
+      userId: blogComments.userId,
+      content: blogComments.content,
+      createdAt: blogComments.createdAt,
+      updatedAt: blogComments.updatedAt,
+      userName: users.name,
+    })
+    .from(blogComments)
+    .leftJoin(users, eq(blogComments.userId, users.id))
+    .where(eq(blogComments.articleSlug, articleSlug))
+    .orderBy(desc(blogComments.createdAt))
+    .limit(limit);
+  return comments;
+}
+
+export async function createBlogComment(data: { articleSlug: string; userId: number; content: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(blogComments).values({
+    articleSlug: data.articleSlug,
+    userId: data.userId,
+    content: data.content,
+  });
+  return { id: Number(result[0].insertId) };
+}
+
+export async function deleteBlogComment(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(blogComments)
+    .where(and(eq(blogComments.id, id), eq(blogComments.userId, userId)));
+}
+
+export async function getBlogCommentCount(articleSlug: string): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(blogComments)
+    .where(eq(blogComments.articleSlug, articleSlug));
+  return result[0]?.count ?? 0;
 }
