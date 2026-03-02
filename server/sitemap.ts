@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { getDb } from "./db";
 import { songs } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import { getAllArticles } from "../shared/blogArticles";
 
 const BASE_URL = "https://makecustommusic.com";
 
@@ -15,6 +16,7 @@ const STATIC_ROUTES: { path: string; changefreq: string; priority: number }[] = 
   { path: "/faq", changefreq: "monthly", priority: 0.5 },
   { path: "/privacy", changefreq: "yearly", priority: 0.3 },
   { path: "/terms", changefreq: "yearly", priority: 0.3 },
+  { path: "/blog", changefreq: "weekly", priority: 0.7 },
 ];
 
 function escapeXml(str: string): string {
@@ -41,6 +43,17 @@ export function registerSitemapRoute(app: Express) {
     <loc>${escapeXml(BASE_URL + route.path)}</loc>
     <changefreq>${route.changefreq}</changefreq>
     <priority>${route.priority.toFixed(1)}</priority>
+  </url>`);
+      }
+
+      // Add blog article pages
+      const blogArticles = getAllArticles();
+      for (const article of blogArticles) {
+        urls.push(`  <url>
+    <loc>${escapeXml(BASE_URL + "/blog/" + article.slug)}</loc>
+    <lastmod>${article.publishedAt}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>`);
       }
 

@@ -20,6 +20,8 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import FAQ from "./pages/FAQ";
 import Referrals from "./pages/Referrals";
+import Blog from "./pages/Blog";
+import BlogArticle from "./pages/BlogArticle";
 import Layout from "./components/Layout";
 import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
@@ -45,6 +47,8 @@ function Router() {
       <Route path={"/terms"} component={Terms} />
       <Route path={"/faq"} component={FAQ} />
       <Route path={"/referrals"} component={Referrals} />
+      <Route path={"/blog"} component={Blog} />
+      <Route path={"/blog/:slug"} component={BlogArticle} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

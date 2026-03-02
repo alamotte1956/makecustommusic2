@@ -761,3 +761,15 @@
 - [x] Add preconnect hints for CDN domains
 - [x] Add aria-labels to all icon-only buttons across pages and components (AudioPlayer, QueuePlayerBar, AIChatBox, StudioProducer, VoiceSelector, Albums)
 - [x] Write tests for accessibility fixes
+
+## Blog Section for SEO
+- [x] Create blog article data structure (title, slug, excerpt, content, author, date, tags, coverImage)
+- [x] Write 5 SEO-optimized articles about AI music generation
+- [x] Create blog listing page at /blog with article cards
+- [x] Create blog article detail page at /blog/:slug with full content
+- [x] Add usePageMeta with canonical tags to blog pages
+- [x] Add blog to site navigation (header/footer)
+- [x] Add blog routes to dynamic sitemap
+- [x] Allow blog routes in robots.txt
+- [x] Add JSON-LD Article structured data to blog posts
+- [x] Write tests for blog features

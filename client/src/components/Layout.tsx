@@ -276,6 +276,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">FAQ</span>
             </Link>
             <span className="text-border">|</span>
+            <Link href="/blog">
+              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Blog</span>
+            </Link>
+            <span className="text-border">|</span>
             <Link href="/referrals">
               <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Invite Friends</span>
             </Link>

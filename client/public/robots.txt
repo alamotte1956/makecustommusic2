@@ -6,6 +6,8 @@ Allow: /pricing
 Allow: /faq
 Allow: /privacy
 Allow: /terms
+Allow: /blog
+Allow: /blog/
 
 # Block private/authenticated routes
 Disallow: /api/
