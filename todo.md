@@ -804,3 +804,10 @@
 - [x] Add explicit width/height to image elements to reduce CLS
 - [x] Optimize font loading: removed unused weights (300, 800), JetBrains Mono; non-blocking load with media=print trick
 - [x] Preload critical fonts and defer non-critical CSS
+
+## Service Worker for Caching
+- [x] Create service worker with cache-first strategy for static assets (JS, CSS, fonts, images)
+- [x] Register service worker in main.tsx with proper lifecycle handling
+- [x] Add network-first strategy for API/tRPC calls
+- [x] Handle service worker updates gracefully (notify user of new version)
+- [x] Write tests for service worker registration and caching logic

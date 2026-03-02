@@ -8,6 +8,7 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import "./index.css";
+import { registerServiceWorker } from "./lib/registerSW";
 
 const queryClient = new QueryClient();
 
@@ -62,3 +63,6 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>
 );
+
+// Register service worker for caching static assets (production only)
+registerServiceWorker();
