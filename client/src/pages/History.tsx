@@ -20,6 +20,7 @@ import { DeleteSongDialog } from "@/components/DeleteSongDialog";
 import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import GenerateCoverButton from "@/components/GenerateCoverButton";
 import SongCoverImage from "@/components/SongCoverImage";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export default function History() {
+  usePageMeta({
+    title: "My Songs",
+    description: "Browse and manage your AI-generated song collection. Play, download, edit, and organize your music.",
+    canonicalPath: "/history",
+  });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const { data: songs, isLoading } = trpc.songs.list.useQuery(undefined, {
     enabled: isAuthenticated,

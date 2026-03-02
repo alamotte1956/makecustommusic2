@@ -1,9 +1,9 @@
-import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
 import { Sparkles, Music, Download, Printer, Disc3, History, ArrowRight } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const features = [
   {
@@ -41,9 +41,11 @@ const features = [
 export default function Home() {
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    document.title = "Make Custom Music - AI Music Generator & Composer";
-  }, []);
+  usePageMeta({
+    title: "AI Music Generator & Composer",
+    description: "Transform your ideas into songs with AI. Describe your music, choose a genre and mood, and generate unique compositions in seconds.",
+    canonicalPath: "/",
+  });
 
   return (
     <div>

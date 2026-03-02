@@ -1,7 +1,13 @@
 import { Link } from "wouter";
 import { Shield, ArrowLeft } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Privacy() {
+  usePageMeta({
+    title: "Privacy Policy",
+    description: "Privacy policy for Make Custom Music. Learn how we collect, use, and protect your personal data.",
+    canonicalPath: "/privacy",
+  });
   return (
     <div className="container max-w-3xl py-12 px-4">
       {/* Back link */}

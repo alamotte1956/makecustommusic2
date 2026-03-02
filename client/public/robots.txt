@@ -1,6 +1,23 @@
 User-agent: *
 Allow: /
+Allow: /share/
+Allow: /discover
+Allow: /pricing
+Allow: /faq
+Allow: /privacy
+Allow: /terms
+
+# Block private/authenticated routes
 Disallow: /api/
 Disallow: /usage
+Disallow: /history
+Disallow: /favorites
+Disallow: /albums
+Disallow: /songs/
+Disallow: /generator
+Disallow: /upload
+Disallow: /referrals
+Disallow: /studio
+Disallow: /component-showcase
 
 Sitemap: https://makecustommusic.com/sitemap.xml

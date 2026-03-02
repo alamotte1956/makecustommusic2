@@ -1,7 +1,13 @@
 import { Link } from "wouter";
 import { FileText, ArrowLeft } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Terms() {
+  usePageMeta({
+    title: "Terms of Service",
+    description: "Terms of service for Make Custom Music. Understand your rights and responsibilities when using our AI music generation platform.",
+    canonicalPath: "/terms",
+  });
   return (
     <div className="container max-w-3xl py-12 px-4">
       {/* Back link */}

@@ -18,8 +18,14 @@ import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 import GenerateCoverButton from "@/components/GenerateCoverButton";
 import SongCoverImage from "@/components/SongCoverImage";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Favorites() {
+  usePageMeta({
+    title: "Favorites",
+    description: "Your favorite AI-generated songs. Listen, download, and manage your saved music collection.",
+    canonicalPath: "/favorites",
+  });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const { data: songs, isLoading } = trpc.favorites.list.useQuery(undefined, {
     enabled: isAuthenticated,

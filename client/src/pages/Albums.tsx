@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const COVER_COLORS = [
   "#6366f1", "#8b5cf6", "#a855f7", "#d946ef",
@@ -38,6 +39,11 @@ const COVER_COLORS = [
 ];
 
 export default function Albums() {
+  usePageMeta({
+    title: "My Albums",
+    description: "Create and manage your music album collections. Organize AI-generated songs into albums with custom covers.",
+    canonicalPath: "/albums",
+  });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const { data: albums, isLoading } = trpc.albums.list.useQuery(undefined, {
     enabled: isAuthenticated,

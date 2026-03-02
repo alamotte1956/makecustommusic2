@@ -143,6 +143,7 @@ export default function FAQ() {
   usePageMeta({
     title: "FAQ",
     description: "Frequently asked questions about Make Custom Music. Learn about AI music generation, pricing, downloads, and account management.",
+    canonicalPath: "/faq",
   });
   return (
     <div className="min-h-screen bg-background">

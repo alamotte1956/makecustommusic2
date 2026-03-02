@@ -742,3 +742,14 @@
 - [x] Inject JSON-LD script tag server-side in /share/:token HTML
 - [x] Include song title, genre, duration, creator, image, and audio URL
 - [x] Write tests for JSON-LD generation and injection
+
+## Bug Fix - Lyrics Not Working
+- [ ] Investigate and fix lyrics generation/display issue
+
+## SEO - Canonical Tags & Robots.txt
+- [x] Add canonical tag support to usePageMeta hook
+- [x] Add canonical tags to all pages (Home, Pricing, FAQ, Discover, Upload, Referrals, Generator, History, Favorites, Albums, Usage, Privacy, Terms)
+- [x] Server-side canonical tag for /share/:token already works via ogTags.ts
+- [x] Update robots.txt to block private routes and allow public routes
+- [x] Sitemap reference in robots.txt
+- [x] Write tests for canonical tag injection

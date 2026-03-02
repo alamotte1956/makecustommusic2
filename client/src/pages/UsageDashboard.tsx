@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 function ProgressBar({ value, max, color = "bg-violet-600" }: { value: number; max: number; color?: string }) {
   const pct = max <= 0 ? 0 : Math.min(100, (value / max) * 100);
@@ -21,6 +22,11 @@ function ProgressBar({ value, max, color = "bg-violet-600" }: { value: number; m
 }
 
 export default function UsageDashboard() {
+  usePageMeta({
+    title: "Usage Dashboard",
+    description: "Track your AI music generation credits, subscription plan, and usage history.",
+    canonicalPath: "/usage",
+  });
   const { user, loading } = useAuth();
   const searchString = useSearch();
   const [showSuccess, setShowSuccess] = useState(false);

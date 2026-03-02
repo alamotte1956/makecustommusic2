@@ -18,6 +18,7 @@ export default function Discover() {
   usePageMeta({
     title: "Discover",
     description: "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Make Custom Music.",
+    canonicalPath: "/discover",
   });
   const { user } = useAuth();
   const { currentSong, isPlaying, togglePlay, loadQueue } = useQueuePlayer();

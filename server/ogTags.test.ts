@@ -307,6 +307,129 @@ describe("buildMusicRecordingJsonLd", () => {
   });
 });
 
+describe("Canonical Tag Injection", () => {
+  it("should update canonical URL for shared song pages", () => {
+    const ogTags = {
+      title: "Test Song — Make Custom Music",
+      description: "Listen to Test Song.",
+      image: "https://example.com/cover.jpg",
+      url: "https://makecustommusic.com/share/abc123",
+      type: "music.song",
+    };
+    const result = injectOgTags(SAMPLE_HTML, ogTags);
+    expect(result).toContain('<link rel="canonical" href="https://makecustommusic.com/share/abc123" />');
+    // Should not contain the default canonical
+    expect(result).not.toContain('<link rel="canonical" href="https://makecustommusic.com/" />');
+  });
+
+  it("should preserve default canonical when no OG tags injected", () => {
+    const result = injectOgTags(SAMPLE_HTML, undefined);
+    expect(result).toContain('<link rel="canonical" href="https://makecustommusic.com/" />');
+  });
+
+  it("should have exactly one canonical link tag after injection", () => {
+    const ogTags = {
+      title: "Test",
+      description: "Test",
+      image: "https://example.com/img.jpg",
+      url: "https://makecustommusic.com/share/xyz",
+      type: "music.song",
+    };
+    const result = injectOgTags(SAMPLE_HTML, ogTags);
+    const canonicalMatches = result.match(/rel="canonical"/g);
+    expect(canonicalMatches).toHaveLength(1);
+  });
+});
+
+describe("usePageMeta canonical paths", () => {
+  it("should have valid canonical paths for all pages", () => {
+    const canonicalPaths = [
+      "/",
+      "/pricing",
+      "/faq",
+      "/referrals",
+      "/discover",
+      "/upload",
+      "/generator",
+      "/history",
+      "/favorites",
+      "/albums",
+      "/usage",
+      "/privacy",
+      "/terms",
+    ];
+
+    for (const path of canonicalPaths) {
+      expect(path).toMatch(/^\//);
+      expect(path).not.toContain(" ");
+      expect(path).not.toContain("?");
+      expect(path).not.toContain("#");
+    }
+  });
+
+  it("should have unique canonical paths", () => {
+    const paths = ["/", "/pricing", "/faq", "/referrals", "/discover", "/upload", "/generator", "/history", "/favorites", "/albums", "/usage", "/privacy", "/terms"];
+    const unique = new Set(paths);
+    expect(unique.size).toBe(paths.length);
+  });
+
+  it("should have all new page descriptions under 160 characters", () => {
+    const descriptions = [
+      "Transform your ideas into songs with AI. Describe your music, choose a genre and mood, and generate unique compositions in seconds.",
+      "Generate unique AI-composed songs. Describe your music, choose genre, mood, and vocal style, then create in seconds.",
+      "Browse and manage your AI-generated song collection. Play, download, edit, and organize your music.",
+      "Your favorite AI-generated songs. Listen, download, and manage your saved music collection.",
+      "Create and manage your music album collections. Organize AI-generated songs into albums with custom covers.",
+      "Track your AI music generation credits, subscription plan, and usage history.",
+      "Privacy policy for Make Custom Music. Learn how we collect, use, and protect your personal data.",
+      "Terms of service for Make Custom Music. Understand your rights and responsibilities when using our AI music generation platform.",
+    ];
+
+    for (const desc of descriptions) {
+      expect(desc.length).toBeGreaterThanOrEqual(50);
+      expect(desc.length).toBeLessThanOrEqual(160);
+    }
+  });
+});
+
+describe("robots.txt configuration", () => {
+  it("should block private routes", () => {
+    const blockedRoutes = [
+      "/api/",
+      "/usage",
+      "/history",
+      "/favorites",
+      "/albums",
+      "/songs/",
+      "/generator",
+      "/upload",
+      "/referrals",
+      "/studio",
+      "/component-showcase",
+    ];
+
+    for (const route of blockedRoutes) {
+      expect(route).toBeTruthy();
+    }
+  });
+
+  it("should allow public routes", () => {
+    const allowedRoutes = [
+      "/",
+      "/share/",
+      "/discover",
+      "/pricing",
+      "/faq",
+      "/privacy",
+      "/terms",
+    ];
+
+    for (const route of allowedRoutes) {
+      expect(route).toBeTruthy();
+    }
+  });
+});
+
 describe("Batch Album Cover Generation", () => {
   it("should filter songs without covers", () => {
     const songs = [

@@ -12,6 +12,7 @@ export default function Pricing() {
   usePageMeta({
     title: "Pricing",
     description: "Choose a plan for AI music generation. Free, Pro, and Enterprise tiers with credits for song creation, MP3 downloads, and more.",
+    canonicalPath: "/pricing",
   });
   const { user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");

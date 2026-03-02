@@ -136,6 +136,7 @@ export default function Referrals() {
   usePageMeta({
     title: "Invite Friends",
     description: "Invite friends to Make Custom Music and earn free credits. Share your referral link and get rewarded when they sign up.",
+    canonicalPath: "/referrals",
   });
   const { user, loading } = useAuth();
   const [copied, setCopied] = useState(false);

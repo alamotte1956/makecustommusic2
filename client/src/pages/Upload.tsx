@@ -25,6 +25,7 @@ export default function UploadPage() {
   usePageMeta({
     title: "Upload",
     description: "Upload your own audio or sheet music to Make Custom Music. Import MP3, WAV, or FLAC files and add them to your collection.",
+    canonicalPath: "/upload",
   });
   const { user } = useAuth();
   const [, navigate] = useLocation();

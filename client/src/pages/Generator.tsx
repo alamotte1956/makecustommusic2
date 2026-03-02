@@ -22,6 +22,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { Link } from "wouter";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import GenerateCoverButton from "@/components/GenerateCoverButton";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type GeneratedSong = {
   id: number;
@@ -152,6 +153,11 @@ function ChipGroup({
 /* Main Component                                          */
 /* ─────────────────────────────────────────────────────── */
 export default function Generator() {
+  usePageMeta({
+    title: "Create Music",
+    description: "Generate unique AI-composed songs. Describe your music, choose genre, mood, and vocal style, then create in seconds.",
+    canonicalPath: "/generator",
+  });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
 
   // Step 1: Creation mode
