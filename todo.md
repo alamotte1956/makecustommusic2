@@ -817,3 +817,11 @@
 - [x] Create OfflineIndicator component with animated banner
 - [x] Integrate OfflineIndicator into App layout
 - [x] Write tests for offline indicator feature
+
+## Vercel Deployment Compatibility
+- [x] Create vercel.json with routes and serverless function config
+- [x] Create Vercel-compatible server entry point (api/index.ts)
+- [x] Update build scripts for Vercel (client build + server bundle)
+- [x] Ensure environment variables are documented for Vercel dashboard
+- [x] Write VERCEL_DEPLOY.md deployment guide
+- [x] Run tests to verify no regressions
