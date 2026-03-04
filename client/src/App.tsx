@@ -7,6 +7,7 @@ import Layout from "./components/Layout";
 import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
 import TourTooltip from "./components/TourTooltip";
+import OfflineIndicator from "./components/OfflineIndicator";
 import { useReferral } from "./hooks/useReferral";
 import { lazy, Suspense } from "react";
 
@@ -87,6 +88,7 @@ function App() {
         <QueuePlayerProvider>
           <TooltipProvider>
             <Toaster />
+            <OfflineIndicator />
             <Layout>
               <Router />
             </Layout>

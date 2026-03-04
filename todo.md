@@ -811,3 +811,9 @@
 - [x] Add network-first strategy for API/tRPC calls
 - [x] Handle service worker updates gracefully (notify user of new version)
 - [x] Write tests for service worker registration and caching logic
+
+## Offline Indicator
+- [x] Create useOnlineStatus hook to track navigator.onLine state
+- [x] Create OfflineIndicator component with animated banner
+- [x] Integrate OfflineIndicator into App layout
+- [x] Write tests for offline indicator feature
