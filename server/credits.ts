@@ -20,7 +20,6 @@ export function getLicenseType(plan: PlanName): LicenseType {
     case "free": return "personal";
     case "creator": return "commercial_social";
     case "professional": return "commercial_full";
-    case "studio": return "commercial_sync";
   }
 }
 
@@ -339,7 +338,7 @@ export async function checkDailyLimit(
   plan: PlanName
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
   const limits = getPlanLimits(plan);
-  const dailyLimit = limits.dailySongLimit;
+  const dailyLimit = limits.dailySongLimit as number;
 
   if (dailyLimit === -1) return { allowed: true, used: 0, limit: -1 };
 

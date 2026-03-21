@@ -1311,7 +1311,7 @@ RULES:
 
     // Get plan limits for display
     planLimits: publicProcedure
-      .input(z.object({ plan: z.enum(["free", "creator", "professional", "studio"]) }))
+      .input(z.object({ plan: z.enum(["free", "creator", "professional"]) }))
       .query(({ input }) => {
         return getPlanLimits(input.plan as PlanName);
       }),
@@ -1321,29 +1321,15 @@ RULES:
       return {
         plans: [
           {
-            id: "free",
-            name: "Free",
-            tagline: "Try AI music creation",
-            monthlyPrice: 0,
-            annualPrice: 0,
-            limits: PLAN_LIMITS.free,
-            features: [
-              "2 songs per month",
-              "1 sheet music per month",
-              "128kbps MP3 quality",
-              "Personal use only",
-            ],
-          },
-          {
             id: "creator",
             name: "Creator",
             tagline: "For content creators & hobbyists",
-            monthlyPrice: 8,
-            annualPrice: 72,
+            monthlyPrice: 15,
+            annualPrice: 132,
             popular: true,
             limits: PLAN_LIMITS.creator,
             features: [
-              "125 songs per month",
+              "30 songs per month",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Commercial use (personal & social)",
@@ -1353,28 +1339,14 @@ RULES:
             id: "professional",
             name: "Professional",
             tagline: "For serious musicians & businesses",
-            monthlyPrice: 19,
-            annualPrice: 180,
+            monthlyPrice: 29,
+            annualPrice: 264,
             limits: PLAN_LIMITS.professional,
             features: [
-              "500 songs per month",
+              "60 songs per month",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Full commercial rights",
-            ],
-          },
-          {
-            id: "studio",
-            name: "Studio",
-            tagline: "For studios, agencies & power users",
-            monthlyPrice: 39,
-            annualPrice: 348,
-            limits: PLAN_LIMITS.studio,
-            features: [
-              "2,500 songs per month",
-              "Unlimited sheet music & chords",
-              "192kbps MP3 quality",
-              "Full commercial + sync licensing",
             ],
           },
         ],
@@ -1385,7 +1357,7 @@ RULES:
     // Create a Stripe Checkout session for a subscription plan
     createCheckout: protectedProcedure
       .input(z.object({
-        planId: z.enum(["creator", "professional", "studio"]),
+        planId: z.enum(["creator", "professional"]),
         billingCycle: z.enum(["monthly", "annual"]).default("monthly"),
         successUrl: z.string().url(),
         cancelUrl: z.string().url(),

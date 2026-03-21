@@ -2,8 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Link } from "wouter";
-import { Check, Sparkles, Zap, Crown, Building2, ArrowRight, Loader2 } from "lucide-react";
+import { Check, Zap, Crown, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -11,7 +10,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 export default function Pricing() {
   usePageMeta({
     title: "Pricing",
-    description: "Choose a plan for AI music generation. Free, Pro, and Enterprise tiers with credits for song creation, MP3 downloads, and more.",
+    description: "Choose a plan for AI music generation. Creator and Professional tiers with credits for song creation, MP3 downloads, and more.",
     canonicalPath: "/pricing",
   });
   const { user } = useAuth();
@@ -35,22 +34,16 @@ export default function Pricing() {
   });
 
   const planIcons: Record<string, React.ReactNode> = {
-    free: <Sparkles className="h-6 w-6" />,
     creator: <Zap className="h-6 w-6" />,
     professional: <Crown className="h-6 w-6" />,
-    studio: <Building2 className="h-6 w-6" />,
   };
 
   const planColors: Record<string, string> = {
-    free: "border-gray-200",
     creator: "border-violet-500 ring-2 ring-violet-500/20",
     professional: "border-violet-600",
-    studio: "border-gray-800",
   };
 
   const handleUpgrade = (planId: string) => {
-    if (planId === "free") return;
-
     if (!user) {
       window.location.href = getLoginUrl();
       return;
@@ -64,7 +57,7 @@ export default function Pricing() {
     setLoadingPlan(planId);
     const origin = window.location.origin;
     createCheckout.mutate({
-      planId: planId as "creator" | "professional" | "studio",
+      planId: planId as "creator" | "professional",
       billingCycle,
       successUrl: `${origin}/usage?checkout=success&plan=${planId}`,
       cancelUrl: `${origin}/pricing?checkout=canceled`,
@@ -91,7 +84,7 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start free. Upgrade when you need more songs, better quality, and commercial rights.
+            Choose the plan that fits your creative needs. Upgrade anytime.
           </p>
 
           {/* Billing toggle */}
@@ -123,13 +116,12 @@ export default function Pricing() {
 
       {/* Plan Cards */}
       <div className="max-w-7xl mx-auto px-4 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto gap-6">
           {plans.map((plan: any) => {
             const isCurrentPlan = summary?.plan === plan.id;
             const price = billingCycle === "monthly" ? plan.monthlyPrice : Math.round(plan.annualPrice / 12);
             const totalAnnual = plan.annualPrice;
-            const isUpgrade = summary?.plan && plan.id !== "free" && plan.id !== summary.plan;
-            const isDowngrade = summary?.plan && plan.id === "free" && summary.plan !== "free";
+            const isUpgrade = summary?.plan && plan.id !== summary.plan;
 
             return (
               <div
@@ -172,9 +164,7 @@ export default function Pricing() {
                       ${totalAnnual}/year billed annually
                     </p>
                   )}
-                  {plan.monthlyPrice === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">Free forever</p>
-                  )}
+
                 </div>
 
                 {/* CTA Button */}
@@ -182,12 +172,6 @@ export default function Pricing() {
                   <Button variant="outline" disabled className="w-full mb-6">
                     Current Plan
                   </Button>
-                ) : plan.monthlyPrice === 0 ? (
-                  <Link href="/generator">
-                    <Button variant="outline" className="w-full mb-6">
-                      Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
                 ) : (
                   <Button
                     onClick={() => handleUpgrade(plan.id)}
@@ -205,7 +189,7 @@ export default function Pricing() {
                       </>
                     ) : (
                       <>
-                        {isUpgrade ? "Upgrade" : "Subscribe"} to {plan.name}
+                        {isUpgrade ? "Upgrade" : "Get Started Here"}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
@@ -241,11 +225,11 @@ export default function Pricing() {
               },
               {
                 q: "Can I use the music commercially?",
-                a: "Free plan songs are for personal use only. Creator plan includes social media rights. Professional and Studio plans include full commercial and sync licensing rights.",
+                a: "Creator plan includes social media rights. Professional plan includes full commercial rights.",
               },
               {
                 q: "What audio formats are supported?",
-                a: "Free plan exports MP3 at 128kbps. All paid plans export MP3 at 192kbps.",
+                a: "All plans export MP3 at 192kbps high quality.",
               },
               {
                 q: "Can I cancel anytime?",
@@ -253,7 +237,7 @@ export default function Pricing() {
               },
               {
                 q: "What payment methods do you accept?",
-                a: "We accept all major credit cards, debit cards, and digital wallets through Stripe. Enterprise invoicing is available for Studio plans.",
+                a: "We accept all major credit cards, debit cards, and digital wallets through Stripe.",
               },
               {
                 q: "How do I manage my subscription?",

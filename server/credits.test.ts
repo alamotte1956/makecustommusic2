@@ -4,40 +4,32 @@ import { PLAN_LIMITS } from "../drizzle/schema";
 
 describe("Credits Module", () => {
   describe("getPlanLimits", () => {
-    it("returns correct limits for free plan", () => {
+    it("returns correct limits for free (no plan) tier", () => {
       const limits = getPlanLimits("free");
       expect(limits).toEqual(PLAN_LIMITS.free);
-      expect(limits.monthlyCredits).toBe(2);
-      expect(limits.dailySongLimit).toBe(2);
-      expect(limits.dailySheetMusicLimit).toBe(1);
+      expect(limits.monthlyCredits).toBe(0);
+      expect(limits.dailySongLimit).toBe(0);
       expect(limits.audioQuality).toBe("128kbps");
     });
 
     it("returns correct limits for creator plan", () => {
       const limits = getPlanLimits("creator");
       expect(limits).toEqual(PLAN_LIMITS.creator);
-      expect(limits.monthlyCredits).toBe(125);
-      expect(limits.dailySongLimit).toBe(30);
+      expect(limits.monthlyCredits).toBe(30);
+      expect(limits.dailySongLimit).toBe(10);
       expect(limits.audioQuality).toBe("192kbps");
     });
 
     it("returns correct limits for professional plan", () => {
       const limits = getPlanLimits("professional");
       expect(limits).toEqual(PLAN_LIMITS.professional);
-      expect(limits.monthlyCredits).toBe(500);
-      expect(limits.dailySongLimit).toBe(-1);
-    });
-
-    it("returns correct limits for studio plan", () => {
-      const limits = getPlanLimits("studio");
-      expect(limits).toEqual(PLAN_LIMITS.studio);
-      expect(limits.monthlyCredits).toBe(2500);
-      expect(limits.dailySongLimit).toBe(-1); // unlimited
+      expect(limits.monthlyCredits).toBe(60);
+      expect(limits.dailySongLimit).toBe(20);
     });
   });
 
   describe("getLicenseType", () => {
-    it("returns personal for free plan", () => {
+    it("returns personal for free (no plan) tier", () => {
       expect(getLicenseType("free")).toBe("personal");
     });
 
@@ -48,13 +40,13 @@ describe("Credits Module", () => {
     it("returns commercial_full for professional plan", () => {
       expect(getLicenseType("professional")).toBe("commercial_full");
     });
-
-    it("returns commercial_sync for studio plan", () => {
-      expect(getLicenseType("studio")).toBe("commercial_sync");
-    });
   });
 
   describe("PLAN_LIMITS structure", () => {
+    it("has exactly three tiers (free, creator, professional)", () => {
+      expect(Object.keys(PLAN_LIMITS)).toEqual(["free", "creator", "professional"]);
+    });
+
     it("all plans have required fields", () => {
       const requiredFields = [
         "monthlyCredits", "dailySongLimit",
@@ -62,7 +54,7 @@ describe("Credits Module", () => {
         "commercialUse", "audioQuality",
       ];
 
-      for (const plan of ["free", "creator", "professional", "studio"] as const) {
+      for (const plan of ["free", "creator", "professional"] as const) {
         const limits = PLAN_LIMITS[plan];
         for (const field of requiredFields) {
           expect(limits).toHaveProperty(field);
@@ -73,27 +65,24 @@ describe("Credits Module", () => {
     it("plans scale up in monthly credits", () => {
       expect(PLAN_LIMITS.free.monthlyCredits).toBeLessThan(PLAN_LIMITS.creator.monthlyCredits);
       expect(PLAN_LIMITS.creator.monthlyCredits).toBeLessThan(PLAN_LIMITS.professional.monthlyCredits);
-      expect(PLAN_LIMITS.professional.monthlyCredits).toBeLessThan(PLAN_LIMITS.studio.monthlyCredits);
     });
 
-    it("free plan has no commercial use", () => {
+    it("free tier has no commercial use", () => {
       expect(PLAN_LIMITS.free.commercialUse).toBe(false);
     });
 
     it("paid plans have commercial use", () => {
       expect(PLAN_LIMITS.creator.commercialUse).toBeTruthy();
       expect(PLAN_LIMITS.professional.commercialUse).toBeTruthy();
-      expect(PLAN_LIMITS.studio.commercialUse).toBeTruthy();
     });
 
-    it("free plan has lower audio quality", () => {
+    it("free tier has lower audio quality", () => {
       expect(PLAN_LIMITS.free.audioQuality).toBe("128kbps");
     });
 
     it("paid plans have higher audio quality", () => {
       expect(PLAN_LIMITS.creator.audioQuality).toBe("192kbps");
       expect(PLAN_LIMITS.professional.audioQuality).toBe("192kbps");
-      expect(PLAN_LIMITS.studio.audioQuality).toBe("192kbps");
     });
   });
 });

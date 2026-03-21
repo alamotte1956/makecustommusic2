@@ -3,11 +3,17 @@ import { describe, it, expect, vi } from "vitest";
 // ─── stripeProducts.ts tests ────────────────────────────────────────────────
 
 describe("stripeProducts", () => {
-  it("should export all three subscription plans", async () => {
+  it("should export two subscription plans (creator and professional)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
     expect(STRIPE_PLANS).toHaveProperty("creator");
     expect(STRIPE_PLANS).toHaveProperty("professional");
-    expect(STRIPE_PLANS).toHaveProperty("studio");
+    expect(Object.keys(STRIPE_PLANS)).toHaveLength(2);
+  });
+
+  it("should not have free or studio plans", async () => {
+    const { STRIPE_PLANS } = await import("./stripeProducts");
+    expect(STRIPE_PLANS).not.toHaveProperty("free");
+    expect(STRIPE_PLANS).not.toHaveProperty("studio");
   });
 
   it("each plan should have valid prices", async () => {
@@ -28,19 +34,14 @@ describe("stripeProducts", () => {
     }
   });
 
-  it("creator plan should cost $8/mo", async () => {
+  it("creator plan should cost $15/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(800);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1500);
   });
 
-  it("professional plan should cost $19/mo", async () => {
+  it("professional plan should cost $29/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(1900);
-  });
-
-  it("studio plan should cost $39/mo", async () => {
-    const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.studio.prices.monthly).toBe(3900);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2900);
   });
 
   describe("getPlanFromMetadata", () => {
@@ -48,7 +49,6 @@ describe("stripeProducts", () => {
       const { getPlanFromMetadata } = await import("./stripeProducts");
       expect(getPlanFromMetadata({ plan_tier: "creator" })).toBe("creator");
       expect(getPlanFromMetadata({ plan_tier: "professional" })).toBe("professional");
-      expect(getPlanFromMetadata({ plan_tier: "studio" })).toBe("studio");
     });
 
     it("should return null for invalid metadata", async () => {
@@ -58,9 +58,10 @@ describe("stripeProducts", () => {
       expect(getPlanFromMetadata({ other: "value" })).toBeNull();
     });
 
-    it("should not match free plan", async () => {
+    it("should not match free or studio plan", async () => {
       const { getPlanFromMetadata } = await import("./stripeProducts");
       expect(getPlanFromMetadata({ plan_tier: "free" })).toBeNull();
+      expect(getPlanFromMetadata({ plan_tier: "studio" })).toBeNull();
     });
   });
 });
@@ -104,11 +105,9 @@ describe("Stripe-credits integration", () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
     const { PLAN_LIMITS } = await import("../drizzle/schema");
 
-    // Creator: 125 credits
+    // Creator: 30 credits
     expect(parseInt(STRIPE_PLANS.creator.metadata.monthly_credits)).toBe(PLAN_LIMITS.creator.monthlyCredits);
-    // Professional: 500 credits
+    // Professional: 60 credits
     expect(parseInt(STRIPE_PLANS.professional.metadata.monthly_credits)).toBe(PLAN_LIMITS.professional.monthlyCredits);
-    // Studio: 2500 credits
-    expect(parseInt(STRIPE_PLANS.studio.metadata.monthly_credits)).toBe(PLAN_LIMITS.studio.monthlyCredits);
   });
 });

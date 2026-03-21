@@ -828,3 +828,14 @@
 
 ## Railway Deployment Guide
 - [x] Write RAILWAY_DEPLOY.md deployment guide
+
+## Remove Free Pricing Tier
+- [x] Remove free tier from pricing configuration and UI
+
+## Pricing Update
+- [x] Update Creator plan to $15/month
+- [x] Update Professional plan to $29/month
+- [x] Remove Free tier entirely
+- [x] Remove Studio tier entirely
+- [x] Change 'Get Started Free' to 'Get Started Here'
+- [x] Update Creator to 30 songs/month and Professional to 60 songs/month

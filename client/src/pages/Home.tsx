@@ -78,7 +78,7 @@ export default function Home() {
               ) : (
                 <Button asChild size="lg" className="text-base px-8">
                   <a href={getLoginUrl()}>
-                    Get Started Free
+                    Get Started Here
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </a>
                 </Button>

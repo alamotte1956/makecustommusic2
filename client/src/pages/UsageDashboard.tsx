@@ -107,17 +107,15 @@ export default function UsageDashboard() {
   const subscription = summary?.subscription;
 
   const planLabel: Record<string, string> = {
-    free: "Free",
+    free: "No Plan",
     creator: "Creator",
     professional: "Professional",
-    studio: "Studio",
   };
 
   const planColor: Record<string, string> = {
     free: "bg-gray-100 text-gray-700",
     creator: "bg-violet-100 text-violet-700",
     professional: "bg-violet-200 text-violet-800",
-    studio: "bg-gray-900 text-white",
   };
 
   const typeIcons: Record<string, React.ReactNode> = {
@@ -260,9 +258,7 @@ export default function UsageDashboard() {
                 </div>
               </>
             )}
-            {limits && limits.dailySongLimit === -1 && (
-              <p className="text-xs text-muted-foreground mt-1">Unlimited</p>
-            )}
+
           </div>
 
 

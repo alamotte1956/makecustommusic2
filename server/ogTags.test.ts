@@ -161,7 +161,7 @@ describe("OG Tag Description Building", () => {
 describe("usePageMeta descriptions", () => {
   it("should have descriptions under 160 characters for all pages", () => {
     const descriptions = [
-      "Choose a plan for AI music generation. Free, Pro, and Enterprise tiers with credits for song creation, MP3 downloads, and more.",
+      "Choose a plan for AI music generation. Creator and Professional tiers with credits for song creation, MP3 downloads, and more.",
       "Frequently asked questions about Make Custom Music. Learn about AI music generation, pricing, downloads, and account management.",
       "Invite friends to Make Custom Music and earn free credits. Share your referral link and get rewarded when they sign up.",
       "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Make Custom Music.",

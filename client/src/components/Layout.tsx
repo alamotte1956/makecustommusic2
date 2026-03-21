@@ -21,17 +21,15 @@ const navItems = [
 ];
 
 const planLabel: Record<string, string> = {
-  free: "Free",
+  free: "No Plan",
   creator: "Creator",
   professional: "Pro",
-  studio: "Studio",
 };
 
 const planBadgeStyle: Record<string, string> = {
   free: "bg-gray-100 text-gray-600 border-gray-200",
   creator: "bg-violet-100 text-violet-700 border-violet-200",
   professional: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  studio: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

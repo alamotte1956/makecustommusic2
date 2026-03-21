@@ -191,35 +191,27 @@ export type InsertCreditTransaction = typeof creditTransactions.$inferInsert;
 // Plan limits configuration (used in code, not DB)
 export const PLAN_LIMITS = {
   free: {
-    monthlyCredits: 2,
-    dailySongLimit: 2,
-    dailySheetMusicLimit: 1,
-    dailyChordLimit: 1,
+    monthlyCredits: 0,
+    dailySongLimit: 0,
+    dailySheetMusicLimit: 0,
+    dailyChordLimit: 0,
     commercialUse: false,
     audioQuality: "128kbps",
   },
   creator: {
-    monthlyCredits: 125,
-    dailySongLimit: 30,
+    monthlyCredits: 30,
+    dailySongLimit: 10,
     dailySheetMusicLimit: -1, // unlimited
     dailyChordLimit: -1,
     commercialUse: "personal", // personal + social media
     audioQuality: "192kbps",
   },
   professional: {
-    monthlyCredits: 500,
-    dailySongLimit: -1,
+    monthlyCredits: 60,
+    dailySongLimit: 20,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
     commercialUse: "full",
-    audioQuality: "192kbps",
-  },
-  studio: {
-    monthlyCredits: 2500,
-    dailySongLimit: -1,
-    dailySheetMusicLimit: -1,
-    dailyChordLimit: -1,
-    commercialUse: "full+sync",
     audioQuality: "192kbps",
   },
 } as const;
