@@ -38,6 +38,7 @@ import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
+import { generateSheetMusicInBackground, generateAbcNotation } from "./backgroundSheetMusic";
 
 function getStripe(): Stripe | null {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -152,6 +153,9 @@ export const appRouter = router({
           message: `"${song.title}" has been generated. Tap to listen and download.`,
           songId: song.id,
         }).catch(() => {}); // Fire-and-forget
+
+        // Pre-generate sheet music in the background
+        generateSheetMusicInBackground(song.id);
 
         return song;
       }),
@@ -313,6 +317,10 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         });
 
         await deductCredits(ctx.user.id, 1, "generation", `Uploaded audio: ${title}`);
+
+        // Pre-generate sheet music in the background
+        generateSheetMusicInBackground(song.id);
+
         return { song, audioUrl };
       }),
 
@@ -426,6 +434,9 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           message: `"${analysis.title}" has been generated from sheet music. Tap to listen and download.`,
           songId: song.id,
         }).catch(() => {}); // Fire-and-forget
+
+        // Pre-generate sheet music in the background
+        generateSheetMusicInBackground(song.id);
 
         return { song, audioUrl: result.audioUrl };
       }),
@@ -670,79 +681,12 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           return { abcNotation: song.sheetMusicAbc };
         }
 
-        // Use the requested key, or fall back to the song's key signature
-        const requestedKey = input.key || song.keySignature;
+        // Override key if explicitly requested
+        const songForGeneration = input.key
+          ? { ...song, keySignature: input.key }
+          : song;
 
-        const songContext = [
-          `Title: ${song.title}`,
-          song.genre ? `Genre: ${song.genre}` : null,
-          song.mood ? `Mood: ${song.mood}` : null,
-          requestedKey ? `Key: ${requestedKey}` : null,
-          song.timeSignature ? `Time Signature: ${song.timeSignature}` : null,
-          song.tempo ? `Tempo: ${song.tempo} BPM` : null,
-          song.lyrics ? `Lyrics:\n${song.lyrics}` : null,
-        ].filter(Boolean).join("\n");
-
-        const response = await invokeLLM({
-          model: "claude-sonnet-4-20250514",
-          messages: [
-            {
-              role: "system",
-              content: `You are a professional music arranger and sheet music engraver. Generate valid ABC notation for a lead sheet based on the song information provided.
-
-REQUIRED HEADERS (must all be present):
-- X: reference number (always 1)
-- T: title of the song
-- C: composer/artist if known
-- M: time signature (e.g., 4/4, 3/4, 6/8) — ALWAYS include this
-- L: default note length (e.g., 1/8)
-- Q: tempo marking (e.g., 1/4=120) — ALWAYS include this
-- K: key signature (e.g., C, Am, F#m) — ALWAYS include this
-
-NOTATION RULES:
-- Output ONLY valid ABC notation, no explanations
-- Write a singable melody line that matches the lyrics and genre
-- Align lyrics under notes using w: lines
-- If a specific key is provided, you MUST use that exact key for K: and write all melody and chords in that key
-- If no key is specified, choose an appropriate key for the genre
-- For songs without lyrics, write an instrumental melody
-
-MUSICAL COMPLETENESS:
-- Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
-- Use proper bar lines | at every measure boundary
-- Use repeat signs |: and :| for repeated sections
-- Use section markers [P:Intro], [P:Verse], [P:Chorus], [P:Bridge], [P:Outro] to label song structure
-- Use first/second endings [1 and [2 where appropriate
-- Include dynamics: !p!, !mp!, !mf!, !f!, !ff!, !crescendo(!, !crescendo)!, !diminuendo(!, !diminuendo)!
-- Include articulations where musically appropriate: .A (staccato), ~A (trill), HA (fermata)
-- Use ties - between notes of the same pitch that span bar lines
-- Use slurs () to group legato phrases
-- Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)
-- Ensure every measure has the correct number of beats matching the time signature
-
-QUALITY:
-- The melody must be musically coherent and match the mood/genre
-- Keep the notation clean and professional — this will be rendered as printable sheet music
-- The output must be parseable by the abcjs library
-- Ensure the piece has a clear beginning, development, and ending`,
-            },
-            {
-              role: "user",
-              content: `Generate a professional lead sheet in ABC notation for this song:\n\n${songContext}`,
-            },
-          ],
-        });
-
-        const rawContent = response.choices?.[0]?.message?.content;
-        const abcNotation = typeof rawContent === "string" ? rawContent.trim() : null;
-        if (!abcNotation) {
-          throw new Error("Failed to generate sheet music. Please try again.");
-        }
-
-        // Clean up: extract just the ABC notation if wrapped in markdown code blocks
-        const cleanAbc = abcNotation.replace(/^```[a-z]*\n?/gm, "").replace(/```$/gm, "").trim();
-
-        // Save to database
+        const cleanAbc = await generateAbcNotation(songForGeneration);
         await updateSongSheetMusic(input.songId, cleanAbc);
 
         return { abcNotation: cleanAbc };

@@ -907,3 +907,11 @@
 - [x] Add error state with clear message and Try Again button in Mp3ToSheetMusic
 - [x] Distinguish between LLM errors, network errors, and rendering errors
 - [x] Write tests for error handling
+
+## Pre-Generate Sheet Music After Song Creation
+- [x] Identify song creation endpoints and trigger points (ElevenLabs generate, audio upload, generateFromSheetMusic)
+- [x] Add background sheet music generation function on the server (backgroundSheetMusic.ts)
+- [x] Trigger background generation after song creation (fire-and-forget)
+- [x] Add polling via refetchInterval on SongDetail getById query (polls every 5s when sheetMusicAbc is null)
+- [x] Update SheetMusicViewer to show "Preparing" state and sync with initialAbc prop changes
+- [x] Write tests for background generation logic

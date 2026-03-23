@@ -33,7 +33,15 @@ export default function SongDetail() {
 
   const { data: song, isLoading } = trpc.songs.getById.useQuery(
     { id: songId! },
-    { enabled: !!songId && !!user }
+    {
+      enabled: !!songId && !!user,
+      // Poll every 5s while sheet music is still being generated in the background
+      refetchInterval: (query) => {
+        const data = query.state.data;
+        if (data && !data.sheetMusicAbc) return 5000;
+        return false;
+      },
+    }
   );
 
   const [activeTab, setActiveTab] = useState("lyrics");

@@ -83,6 +83,13 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
 
+  // Sync local abc state when the parent passes updated initialAbc (e.g. from background generation)
+  useEffect(() => {
+    if (initialAbc && !abc) {
+      setAbc(initialAbc);
+    }
+  }, [initialAbc]);
+
   // Progress bar state
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackIsActive, setPlaybackIsActive] = useState(false);
@@ -259,7 +266,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     );
   };
 
-  // No ABC notation yet — show key picker + generate button (or error)
+  // Check if background generation might still be in progress
+  // (song exists but no sheet music yet and no user-triggered error)
+  const isPreparing = !abc && !error && !generateMutation.isPending;
+
+  // No ABC notation yet — show preparing state, key picker + generate button, or error
   if (!abc) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-6">
@@ -267,6 +278,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           <div className="w-full max-w-md">
             {renderErrorBanner()}
           </div>
+        ) : isPreparing ? (
+          <>
+            <div className="relative">
+              <Music className="w-12 h-12 text-violet-400 animate-pulse" />
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-violet-100 rounded-full flex items-center justify-center">
+                <Loader2 className="w-3 h-3 text-violet-600 animate-spin" />
+              </div>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-foreground">Preparing sheet music...</p>
+              <p className="text-xs text-muted-foreground">
+                Sheet music is being generated automatically. This usually takes 15–30 seconds.
+              </p>
+            </div>
+          </>
         ) : (
           <>
             <Music className="w-12 h-12 text-muted-foreground/40" />
@@ -308,10 +334,17 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           </p>
         </div>
 
+        {isPreparing ? (
+          <p className="text-xs text-muted-foreground">
+            Or generate manually with a specific key:
+          </p>
+        ) : null}
+
         <Button
           onClick={handleGenerate}
           disabled={generateMutation.isPending}
           className="gap-2"
+          variant={isPreparing ? "outline" : "default"}
         >
           {generateMutation.isPending ? (
             <>
@@ -321,7 +354,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           ) : (
             <>
               <Music className="w-4 h-4" />
-              {error ? "Try Again" : "Generate Sheet Music"}
+              {error ? "Try Again" : isPreparing ? "Generate Now" : "Generate Sheet Music"}
             </>
           )}
         </Button>
