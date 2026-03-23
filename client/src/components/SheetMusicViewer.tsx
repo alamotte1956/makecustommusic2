@@ -9,7 +9,9 @@ import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
+import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
+import type { PlaybackState } from "@/lib/abcPlayer";
 
 interface SheetMusicViewerProps {
   songId: number;
@@ -27,6 +29,18 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [generateInKey, setGenerateInKey] = useState<string>("auto");
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
+
+  // Progress bar state
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [playbackIsActive, setPlaybackIsActive] = useState(false);
+  const [playbackIsPlaying, setPlaybackIsPlaying] = useState(false);
+
+  const handlePlaybackStateChange = useCallback((state: PlaybackState) => {
+    const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
+    setPlaybackProgress(progress);
+    setPlaybackIsActive(state.isPlaying && !state.isPaused);
+    setPlaybackIsPlaying(state.isPlaying);
+  }, []);
 
   // Detect the original key from ABC notation
   const originalKey = useMemo(() => {
@@ -279,8 +293,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         </div>
       </div>
 
-      {/* Playback controls with note highlighting */}
-      <PlaybackControls abc={displayAbc} onActiveNoteChange={onActiveNoteChange} />
+      {/* Playback controls with note highlighting and progress tracking */}
+      <PlaybackControls
+        abc={displayAbc}
+        onActiveNoteChange={onActiveNoteChange}
+        onPlaybackStateChange={handlePlaybackStateChange}
+      />
+
+      {/* Progress bar above sheet music */}
+      <SheetMusicProgressBar
+        progress={playbackProgress}
+        isActive={playbackIsActive}
+        isPlaying={playbackIsPlaying}
+      />
 
       {/* Sheet music rendering area */}
       <div

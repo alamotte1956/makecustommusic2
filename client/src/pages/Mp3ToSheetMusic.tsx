@@ -15,7 +15,9 @@ import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
+import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
+import type { PlaybackState } from "@/lib/abcPlayer";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac";
@@ -51,6 +53,18 @@ export default function Mp3ToSheetMusic() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { sheetRef, onActiveNoteChange } = useNoteHighlight();
   const [isRendered, setIsRendered] = useState(false);
+
+  // Progress bar state for sheet music playback
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [playbackIsActive, setPlaybackIsActive] = useState(false);
+  const [playbackIsPlaying, setPlaybackIsPlaying] = useState(false);
+
+  const handlePlaybackStateChange = useCallback((state: PlaybackState) => {
+    const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
+    setPlaybackProgress(progress);
+    setPlaybackIsActive(state.isPlaying && !state.isPaused);
+    setPlaybackIsPlaying(state.isPlaying);
+  }, []);
 
   // Audio preview state
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -610,8 +624,20 @@ export default function Mp3ToSheetMusic() {
                 </div>
               </div>
 
-              {/* Playback controls with note highlighting */}
-              <PlaybackControls abc={displayAbc} className="mb-4" onActiveNoteChange={onActiveNoteChange} />
+              {/* Playback controls with note highlighting and progress tracking */}
+              <PlaybackControls
+                abc={displayAbc}
+                className="mb-4"
+                onActiveNoteChange={onActiveNoteChange}
+                onPlaybackStateChange={handlePlaybackStateChange}
+              />
+
+              {/* Progress bar above sheet music */}
+              <SheetMusicProgressBar
+                progress={playbackProgress}
+                isActive={playbackIsActive}
+                isPlaying={playbackIsPlaying}
+              />
 
               {/* Sheet music rendering area */}
               <div

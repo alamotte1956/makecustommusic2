@@ -889,3 +889,12 @@
 - [x] Integrate note highlighting into Mp3ToSheetMusic page
 - [x] Auto-scroll to keep active note visible
 - [x] Write tests for note highlighting logic
+
+## Sheet Music Playback Progress Bar
+- [x] Create SheetMusicProgressBar component with thin colored overlay on sheet music
+- [x] Track playback progress percentage from PlaybackControls state
+- [x] Show progress bar above sheet music container synced with playback
+- [x] Animate progress bar smoothly during playback
+- [x] Integrate into SheetMusicViewer
+- [x] Integrate into Mp3ToSheetMusic page
+- [x] Write tests for progress bar component

@@ -9,6 +9,8 @@ interface PlaybackControlsProps {
   className?: string;
   /** Called on every animation frame with the index of the currently-sounding note (-1 = none). */
   onActiveNoteChange?: (index: number) => void;
+  /** Called on every animation frame with the full playback state for progress tracking. */
+  onPlaybackStateChange?: (state: PlaybackState) => void;
 }
 
 const DEFAULT_STATE: PlaybackState = {
@@ -20,12 +22,14 @@ const DEFAULT_STATE: PlaybackState = {
   activeNoteIndex: -1,
 };
 
-export function PlaybackControls({ abc, className = "", onActiveNoteChange }: PlaybackControlsProps) {
+export function PlaybackControls({ abc, className = "", onActiveNoteChange, onPlaybackStateChange }: PlaybackControlsProps) {
   const playerRef = useRef<ABCPlayer>(getPlayer());
   const [state, setState] = useState<PlaybackState>(DEFAULT_STATE);
   const [tempoMultiplier, setTempoMultiplier] = useState(1);
   const onActiveNoteChangeRef = useRef(onActiveNoteChange);
   onActiveNoteChangeRef.current = onActiveNoteChange;
+  const onPlaybackStateChangeRef = useRef(onPlaybackStateChange);
+  onPlaybackStateChangeRef.current = onPlaybackStateChange;
 
   // Load ABC when it changes
   useEffect(() => {
@@ -45,6 +49,7 @@ export function PlaybackControls({ abc, className = "", onActiveNoteChange }: Pl
     player.onStateChange((newState) => {
       setState(newState);
       onActiveNoteChangeRef.current?.(newState.activeNoteIndex);
+      onPlaybackStateChangeRef.current?.(newState);
     });
 
     return () => {
