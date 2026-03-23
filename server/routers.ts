@@ -690,20 +690,41 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
               role: "system",
               content: `You are a professional music arranger and sheet music engraver. Generate valid ABC notation for a lead sheet based on the song information provided.
 
-RULES:
+REQUIRED HEADERS (must all be present):
+- X: reference number (always 1)
+- T: title of the song
+- C: composer/artist if known
+- M: time signature (e.g., 4/4, 3/4, 6/8) — ALWAYS include this
+- L: default note length (e.g., 1/8)
+- Q: tempo marking (e.g., 1/4=120) — ALWAYS include this
+- K: key signature (e.g., C, Am, F#m) — ALWAYS include this
+
+NOTATION RULES:
 - Output ONLY valid ABC notation, no explanations
-- Include the X: (reference number), T: (title), M: (meter), L: (default note length), Q: (tempo), K: (key) headers
 - Write a singable melody line that matches the lyrics and genre
 - Align lyrics under notes using w: lines
-- If a specific key is provided in the song info, you MUST use that exact key for the K: header and write all melody and chords in that key
-- If no key is specified, choose an appropriate key signature for the genre (e.g., minor keys for dark/melancholic, major for happy/uplifting)
-- Include dynamics and expression marks where appropriate
+- If a specific key is provided, you MUST use that exact key for K: and write all melody and chords in that key
+- If no key is specified, choose an appropriate key for the genre
 - For songs without lyrics, write an instrumental melody
-- Keep the notation clean and professional — this will be rendered as printable sheet music
-- Use standard ABC notation features: bar lines |, repeat signs :|, section markers [P:Verse], etc.
-- Ensure the melody is musically coherent and matches the mood/genre
+
+MUSICAL COMPLETENESS:
 - Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
-- The output must be parseable by abcjs library`,
+- Use proper bar lines | at every measure boundary
+- Use repeat signs |: and :| for repeated sections
+- Use section markers [P:Intro], [P:Verse], [P:Chorus], [P:Bridge], [P:Outro] to label song structure
+- Use first/second endings [1 and [2 where appropriate
+- Include dynamics: !p!, !mp!, !mf!, !f!, !ff!, !crescendo(!, !crescendo)!, !diminuendo(!, !diminuendo)!
+- Include articulations where musically appropriate: .A (staccato), ~A (trill), HA (fermata)
+- Use ties - between notes of the same pitch that span bar lines
+- Use slurs () to group legato phrases
+- Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)
+- Ensure every measure has the correct number of beats matching the time signature
+
+QUALITY:
+- The melody must be musically coherent and match the mood/genre
+- Keep the notation clean and professional — this will be rendered as printable sheet music
+- The output must be parseable by the abcjs library
+- Ensure the piece has a clear beginning, development, and ending`,
             },
             {
               role: "user",
@@ -1122,15 +1143,38 @@ Your task:
 1. Listen carefully to the audio and identify: key signature, time signature, tempo (BPM), melody, chord progressions, and song structure
 2. Generate valid ABC notation that accurately represents the music
 
-RULES:
+REQUIRED HEADERS (must all be present):
+- X: reference number (always 1)
+- T: title (use the filename or identify from audio)
+- C: composer/artist if identifiable
+- M: time signature (e.g., 4/4, 3/4, 6/8) — ALWAYS include, detect from audio
+- L: default note length (e.g., 1/8)
+- Q: tempo marking (e.g., 1/4=120) — ALWAYS include, detect BPM from audio
+- K: key signature (e.g., C, Am, F#m) — ALWAYS include, detect from audio
+
+TRANSCRIPTION RULES:
 - Output ONLY valid ABC notation, no explanations or commentary
-- Include headers: X: (reference number), T: (title), M: (meter), L: (default note length), Q: (tempo), K: (key)
 - Write the melody line as accurately as possible from what you hear
 - Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
 - If lyrics are provided, align them under notes using w: lines
-- Use standard ABC notation: bar lines |, repeat signs :|, section markers [P:Verse], [P:Chorus], etc.
+
+MUSICAL COMPLETENESS:
+- Use proper bar lines | at every measure boundary
+- Use repeat signs |: and :| for repeated sections (verses, choruses)
+- Use section markers [P:Intro], [P:Verse], [P:Chorus], [P:Bridge], [P:Outro] to label song structure
+- Use first/second endings [1 and [2 where appropriate
+- Include dynamics: !p!, !mp!, !mf!, !f!, !ff!, !crescendo(!, !crescendo)!, !diminuendo(!, !diminuendo)!
+- Include articulations where musically appropriate: .A (staccato), ~A (trill), HA (fermata)
+- Use ties - between notes of the same pitch that span bar lines
+- Use slurs () to group legato phrases
+- Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)
+- Ensure every measure has the correct number of beats matching the time signature
+
+QUALITY:
+- The transcription should capture the essential musical content faithfully
 - Keep the notation clean and professional — this will be rendered as printable sheet music
-- The output must be parseable by the abcjs library`,
+- The output must be parseable by the abcjs library
+- Ensure the piece has a clear structure matching what you hear in the audio`,
           },
           {
             role: "user" as const,

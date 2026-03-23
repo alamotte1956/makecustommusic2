@@ -12,6 +12,8 @@ import {
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
+import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
+import { GuitarChordChart } from "@/components/GuitarChordChart";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac";
@@ -72,6 +74,26 @@ export default function Mp3ToSheetMusic() {
     if (!abcNotation || selectedKey === "original" || !originalKey) return abcNotation;
     return transposeABC(abcNotation, originalKey, selectedKey);
   }, [abcNotation, selectedKey, originalKey]);
+
+  // Extract chords from the currently displayed (transposed) ABC notation
+  const chords = useMemo(() => {
+    if (!displayAbc) return [];
+    return extractChordsFromABC(displayAbc);
+  }, [displayAbc]);
+
+  const handleDownloadMIDI = useCallback(() => {
+    if (!displayAbc) return;
+    try {
+      const title = file?.name.replace(/\.[^/.]+$/, "") || "Sheet Music";
+      const keyLabel = selectedKey === "original"
+        ? (originalKey ? `-${originalKey}` : "")
+        : `-${selectedKey}`;
+      downloadMidi(displayAbc, `${title}${keyLabel}`);
+      toast.success("MIDI file downloaded!");
+    } catch {
+      toast.error("Failed to export MIDI file");
+    }
+  }, [displayAbc, file, selectedKey, originalKey]);
 
   // Clean up preview URL on unmount
   useEffect(() => {
@@ -555,7 +577,18 @@ export default function Mp3ToSheetMusic() {
                     ) : (
                       <Download className="w-3.5 h-3.5" />
                     )}
-                    Download PDF
+                    PDF
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadMIDI}
+                    disabled={!isRendered}
+                    className="gap-1.5"
+                  >
+                    <FileAudio className="w-3.5 h-3.5" />
+                    MIDI
                   </Button>
 
                   <Button
@@ -581,6 +614,13 @@ export default function Mp3ToSheetMusic() {
                 className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto"
                 style={{ colorScheme: "light" }}
               />
+
+              {/* Guitar chord diagrams */}
+              {chords.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <GuitarChordChart chords={chords} />
+                </div>
+              )}
             </div>
 
             {/* Detected Lyrics */}
@@ -612,8 +652,9 @@ export default function Mp3ToSheetMusic() {
             <p>
               Our AI uses audio transcription and advanced music analysis to identify melody, chords,
               key signature, tempo, and song structure from your audio file. The result is a professional
-              lead sheet in ABC notation that you can transpose to any key and download as a PDF.
-              Each conversion costs 1 credit. Best results come from clear recordings with prominent melody lines.
+              lead sheet in ABC notation that you can transpose to any key and download as PDF or MIDI.
+              Guitar chord diagrams are shown automatically. Each conversion costs 1 credit.
+              Best results come from clear recordings with prominent melody lines.
             </p>
           </div>
         </div>

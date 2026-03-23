@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
+import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
+import { GuitarChordChart } from "@/components/GuitarChordChart";
 
 interface SheetMusicViewerProps {
   songId: number;
@@ -36,6 +38,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     if (!abc || selectedKey === "original" || !originalKey) return abc;
     return transposeABC(abc, originalKey, selectedKey);
   }, [abc, selectedKey, originalKey]);
+
+  // Extract chords from the currently displayed (transposed) ABC notation
+  const chords = useMemo(() => {
+    if (!displayAbc) return [];
+    return extractChordsFromABC(displayAbc);
+  }, [displayAbc]);
 
   const handleGenerate = useCallback(async () => {
     try {
@@ -96,6 +104,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       setExporting(false);
     }
   }, [songTitle, selectedKey, originalKey]);
+
+  const handleDownloadMIDI = useCallback(() => {
+    if (!displayAbc) return;
+    try {
+      const keyLabel = selectedKey === "original"
+        ? (originalKey ? `-${originalKey}` : "")
+        : `-${selectedKey}`;
+      downloadMidi(displayAbc, `${songTitle}${keyLabel}`);
+      toast.success("MIDI file downloaded!");
+    } catch {
+      toast.error("Failed to export MIDI file");
+    }
+  }, [displayAbc, songTitle, selectedKey, originalKey]);
 
   // No ABC notation yet — show key picker + generate button
   if (!abc) {
@@ -192,6 +213,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               </SelectContent>
             </Select>
           </div>
+
+          {/* Download PDF */}
           <Button
             variant="outline"
             size="sm"
@@ -204,7 +227,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             ) : (
               <Download className="w-3.5 h-3.5" />
             )}
-            Download PDF
+            PDF
+          </Button>
+
+          {/* Download MIDI */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadMIDI}
+            disabled={!isRendered}
+            className="gap-1.5"
+          >
+            <FileAudio className="w-3.5 h-3.5" />
+            MIDI
           </Button>
 
           {/* Regenerate with key selection */}
@@ -249,6 +284,13 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto"
         style={{ colorScheme: "light" }}
       />
+
+      {/* Guitar chord diagrams */}
+      {chords.length > 0 && (
+        <div className="bg-card rounded-lg border border-border p-4">
+          <GuitarChordChart chords={chords} />
+        </div>
+      )}
     </div>
   );
 }

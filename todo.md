@@ -847,3 +847,27 @@
 - [x] Integrate with existing sheet music renderer (abcjs, transpose, PDF export)
 - [x] Add route to App.tsx, navigation, sitemap, and robots.txt
 - [x] Write tests for MP3-to-sheet-music feature
+
+## MIDI Export Feature
+- [x] Custom ABC-to-MIDI converter (no external library needed)
+- [x] Create ABC-to-MIDI conversion utility
+- [x] Add MIDI export button to MP3 to Sheet Music page
+- [x] Add MIDI export button to SongDetail sheet music section
+- [x] Write tests for MIDI export feature
+
+## Guitar Chord Chart Feature
+- [x] Create guitar chord diagram data (fingerings for common chords)
+- [x] Create GuitarChordChart component with SVG chord diagrams
+- [x] Extract chords from ABC notation and display chord chart
+- [x] Integrate chord chart into SheetMusicViewer and Mp3ToSheetMusic pages
+- [x] Write tests for guitar chord chart feature
+
+## Enhanced Sheet Music Notation
+- [x] Improve LLM prompts to include time signatures, key signatures, tempo, dynamics, repeats, articulations
+- [x] Ensure MP3-to-sheet-music pipeline produces complete notation
+
+## MIDI Export (respects selected key)
+- [x] Create ABC-to-MIDI converter utility
+- [x] Add MIDI download button to SheetMusicViewer and Mp3ToSheetMusic
+- [x] MIDI export uses the currently transposed key
+- [x] Write tests for MIDI export
