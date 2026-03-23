@@ -871,3 +871,11 @@
 - [x] Add MIDI download button to SheetMusicViewer and Mp3ToSheetMusic
 - [x] MIDI export uses the currently transposed key
 - [x] Write tests for MIDI export
+
+## MIDI Audio Playback in Browser
+- [x] Create Web Audio API playback engine from ABC notation
+- [x] Add Play/Pause/Stop controls to SheetMusicViewer
+- [x] Add Play/Pause/Stop controls to Mp3ToSheetMusic page
+- [x] Playback respects the currently transposed key
+- [x] Add tempo control slider
+- [x] Write tests for playback feature

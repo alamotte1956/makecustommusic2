@@ -14,6 +14,7 @@ import { exportSheetMusicPDF } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
+import { PlaybackControls } from "@/components/PlaybackControls";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac";
@@ -607,6 +608,9 @@ export default function Mp3ToSheetMusic() {
                   </Button>
                 </div>
               </div>
+
+              {/* Playback controls */}
+              <PlaybackControls abc={displayAbc} className="mb-4" />
 
               {/* Sheet music rendering area */}
               <div

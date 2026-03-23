@@ -8,6 +8,7 @@ import { exportSheetMusicPDF } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
+import { PlaybackControls } from "@/components/PlaybackControls";
 
 interface SheetMusicViewerProps {
   songId: number;
@@ -277,6 +278,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           </Button>
         </div>
       </div>
+
+      {/* Playback controls */}
+      <PlaybackControls abc={displayAbc} />
 
       {/* Sheet music rendering area */}
       <div
