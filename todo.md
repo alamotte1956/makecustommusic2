@@ -839,3 +839,11 @@
 - [x] Remove Studio tier entirely
 - [x] Change 'Get Started Free' to 'Get Started Here'
 - [x] Update Creator to 30 songs/month and Professional to 60 songs/month
+
+## MP3 to Sheet Music Feature
+- [x] Create server-side MP3-to-sheet-music pipeline (transcribe audio → LLM extract notes → generate ABC notation)
+- [x] Add tRPC route for MP3 upload and sheet music generation
+- [x] Build frontend UI for MP3 upload with drag-and-drop, audio preview, and progress steps
+- [x] Integrate with existing sheet music renderer (abcjs, transpose, PDF export)
+- [x] Add route to App.tsx, navigation, sitemap, and robots.txt
+- [x] Write tests for MP3-to-sheet-music feature

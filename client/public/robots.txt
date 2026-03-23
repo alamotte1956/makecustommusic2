@@ -8,6 +8,7 @@ Allow: /privacy
 Allow: /terms
 Allow: /blog
 Allow: /blog/
+Allow: /mp3-to-sheet-music
 
 # Block private/authenticated routes
 Disallow: /api/

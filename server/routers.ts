@@ -1071,6 +1071,109 @@ RULES:
 
         return { imageUrl: url };
       }),
+
+    // Generate sheet music from an uploaded MP3 file
+    generateSheetMusicFromMp3: protectedProcedure
+      .input(z.object({
+        fileData: z.string().min(1), // base64 encoded MP3
+        fileName: z.string().min(1).max(255),
+        mimeType: z.string().refine(
+          t => ["audio/mpeg", "audio/wav", "audio/mp4", "audio/ogg", "audio/flac", "audio/x-m4a", "audio/aac"].includes(t),
+          "Unsupported audio format. Please upload MP3, WAV, FLAC, OGG, or M4A."
+        ),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check credits
+        const balance = await getCreditBalance(ctx.user.id);
+        if (balance.totalCredits < 1) {
+          throw new Error("Insufficient credits. Please upgrade or purchase more credits.");
+        }
+
+        // Decode and validate file size (16MB limit for Whisper)
+        const buffer = Buffer.from(input.fileData, "base64");
+        const sizeMB = buffer.length / (1024 * 1024);
+        if (sizeMB > 16) {
+          throw new Error(`File too large (${sizeMB.toFixed(1)}MB). Maximum size is 16MB.`);
+        }
+
+        // Upload to S3 for processing
+        const ext = input.mimeType.split("/")[1] === "mpeg" ? "mp3" : input.mimeType.split("/")[1];
+        const fileKey = `mp3-to-sheet/${ctx.user.id}/${nanoid()}.${ext}`;
+        const { url: audioUrl } = await storagePut(fileKey, buffer, input.mimeType);
+
+        // Step 1: Transcribe audio to get lyrics/vocal content
+        const { transcribeAudio } = await import("./_core/voiceTranscription");
+        const transcription = await transcribeAudio({
+          audioUrl,
+          prompt: "Transcribe the song lyrics. Include all sung words.",
+        });
+
+        const hasLyrics = !("error" in transcription) && transcription.text && transcription.text.trim().length > 10;
+        const lyricsText = hasLyrics && !("error" in transcription) ? transcription.text : null;
+        const audioDuration = !("error" in transcription) ? transcription.duration : null;
+
+        // Step 2: Use LLM with audio file to analyze musical elements and generate ABC notation
+        const analysisMessages: any[] = [
+          {
+            role: "system" as const,
+            content: `You are an expert music transcriber and arranger. You will analyze an audio file and produce professional ABC notation for a lead sheet.
+
+Your task:
+1. Listen carefully to the audio and identify: key signature, time signature, tempo (BPM), melody, chord progressions, and song structure
+2. Generate valid ABC notation that accurately represents the music
+
+RULES:
+- Output ONLY valid ABC notation, no explanations or commentary
+- Include headers: X: (reference number), T: (title), M: (meter), L: (default note length), Q: (tempo), K: (key)
+- Write the melody line as accurately as possible from what you hear
+- Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
+- If lyrics are provided, align them under notes using w: lines
+- Use standard ABC notation: bar lines |, repeat signs :|, section markers [P:Verse], [P:Chorus], etc.
+- Keep the notation clean and professional — this will be rendered as printable sheet music
+- The output must be parseable by the abcjs library`,
+          },
+          {
+            role: "user" as const,
+            content: [
+              {
+                type: "file_url" as const,
+                file_url: {
+                  url: audioUrl,
+                  mime_type: "audio/mpeg" as const,
+                },
+              },
+              {
+                type: "text" as const,
+                text: `Please transcribe this audio into ABC notation for a lead sheet.\n\nFile: ${input.fileName}${lyricsText ? `\n\nDetected lyrics:\n${lyricsText}` : "\n\nNo lyrics detected — this appears to be instrumental."}${audioDuration ? `\nAudio duration: ${Math.round(audioDuration)} seconds` : ""}`,
+              },
+            ],
+          },
+        ];
+
+        const response = await invokeLLM({
+          model: "claude-sonnet-4-20250514",
+          messages: analysisMessages,
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        const abcRaw = typeof rawContent === "string" ? rawContent.trim() : null;
+        if (!abcRaw) {
+          throw new Error("Failed to generate sheet music from audio. Please try again.");
+        }
+
+        // Clean up: extract just the ABC notation if wrapped in markdown code blocks
+        const cleanAbc = abcRaw.replace(/^```[a-z]*\n?/gm, "").replace(/```$/gm, "").trim();
+
+        // Deduct credit
+        await deductCredits(ctx.user.id, 1, "generation", `Sheet music from MP3: ${input.fileName}`);
+
+        return {
+          abcNotation: cleanAbc,
+          lyrics: lyricsText,
+          audioUrl,
+          fileName: input.fileName,
+        };
+      }),
   }),
 
   favorites: router({

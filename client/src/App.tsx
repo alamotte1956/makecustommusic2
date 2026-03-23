@@ -32,6 +32,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Blog = lazy(() => import("./pages/Blog"));
+const Mp3ToSheetMusic = lazy(() => import("./pages/Mp3ToSheetMusic"));
 const BlogArticle = lazy(() => import("./pages/BlogArticle"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -67,6 +68,7 @@ function Router() {
         <Route path={"/terms"} component={Terms} />
         <Route path={"/faq"} component={FAQ} />
         <Route path={"/referrals"} component={Referrals} />
+        <Route path={"/mp3-to-sheet-music"} component={Mp3ToSheetMusic} />
         <Route path={"/blog"} component={Blog} />
         <Route path={"/blog/:slug"} component={BlogArticle} />
         <Route path={"/404"} component={NotFound} />

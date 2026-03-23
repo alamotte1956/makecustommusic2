@@ -17,6 +17,7 @@ const STATIC_ROUTES: { path: string; changefreq: string; priority: number }[] = 
   { path: "/privacy", changefreq: "yearly", priority: 0.3 },
   { path: "/terms", changefreq: "yearly", priority: 0.3 },
   { path: "/blog", changefreq: "weekly", priority: 0.7 },
+  { path: "/mp3-to-sheet-music", changefreq: "monthly", priority: 0.7 },
 ];
 
 function escapeXml(str: string): string {

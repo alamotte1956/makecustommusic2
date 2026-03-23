@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift, FileAudio } from "lucide-react";
 import NotificationCenter from "@/components/NotificationCenter";
 import CookieConsent from "@/components/CookieConsent";
 import { useState } from "react";
@@ -17,6 +17,7 @@ const navItems = [
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/albums", label: "Albums", icon: Disc3 },
   { href: "/upload", label: "Upload", icon: Upload },
+  { href: "/mp3-to-sheet-music", label: "MP3 to Sheet Music", icon: FileAudio },
   { href: "/referrals", label: "Invite Friends", icon: Gift },
 ];
 
