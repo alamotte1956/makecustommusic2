@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Music, FileAudio, X, Loader2, CheckCircle2, AlertCircle,
-  Download, Play, Pause, Volume2, VolumeX, RefreshCw,
+  Download, Play, Pause, Volume2, VolumeX, RefreshCw, WifiOff,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
@@ -24,6 +24,7 @@ const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac";
 const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB for Whisper
 
 type ProcessingStep = "idle" | "uploading" | "transcribing" | "analyzing" | "generating" | "done" | "error";
+type ErrorType = "network" | "generation" | "rendering";
 
 const STEP_LABELS: Record<ProcessingStep, string> = {
   idle: "",
@@ -53,6 +54,7 @@ export default function Mp3ToSheetMusic() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { sheetRef, onActiveNoteChange } = useNoteHighlight();
   const [isRendered, setIsRendered] = useState(false);
+  const [errorInfo, setErrorInfo] = useState<{ type: ErrorType; message: string; detail?: string } | null>(null);
 
   // Progress bar state for sheet music playback
   const [playbackProgress, setPlaybackProgress] = useState(0);
@@ -270,7 +272,14 @@ export default function Mp3ToSheetMusic() {
       toast.success("Sheet music generated successfully!");
     } catch (err: any) {
       setStep("error");
-      toast.error(err.message || "Failed to generate sheet music. Please try again.");
+      const msg = err?.message || "";
+      const lowerMsg = msg.toLowerCase();
+      const isNetwork = lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout") || lowerMsg.includes("aborted");
+      setErrorInfo({
+        type: isNetwork ? "network" : "generation",
+        message: isNetwork ? "Unable to reach the server. Check your connection and try again." : (msg || "Failed to generate sheet music."),
+        detail: msg || undefined,
+      });
     }
   }, [file, readFileAsBase64, generateMutation]);
 
@@ -531,18 +540,45 @@ export default function Mp3ToSheetMusic() {
 
         {/* Error state */}
         {step === "error" && (
-          <div className="mt-6 bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-            <p className="font-semibold text-red-700 mb-2">Generation Failed</p>
-            <p className="text-sm text-red-600 mb-4">
-              The AI couldn't generate sheet music from this audio. Try a different file or a clearer recording.
-            </p>
-            <div className="flex gap-3 justify-center">
+          <div className="mt-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                {errorInfo?.type === "network" ? (
+                  <WifiOff className="h-6 w-6 text-red-500" />
+                ) : (
+                  <AlertCircle className="h-6 w-6 text-red-500" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-red-700 dark:text-red-400">
+                  {errorInfo?.type === "network" ? "Connection Error" : "Generation Failed"}
+                </h4>
+                <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                  {errorInfo?.message || "The AI couldn't generate sheet music from this audio."}
+                </p>
+                <p className="text-xs text-red-500/80 dark:text-red-400/60 mt-1.5">
+                  {errorInfo?.type === "network"
+                    ? "Check your internet connection and try again."
+                    : "Try a different file, a clearer recording, or retry the generation."}
+                </p>
+                {errorInfo?.detail && errorInfo.detail !== errorInfo.message && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-red-400 dark:text-red-500 cursor-pointer hover:text-red-500 dark:hover:text-red-400">
+                      Technical details
+                    </summary>
+                    <pre className="text-xs text-red-400 dark:text-red-500 mt-1 whitespace-pre-wrap break-all bg-red-100/50 dark:bg-red-900/20 rounded p-2">
+                      {errorInfo.detail}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4 ml-9">
               <Button variant="outline" onClick={handleReset}>
                 Try Another File
               </Button>
-              <Button onClick={handleGenerate} className="bg-violet-600 hover:bg-violet-700 text-white">
-                <RefreshCw className="mr-2 h-4 w-4" /> Retry
+              <Button onClick={() => { setErrorInfo(null); handleGenerate(); }} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                <RefreshCw className="h-4 w-4" /> Try Again
               </Button>
             </div>
           </div>

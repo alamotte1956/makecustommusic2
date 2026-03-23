@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, AlertCircle, WifiOff } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
@@ -20,6 +20,58 @@ interface SheetMusicViewerProps {
   songKeySignature?: string | null;
 }
 
+type ErrorType = "network" | "generation" | "rendering" | null;
+
+interface ErrorState {
+  type: ErrorType;
+  message: string;
+  detail?: string;
+}
+
+const ERROR_INFO: Record<NonNullable<ErrorType>, { icon: typeof AlertCircle; title: string; suggestion: string }> = {
+  network: {
+    icon: WifiOff,
+    title: "Connection Error",
+    suggestion: "Check your internet connection and try again.",
+  },
+  generation: {
+    icon: AlertCircle,
+    title: "Generation Failed",
+    suggestion: "The AI could not generate sheet music for this song. Try regenerating or choosing a different key.",
+  },
+  rendering: {
+    icon: AlertCircle,
+    title: "Rendering Error",
+    suggestion: "The sheet music notation could not be displayed. Try regenerating the sheet music.",
+  },
+};
+
+function classifyError(error: any): ErrorState {
+  const message = error?.message || String(error) || "An unexpected error occurred";
+  const lowerMsg = message.toLowerCase();
+
+  if (
+    lowerMsg.includes("network") ||
+    lowerMsg.includes("fetch") ||
+    lowerMsg.includes("timeout") ||
+    lowerMsg.includes("econnrefused") ||
+    lowerMsg.includes("failed to fetch") ||
+    lowerMsg.includes("aborted")
+  ) {
+    return { type: "network", message: "Unable to reach the server.", detail: message };
+  }
+
+  if (
+    lowerMsg.includes("render") ||
+    lowerMsg.includes("abcjs") ||
+    lowerMsg.includes("svg")
+  ) {
+    return { type: "rendering", message: "Failed to render the sheet music.", detail: message };
+  }
+
+  return { type: "generation", message, detail: undefined };
+}
+
 export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature }: SheetMusicViewerProps) {
   const { sheetRef, onActiveNoteChange } = useNoteHighlight();
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
@@ -27,6 +79,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [exporting, setExporting] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>("original");
   const [generateInKey, setGenerateInKey] = useState<string>("auto");
+  const [error, setError] = useState<ErrorState | null>(null);
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
 
@@ -61,6 +114,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   }, [displayAbc]);
 
   const handleGenerate = useCallback(async () => {
+    setError(null);
     try {
       const keyParam = generateInKey === "auto" ? undefined : generateInKey;
       const result = await generateMutation.mutateAsync({ songId, key: keyParam });
@@ -68,8 +122,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       setSelectedKey("original");
       utils.songs.getById.invalidate({ id: songId });
       toast.success("Sheet music generated!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to generate sheet music");
+    } catch (err: any) {
+      const errorState = classifyError(err);
+      setError(errorState);
     }
   }, [songId, generateInKey, generateMutation, utils]);
 
@@ -78,23 +133,29 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     if (!displayAbc || !sheetRef.current) return;
 
     setIsRendered(false);
+    // Clear any previous rendering error when attempting to render new ABC
+    setError((prev) => (prev?.type === "rendering" ? null : prev));
 
     import("abcjs").then((mod) => {
       const abcjs = mod.default || mod;
       if (!sheetRef.current) return;
       sheetRef.current.innerHTML = "";
-      abcjs.renderAbc(sheetRef.current, displayAbc, {
-        responsive: "resize",
-        staffwidth: 700,
-        paddingtop: 20,
-        paddingbottom: 20,
-        paddingleft: 15,
-        paddingright: 15,
-        add_classes: true,
-      });
-      setIsRendered(true);
-    }).catch(() => {
-      toast.error("Failed to render sheet music");
+      try {
+        abcjs.renderAbc(sheetRef.current, displayAbc, {
+          responsive: "resize",
+          staffwidth: 700,
+          paddingtop: 20,
+          paddingbottom: 20,
+          paddingleft: 15,
+          paddingright: 15,
+          add_classes: true,
+        });
+        setIsRendered(true);
+      } catch (renderErr: any) {
+        setError({ type: "rendering", message: "Failed to render the sheet music notation.", detail: renderErr?.message });
+      }
+    }).catch((importErr: any) => {
+      setError({ type: "rendering", message: "Failed to load the sheet music renderer.", detail: importErr?.message });
     });
   }, [displayAbc]);
 
@@ -134,17 +195,89 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [displayAbc, songTitle, selectedKey, originalKey]);
 
-  // No ABC notation yet — show key picker + generate button
+  // Shared error banner component
+  const renderErrorBanner = () => {
+    if (!error) return null;
+    const info = ERROR_INFO[error.type || "generation"];
+    const Icon = info.icon;
+    return (
+      <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 mt-0.5">
+            <Icon className="h-5 w-5 text-red-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">{info.title}</h4>
+            <p className="text-sm text-red-600 dark:text-red-300 mt-1">{error.message}</p>
+            <p className="text-xs text-red-500/80 dark:text-red-400/60 mt-1.5">{info.suggestion}</p>
+            {error.detail && (
+              <details className="mt-2">
+                <summary className="text-xs text-red-400 dark:text-red-500 cursor-pointer hover:text-red-500 dark:hover:text-red-400">
+                  Technical details
+                </summary>
+                <pre className="text-xs text-red-400 dark:text-red-500 mt-1 whitespace-pre-wrap break-all bg-red-100/50 dark:bg-red-900/20 rounded p-2">
+                  {error.detail}
+                </pre>
+              </details>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4 ml-8">
+          <Button
+            size="sm"
+            onClick={() => {
+              setError(null);
+              handleGenerate();
+            }}
+            disabled={generateMutation.isPending}
+            className="gap-1.5"
+          >
+            {generateMutation.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
+            Try Again
+          </Button>
+          {error.type === "rendering" && abc && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setError(null);
+                // Force re-render by toggling abc
+                const current = abc;
+                setAbc(null);
+                requestAnimationFrame(() => setAbc(current));
+              }}
+            >
+              Re-render
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // No ABC notation yet — show key picker + generate button (or error)
   if (!abc) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-6">
-        <Music className="w-12 h-12 text-muted-foreground/40" />
-        <div className="text-center space-y-1">
-          <p className="text-sm font-medium text-foreground">No sheet music yet</p>
-          <p className="text-xs text-muted-foreground">
-            Generate a professional lead sheet with melody notation and chord symbols
-          </p>
-        </div>
+        {error ? (
+          <div className="w-full max-w-md">
+            {renderErrorBanner()}
+          </div>
+        ) : (
+          <>
+            <Music className="w-12 h-12 text-muted-foreground/40" />
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-foreground">No sheet music yet</p>
+              <p className="text-xs text-muted-foreground">
+                Generate a professional lead sheet with melody notation and chord symbols
+              </p>
+            </div>
+          </>
+        )}
 
         {/* Key selection before generation */}
         <div className="flex flex-col items-center gap-3 w-full max-w-xs">
@@ -188,7 +321,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           ) : (
             <>
               <Music className="w-4 h-4" />
-              Generate Sheet Music
+              {error ? "Try Again" : "Generate Sheet Music"}
             </>
           )}
         </Button>
@@ -198,6 +331,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
   return (
     <div className="space-y-4">
+      {/* Error banner (shown inline when sheet music exists but an error occurred) */}
+      {error && renderErrorBanner()}
+
       {/* Action bar */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">

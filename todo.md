@@ -901,3 +901,9 @@
 
 ## Bug Fix: Sheet Music Not Working Correctly
 - [x] Investigate and fix sheet music rendering/playback issue (root cause: dynamic import("abcjs") returns ESM module wrapper where renderAbc is on .default, not top-level)
+
+## Sheet Music Generation Error Handling
+- [x] Add error state with clear message and Try Again button in SheetMusicViewer
+- [x] Add error state with clear message and Try Again button in Mp3ToSheetMusic
+- [x] Distinguish between LLM errors, network errors, and rendering errors
+- [x] Write tests for error handling
