@@ -1,0 +1,121 @@
+{
+  "query": "SELECT sheetMusicAbc FROM songs WHERE id = 210035;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT sheetMusicAbc FROM songs WHERE id = 210035;",
+  "rows": [
+    {
+      "sheetMusicAbc": "X:1"
+    },
+    {
+      "sheetMusicAbc": "T:Men of The Father's House"
+    },
+    {
+      "sheetMusicAbc": "M:4/4"
+    },
+    {
+      "sheetMusicAbc": "L:1/8"
+    },
+    {
+      "sheetMusicAbc": "Q:1/4=120"
+    },
+    {
+      "sheetMusicAbc": "K:G"
+    },
+    {
+      "sheetMusicAbc": "V:1 treble"
+    },
+    {
+      "sheetMusicAbc": "\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: Men of the Fa-ther's House, stand up and sing His praise!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: Men of the Fa-ther's House, through all your liv-ing days!"
+    },
+    {
+      "sheetMusicAbc": "\"Em\"G2 A2 B2 c2 | \"C\"d2 c2 B2 G2 | \"G\"E2 G2 B2 d2 | \"D\"c4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: With hearts a-flame, pro-claim His Name, let ev-ery na-tion hear,"
+    },
+    {
+      "sheetMusicAbc": "\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: Men of the Fa-ther's House, cast out all doubt and fear!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: For He is Lord, our great re-ward, His love will nev-er cease!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: So lift your voice, make Him your choice, and live in joy and peace!"
+    },
+    {
+      "sheetMusicAbc": "\"Em\"G2 A2 B2 c2 | \"C\"d2 c2 B2 G2 | \"G\"E2 G2 B2 d2 | \"D\"c4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: With hearts a-flame, pro-claim His Name, let ev-ery na-tion hear,"
+    },
+    {
+      "sheetMusicAbc": "\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: Men of the Fa-ther's House, cast out all doubt and fear!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: For He is Lord, our great re-ward, His love will nev-er cease!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: So lift your voice, make Him your choice, and live in joy and peace!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: For He is Lord, our great re-ward, His love will nev-er cease!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: So lift your voice, make Him your choice, and live in joy and peace!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: For He is Lord, our great re-ward, His love will nev-er cease!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: So lift your voice, make Him your choice, and live in joy and peace!"
+    },
+    {
+      "sheetMusicAbc": "\"G\"G4 z4 |]"
+    },
+    {
+      "sheetMusicAbc": "w: Amen!"
+    }
+  ],
+  "messages": [],
+  "stdout": "sheetMusicAbc\nX:1\nT:Men of The Father's House\nM:4/4\nL:1/8\nQ:1/4=120\nK:G\nV:1 treble\n\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |\nw: Men of the Fa-ther's House, stand up and sing His praise!\n\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |\nw: Men of the Fa-ther's House, through all your liv-ing days!\n\"Em\"G2 A2 B2 c2 | \"C\"d2 c2 B2 G2 | \"G\"E2 G2 B2 d2 | \"D\"c4 z4 |\nw: With hearts a-flame, pro-claim His Name, let ev-ery na-tion hear,\n\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |\nw: Men of the Fa-ther's House, cast out all doubt and fear!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: For He is Lord, our great re-ward, His love will nev-er cease!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: So lift your voice, make Him your choice, and live in joy and peace!\n\"Em\"G2 A2 B2 c2 | \"C\"d2 c2 B2 G2 | \"G\"E2 G2 B2 d2 | \"D\"c4 z4 |\nw: With hearts a-flame, pro-claim His Name, let ev-ery na-tion hear,\n\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |\nw: Men of the Fa-ther's House, cast out all doubt and fear!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: For He is Lord, our great re-ward, His love will nev-er cease!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: So lift your voice, make Him your choice, and live in joy and peace!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: For He is Lord, our great re-ward, His love will nev-er cease!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: So lift your voice, make Him your choice, and live in joy and peace!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: For He is Lord, our great re-ward, His love will nev-er cease!\n\"G\"G2 B2 d2 B2 | \"C\"c2 d2 e2 d2 | \"G\"B2 G2 D2 E2 | \"D\"D4 z4 |\nw: So lift your voice, make Him your choice, and live in joy and peace!\n\"G\"G4 z4 |]\nw: Amen!\n",
+  "stderr": "",
+  "execution_time_ms": 368
+}

@@ -79,7 +79,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
     setIsRendered(false);
 
-    import("abcjs").then((abcjs) => {
+    import("abcjs").then((mod) => {
+      const abcjs = mod.default || mod;
       if (!sheetRef.current) return;
       sheetRef.current.innerHTML = "";
       abcjs.renderAbc(sheetRef.current, displayAbc, {

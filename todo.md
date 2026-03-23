@@ -898,3 +898,6 @@
 - [x] Integrate into SheetMusicViewer
 - [x] Integrate into Mp3ToSheetMusic page
 - [x] Write tests for progress bar component
+
+## Bug Fix: Sheet Music Not Working Correctly
+- [x] Investigate and fix sheet music rendering/playback issue (root cause: dynamic import("abcjs") returns ESM module wrapper where renderAbc is on .default, not top-level)

@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, title, sheetMusicAbc IS NOT NULL as hasSheetMusic, LEFT(sheetMusicAbc, 200) as abcPreview FROM songs WHERE userId = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, sheetMusicAbc IS NOT NULL as hasSheetMusic, LEFT(sheetMusicAbc, 200) as abcPreview FROM songs WHERE userId = 1;",
+  "rows": [
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "hasSheetMusic": "1",
+      "abcPreview": "X:1"
+    }
+  ],
+  "messages": [
+    "T:Men of The Father's House",
+    "M:4/4",
+    "L:1/8",
+    "Q:1/4=120",
+    "K:G",
+    "V:1 treble",
+    "\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |",
+    "w: Men of the Fa-ther's House, stand up and sing His praise!",
+    "\"G\"D2 G2"
+  ],
+  "stdout": "id\ttitle\thasSheetMusic\tabcPreview\n210035\tMen of The Father's House\t1\tX:1\nT:Men of The Father's House\nM:4/4\nL:1/8\nQ:1/4=120\nK:G\nV:1 treble\n\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |\nw: Men of the Fa-ther's House, stand up and sing His praise!\n\"G\"D2 G2\n",
+  "stderr": "",
+  "execution_time_ms": 353
+}

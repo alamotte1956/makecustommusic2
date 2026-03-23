@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, title, userId, sheetMusicAbc IS NOT NULL as hasSheetMusic, audioUrl IS NOT NULL as hasAudio FROM songs WHERE userId = 1 ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, userId, sheetMusicAbc IS NOT NULL as hasSheetMusic, audioUrl IS NOT NULL as hasAudio FROM songs WHERE userId = 1 ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "userId": "1",
+      "hasSheetMusic": "1",
+      "hasAudio": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tuserId\thasSheetMusic\thasAudio\n210035\tMen of The Father's House\t1\t1\t1\n",
+  "stderr": "",
+  "execution_time_ms": 368
+}

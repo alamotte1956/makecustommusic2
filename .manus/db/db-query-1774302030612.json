@@ -1,0 +1,83 @@
+{
+  "query": "SELECT id, title, userId, sheetMusicAbc IS NOT NULL as hasSheetMusic, LEFT(sheetMusicAbc, 100) as abcPreview FROM songs ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, userId, sheetMusicAbc IS NOT NULL as hasSheetMusic, LEFT(sheetMusicAbc, 100) as abcPreview FROM songs ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "userId": "1320001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "userId": "1320001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "userId": "1320001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "userId": "1320001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "userId": "1320001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "userId": "1320001",
+      "hasSheetMusic": "1",
+      "abcPreview": "X: 1"
+    },
+    {
+      "id": "450001",
+      "title": "높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기",
+      "userId": "1230001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    },
+    {
+      "id": "360013",
+      "title": "Psalm 91",
+      "userId": "750001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    },
+    {
+      "id": "330003",
+      "title": "Custom Song",
+      "userId": "750001",
+      "hasSheetMusic": "0",
+      "abcPreview": "NULL"
+    }
+  ],
+  "messages": [
+    "T: playful jazz piano",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 120",
+    "K: C",
+    "V: 1 treble",
+    "\"C\"G,CDE G2 c2 | \"G7\"B,DFA G2 B2 | ",
+    "480001\tTraditional folk",
+    "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\t1290001\t0\tNULL"
+  ],
+  "stdout": "id\ttitle\tuserId\thasSheetMusic\tabcPreview\n540003\tonly relaxed piano\t1320001\t0\tNULL\n540002\tonly relaxed piano\t1320001\t0\tNULL\n540001\trelaxed piano\t1320001\t0\tNULL\n510003\tplayful happy piano, light and bouncy\t1320001\t0\tNULL\n510002\tplayful happy piano, light and bouncy\t1320001\t0\tNULL\n510001\tplayful jazz piano\t1320001\t1\tX: 1\nT: playful jazz piano\nM: 4/4\nL: 1/8\nQ: 120\nK: C\nV: 1 treble\n\"C\"G,CDE G2 c2 | \"G7\"B,DFA G2 B2 | \n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\t1290001\t0\tNULL\n450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\t1230001\t0\tNULL\n360013\tPsalm 91\t750001\t0\tNULL\n330003\tCustom Song\t750001\t0\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 552
+}

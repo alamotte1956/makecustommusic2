@@ -1,0 +1,18 @@
+Debug Notes - Sheet Music Not Generating
+
+Key finding: The invokeLLM helper has these settings:
+- Default model: "gemini-2.5-flash"
+- max_tokens: 32768
+- thinking.budget_tokens: 128
+
+The generateSheetMusic procedure specifies model: "claude-sonnet-4-20250514"
+
+Potential issues:
+1. The model "claude-sonnet-4-20250514" may not be available via the Forge API
+2. The thinking config (budget_tokens: 128) may not be compatible with Claude models
+3. The response format from the LLM may have changed
+
+Need to check:
+- Is the LLM call actually failing silently?
+- Is the model name correct?
+- Does the thinking parameter cause issues with Claude?
