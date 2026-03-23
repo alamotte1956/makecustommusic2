@@ -15,6 +15,7 @@ import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
+import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac";
@@ -48,7 +49,7 @@ export default function Mp3ToSheetMusic() {
   const [selectedKey, setSelectedKey] = useState<string>("original");
   const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
+  const { sheetRef, onActiveNoteChange } = useNoteHighlight();
   const [isRendered, setIsRendered] = useState(false);
 
   // Audio preview state
@@ -609,13 +610,13 @@ export default function Mp3ToSheetMusic() {
                 </div>
               </div>
 
-              {/* Playback controls */}
-              <PlaybackControls abc={displayAbc} className="mb-4" />
+              {/* Playback controls with note highlighting */}
+              <PlaybackControls abc={displayAbc} className="mb-4" onActiveNoteChange={onActiveNoteChange} />
 
               {/* Sheet music rendering area */}
               <div
                 ref={sheetRef}
-                className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto"
+                className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
                 style={{ colorScheme: "light" }}
               />
 

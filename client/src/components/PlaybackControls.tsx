@@ -7,18 +7,25 @@ import { ABCPlayer, PlaybackState, formatTime, getPlayer } from "@/lib/abcPlayer
 interface PlaybackControlsProps {
   abc: string | null;
   className?: string;
+  /** Called on every animation frame with the index of the currently-sounding note (-1 = none). */
+  onActiveNoteChange?: (index: number) => void;
 }
 
-export function PlaybackControls({ abc, className = "" }: PlaybackControlsProps) {
+const DEFAULT_STATE: PlaybackState = {
+  isPlaying: false,
+  isPaused: false,
+  currentTime: 0,
+  duration: 0,
+  tempo: 120,
+  activeNoteIndex: -1,
+};
+
+export function PlaybackControls({ abc, className = "", onActiveNoteChange }: PlaybackControlsProps) {
   const playerRef = useRef<ABCPlayer>(getPlayer());
-  const [state, setState] = useState<PlaybackState>({
-    isPlaying: false,
-    isPaused: false,
-    currentTime: 0,
-    duration: 0,
-    tempo: 120,
-  });
+  const [state, setState] = useState<PlaybackState>(DEFAULT_STATE);
   const [tempoMultiplier, setTempoMultiplier] = useState(1);
+  const onActiveNoteChangeRef = useRef(onActiveNoteChange);
+  onActiveNoteChangeRef.current = onActiveNoteChange;
 
   // Load ABC when it changes
   useEffect(() => {
@@ -28,6 +35,8 @@ export function PlaybackControls({ abc, className = "" }: PlaybackControlsProps)
     } else {
       player.stop();
     }
+    // Reset tempo multiplier when ABC changes
+    setTempoMultiplier(1);
   }, [abc]);
 
   // Subscribe to state updates
@@ -35,6 +44,7 @@ export function PlaybackControls({ abc, className = "" }: PlaybackControlsProps)
     const player = playerRef.current;
     player.onStateChange((newState) => {
       setState(newState);
+      onActiveNoteChangeRef.current?.(newState.activeNoteIndex);
     });
 
     return () => {

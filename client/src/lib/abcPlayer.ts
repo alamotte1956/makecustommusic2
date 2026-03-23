@@ -2,6 +2,9 @@
  * ABC Notation Playback Engine
  * Uses the Web Audio API to synthesize and play ABC notation
  * directly in the browser with piano-like tones.
+ *
+ * Also exposes a note-timing map so consumers can highlight
+ * the currently-playing note in the rendered sheet music.
  */
 
 // ─── Types ───
@@ -12,9 +15,21 @@ export interface PlaybackState {
   currentTime: number;
   duration: number;
   tempo: number;
+  /** Index into the scheduledNotes array for the note currently sounding (-1 = none) */
+  activeNoteIndex: number;
 }
 
 export type PlaybackCallback = (state: PlaybackState) => void;
+
+/** Timing entry exposed to consumers for mapping notes to SVG elements */
+export interface NoteTiming {
+  /** Seconds from start (before tempo multiplier) */
+  startTime: number;
+  /** Duration in seconds (before tempo multiplier) */
+  duration: number;
+  /** True for rests (no audible pitch) */
+  isRest: boolean;
+}
 
 // ─── ABC Note to Frequency Mapping ───
 
@@ -69,8 +84,7 @@ function parseHeaders(abc: string): ABCHeaders {
 // ─── Parse Duration ───
 
 function parseDuration(durationStr: string, defaultLength: [number, number], bps: number): number {
-  // Default note duration in seconds
-  const defaultBeats = (defaultLength[0] / defaultLength[1]) * 4; // in quarter notes
+  const defaultBeats = (defaultLength[0] / defaultLength[1]) * 4;
   const defaultSeconds = defaultBeats / bps;
 
   if (!durationStr || durationStr.length === 0) return defaultSeconds;
@@ -91,15 +105,15 @@ function parseDuration(durationStr: string, defaultLength: [number, number], bps
 // ─── Parse ABC into Scheduled Notes ───
 
 interface ScheduledNote {
-  pitch: number; // MIDI note number (0 = rest)
-  startTime: number; // seconds from start
-  duration: number; // seconds
-  velocity: number; // 0-127
+  pitch: number;
+  startTime: number;
+  duration: number;
+  velocity: number;
 }
 
 function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: number; tempo: number } {
   const headers = parseHeaders(abc);
-  const bps = headers.tempo / 60; // beats (quarter notes) per second
+  const bps = headers.tempo / 60;
   const notes: ScheduledNote[] = [];
   let currentTime = 0;
   let currentVelocity = 80;
@@ -121,10 +135,8 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
     while (i < trimmed.length) {
       const ch = trimmed[i];
 
-      // Skip bar lines, repeat signs
       if (ch === "|" || ch === ":") { i++; continue; }
 
-      // Handle dynamics
       if (ch === "!") {
         const endBang = trimmed.indexOf("!", i + 1);
         if (endBang > i) {
@@ -136,21 +148,18 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
         i++; continue;
       }
 
-      // Skip chord symbols
       if (ch === '"') {
         const endQuote = trimmed.indexOf('"', i + 1);
         if (endQuote > i) { i = endQuote + 1; continue; }
         i++; continue;
       }
 
-      // Skip brackets
       if (ch === "[") {
         const endBracket = trimmed.indexOf("]", i + 1);
         if (endBracket > i) { i = endBracket + 1; continue; }
         i++; continue;
       }
 
-      // Handle rests
       if (ch === "z" || ch === "Z") {
         i++;
         let durStr = "";
@@ -163,13 +172,11 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
         continue;
       }
 
-      // Handle accidentals
       let accidental = 0;
       if (ch === "^") { accidental = 1; i++; if (i < trimmed.length && trimmed[i] === "^") { accidental = 2; i++; } }
       else if (ch === "_") { accidental = -1; i++; if (i < trimmed.length && trimmed[i] === "_") { accidental = -2; i++; } }
       else if (ch === "=") { accidental = 0; i++; }
 
-      // Note letter
       if (i < trimmed.length && /[A-Ga-g]/.test(trimmed[i])) {
         const noteLetter = trimmed[i];
         let pitch = NOTE_MAP[noteLetter];
@@ -178,14 +185,12 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
         pitch += accidental;
         i++;
 
-        // Octave modifiers
         while (i < trimmed.length) {
           if (trimmed[i] === "'") { pitch += 12; i++; }
           else if (trimmed[i] === ",") { pitch -= 12; i++; }
           else break;
         }
 
-        // Duration
         let durStr = "";
         while (i < trimmed.length && /[\d\/]/.test(trimmed[i])) {
           durStr += trimmed[i]; i++;
@@ -197,7 +202,6 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
         continue;
       }
 
-      // Skip decorations and other characters
       i++;
     }
   }
@@ -215,9 +219,8 @@ function createPianoTone(
   velocity: number,
   masterGain: GainNode
 ): void {
-  const vol = (velocity / 127) * 0.3; // Scale volume
+  const vol = (velocity / 127) * 0.3;
 
-  // Fundamental + harmonics for a piano-like timbre
   const harmonics = [
     { ratio: 1, gain: 1.0 },
     { ratio: 2, gain: 0.5 },
@@ -235,16 +238,11 @@ function createPianoTone(
 
     const noteGain = vol * h.gain;
 
-    // ADSR envelope for piano-like sound
     gain.gain.setValueAtTime(0, startTime);
-    // Attack (fast)
     gain.gain.linearRampToValueAtTime(noteGain, startTime + 0.01);
-    // Decay
     gain.gain.exponentialRampToValueAtTime(noteGain * 0.7, startTime + 0.08);
-    // Sustain (hold for most of the duration)
     const sustainEnd = startTime + Math.max(duration - 0.05, 0.1);
     gain.gain.setValueAtTime(noteGain * 0.7, sustainEnd);
-    // Release
     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration + 0.1);
 
     osc.connect(gain);
@@ -253,6 +251,27 @@ function createPianoTone(
     osc.start(startTime);
     osc.stop(startTime + duration + 0.15);
   }
+}
+
+// ─── Active Note Lookup ───
+
+/**
+ * Binary-search style lookup: given the current playback time (already
+ * adjusted for tempo multiplier), return the index of the note that is
+ * currently sounding, or -1 if none.
+ */
+function findActiveNoteIndex(notes: ScheduledNote[], time: number, tempoMultiplier: number): number {
+  if (notes.length === 0 || time < 0) return -1;
+
+  // Walk backwards from the end to find the latest note whose adjusted
+  // start time is <= current time and whose end time is > current time.
+  for (let i = notes.length - 1; i >= 0; i--) {
+    const n = notes[i];
+    const start = n.startTime / tempoMultiplier;
+    const end = start + n.duration / tempoMultiplier;
+    if (start <= time && time < end) return i;
+  }
+  return -1;
 }
 
 // ─── ABCPlayer Class ───
@@ -280,6 +299,18 @@ export class ABCPlayer {
    */
   onStateChange(cb: PlaybackCallback): void {
     this.callback = cb;
+  }
+
+  /**
+   * Return the note-timing map so consumers can correlate indices
+   * with rendered SVG note elements.
+   */
+  getNoteTimings(): NoteTiming[] {
+    return this.scheduledNotes.map((n) => ({
+      startTime: n.startTime,
+      duration: n.duration,
+      isRest: n.pitch === 0,
+    }));
   }
 
   /**
@@ -324,17 +355,14 @@ export class ABCPlayer {
       this.masterGain.connect(this.audioCtx.destination);
     }
 
-    // Resume from suspended state (browser autoplay policy)
     if (this.audioCtx.state === "suspended") {
       this.audioCtx.resume();
     }
 
     if (this._isPaused) {
-      // Resume from paused position
       this.scheduleFrom(this.pausedAt);
       this._isPaused = false;
     } else {
-      // Start from beginning
       this.scheduleFrom(0);
     }
 
@@ -418,10 +446,8 @@ export class ABCPlayer {
   private scheduleFrom(fromTime: number): void {
     if (!this.audioCtx || !this.masterGain) return;
 
-    // Close and recreate to clear all scheduled nodes
     const wasCtx = this.audioCtx;
     if (wasCtx.state !== "closed") {
-      // Create fresh context to avoid overlapping sounds
       this.audioCtx = new AudioContext();
       this.masterGain = this.audioCtx.createGain();
       this.masterGain.gain.setValueAtTime(0.8, this.audioCtx.currentTime);
@@ -440,7 +466,6 @@ export class ABCPlayer {
       const noteStart = note.startTime / this.tempoMultiplier;
       const noteDur = note.duration / this.tempoMultiplier;
 
-      // Skip notes that have already passed
       if (noteStart + noteDur <= fromTime) continue;
 
       const scheduleTime = now + Math.max(0, noteStart - fromTime);
@@ -454,7 +479,6 @@ export class ABCPlayer {
       createPianoTone(ctx, freq, scheduleTime, actualDur, note.velocity, this.masterGain!);
     }
 
-    // Schedule auto-stop
     const remainingTime = adjustedDuration - fromTime;
     if (remainingTime > 0) {
       setTimeout(() => {
@@ -494,12 +518,19 @@ export class ABCPlayer {
   private emitState(): void {
     if (!this.callback) return;
     const adjustedDuration = this.getAdjustedDuration();
+    const ct = Math.min(this.getCurrentTime(), adjustedDuration);
+    const activeNoteIndex = (this._isPlaying && !this._isPaused)
+      ? findActiveNoteIndex(this.scheduledNotes, ct, this.tempoMultiplier)
+      : (this._isPaused
+          ? findActiveNoteIndex(this.scheduledNotes, ct, this.tempoMultiplier)
+          : -1);
     this.callback({
       isPlaying: this._isPlaying,
       isPaused: this._isPaused,
-      currentTime: Math.min(this.getCurrentTime(), adjustedDuration),
+      currentTime: ct,
       duration: adjustedDuration,
       tempo: Math.round(this.tempo * this.tempoMultiplier),
+      activeNoteIndex,
     });
   }
 }
@@ -508,10 +539,6 @@ export class ABCPlayer {
 
 let playerInstance: ABCPlayer | null = null;
 
-/**
- * Get or create the global ABCPlayer instance.
- * Use a singleton to prevent multiple audio contexts.
- */
 export function getPlayer(): ABCPlayer {
   if (!playerInstance) {
     playerInstance = new ABCPlayer();

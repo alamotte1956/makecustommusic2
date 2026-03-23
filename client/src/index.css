@@ -171,6 +171,27 @@
   height: auto;
 }
 
+/* ─── Real-time note highlighting during playback ─── */
+.abcjs-note-active {
+  /* Highlight the note head, stem, beam, and any associated elements */
+}
+
+.abcjs-note-active path,
+.abcjs-note-active circle,
+.abcjs-note-active ellipse,
+.abcjs-note-active rect,
+.abcjs-note-active line,
+.abcjs-note-active polygon {
+  fill: #7c3aed !important;
+  stroke: #7c3aed !important;
+  transition: fill 0.08s ease, stroke 0.08s ease;
+}
+
+/* Glow effect around the active note for better visibility */
+.abcjs-note-active {
+  filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.5));
+}
+
 @media print {
   .no-print {
     display: none !important;

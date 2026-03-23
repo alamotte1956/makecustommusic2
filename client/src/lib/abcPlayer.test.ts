@@ -300,6 +300,76 @@ C2 D4 E/2 F|`;
   });
 });
 
+// ─── activeNoteIndex Tests ───
+
+describe("ABCPlayer activeNoteIndex", () => {
+  let player: ABCPlayer;
+
+  beforeEach(() => {
+    player = new ABCPlayer();
+  });
+
+  afterEach(() => {
+    player.dispose();
+  });
+
+  it("should emit activeNoteIndex in PlaybackState", () => {
+    const states: any[] = [];
+    player.onStateChange((s) => states.push({ ...s }));
+    player.load(SAMPLE_ABC);
+
+    const last = states[states.length - 1];
+    expect(last).toHaveProperty("activeNoteIndex");
+    // When not playing, activeNoteIndex should be -1
+    expect(last.activeNoteIndex).toBe(-1);
+  });
+
+  it("should return note timings via getNoteTimings()", () => {
+    player.load(SAMPLE_ABC);
+    const timings = player.getNoteTimings();
+
+    // SAMPLE_ABC has 8 notes: C D E F G A B c
+    expect(timings.length).toBe(8);
+
+    // All should be non-rest notes
+    for (const t of timings) {
+      expect(t.isRest).toBe(false);
+      expect(t.startTime).toBeGreaterThanOrEqual(0);
+      expect(t.duration).toBeGreaterThan(0);
+    }
+
+    // Start times should be monotonically increasing
+    for (let i = 1; i < timings.length; i++) {
+      expect(timings[i].startTime).toBeGreaterThan(timings[i - 1].startTime);
+    }
+  });
+
+  it("should identify rests in getNoteTimings()", () => {
+    const abcWithRests = `X:1
+T:Rest Test
+M:4/4
+L:1/4
+Q:1/4=120
+K:C
+C z E z|`;
+
+    player.load(abcWithRests);
+    const timings = player.getNoteTimings();
+
+    // 4 events: C, rest, E, rest
+    expect(timings.length).toBe(4);
+    expect(timings[0].isRest).toBe(false);
+    expect(timings[1].isRest).toBe(true);
+    expect(timings[2].isRest).toBe(false);
+    expect(timings[3].isRest).toBe(true);
+  });
+
+  it("should return empty timings when no ABC is loaded", () => {
+    const timings = player.getNoteTimings();
+    expect(timings.length).toBe(0);
+  });
+});
+
 // ─── getPlayer Singleton Tests ───
 
 describe("getPlayer", () => {

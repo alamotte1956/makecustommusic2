@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Music, RefreshCw, FileAudio } from "lucide-react";
@@ -9,6 +9,7 @@ import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
+import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 
 interface SheetMusicViewerProps {
   songId: number;
@@ -18,12 +19,11 @@ interface SheetMusicViewerProps {
 }
 
 export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature }: SheetMusicViewerProps) {
-  const sheetRef = useRef<HTMLDivElement>(null);
+  const { sheetRef, onActiveNoteChange } = useNoteHighlight();
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
   const [isRendered, setIsRendered] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>("original");
-  // Key to generate sheet music in (before generation)
   const [generateInKey, setGenerateInKey] = useState<string>("auto");
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
@@ -279,13 +279,13 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         </div>
       </div>
 
-      {/* Playback controls */}
-      <PlaybackControls abc={displayAbc} />
+      {/* Playback controls with note highlighting */}
+      <PlaybackControls abc={displayAbc} onActiveNoteChange={onActiveNoteChange} />
 
       {/* Sheet music rendering area */}
       <div
         ref={sheetRef}
-        className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto"
+        className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
         style={{ colorScheme: "light" }}
       />
 

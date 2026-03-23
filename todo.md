@@ -879,3 +879,13 @@
 - [x] Playback respects the currently transposed key
 - [x] Add tempo control slider
 - [x] Write tests for playback feature
+
+## Real-Time Note Highlighting During Playback
+- [x] Extend ABCPlayer to track current note index based on playback time
+- [x] Build note-timing map from ABC parsing (note index → start/end times)
+- [x] Emit activeNoteIndex in PlaybackState callback
+- [x] Add CSS highlight styles for active notes in sheet music SVG
+- [x] Integrate note highlighting into SheetMusicViewer
+- [x] Integrate note highlighting into Mp3ToSheetMusic page
+- [x] Auto-scroll to keep active note visible
+- [x] Write tests for note highlighting logic
