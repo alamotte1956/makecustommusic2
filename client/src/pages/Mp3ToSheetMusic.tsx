@@ -93,25 +93,35 @@ export default function Mp3ToSheetMusic() {
     return transposeABC(abcNotation, originalKey, selectedKey);
   }, [abcNotation, selectedKey, originalKey]);
 
-  // Extract chords from the currently displayed (transposed) ABC notation
-  const chords = useMemo(() => {
-    if (!displayAbc) return [];
-    return extractChordsFromABC(displayAbc);
+  // Frontend-side ABC sanitisation: strip V: directives and %%staves as a safety net
+  const sanitisedDisplayAbc = useMemo(() => {
+    if (!displayAbc) return null;
+    return displayAbc
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("V:") && !l.trim().startsWith("%%staves"))
+      .join("\n")
+      .trim();
   }, [displayAbc]);
 
+  // Extract chords from the currently displayed (transposed) ABC notation
+  const chords = useMemo(() => {
+    if (!sanitisedDisplayAbc) return [];
+    return extractChordsFromABC(sanitisedDisplayAbc);
+  }, [sanitisedDisplayAbc]);
+
   const handleDownloadMIDI = useCallback(() => {
-    if (!displayAbc) return;
+    if (!sanitisedDisplayAbc) return;
     try {
       const title = file?.name.replace(/\.[^/.]+$/, "") || "Sheet Music";
       const keyLabel = selectedKey === "original"
         ? (originalKey ? `-${originalKey}` : "")
         : `-${selectedKey}`;
-      downloadMidi(displayAbc, `${title}${keyLabel}`);
+      downloadMidi(sanitisedDisplayAbc, `${title}${keyLabel}`);
       toast.success("MIDI file downloaded!");
     } catch {
       toast.error("Failed to export MIDI file");
     }
-  }, [displayAbc, file, selectedKey, originalKey]);
+  }, [sanitisedDisplayAbc, file, selectedKey, originalKey]);
 
   // Clean up preview URL on unmount
   useEffect(() => {
@@ -126,26 +136,31 @@ export default function Mp3ToSheetMusic() {
 
   // Render ABC notation using abcjs
   useEffect(() => {
-    if (!displayAbc || !sheetRef.current) return;
+    if (!sanitisedDisplayAbc || !sheetRef.current) return;
     setIsRendered(false);
     import("abcjs").then((mod) => {
       const abcjs = mod.default || mod;
       if (!sheetRef.current) return;
       sheetRef.current.innerHTML = "";
-      abcjs.renderAbc(sheetRef.current, displayAbc, {
-        responsive: "resize",
-        staffwidth: 700,
-        paddingtop: 20,
-        paddingbottom: 20,
-        paddingleft: 15,
-        paddingright: 15,
-        add_classes: true,
-      });
-      setIsRendered(true);
+      try {
+        abcjs.renderAbc(sheetRef.current, sanitisedDisplayAbc, {
+          responsive: "resize",
+          staffwidth: 700,
+          paddingtop: 20,
+          paddingbottom: 20,
+          paddingleft: 15,
+          paddingright: 15,
+          add_classes: true,
+        });
+        setIsRendered(true);
+      } catch (renderErr: any) {
+        console.error("Sheet music render error:", renderErr);
+        toast.error("Failed to render sheet music notation");
+      }
     }).catch(() => {
-      toast.error("Failed to render sheet music");
+      toast.error("Failed to load sheet music renderer");
     });
-  }, [displayAbc]);
+  }, [sanitisedDisplayAbc]);
 
   const stopPreview = useCallback(() => {
     if (audioRef.current) {
@@ -663,7 +678,7 @@ export default function Mp3ToSheetMusic() {
 
               {/* Playback controls with note highlighting and progress tracking */}
               <PlaybackControls
-                abc={displayAbc}
+                abc={sanitisedDisplayAbc}
                 className="mb-4"
                 onActiveNoteChange={onActiveNoteChange}
                 onPlaybackStateChange={handlePlaybackStateChange}

@@ -151,7 +151,15 @@ export async function getSongByShareToken(shareToken: string) {
 export async function updateSongSheetMusic(id: number, sheetMusicAbc: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(songs).set({ sheetMusicAbc }).where(eq(songs.id, id));
+  // Sanitise before storing: remove V: directives, code fences, etc.
+  const clean = sheetMusicAbc
+    .replace(/^```[a-z]*\n?/gm, "")
+    .replace(/```\s*$/gm, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("V:") && !l.trim().startsWith("%%staves"))
+    .join("\n")
+    .trim();
+  await db.update(songs).set({ sheetMusicAbc: clean }).where(eq(songs.id, id));
 }
 
 export async function updateSongChordProgression(id: number, chordProgression: ChordProgressionData) {

@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, sheetMusicAbc LIKE '%V:%' as has_v_directive FROM songs WHERE sheetMusicAbc IS NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, sheetMusicAbc LIKE '%V:%' as has_v_directive FROM songs WHERE sheetMusicAbc IS NOT NULL;",
+  "rows": [
+    {
+      "id": "210035",
+      "has_v_directive": "0"
+    },
+    {
+      "id": "510001",
+      "has_v_directive": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\thas_v_directive\n210035\t0\n510001\t0\n",
+  "stderr": "",
+  "execution_time_ms": 349
+}

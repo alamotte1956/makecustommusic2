@@ -135,9 +135,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [songId, generateInKey, generateMutation, utils]);
 
+  // Frontend-side ABC sanitisation: strip V: directives and %%staves as a safety net
+  const sanitisedDisplayAbc = useMemo(() => {
+    if (!displayAbc) return null;
+    return displayAbc
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("V:") && !l.trim().startsWith("%%staves"))
+      .join("\n")
+      .trim();
+  }, [displayAbc]);
+
   // Render ABC notation using abcjs
   useEffect(() => {
-    if (!displayAbc || !sheetRef.current) return;
+    if (!sanitisedDisplayAbc || !sheetRef.current) return;
 
     setIsRendered(false);
     // Clear any previous rendering error when attempting to render new ABC
@@ -148,7 +158,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       if (!sheetRef.current) return;
       sheetRef.current.innerHTML = "";
       try {
-        abcjs.renderAbc(sheetRef.current, displayAbc, {
+        abcjs.renderAbc(sheetRef.current, sanitisedDisplayAbc, {
           responsive: "resize",
           staffwidth: 700,
           paddingtop: 20,
@@ -164,7 +174,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }).catch((importErr: any) => {
       setError({ type: "rendering", message: "Failed to load the sheet music renderer.", detail: importErr?.message });
     });
-  }, [displayAbc]);
+  }, [sanitisedDisplayAbc]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!sheetRef.current) return;
@@ -190,17 +200,17 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   }, [songTitle, selectedKey, originalKey]);
 
   const handleDownloadMIDI = useCallback(() => {
-    if (!displayAbc) return;
+    if (!sanitisedDisplayAbc) return;
     try {
       const keyLabel = selectedKey === "original"
         ? (originalKey ? `-${originalKey}` : "")
         : `-${selectedKey}`;
-      downloadMidi(displayAbc, `${songTitle}${keyLabel}`);
+      downloadMidi(sanitisedDisplayAbc, `${songTitle}${keyLabel}`);
       toast.success("MIDI file downloaded!");
     } catch {
       toast.error("Failed to export MIDI file");
     }
-  }, [displayAbc, songTitle, selectedKey, originalKey]);
+  }, [sanitisedDisplayAbc, songTitle, selectedKey, originalKey]);
 
   // Shared error banner component
   const renderErrorBanner = () => {
@@ -465,7 +475,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
       {/* Playback controls with note highlighting and progress tracking */}
       <PlaybackControls
-        abc={displayAbc}
+        abc={sanitisedDisplayAbc}
         onActiveNoteChange={onActiveNoteChange}
         onPlaybackStateChange={handlePlaybackStateChange}
       />

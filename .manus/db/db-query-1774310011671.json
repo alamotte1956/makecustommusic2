@@ -1,0 +1,39 @@
+{
+  "query": "SELECT id, title, LEFT(sheetMusicAbc, 300) as abc_preview FROM songs WHERE sheetMusicAbc IS NOT NULL LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, LEFT(sheetMusicAbc, 300) as abc_preview FROM songs WHERE sheetMusicAbc IS NOT NULL LIMIT 5;",
+  "rows": [
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "abc_preview": "X:1"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "abc_preview": "X: 1"
+    }
+  ],
+  "messages": [
+    "T:Men of The Father's House",
+    "M:4/4",
+    "L:1/8",
+    "Q:1/4=120",
+    "K:G",
+    "\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |",
+    "w: Men of the Fa-ther's House, stand up and sing His praise!",
+    "\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |",
+    "w: Men of the Fa-ther's House, through all your liv-ing d",
+    "T: playful jazz piano",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 120",
+    "K: C",
+    "\"C\"G,CDE G2 c2 | \"G7\"B,DFA G2 B2 | \"C\"CDEF G2 c2 | \"G7\"B,DFA G2 B2 |",
+    "\"C\"cdef g2 e2 | \"F\"fgaf e2 d2 | \"C\"cdef g2 e2 | \"G7\"dgbd c2 B2 |",
+    "\"C\"cdef g2 e2 | \"F\"fgaf e2 d2 | \"C\"cdef g2 e2 | \"G7\"dgbd c2 B2 |",
+    "\"C\"G,CDE G2 c2 | \"G7\"B,DFA G2 B2 | \"C\"CDEF G2 c2"
+  ],
+  "stdout": "id\ttitle\tabc_preview\n210035\tMen of The Father's House\tX:1\nT:Men of The Father's House\nM:4/4\nL:1/8\nQ:1/4=120\nK:G\n\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |\nw: Men of the Fa-ther's House, stand up and sing His praise!\n\"G\"D2 G2 B2 d2 | \"C\"e2 d2 c2 B2 | \"G\"G2 B2 d2 B2 | \"D\"A4 z4 |\nw: Men of the Fa-ther's House, through all your liv-ing d\n510001\tplayful jazz piano\tX: 1\nT: playful jazz piano\nM: 4/4\nL: 1/8\nQ: 120\nK: C\n\"C\"G,CDE G2 c2 | \"G7\"B,DFA G2 B2 | \"C\"CDEF G2 c2 | \"G7\"B,DFA G2 B2 |\n\"C\"cdef g2 e2 | \"F\"fgaf e2 d2 | \"C\"cdef g2 e2 | \"G7\"dgbd c2 B2 |\n\"C\"cdef g2 e2 | \"F\"fgaf e2 d2 | \"C\"cdef g2 e2 | \"G7\"dgbd c2 B2 |\n\"C\"G,CDE G2 c2 | \"G7\"B,DFA G2 B2 | \"C\"CDEF G2 c2\n",
+  "stderr": "",
+  "execution_time_ms": 365
+}

@@ -1,0 +1,23 @@
+AUDIT NOTES: Sheet Music Generation Pipeline
+
+## LLM Module (server/_core/llm.ts)
+- Line 301-304: CRITICAL ISSUE - `thinking` parameter with `budget_tokens: 128` is hardcoded
+  - This is a Claude-specific parameter but the default model is "gemini-2.5-flash"
+  - When using claude-sonnet-4-20250514 (as in backgroundSheetMusic.ts), the thinking parameter
+    may cause the response format to include thinking blocks, which could make
+    response.choices[0].message.content an ARRAY instead of a string
+  - The InvokeResult type says content can be `string | Array<TextContent | ImageContent | FileContent>`
+  - In backgroundSheetMusic.ts line 92: `response.choices?.[0]?.message?.content`
+    - If content is an array (due to thinking), this returns the array, not a string
+    - Line 93: `typeof rawContent === "string"` would be FALSE for an array
+    - This means abcNotation would be null, triggering the "LLM returned empty content" error
+
+## backgroundSheetMusic.ts
+- Line 82: Uses model "claude-sonnet-4-20250514" 
+- Line 92-93: Only handles string content, not array content (thinking blocks)
+- Line 99: Regex to strip markdown fences looks correct
+
+## Potential JSON Error
+- The user mentioned ".json file" error
+- Could be related to the LLM response being JSON with thinking blocks
+- Or could be the fetch response failing to parse as JSON

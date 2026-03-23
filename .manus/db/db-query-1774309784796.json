@@ -1,0 +1,91 @@
+{
+  "query": "SELECT id, title, sheetMusicAbc IS NOT NULL as has_sheet, createdAt FROM songs ORDER BY id DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, sheetMusicAbc IS NOT NULL as has_sheet, createdAt FROM songs ORDER BY id DESC LIMIT 20;",
+  "rows": [
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "has_sheet": "0",
+      "createdAt": "2026-03-22 10:10:31"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "has_sheet": "0",
+      "createdAt": "2026-03-22 10:09:46"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "has_sheet": "0",
+      "createdAt": "2026-03-22 10:08:36"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "has_sheet": "0",
+      "createdAt": "2026-03-20 21:54:28"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "has_sheet": "0",
+      "createdAt": "2026-03-20 21:52:02"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "has_sheet": "1",
+      "createdAt": "2026-03-20 21:47:24"
+    },
+    {
+      "id": "450001",
+      "title": "높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기",
+      "has_sheet": "0",
+      "createdAt": "2026-03-13 07:03:13"
+    },
+    {
+      "id": "360013",
+      "title": "Psalm 91",
+      "has_sheet": "0",
+      "createdAt": "2026-03-02 12:20:21"
+    },
+    {
+      "id": "330003",
+      "title": "Custom Song",
+      "has_sheet": "0",
+      "createdAt": "2026-03-02 01:27:22"
+    },
+    {
+      "id": "330002",
+      "title": "Custom Song",
+      "has_sheet": "0",
+      "createdAt": "2026-03-02 01:26:28"
+    },
+    {
+      "id": "330001",
+      "title": "Custom Song",
+      "has_sheet": "0",
+      "createdAt": "2026-03-02 01:25:35"
+    },
+    {
+      "id": "300001",
+      "title": "Colossians 3:14",
+      "has_sheet": "0",
+      "createdAt": "2026-03-02 00:45:59"
+    },
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "has_sheet": "1",
+      "createdAt": "2026-03-01 11:18:16"
+    }
+  ],
+  "messages": [
+    "480001\tTraditional folk",
+    "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\t0\t2026-03-20 00:44:49"
+  ],
+  "stdout": "id\ttitle\thas_sheet\tcreatedAt\n540003\tonly relaxed piano\t0\t2026-03-22 10:10:31\n540002\tonly relaxed piano\t0\t2026-03-22 10:09:46\n540001\trelaxed piano\t0\t2026-03-22 10:08:36\n510003\tplayful happy piano, light and bouncy\t0\t2026-03-20 21:54:28\n510002\tplayful happy piano, light and bouncy\t0\t2026-03-20 21:52:02\n510001\tplayful jazz piano\t1\t2026-03-20 21:47:24\n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\t0\t2026-03-20 00:44:49\n450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\t0\t2026-03-13 07:03:13\n360013\tPsalm 91\t0\t2026-03-02 12:20:21\n330003\tCustom Song\t0\t2026-03-02 01:27:22\n330002\tCustom Song\t0\t2026-03-02 01:26:28\n330001\tCustom Song\t0\t2026-03-02 01:25:35\n300001\tColossians 3:14\t0\t2026-03-02 00:45:59\n210035\tMen of The Father's House\t1\t2026-03-01 11:18:16\n",
+  "stderr": "",
+  "execution_time_ms": 379
+}

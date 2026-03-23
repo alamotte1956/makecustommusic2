@@ -38,7 +38,7 @@ import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
-import { generateSheetMusicInBackground, generateAbcNotation } from "./backgroundSheetMusic";
+import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
 
 function getStripe(): Stripe | null {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -1087,14 +1087,22 @@ Your task:
 1. Listen carefully to the audio and identify: key signature, time signature, tempo (BPM), melody, chord progressions, and song structure
 2. Generate valid ABC notation that accurately represents the music
 
-REQUIRED HEADERS (must all be present):
+REQUIRED HEADERS (must all be present, each on its own line):
 - X: reference number (always 1)
 - T: title (use the filename or identify from audio)
 - C: composer/artist if identifiable
 - M: time signature (e.g., 4/4, 3/4, 6/8) — ALWAYS include, detect from audio
 - L: default note length (e.g., 1/8)
 - Q: tempo marking (e.g., 1/4=120) — ALWAYS include, detect BPM from audio
-- K: key signature (e.g., C, Am, F#m) — ALWAYS include, detect from audio
+- K: key signature (e.g., C, Am, F#m) — ALWAYS include, detect from audio, must be the LAST header line
+
+STRICT FORMAT RULES:
+- Output ONLY valid ABC notation text, nothing else
+- Do NOT wrap the output in markdown code fences or backticks
+- Do NOT include any JSON, XML, or other structured data formats
+- Do NOT include any explanatory text before or after the notation
+- Do NOT use V: (voice) directives — write a single-voice lead sheet only
+- Do NOT use %%staves or multi-staff directives
 
 TRANSCRIPTION RULES:
 - Output ONLY valid ABC notation, no explanations or commentary
@@ -1149,8 +1157,12 @@ QUALITY:
           throw new Error("Failed to generate sheet music from audio. Please try again.");
         }
 
-        // Clean up: extract just the ABC notation if wrapped in markdown code blocks
-        const cleanAbc = abcRaw.replace(/^```[a-z]*\n?/gm, "").replace(/```$/gm, "").trim();
+        // Sanitise and validate the ABC notation
+        const cleanAbc = sanitiseAbc(abcRaw);
+        const validationError = validateAbc(cleanAbc);
+        if (validationError) {
+          throw new Error(`Generated sheet music failed validation: ${validationError}. Please try again.`);
+        }
 
         // Deduct credit
         await deductCredits(ctx.user.id, 1, "generation", `Sheet music from MP3: ${input.fileName}`);

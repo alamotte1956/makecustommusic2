@@ -915,3 +915,16 @@
 - [x] Add polling via refetchInterval on SongDetail getById query (polls every 5s when sheetMusicAbc is null)
 - [x] Update SheetMusicViewer to show "Preparing" state and sync with initialAbc prop changes
 - [x] Write tests for background generation logic
+
+## Bug Fix: JSON Error in Sheet Music Generation
+- [x] Investigated JSON error — improved LLM prompt to explicitly forbid JSON/XML output, added validation
+
+## Deep Audit: Sheet Music Generation Pipeline
+- [x] Audit backgroundSheetMusic.ts — rewrote prompt with strict format rules, added sanitiseAbc/validateAbc, 2s delay
+- [x] Audit routers.ts — added V: prohibition to Mp3 prompt, used shared sanitiseAbc/validateAbc
+- [x] Audit db.ts — added V: directive stripping in updateSongSheetMusic, cleaned existing DB records
+- [x] Audit SheetMusicViewer.tsx — added frontend sanitisation layer, uses sanitisedDisplayAbc everywhere
+- [x] Audit Mp3ToSheetMusic.tsx — added frontend sanitisation, try/catch on renderAbc, uses sanitisedDisplayAbc
+- [x] Audit abcPlayer.ts — confirmed parsing handles sanitised ABC correctly
+- [x] Test full pipeline end-to-end — LLM returns valid ABC, sanitisation works, validation passes
+- [x] Fix all identified issues — V: directives stripped at all layers, prompts hardened, validation added
