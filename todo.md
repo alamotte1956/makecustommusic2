@@ -957,3 +957,10 @@
 - [x] Cleaned up debug endpoint from server/_core/index.ts
 - [x] Added 16 new tests for sanitiseAbc, zero-width guard logic, and real ABC notation processing
 - [x] All 849 tests passing (39 test files)
+
+## Sheet Music Loading Skeleton
+- [x] Create a music-themed skeleton component that mimics staff lines, notes, and measures
+- [x] Show skeleton in SheetMusicViewer while abcjs is rendering (between abc available and isRendered)
+- [x] Show skeleton in Mp3ToSheetMusic while abcjs is rendering
+- [x] Smooth fade transition from skeleton to rendered notation (500ms opacity ease-in-out)
+- [x] Added 12 tests for skeleton design constants and visibility logic — 861 tests passing

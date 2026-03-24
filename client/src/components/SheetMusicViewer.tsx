@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Music, RefreshCw, FileAudio, AlertCircle, WifiOff } from "lucide-react";
+import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
@@ -649,13 +650,25 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         isPlaying={playbackIsPlaying}
       />
 
-      {/* Sheet music rendering area */}
-      <div
-        id="sheet-music-render"
-        ref={sheetRef}
-        className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
-        style={{ colorScheme: "light" }}
-      />
+      {/* Sheet music rendering area with skeleton overlay */}
+      <div className="relative">
+        {/* Skeleton shown while rendering */}
+        {sanitisedDisplayAbc && !isRendered && !error?.type && (
+          <div className="absolute inset-0 z-10">
+            <SheetMusicSkeleton />
+          </div>
+        )}
+        {/* Actual rendering container — always in the DOM with full width so
+            abcjs can compute staff layout. Opacity transitions to reveal once rendered. */}
+        <div
+          id="sheet-music-render"
+          ref={sheetRef}
+          className={`bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth transition-opacity duration-500 ease-in-out ${
+            isRendered ? "opacity-100" : "opacity-0"
+          }`}
+          style={{ colorScheme: "light" }}
+        />
+      </div>
 
       {/* Guitar chord diagrams */}
       {chords.length > 0 && (

@@ -16,6 +16,7 @@ import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
+import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
 
@@ -747,13 +748,24 @@ export default function Mp3ToSheetMusic() {
                 isPlaying={playbackIsPlaying}
               />
 
-              {/* Sheet music rendering area */}
-              <div
-                id="mp3-sheet-music-render"
-                ref={sheetRef}
-                className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
-                style={{ colorScheme: "light" }}
-              />
+              {/* Sheet music rendering area with skeleton overlay */}
+              <div className="relative">
+                {/* Skeleton shown while rendering */}
+                {sanitisedDisplayAbc && !isRendered && (
+                  <div className="absolute inset-0 z-10">
+                    <SheetMusicSkeleton />
+                  </div>
+                )}
+                {/* Actual rendering container — always in the DOM with full width */}
+                <div
+                  id="mp3-sheet-music-render"
+                  ref={sheetRef}
+                  className={`bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth transition-opacity duration-500 ease-in-out ${
+                    isRendered ? "opacity-100" : "opacity-0"
+                  }`}
+                  style={{ colorScheme: "light" }}
+                />
+              </div>
 
               {/* Guitar chord diagrams */}
               {chords.length > 0 && (
