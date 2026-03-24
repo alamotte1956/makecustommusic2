@@ -1062,14 +1062,26 @@ RULES:
         // Check credits
         const balance = await getCreditBalance(ctx.user.id);
         if (balance.totalCredits < 1) {
-          throw new Error("Insufficient credits. Please upgrade or purchase more credits.");
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Insufficient credits. You need at least 1 credit to convert audio to sheet music. Please upgrade your plan or purchase more credits.",
+          });
         }
 
         // Decode and validate file size (16MB limit for Whisper)
         const buffer = Buffer.from(input.fileData, "base64");
         const sizeMB = buffer.length / (1024 * 1024);
         if (sizeMB > 16) {
-          throw new Error(`File too large (${sizeMB.toFixed(1)}MB). Maximum size is 16MB.`);
+          throw new TRPCError({
+            code: "PAYLOAD_TOO_LARGE",
+            message: `File too large (${sizeMB.toFixed(1)}MB). The maximum file size is 16MB. Please compress or trim your audio file and try again.`,
+          });
+        }
+        if (sizeMB < 0.001) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "The uploaded file appears to be empty. Please select a valid audio file.",
+          });
         }
 
         // Upload to S3 for processing
@@ -1108,6 +1120,7 @@ RULES:
           audioUrl: job.audioUrl,
           fileName: job.fileName,
           errorMessage: job.errorMessage,
+          errorCode: job.errorCode,
         };
       }),
 

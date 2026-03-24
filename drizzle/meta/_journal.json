@@ -127,6 +127,13 @@
       "when": 1774322425255,
       "tag": "0017_grey_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1774325944649,
+      "tag": "0018_greedy_reavers",
+      "breakpoints": true
     }
   ]
 }

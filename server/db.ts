@@ -524,7 +524,7 @@ export async function getMp3SheetJob(jobId: number, userId: number) {
 
 export async function updateMp3SheetJob(
   jobId: number,
-  data: Partial<Pick<InsertMp3SheetJob, "status" | "audioUrl" | "abcNotation" | "lyrics" | "errorMessage">>
+  data: Partial<Pick<InsertMp3SheetJob, "status" | "audioUrl" | "abcNotation" | "lyrics" | "errorMessage" | "errorCode">>
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

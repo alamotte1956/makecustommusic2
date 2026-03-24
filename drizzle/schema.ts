@@ -233,6 +233,7 @@ export const mp3SheetJobs = mysqlTable("mp3_sheet_jobs", {
   abcNotation: text("abcNotation"),
   lyrics: text("lyrics"),
   errorMessage: text("errorMessage"),
+  errorCode: varchar("errorCode", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

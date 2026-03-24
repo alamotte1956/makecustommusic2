@@ -998,3 +998,15 @@
 - [x] Fixed llm.ts: max_tokens now respects per-call overrides instead of hardcoded 32768
 - [x] Fixed mp3SheetProcessor: switched from claude-sonnet to default gemini-2.5-flash which natively supports audio input
 - [x] All 910 tests passing
+
+## Better Error Messages for MP3-to-Sheet-Music
+- [x] Backend: Added errorCode column to mp3SheetJobs table
+- [x] Backend: Added structured error codes to mp3SheetProcessor (audio_too_long, transcription_failed, transcription_timeout, audio_download_failed, generation_failed, generation_timeout, validation_failed, credit_error)
+- [x] Backend: Added specific TRPCError messages for file too large, unsupported format, empty file in startMp3SheetJob
+- [x] Backend: Added errorCode to getMp3SheetJobStatus route response
+- [x] Frontend: 13 distinct error types with mapErrorCodeToType + message-based fallback inference
+- [x] Frontend: getErrorDisplay returns specific icon (wifi/file/clock/alert/credit), title, and suggestion per type
+- [x] Frontend: Distinct icons per error type (WifiOff, FileAudio, Clock, AlertCircle)
+- [x] Frontend: "Try Again" button hidden for non-retryable errors (file_too_large, empty_file, unsupported_format, insufficient_credits)
+- [x] Frontend: "Back" button text for insufficient_credits instead of "Try Another File"
+- [x] Added 11 tests for error mapping, display, retryability, and code conventions — 922 tests passing

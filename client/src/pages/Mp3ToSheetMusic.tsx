@@ -27,7 +27,51 @@ const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac";
 const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB for Whisper
 
 type ProcessingStep = "idle" | "uploading" | "transcribing" | "analyzing" | "generating" | "done" | "error";
-type ErrorType = "network" | "generation" | "rendering";
+type ErrorType = "network" | "file_too_large" | "empty_file" | "unsupported_format" | "insufficient_credits" | "audio_too_long" | "transcription_failed" | "transcription_timeout" | "generation_failed" | "generation_timeout" | "validation_failed" | "credit_error" | "unknown";
+
+function mapErrorCodeToType(errorCode?: string | null, message?: string): ErrorType {
+  if (errorCode) {
+    const mapping: Record<string, ErrorType> = {
+      audio_too_long: "audio_too_long",
+      transcription_failed: "transcription_failed",
+      transcription_timeout: "transcription_timeout",
+      audio_download_failed: "network",
+      generation_failed: "generation_failed",
+      generation_timeout: "generation_timeout",
+      validation_failed: "validation_failed",
+      credit_error: "credit_error",
+      unknown: "unknown",
+    };
+    return mapping[errorCode] || "unknown";
+  }
+  const lowerMsg = (message || "").toLowerCase();
+  if (lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("connection")) return "network";
+  if (lowerMsg.includes("too large") || lowerMsg.includes("file size")) return "file_too_large";
+  if (lowerMsg.includes("empty")) return "empty_file";
+  if (lowerMsg.includes("unsupported") || lowerMsg.includes("format")) return "unsupported_format";
+  if (lowerMsg.includes("credit") || lowerMsg.includes("insufficient")) return "insufficient_credits";
+  if (lowerMsg.includes("timeout") || lowerMsg.includes("timed out")) return "generation_timeout";
+  return "unknown";
+}
+
+function getErrorDisplay(type: ErrorType): { icon: "wifi" | "file" | "clock" | "alert" | "credit"; title: string; suggestion: string } {
+  const displays: Record<ErrorType, { icon: "wifi" | "file" | "clock" | "alert" | "credit"; title: string; suggestion: string }> = {
+    network: { icon: "wifi", title: "Connection Error", suggestion: "Check your internet connection and try again." },
+    file_too_large: { icon: "file", title: "File Too Large", suggestion: "Compress or trim your audio file to under 16MB and try again." },
+    empty_file: { icon: "file", title: "Empty File", suggestion: "The uploaded file appears to be empty. Please select a valid audio file." },
+    unsupported_format: { icon: "file", title: "Unsupported Format", suggestion: "Please upload an MP3, WAV, FLAC, OGG, or M4A file." },
+    insufficient_credits: { icon: "credit", title: "Insufficient Credits", suggestion: "You need at least 1 credit. Please upgrade your plan or purchase more credits." },
+    audio_too_long: { icon: "clock", title: "Audio Too Long", suggestion: "Maximum supported duration is 10 minutes. Please trim the audio and try again." },
+    transcription_failed: { icon: "alert", title: "Transcription Failed", suggestion: "The audio could not be transcribed. Try a clearer recording or a different audio format." },
+    transcription_timeout: { icon: "clock", title: "Transcription Timed Out", suggestion: "The audio file may be too long or the service is busy. Try a shorter clip or try again later." },
+    generation_failed: { icon: "alert", title: "Sheet Music Generation Failed", suggestion: "The AI could not generate notation from this audio. Try a different file or a clearer recording." },
+    generation_timeout: { icon: "clock", title: "Generation Timed Out", suggestion: "The AI service is temporarily busy. Please try again in a few minutes." },
+    validation_failed: { icon: "alert", title: "Notation Validation Failed", suggestion: "The AI-generated notation had formatting issues. Try again — results may vary between attempts." },
+    credit_error: { icon: "credit", title: "Credit Processing Error", suggestion: "Could not process credits. Please check your account balance and try again." },
+    unknown: { icon: "alert", title: "Something Went Wrong", suggestion: "An unexpected error occurred. Please try again or try a different audio file." },
+  };
+  return displays[type] || displays.unknown;
+}
 
 const STEP_LABELS: Record<ProcessingStep, string> = {
   idle: "",
@@ -360,9 +404,11 @@ export default function Mp3ToSheetMusic() {
           pollingRef.current = null;
           setActiveJobId(null);
           setStep("error");
+          const errType = mapErrorCodeToType(result.errorCode ?? undefined, result.errorMessage ?? undefined);
           setErrorInfo({
-            type: "generation",
+            type: errType,
             message: result.errorMessage || "Sheet music generation failed. Please try again.",
+            detail: result.errorCode || undefined,
           });
         }
       } catch (pollErr: any) {
@@ -390,13 +436,10 @@ export default function Mp3ToSheetMusic() {
     } catch (err: any) {
       setStep("error");
       const msg = err?.message || "";
-      const lowerMsg = msg.toLowerCase();
-      const isNetwork = lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout");
+      const errType = mapErrorCodeToType(null, msg);
       setErrorInfo({
-        type: isNetwork ? "network" : "generation",
-        message: isNetwork
-          ? "Network error. Please check your connection and try again."
-          : (msg || "Failed to start sheet music generation."),
+        type: errType,
+        message: msg || "Failed to start sheet music generation.",
         detail: msg || undefined,
       });
     }
@@ -690,50 +733,55 @@ export default function Mp3ToSheetMusic() {
         )}
 
         {/* Error state */}
-        {step === "error" && (
-          <div className="mt-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-6">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                {errorInfo?.type === "network" ? (
-                  <WifiOff className="h-6 w-6 text-red-500" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-red-500" />
-                )}
+        {step === "error" && errorInfo && (() => {
+          const display = getErrorDisplay(errorInfo.type);
+          const IconComponent = display.icon === "wifi" ? WifiOff
+            : display.icon === "file" ? FileAudio
+            : display.icon === "clock" ? Clock
+            : display.icon === "credit" ? AlertCircle
+            : AlertCircle;
+          const isRetryable = !["file_too_large", "empty_file", "unsupported_format", "insufficient_credits"].includes(errorInfo.type);
+          return (
+            <div className="mt-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <IconComponent className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-red-700 dark:text-red-400">
+                    {display.title}
+                  </h4>
+                  <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                    {errorInfo.message}
+                  </p>
+                  <p className="text-xs text-red-500/80 dark:text-red-400/60 mt-1.5">
+                    {display.suggestion}
+                  </p>
+                  {errorInfo.detail && errorInfo.detail !== errorInfo.message && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-red-400 dark:text-red-500 cursor-pointer hover:text-red-500 dark:hover:text-red-400">
+                        Technical details
+                      </summary>
+                      <pre className="text-xs text-red-400 dark:text-red-500 mt-1 whitespace-pre-wrap break-all bg-red-100/50 dark:bg-red-900/20 rounded p-2">
+                        {errorInfo.detail}
+                      </pre>
+                    </details>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-red-700 dark:text-red-400">
-                  {errorInfo?.type === "network" ? "Connection Error" : "Generation Failed"}
-                </h4>
-                <p className="text-sm text-red-600 dark:text-red-300 mt-1">
-                  {errorInfo?.message || "The AI couldn't generate sheet music from this audio."}
-                </p>
-                <p className="text-xs text-red-500/80 dark:text-red-400/60 mt-1.5">
-                  {errorInfo?.type === "network"
-                    ? "Check your internet connection and try again."
-                    : "Try a different file, a clearer recording, or retry the generation."}
-                </p>
-                {errorInfo?.detail && errorInfo.detail !== errorInfo.message && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-red-400 dark:text-red-500 cursor-pointer hover:text-red-500 dark:hover:text-red-400">
-                      Technical details
-                    </summary>
-                    <pre className="text-xs text-red-400 dark:text-red-500 mt-1 whitespace-pre-wrap break-all bg-red-100/50 dark:bg-red-900/20 rounded p-2">
-                      {errorInfo.detail}
-                    </pre>
-                  </details>
+              <div className="flex gap-3 mt-4 ml-9">
+                <Button variant="outline" onClick={handleReset}>
+                  {errorInfo.type === "insufficient_credits" ? "Back" : "Try Another File"}
+                </Button>
+                {isRetryable && (
+                  <Button onClick={() => { setErrorInfo(null); handleGenerate(); }} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
+                    <RefreshCw className="h-4 w-4" /> Try Again
+                  </Button>
                 )}
               </div>
             </div>
-            <div className="flex gap-3 mt-4 ml-9">
-              <Button variant="outline" onClick={handleReset}>
-                Try Another File
-              </Button>
-              <Button onClick={() => { setErrorInfo(null); handleGenerate(); }} className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5">
-                <RefreshCw className="h-4 w-4" /> Try Again
-              </Button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Sheet Music Result */}
         {abcNotation && step === "done" && (

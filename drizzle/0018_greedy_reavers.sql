@@ -1,0 +1,1 @@
+ALTER TABLE `mp3_sheet_jobs` ADD `errorCode` varchar(64);
