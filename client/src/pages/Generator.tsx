@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import AudioPlayer from "@/components/AudioPlayer";
+import { downloadFile, sanitizeFilename } from "@/lib/safariDownload";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -419,18 +420,12 @@ export default function Generator() {
     }
   }, [keywords, creationMode, isCustomMode, selectedGenre, selectedMood, vocalType, duration, customTitle, customLyrics, customStyle, generateMutation, utils, isElevenLabsAvailable]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!generatedSong) return;
     const downloadUrl = generatedSong.audioUrl || generatedSong.mp3Url;
     if (!downloadUrl) return;
-    const filename = `${generatedSong.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = filename;
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    toast.info("Preparing download...");
+    await downloadFile(downloadUrl, sanitizeFilename(generatedSong.title));
     toast.success("Download started!");
   }, [generatedSong]);
 

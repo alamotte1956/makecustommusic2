@@ -129,8 +129,11 @@ export default function ListenToLyricsButton({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
-      setIsPlaying(true);
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {
+        setIsPlaying(false);
+      });
     }
   }, [isPlaying]);
 
@@ -142,17 +145,35 @@ export default function ListenToLyricsButton({
     }
   }, []);
 
-  const handleDownloadTTS = useCallback(() => {
+  const handleDownloadTTS = useCallback(async () => {
     const url = persistentUrl || audioUrl;
     if (!url) return;
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "lyrics-audio.mp3";
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // For blob URLs (local), use direct download; for remote URLs, fetch as blob first (Safari fix)
+    if (url.startsWith("blob:")) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "lyrics-audio.mp3";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 250);
+    } else {
+      try {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = "lyrics-audio.mp3";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 250);
+      } catch {
+        window.open(url, "_blank");
+      }
+    }
     toast.success("Download started!");
   }, [persistentUrl, audioUrl]);
 

@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { copyToClipboard } from "@/lib/clipboard";
 import { trpc } from "@/lib/trpc";
+import { downloadFile, sanitizeFilename } from "@/lib/safariDownload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -89,20 +90,14 @@ export default function Favorites() {
     [songs, isFavoritesQueue, currentSong, togglePlay, handlePlayAll]
   );
 
-  const handleDownload = useCallback((song: any) => {
+  const handleDownload = useCallback(async (song: any) => {
     const url = song.audioUrl || song.mp3Url;
     if (!url) {
       toast.error("No audio available for download");
       return;
     }
-    const filename = `${song.title.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")}.mp3`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    toast.info("Preparing download...");
+    await downloadFile(url, sanitizeFilename(song.title));
     toast.success("Download started!");
   }, []);
 

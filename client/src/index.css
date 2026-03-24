@@ -192,6 +192,57 @@
   filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.5));
 }
 
+/* ─── Safari / WebKit compatibility ─── */
+
+/* Safari requires -webkit-backdrop-filter prefix */
+@supports not (backdrop-filter: blur(1px)) {
+  .backdrop-blur-lg,
+  .backdrop-blur-2xl,
+  .backdrop-blur {
+    -webkit-backdrop-filter: blur(16px);
+  }
+}
+
+/* Ensure backdrop-filter always has webkit prefix for Safari */
+@layer base {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: var(--tw-backdrop-blur);
+  }
+}
+
+/* Safari smooth scrolling */
+html {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safari input appearance fix */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+textarea,
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Safari audio element styling */
+audio {
+  width: 100%;
+}
+
+/* Safari range input fix */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+
 @media print {
   .no-print {
     display: none !important;

@@ -1141,3 +1141,19 @@
 - [x] Female: "Solo female vocalist with clarity and airiness"
 - [x] Duet: "Male and female trading lines and harmonizing"
 - [x] Male & Female: "Both voices singing together in blended harmony"
+
+## Safari & macOS MP3 Compatibility
+- [x] Audit AudioPlayer, QueuePlayerContext, Upload, Mp3ToSheetMusic, StudioProducer, ListenToLyricsButton for Safari issues
+- [x] Created shared Safari-safe download utility (client/src/lib/safariDownload.ts) — fetches as blob, creates objectURL, fallback to window.open
+- [x] Replaced cross-origin download in 6 pages: Generator, History, Favorites, AlbumDetail, SongDetail, SharedSong
+- [x] Replaced cross-origin download in 2 components: StudioProducer, ListenToLyricsButton
+- [x] Added durationchange handler to Upload.tsx and Mp3ToSheetMusic.tsx audio previews (Safari fires this instead of loadedmetadata)
+- [x] Added audio.preload = "metadata" to Upload.tsx and Mp3ToSheetMusic.tsx
+- [x] Added isFinite(audio.duration) guard to all duration handlers
+- [x] Fixed autoplay rejection handling in Upload.tsx, Mp3ToSheetMusic.tsx, StudioProducer.tsx, ListenToLyricsButton.tsx (.play().then/.catch pattern)
+- [x] QueuePlayerContext already had durationchange and autoplay handling — verified
+- [x] AudioPlayer already had webkitAudioContext, callback decodeAudioData, roundRect fallback — verified
+- [x] Added CSS Safari fixes: -webkit-backdrop-filter prefix, -webkit-overflow-scrolling, -webkit-appearance for inputs, range input webkit fix
+- [x] M4A/macOS format support verified: audio/x-m4a and audio/mp4 accepted in Upload, Mp3ToSheetMusic, and server
+- [x] AlbumDetail zip download: added delayed cleanup (setTimeout 250ms) for Safari
+- [x] Added 28 Safari compatibility tests — 1111 tests passing across 53 files

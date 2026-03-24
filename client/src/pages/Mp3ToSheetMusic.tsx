@@ -294,7 +294,14 @@ export default function Mp3ToSheetMusic() {
     const url = URL.createObjectURL(f);
     setPreviewUrl(url);
     const audio = new Audio(url);
-    audio.addEventListener("loadedmetadata", () => setAudioDuration(audio.duration));
+    audio.preload = "metadata";
+    audio.addEventListener("loadedmetadata", () => {
+      if (audio.duration && isFinite(audio.duration)) setAudioDuration(audio.duration);
+    });
+    // Safari sometimes fires durationchange instead of loadedmetadata
+    audio.addEventListener("durationchange", () => {
+      if (audio.duration && isFinite(audio.duration)) setAudioDuration(audio.duration);
+    });
     audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
     audio.addEventListener("ended", () => { setIsPlaying(false); setCurrentTime(0); });
     audio.volume = volume;
@@ -307,8 +314,12 @@ export default function Mp3ToSheetMusic() {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().catch(() => {});
-      setIsPlaying(true);
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {
+        // Safari/mobile may block autoplay without user gesture
+        setIsPlaying(false);
+      });
     }
   }, [isPlaying]);
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { copyToClipboard } from "@/lib/clipboard";
+import { downloadFile, sanitizeFilename } from "@/lib/safariDownload";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,18 +83,16 @@ export default function SongDetail() {
     );
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     // Prefer mixed URL > audio URL > mp3 URL
     const url = song.mixedUrl || song.audioUrl || song.mp3Url;
     if (!url) {
       toast.error("No audio file available");
       return;
     }
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${song.title}.mp3`;
-    a.target = "_blank";
-    a.click();
+    toast.info("Preparing download...");
+    await downloadFile(url, sanitizeFilename(song.title));
+    toast.success("Download started!");
   };
 
   const handleShare = async () => {

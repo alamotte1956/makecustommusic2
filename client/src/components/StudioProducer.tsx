@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import { downloadFile, sanitizeFilename } from "@/lib/safariDownload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -111,17 +112,17 @@ export default function StudioProducer({ song }: Props) {
     }
     const audio = new Audio(url);
     audioRef.current = audio;
-    audio.play();
-    setPlayingTake(takeIndex);
+    audio.play().then(() => {
+      setPlayingTake(takeIndex);
+    }).catch(() => {
+      // Safari/mobile may block autoplay
+      setPlayingTake(null);
+    });
     audio.onended = () => setPlayingTake(null);
   };
 
-  const handleDownloadStem = (url: string, label: string) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${song.title} - ${label}.mp3`;
-    a.target = "_blank";
-    a.click();
+  const handleDownloadStem = async (url: string, label: string) => {
+    await downloadFile(url, sanitizeFilename(`${song.title} - ${label}`));
   };
 
   const isGenerating = generateVocalMix.isPending || generateTakes.isPending;
