@@ -41,7 +41,10 @@ MUSICAL COMPLETENESS:
 - Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
 - Use proper bar lines | at every measure boundary
 - Use repeat signs |: and :| for repeated sections
-- Use section markers [P:Intro], [P:Verse], [P:Chorus], [P:Bridge], [P:Outro] to label song structure
+- Use comments to label sections: % Intro, % Verse 1, % Chorus, % Bridge, % Outro
+- Do NOT use [P:] section markers — use % comments instead
+- Do NOT include standalone dynamics (!p!, !mp!, !mf!, !f!, !ff!) on their own lines
+- Do NOT include !crescendo! or !diminuendo! decorations
 - Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)
 - Ensure every measure has the correct number of beats matching the time signature
 

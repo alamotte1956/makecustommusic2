@@ -937,3 +937,11 @@
 - [x] Fix: Applied same sanitisation enhancements to server-side backgroundSheetMusic.ts
 - [x] Fix: Cleaned existing DB records to remove problematic directives
 - [x] Added abcjs warnings logging for future debugging
+
+## Bug Fix: "Unexpected token '<' is not valid JSON" During Sheet Music Generation
+- [x] Root cause: Server errors during LLM call cause production proxy to return HTML fallback instead of JSON
+- [x] Fix: Wrapped generateSheetMusic and generateSheetMusicFromMp3 with TRPCError handling
+- [x] Fix: Updated classifyError to detect HTML response errors ("Unexpected token '<'", "is not valid JSON")
+- [x] Fix: Updated both SheetMusicViewer and Mp3ToSheetMusic error handling
+- [x] Fix: Removed [P:] markers and standalone dynamics from all LLM prompts to prevent rendering issues
+- [x] Fix: Added user-friendly error messages for all error types

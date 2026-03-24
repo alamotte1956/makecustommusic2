@@ -304,10 +304,15 @@ export default function Mp3ToSheetMusic() {
       setStep("error");
       const msg = err?.message || "";
       const lowerMsg = msg.toLowerCase();
-      const isNetwork = lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout") || lowerMsg.includes("aborted");
+      const isHtmlResponse = lowerMsg.includes("unexpected token") || lowerMsg.includes("<!doctype") || lowerMsg.includes("is not valid json");
+      const isNetwork = isHtmlResponse || lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout") || lowerMsg.includes("aborted");
       setErrorInfo({
         type: isNetwork ? "network" : "generation",
-        message: isNetwork ? "Unable to reach the server. Check your connection and try again." : (msg || "Failed to generate sheet music."),
+        message: isNetwork
+          ? "The server encountered an error. The request may have timed out. Please try again."
+          : (lowerMsg.includes("sheet music generation failed")
+            ? "Sheet music generation failed. The AI service may be temporarily unavailable."
+            : (msg || "Failed to generate sheet music.")),
         detail: msg || undefined,
       });
     }

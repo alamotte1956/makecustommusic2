@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import {
@@ -686,10 +687,17 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           ? { ...song, keySignature: input.key }
           : song;
 
-        const cleanAbc = await generateAbcNotation(songForGeneration);
-        await updateSongSheetMusic(input.songId, cleanAbc);
-
-        return { abcNotation: cleanAbc };
+        try {
+          const cleanAbc = await generateAbcNotation(songForGeneration);
+          await updateSongSheetMusic(input.songId, cleanAbc);
+          return { abcNotation: cleanAbc };
+        } catch (err: any) {
+          console.error(`[SheetMusic] Generation failed for song ${input.songId}:`, err?.message || err);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Sheet music generation failed: ${err?.message || "Unknown error"}. Please try again.`,
+          });
+        }
       }),
 
     // Generate chord progression for acoustic guitar
@@ -1113,10 +1121,11 @@ TRANSCRIPTION RULES:
 MUSICAL COMPLETENESS:
 - Use proper bar lines | at every measure boundary
 - Use repeat signs |: and :| for repeated sections (verses, choruses)
-- Use section markers [P:Intro], [P:Verse], [P:Chorus], [P:Bridge], [P:Outro] to label song structure
+- Use comments to label sections: % Intro, % Verse 1, % Chorus, % Bridge, % Outro
 - Use first/second endings [1 and [2 where appropriate
-- Include dynamics: !p!, !mp!, !mf!, !f!, !ff!, !crescendo(!, !crescendo)!, !diminuendo(!, !diminuendo)!
-- Include articulations where musically appropriate: .A (staccato), ~A (trill), HA (fermata)
+- Do NOT use [P:] section markers — use % comments instead
+- Do NOT include standalone dynamics (!p!, !mp!, !mf!, !f!, !ff!) on their own lines
+- Do NOT include !crescendo! or !diminuendo! decorations
 - Use ties - between notes of the same pitch that span bar lines
 - Use slurs () to group legato phrases
 - Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)
@@ -1146,33 +1155,42 @@ QUALITY:
           },
         ];
 
-        const response = await invokeLLM({
-          model: "claude-sonnet-4-20250514",
-          messages: analysisMessages,
-        });
+        try {
+          const response = await invokeLLM({
+            model: "claude-sonnet-4-20250514",
+            messages: analysisMessages,
+          });
 
-        const rawContent = response.choices?.[0]?.message?.content;
-        const abcRaw = typeof rawContent === "string" ? rawContent.trim() : null;
-        if (!abcRaw) {
-          throw new Error("Failed to generate sheet music from audio. Please try again.");
+          const rawContent = response.choices?.[0]?.message?.content;
+          const abcRaw = typeof rawContent === "string" ? rawContent.trim() : null;
+          if (!abcRaw) {
+            throw new Error("AI returned empty content. Please try again.");
+          }
+
+          // Sanitise and validate the ABC notation
+          const cleanAbc = sanitiseAbc(abcRaw);
+          const validationError = validateAbc(cleanAbc);
+          if (validationError) {
+            throw new Error(`Generated sheet music failed validation: ${validationError}. Please try again.`);
+          }
+
+          // Deduct credit
+          await deductCredits(ctx.user.id, 1, "generation", `Sheet music from MP3: ${input.fileName}`);
+
+          return {
+            abcNotation: cleanAbc,
+            lyrics: lyricsText,
+            audioUrl,
+            fileName: input.fileName,
+          };
+        } catch (err: any) {
+          console.error(`[SheetMusicFromMp3] Generation failed:`, err?.message || err);
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Sheet music generation failed: ${err?.message || "Unknown error"}. Please try again.`,
+          });
         }
-
-        // Sanitise and validate the ABC notation
-        const cleanAbc = sanitiseAbc(abcRaw);
-        const validationError = validateAbc(cleanAbc);
-        if (validationError) {
-          throw new Error(`Generated sheet music failed validation: ${validationError}. Please try again.`);
-        }
-
-        // Deduct credit
-        await deductCredits(ctx.user.id, 1, "generation", `Sheet music from MP3: ${input.fileName}`);
-
-        return {
-          abcNotation: cleanAbc,
-          lyrics: lyricsText,
-          audioUrl,
-          fileName: input.fileName,
-        };
       }),
   }),
 

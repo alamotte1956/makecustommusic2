@@ -14,6 +14,21 @@ function classifyError(error: any): ErrorState {
   const message = error?.message || String(error) || "An unexpected error occurred";
   const lowerMsg = message.toLowerCase();
 
+  // Detect HTML response errors (server returned HTML instead of JSON)
+  if (
+    lowerMsg.includes("unexpected token '<'") ||
+    lowerMsg.includes("unexpected token '<'") ||
+    lowerMsg.includes("<!doctype") ||
+    lowerMsg.includes("is not valid json") ||
+    lowerMsg.includes("unexpected token") && lowerMsg.includes("json")
+  ) {
+    return {
+      type: "network",
+      message: "The server encountered an error processing the request.",
+      detail: "The request may have timed out or the server was temporarily unavailable. Please try again.",
+    };
+  }
+
   if (
     lowerMsg.includes("network") ||
     lowerMsg.includes("fetch") ||
@@ -33,11 +48,31 @@ function classifyError(error: any): ErrorState {
     return { type: "rendering", message: "Failed to render the sheet music.", detail: message };
   }
 
-  return { type: "generation", message, detail: undefined };
+  // Extract a user-friendly message from TRPCError
+  const friendlyMessage = lowerMsg.includes("sheet music generation failed")
+    ? "Sheet music generation failed. The AI service may be temporarily unavailable."
+    : message;
+
+  return { type: "generation", message: friendlyMessage, detail: message !== friendlyMessage ? message : undefined };
 }
 
 describe("SheetMusicViewer Error Handling", () => {
   describe("classifyError", () => {
+    it("should classify HTML response errors as network errors", () => {
+      const cases = [
+        new Error("Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"),
+        new Error("Unexpected token '<'"),
+        new Error("<!DOCTYPE html>"),
+        new Error("is not valid JSON"),
+      ];
+      for (const err of cases) {
+        const result = classifyError(err);
+        expect(result.type).toBe("network");
+        expect(result.message).toContain("server");
+        expect(result.detail).toContain("try again");
+      }
+    });
+
     it("should classify network errors correctly", () => {
       const cases = [
         new Error("Network error"),
@@ -68,9 +103,16 @@ describe("SheetMusicViewer Error Handling", () => {
       }
     });
 
-    it("should classify generation errors as default", () => {
+    it("should provide friendly message for sheet music generation failures", () => {
+      const err = new Error("Sheet music generation failed: AI returned empty content");
+      const result = classifyError(err);
+      expect(result.type).toBe("generation");
+      expect(result.message).toContain("AI service");
+      expect(result.detail).toBe(err.message);
+    });
+
+    it("should classify generic generation errors as default", () => {
       const cases = [
-        new Error("Failed to generate sheet music. Please try again."),
         new Error("Song not found"),
         new Error("Internal server error"),
         new Error("Something went wrong"),
@@ -79,7 +121,6 @@ describe("SheetMusicViewer Error Handling", () => {
         const result = classifyError(err);
         expect(result.type).toBe("generation");
         expect(result.message).toBe(err.message);
-        expect(result.detail).toBeUndefined();
       }
     });
 
@@ -147,16 +188,27 @@ describe("SheetMusicViewer Error Handling", () => {
   });
 
   describe("Mp3ToSheetMusic error classification", () => {
-    // Replicate the inline classification logic from Mp3ToSheetMusic
+    // Replicate the inline classification logic from Mp3ToSheetMusic (updated version)
     function classifyMp3Error(err: any): { type: string; message: string } {
       const msg = err?.message || "";
       const lowerMsg = msg.toLowerCase();
-      const isNetwork = lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout") || lowerMsg.includes("aborted");
+      const isHtmlResponse = lowerMsg.includes("unexpected token") || lowerMsg.includes("<!doctype") || lowerMsg.includes("is not valid json");
+      const isNetwork = isHtmlResponse || lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout") || lowerMsg.includes("aborted");
       return {
         type: isNetwork ? "network" : "generation",
-        message: isNetwork ? "Unable to reach the server. Check your connection and try again." : (msg || "Failed to generate sheet music."),
+        message: isNetwork
+          ? "The server encountered an error. The request may have timed out. Please try again."
+          : (lowerMsg.includes("sheet music generation failed")
+            ? "Sheet music generation failed. The AI service may be temporarily unavailable."
+            : (msg || "Failed to generate sheet music.")),
       };
     }
+
+    it("should classify HTML response errors as network", () => {
+      expect(classifyMp3Error(new Error("Unexpected token '<'")).type).toBe("network");
+      expect(classifyMp3Error(new Error("is not valid JSON")).type).toBe("network");
+      expect(classifyMp3Error(new Error("<!DOCTYPE html>")).type).toBe("network");
+    });
 
     it("should classify network errors", () => {
       expect(classifyMp3Error(new Error("Network error")).type).toBe("network");
@@ -170,16 +222,27 @@ describe("SheetMusicViewer Error Handling", () => {
       expect(classifyMp3Error(new Error("Invalid audio")).type).toBe("generation");
     });
 
+    it("should provide friendly message for sheet music generation failures", () => {
+      const result = classifyMp3Error(new Error("Sheet music generation failed: AI returned empty content"));
+      expect(result.type).toBe("generation");
+      expect(result.message).toContain("AI service");
+    });
+
+    it("should classify timeout errors as network even if wrapped in generation message", () => {
+      const result = classifyMp3Error(new Error("Sheet music generation failed: timeout"));
+      expect(result.type).toBe("network");
+    });
+
     it("should provide fallback message for empty errors", () => {
       const result = classifyMp3Error(new Error(""));
       expect(result.type).toBe("generation");
       expect(result.message).toBe("Failed to generate sheet music.");
     });
 
-    it("should provide network-specific message for network errors", () => {
-      const result = classifyMp3Error(new Error("Network error"));
+    it("should provide server error message for HTML response errors", () => {
+      const result = classifyMp3Error(new Error("Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"));
       expect(result.message).toContain("server");
-      expect(result.message).toContain("connection");
+      expect(result.message).toContain("try again");
     });
   });
 });

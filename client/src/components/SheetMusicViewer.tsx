@@ -50,6 +50,21 @@ function classifyError(error: any): ErrorState {
   const message = error?.message || String(error) || "An unexpected error occurred";
   const lowerMsg = message.toLowerCase();
 
+  // Detect HTML response errors (server returned HTML instead of JSON)
+  if (
+    lowerMsg.includes("unexpected token '<'") ||
+    lowerMsg.includes("unexpected token '<'") ||
+    lowerMsg.includes("<!doctype") ||
+    lowerMsg.includes("is not valid json") ||
+    lowerMsg.includes("unexpected token") && lowerMsg.includes("json")
+  ) {
+    return {
+      type: "network",
+      message: "The server encountered an error processing the request.",
+      detail: "The request may have timed out or the server was temporarily unavailable. Please try again.",
+    };
+  }
+
   if (
     lowerMsg.includes("network") ||
     lowerMsg.includes("fetch") ||
@@ -69,7 +84,12 @@ function classifyError(error: any): ErrorState {
     return { type: "rendering", message: "Failed to render the sheet music.", detail: message };
   }
 
-  return { type: "generation", message, detail: undefined };
+  // Extract a user-friendly message from TRPCError
+  const friendlyMessage = lowerMsg.includes("sheet music generation failed")
+    ? "Sheet music generation failed. The AI service may be temporarily unavailable."
+    : message;
+
+  return { type: "generation", message: friendlyMessage, detail: message !== friendlyMessage ? message : undefined };
 }
 
 export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature }: SheetMusicViewerProps) {
