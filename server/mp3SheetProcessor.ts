@@ -108,8 +108,9 @@ QUALITY:
       },
     ];
 
+    // Use default model (gemini-2.5-flash) which natively supports audio input
+    // Claude may return 400 when receiving file_url with audio content
     const response = await invokeLLM({
-      model: "claude-sonnet-4-20250514",
       messages: analysisMessages,
     });
 

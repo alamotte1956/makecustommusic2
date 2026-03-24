@@ -298,9 +298,18 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
+  payload.max_tokens = params.maxTokens || params.max_tokens || 32768;
+
+  // Only include thinking for Claude models that support it,
+  // and skip it when the request contains file_url (audio/pdf) content
+  // which may not be compatible with the thinking parameter
+  const isClaude = typeof model === "string" && model.includes("claude");
+  const hasFileContent = messages.some(m => {
+    const parts = Array.isArray(m.content) ? m.content : [m.content];
+    return parts.some(p => typeof p === "object" && p !== null && "type" in p && p.type === "file_url");
+  });
+  if (isClaude && !hasFileContent) {
+    payload.thinking = { budget_tokens: 128 };
   }
 
   const normalizedResponseFormat = normalizeResponseFormat({

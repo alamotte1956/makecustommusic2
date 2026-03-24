@@ -991,3 +991,10 @@
 - [x] ResizeObserver for responsive bar count (1 bar per 3px)
 - [x] HiDPI canvas rendering (devicePixelRatio support)
 - [x] Added 17 tests for extractPeaks, rendering calculations, and skeleton — 910 tests passing
+
+## Bug Fix: MP3-to-Sheet-Music 400 Error
+- [x] Root cause: Claude model doesn't support audio file_url input, and hardcoded `thinking` parameter with `budget_tokens: 128` was sent to all models including non-Claude ones
+- [x] Fixed llm.ts: thinking parameter now only applied to Claude models without file_url content
+- [x] Fixed llm.ts: max_tokens now respects per-call overrides instead of hardcoded 32768
+- [x] Fixed mp3SheetProcessor: switched from claude-sonnet to default gemini-2.5-flash which natively supports audio input
+- [x] All 910 tests passing
