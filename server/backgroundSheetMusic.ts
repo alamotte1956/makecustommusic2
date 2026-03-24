@@ -95,9 +95,18 @@ export function sanitiseAbc(raw: string): string {
   }
 
   // 3. Remove V: (voice) directives — these cause multi-staff rendering issues in abcjs
+  //    Also strip standalone dynamics lines and convert [P:] markers to comments
   abc = abc.split("\n").filter((line) => {
     const trimmed = line.trim();
-    return !trimmed.startsWith("V:") && !trimmed.startsWith("%%staves");
+    if (trimmed.startsWith("V:") || trimmed.startsWith("%%staves")) return false;
+    // Strip standalone dynamics on their own line (e.g. !mp!, !mf!, !p!, !f!, !ff!, !pp!)
+    if (/^![pmf]{1,3}!$/.test(trimmed)) return false;
+    return true;
+  }).map((line) => {
+    const trimmed = line.trim();
+    // Convert [P:...] section markers to comment lines for abcjs compatibility
+    if (/^\[P:.*\]$/.test(trimmed)) return `% ${trimmed}`;
+    return line;
   }).join("\n");
 
   // 4. Remove any trailing non-ABC content (e.g. explanatory text after the notation)

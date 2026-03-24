@@ -98,7 +98,17 @@ export default function Mp3ToSheetMusic() {
     if (!displayAbc) return null;
     return displayAbc
       .split("\n")
-      .filter((l) => !l.trim().startsWith("V:") && !l.trim().startsWith("%%staves"))
+      .filter((l) => {
+        const t = l.trim();
+        if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
+        if (/^![pmf]{1,3}!$/.test(t)) return false;
+        return true;
+      })
+      .map((l) => {
+        const t = l.trim();
+        if (/^\[P:.*\]$/.test(t)) return `% ${t}`;
+        return l;
+      })
       .join("\n")
       .trim();
   }, [displayAbc]);
@@ -142,8 +152,10 @@ export default function Mp3ToSheetMusic() {
       const abcjs = mod.default || mod;
       if (!sheetRef.current) return;
       sheetRef.current.innerHTML = "";
+      // Ensure the container has an id for abcjs (use string id for cross-bundler compatibility)
+      if (!sheetRef.current.id) sheetRef.current.id = "mp3-sheet-music-render";
       try {
-        abcjs.renderAbc(sheetRef.current, sanitisedDisplayAbc, {
+        const visualObj = abcjs.renderAbc(sheetRef.current.id, sanitisedDisplayAbc, {
           responsive: "resize",
           staffwidth: 700,
           paddingtop: 20,
@@ -152,6 +164,9 @@ export default function Mp3ToSheetMusic() {
           paddingright: 15,
           add_classes: true,
         });
+        if (visualObj && visualObj.length > 0 && visualObj[0].warnings && visualObj[0].warnings.length > 0) {
+          console.warn("[SheetMusic] abcjs warnings:", visualObj[0].warnings);
+        }
         setIsRendered(true);
       } catch (renderErr: any) {
         console.error("Sheet music render error:", renderErr);
@@ -693,6 +708,7 @@ export default function Mp3ToSheetMusic() {
 
               {/* Sheet music rendering area */}
               <div
+                id="mp3-sheet-music-render"
                 ref={sheetRef}
                 className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
                 style={{ colorScheme: "light" }}

@@ -140,7 +140,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     if (!displayAbc) return null;
     return displayAbc
       .split("\n")
-      .filter((l) => !l.trim().startsWith("V:") && !l.trim().startsWith("%%staves"))
+      .filter((l) => {
+        const t = l.trim();
+        // Strip voice directives and stave layout
+        if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
+        // Strip standalone dynamics on their own line (e.g. !mp!, !mf!, !p!, !f!, !ff!, !pp!)
+        if (/^![pmf]{1,3}!$/.test(t)) return false;
+        // Convert [P:...] part markers to comments so abcjs doesn't choke
+        return true;
+      })
+      .map((l) => {
+        const t = l.trim();
+        // Convert [P:...] section markers to comment lines for abcjs compatibility
+        if (/^\[P:.*\]$/.test(t)) return `% ${t}`;
+        return l;
+      })
       .join("\n")
       .trim();
   }, [displayAbc]);
@@ -157,8 +171,10 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const abcjs = mod.default || mod;
       if (!sheetRef.current) return;
       sheetRef.current.innerHTML = "";
+      // Ensure the container has an id for abcjs (use string id for cross-bundler compatibility)
+      if (!sheetRef.current.id) sheetRef.current.id = "sheet-music-render";
       try {
-        abcjs.renderAbc(sheetRef.current, sanitisedDisplayAbc, {
+        const visualObj = abcjs.renderAbc(sheetRef.current.id, sanitisedDisplayAbc, {
           responsive: "resize",
           staffwidth: 700,
           paddingtop: 20,
@@ -167,6 +183,10 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           paddingright: 15,
           add_classes: true,
         });
+        // Check if rendering produced actual content
+        if (visualObj && visualObj.length > 0 && visualObj[0].warnings && visualObj[0].warnings.length > 0) {
+          console.warn("[SheetMusic] abcjs warnings:", visualObj[0].warnings);
+        }
         setIsRendered(true);
       } catch (renderErr: any) {
         setError({ type: "rendering", message: "Failed to render the sheet music notation.", detail: renderErr?.message });
@@ -489,6 +509,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
       {/* Sheet music rendering area */}
       <div
+        id="sheet-music-render"
         ref={sheetRef}
         className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
         style={{ colorScheme: "light" }}

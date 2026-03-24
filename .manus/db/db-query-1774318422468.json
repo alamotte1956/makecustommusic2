@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE songs SET sheetMusicAbc = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(sheetMusicAbc, '\\n!mp!\\n', '\\n'), '\\n!mf!\\n', '\\n'), '\\n!p!\\n', '\\n'), '\\n!f!\\n', '\\n'), '\\n!ff!\\n', '\\n'), '\\n!pp!\\n', '\\n'), '\\n[P:', '\\n% [P:'), '\\n!mp!\\n', '\\n') WHERE sheetMusicAbc IS NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute UPDATE songs SET sheetMusicAbc = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(sheetMusicAbc, '\\n!mp!\\n', '\\n'), '\\n!mf!\\n', '\\n'), '\\n!p!\\n', '\\n'), '\\n!f!\\n', '\\n'), '\\n!ff!\\n', '\\n'), '\\n!pp!\\n', '\\n'), '\\n[P:', '\\n% [P:'), '\\n!mp!\\n', '\\n') WHERE sheetMusicAbc IS NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 364
+}

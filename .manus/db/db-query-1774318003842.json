@@ -1,0 +1,190 @@
+{
+  "query": "SELECT sheetMusicAbc FROM songs WHERE id = 570003;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT sheetMusicAbc FROM songs WHERE id = 570003;",
+  "rows": [
+    {
+      "sheetMusicAbc": "X: 1"
+    },
+    {
+      "sheetMusicAbc": "T: Forward Moving Song"
+    },
+    {
+      "sheetMusicAbc": "C: Folk Melody"
+    },
+    {
+      "sheetMusicAbc": "M: 4/4"
+    },
+    {
+      "sheetMusicAbc": "L: 1/8"
+    },
+    {
+      "sheetMusicAbc": "Q: 1/4=80"
+    },
+    {
+      "sheetMusicAbc": "K: Am"
+    },
+    {
+      "sheetMusicAbc": "% Intro - Slow and moody"
+    },
+    {
+      "sheetMusicAbc": "[P:Intro]"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "% Verse 1 - Melody begins, still gentle"
+    },
+    {
+      "sheetMusicAbc": "[P:Verse 1]"
+    },
+    {
+      "sheetMusicAbc": "!mp!"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "w: The wind whis-pers soft-ly, a sto-ry un-told,"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "w: Of moun-tains and val-leys, of sil-ver and gold."
+    },
+    {
+      "sheetMusicAbc": "% Chorus - Uplifting, more dynamic"
+    },
+    {
+      "sheetMusicAbc": "[P:Chorus]"
+    },
+    {
+      "sheetMusicAbc": "!crescendo(!"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |"
+    },
+    {
+      "sheetMusicAbc": "w: Oh, the road stretches far, and the jour-ney's un-furled,"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 !f!|"
+    },
+    {
+      "sheetMusicAbc": "w: A new day is dawn-ing, for all of the world."
+    },
+    {
+      "sheetMusicAbc": "% Verse 2 - Similar to Verse 1"
+    },
+    {
+      "sheetMusicAbc": "[P:Verse 2]"
+    },
+    {
+      "sheetMusicAbc": "!mp!"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "w: With eve-ry new foot-step, a hope starts to bloom,"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "w: Dis-pel-ling the shad-ows, and chas-ing the gloom."
+    },
+    {
+      "sheetMusicAbc": "% Chorus - Uplifting, more dynamic"
+    },
+    {
+      "sheetMusicAbc": "[P:Chorus]"
+    },
+    {
+      "sheetMusicAbc": "!crescendo(!"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |"
+    },
+    {
+      "sheetMusicAbc": "w: Oh, the road stretches far, and the jour-ney's un-furled,"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 !f!|"
+    },
+    {
+      "sheetMusicAbc": "w: A new day is dawn-ing, for all of the world."
+    },
+    {
+      "sheetMusicAbc": "% Bridge - Change of pace, reflective"
+    },
+    {
+      "sheetMusicAbc": "[P:Bridge]"
+    },
+    {
+      "sheetMusicAbc": "!mf!"
+    },
+    {
+      "sheetMusicAbc": "\"Dm\"F2 G2 A2 B2 | \"Am\"c2 B2 A2 G2 | \"Em\"E2 F2 G2 A2 | \"Am\"B2 A2 G2 E2 |"
+    },
+    {
+      "sheetMusicAbc": "w: Though paths may be twist-ed, and trials may come,"
+    },
+    {
+      "sheetMusicAbc": "\"Dm\"F2 G2 A2 B2 | \"Am\"c2 B2 A2 G2 | \"Em\"E2 F2 G2 A2 | \"G\"G2 F2 E2 D2 |"
+    },
+    {
+      "sheetMusicAbc": "w: Our spir-its will nev-er, be o-ver-come."
+    },
+    {
+      "sheetMusicAbc": "% Chorus - Most dynamic, full energy"
+    },
+    {
+      "sheetMusicAbc": "[P:Chorus]"
+    },
+    {
+      "sheetMusicAbc": "!ff!"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |"
+    },
+    {
+      "sheetMusicAbc": "w: Oh, the road stretches far, and the jour-ney's un-furled,"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |"
+    },
+    {
+      "sheetMusicAbc": "w: A new day is dawn-ing, for all of the world."
+    },
+    {
+      "sheetMusicAbc": "% Outro - Fading out, reflective"
+    },
+    {
+      "sheetMusicAbc": "[P:Outro]"
+    },
+    {
+      "sheetMusicAbc": "!diminuendo(!"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |"
+    },
+    {
+      "sheetMusicAbc": "\"Am\"A,8 |]"
+    },
+    {
+      "sheetMusicAbc": "w: For-ward we go."
+    }
+  ],
+  "messages": [],
+  "stdout": "sheetMusicAbc\nX: 1\nT: Forward Moving Song\nC: Folk Melody\nM: 4/4\nL: 1/8\nQ: 1/4=80\nK: Am\n\n% Intro - Slow and moody\n[P:Intro]\n\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |\n\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |\n\n% Verse 1 - Melody begins, still gentle\n[P:Verse 1]\n!mp!\n\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |\nw: The wind whis-pers soft-ly, a sto-ry un-told,\n\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |\nw: Of moun-tains and val-leys, of sil-ver and gold.\n\n% Chorus - Uplifting, more dynamic\n[P:Chorus]\n!crescendo(!\n\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |\nw: Oh, the road stretches far, and the jour-ney's un-furled,\n\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 !f!|\nw: A new day is dawn-ing, for all of the world.\n\n% Verse 2 - Similar to Verse 1\n[P:Verse 2]\n!mp!\n\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |\nw: With eve-ry new foot-step, a hope starts to bloom,\n\"Am\"E2 z2 A2 G2 | \"G\"E2 z2 G2 F2 | \"C\"C2 z2 E2 D2 | \"F\"C2 z2 A,2 C2 |\nw: Dis-pel-ling the shad-ows, and chas-ing the gloom.\n\n% Chorus - Uplifting, more dynamic\n[P:Chorus]\n!crescendo(!\n\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |\nw: Oh, the road stretches far, and the jour-ney's un-furled,\n\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 !f!|\nw: A new day is dawn-ing, for all of the world.\n\n% Bridge - Change of pace, reflective\n[P:Bridge]\n!mf!\n\"Dm\"F2 G2 A2 B2 | \"Am\"c2 B2 A2 G2 | \"Em\"E2 F2 G2 A2 | \"Am\"B2 A2 G2 E2 |\nw: Though paths may be twist-ed, and trials may come,\n\"Dm\"F2 G2 A2 B2 | \"Am\"c2 B2 A2 G2 | \"Em\"E2 F2 G2 A2 | \"G\"G2 F2 E2 D2 |\nw: Our spir-its will nev-er, be o-ver-come.\n\n% Chorus - Most dynamic, full energy\n[P:Chorus]\n!ff!\n\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |\nw: Oh, the road stretches far, and the jour-ney's un-furled,\n\"Am\"E2 A2 c2 B2 | \"G\"G2 B2 d2 c2 | \"C\"E2 G2 c2 B2 | \"F\"A2 G2 F2 E2 |\nw: A new day is dawn-ing, for all of the world.\n\n% Outro - Fading out, reflective\n[P:Outro]\n!diminuendo(!\n\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |\n\"Am\"A,2 E2 A,2 E2 | \"G\"G,2 D2 G,2 D2 | \"C\"C2 E2 G2 E2 | \"F\"F2 C2 F2 C2 |\n\"Am\"A,8 |]\nw: For-ward we go.\n",
+  "stderr": "",
+  "execution_time_ms": 354
+}

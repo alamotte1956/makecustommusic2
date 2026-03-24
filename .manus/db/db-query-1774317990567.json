@@ -1,0 +1,60 @@
+{
+  "query": "SELECT id, title, LENGTH(sheetMusicAbc) as total_len, LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, '\\n', '')) as newline_count, LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, ';', '')) as semicolon_count, SUBSTRING(sheetMusicAbc, 1, 100) as first_100 FROM songs WHERE sheetMusicAbc IS NOT NULL ORDER BY id DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, LENGTH(sheetMusicAbc) as total_len, LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, '\\n', '')) as newline_count, LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, ';', '')) as semicolon_count, SUBSTRING(sheetMusicAbc, 1, 100) as first_100 FROM songs WHERE sheetMusicAbc IS NOT NULL ORDER BY id DESC LIMIT 3;",
+  "rows": [
+    {
+      "id": "570003",
+      "title": "Forward moving song with a slow moody slow start with a guitar and piano and certain horns but incre",
+      "total_len": "2301",
+      "newline_count": "67",
+      "semicolon_count": "0",
+      "first_100": "X: 1"
+    },
+    {
+      "id": "570002",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "total_len": "1871",
+      "newline_count": "58",
+      "semicolon_count": "0",
+      "first_100": "X: 1"
+    },
+    {
+      "id": "570001",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "total_len": "2741",
+      "newline_count": "76",
+      "semicolon_count": "0",
+      "first_100": "X: 1"
+    }
+  ],
+  "messages": [
+    "T: Forward Moving Song",
+    "C: Folk Melody",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 1/4=80",
+    "K: Am",
+    "% Intro - Slow and moody",
+    "[",
+    "T: Forward Momentum",
+    "C: Folk Spirit",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 1/4=80",
+    "K: G",
+    "!p!",
+    "[P: Intro]",
+    "\"G\"G,8 | \"C\"C,8 ",
+    "T: Forward Journey",
+    "C: Folk Tradition",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 1/4=70",
+    "K: Dmaj",
+    "% --- Intro ---",
+    "[P:Intro]"
+  ],
+  "stdout": "id\ttitle\ttotal_len\tnewline_count\tsemicolon_count\tfirst_100\n570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\t2301\t67\t0\tX: 1\nT: Forward Moving Song\nC: Folk Melody\nM: 4/4\nL: 1/8\nQ: 1/4=80\nK: Am\n\n% Intro - Slow and moody\n[\n570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\t1871\t58\t0\tX: 1\nT: Forward Momentum\nC: Folk Spirit\nM: 4/4\nL: 1/8\nQ: 1/4=80\nK: G\n!p!\n[P: Intro]\n\"G\"G,8 | \"C\"C,8 \n570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\t2741\t76\t0\tX: 1\nT: Forward Journey\nC: Folk Tradition\nM: 4/4\nL: 1/8\nQ: 1/4=70\nK: Dmaj\n\n% --- Intro ---\n[P:Intro]\n",
+  "stderr": "",
+  "execution_time_ms": 369
+}

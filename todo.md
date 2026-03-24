@@ -928,3 +928,12 @@
 - [x] Audit abcPlayer.ts — confirmed parsing handles sanitised ABC correctly
 - [x] Test full pipeline end-to-end — LLM returns valid ABC, sanitisation works, validation passes
 - [x] Fix all identified issues — V: directives stripped at all layers, prompts hardened, validation added
+
+## Bug Fix: Sheet Music Only Shows Title, No Music Notation
+- [x] Root cause: renderAbc passed HTMLElement instead of string ID (inconsistent across bundlers in production)
+- [x] Fix: Changed renderAbc to use string element ID in both SheetMusicViewer and Mp3ToSheetMusic
+- [x] Fix: Strip standalone dynamics (!mp! etc.) on their own lines in sanitisation
+- [x] Fix: Convert [P:] section markers to comments for abcjs compatibility
+- [x] Fix: Applied same sanitisation enhancements to server-side backgroundSheetMusic.ts
+- [x] Fix: Cleaned existing DB records to remove problematic directives
+- [x] Added abcjs warnings logging for future debugging
