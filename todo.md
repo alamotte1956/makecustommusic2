@@ -1083,3 +1083,19 @@
 - [x] Add Devotional and Triumphant moods (guidance + production settings) that pair well with Christian genres
 - [x] Update style tags placeholder to mention worship, hymn, praise & worship
 - [x] Add 22 tests for Christian genres (guidance, moods, BPM, prompt builder, sonic signatures) — 1010 tests passing
+
+## Additional Christian Sub-Genres (6 new genres added)
+- [x] Add Christian Rock (Skillet, Switchfoot, Newsboys — driving guitars, arena rock energy)
+- [x] Add Christian Hip Hop (Lecrae, NF, Andy Mineo — 808s, trap, faith testimony)
+- [x] Add Southern Gospel (Gaither Vocal Band, The Cathedrals — four-part harmony, piano-driven)
+- [x] Add Hymns / Traditional (Getty, Indelible Grace — organ/piano, classic melodies, theological depth)
+- [x] Add Praise & Worship (Planetshakers, Jesus Culture — high energy, celebratory, praise breaks)
+- [x] Add Christian R&B (Jonathan McReynolds, DOE, Koryn Hawthorne — smooth R&B with faith lyrics)
+- [x] Add genre guidance for all 6 new sub-genres (with artist references and lyric direction)
+- [x] Add production settings for all 6 new sub-genres (BPM, instruments, production quality)
+- [x] Add sonic signatures for all 6 new sub-genres (detailed ElevenLabs prompt injection)
+- [x] Add arrangement templates for all 6 new sub-genres (short/medium/long structures)
+- [x] Add BPM estimation entries for all 6 new sub-genres in ssmlBuilder.ts
+- [x] Update Generator GENRES array with all 6 new sub-genres
+- [x] Update FAQ page to list all 10 Christian sub-genres
+- [x] Add 35 tests for all 6 new sub-genres — 1045 tests passing across 50 test files

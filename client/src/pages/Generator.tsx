@@ -49,6 +49,8 @@ const GENRES = [
   "Jazz", "Classical", "Electronic", "Rock", "Ambient", "Pop",
   "Hip Hop", "Country", "R&B", "Folk", "Reggae", "Blues",
   "Christian", "Gospel", "Christian Modern", "Christian Pop",
+  "Christian Rock", "Christian Hip Hop", "Southern Gospel",
+  "Hymns", "Praise & Worship", "Christian R&B",
 ];
 
 const MOODS = [

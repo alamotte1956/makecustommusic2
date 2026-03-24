@@ -182,6 +182,82 @@ Think Lauren Daigle, for KING & COUNTRY, TobyMac, Casting Crowns, We The Kingdom
 - Use contemporary language naturally — texts, coffee shops, late nights, real-world settings with spiritual undertones
 - Think Lauren Daigle's crossover appeal — faith music that doesn't feel like it's preaching at you
 - The best Christian pop makes you FEEL something before you realize it's about God — lead with emotion, not theology`,
+
+  "christian rock": `\n\nGENRE GUIDANCE — CHRISTIAN ROCK (2024-2026):
+Think Skillet, Switchfoot, Newsboys, Third Day, RED, Thousand Foot Krutch, Disciple.
+- Raw, driving energy with faith at the core — arena rock meets altar call
+- Chorus: anthemic, fist-pumping, the kind of hook that 20,000 people scream together at a festival
+- Verses: gritty and real — spiritual warfare, fighting through doubt, standing firm in faith
+- Bridge: the battle cry moment — strip it back then EXPLODE with everything
+- Power chords, distorted guitars, driving drums with crashes and fills
+- Themes: spiritual warfare, overcoming darkness, God as refuge and strength, fighting the good fight
+- Modern Christian rock blends with alternative, post-grunge, and even metal — Skillet pioneered the symphonic edge
+- Lyrics should feel like they're being shouted with conviction — not gentle worship, but warrior worship
+- Think Winter Jam main stage energy meets Switchfoot's poetic depth meets Skillet's cinematic power`,
+
+  "christian hip hop": `\n\nGENRE GUIDANCE — CHRISTIAN HIP HOP / HOLY HIP HOP (2024-2026):
+Think Lecrae, NF, Andy Mineo, Trip Lee, KB, Tedashii, GAWVI, Hulvey, nobigdyl.
+- Real talk with real faith — the streets meet the sanctuary
+- FLOW IS KING: vary cadence between aggressive bars, melodic hooks, and introspective delivery
+- Verses: dense wordplay, personal testimony, real struggles (addiction, doubt, loss, identity) met with faith
+- Hooks should be melodic and memorable — modern CHH is singing-rapping hybrid
+- Use internal rhymes, multisyllabic rhymes, and clever wordplay — the craft matters
+- Themes: redemption, identity in Christ, overcoming addiction/depression, social justice, grace, real life
+- Bridge or breakdown: strip it back, get vulnerable, then hit the final hook with conviction
+- Modern CHH sounds like mainstream hip hop — same 808s, same trap hats, same quality — but the message transforms
+- NF's raw emotional honesty + Lecrae's cultural awareness + Andy Mineo's creative energy
+- Think Reach Records meets Dreamville — faith music that doesn't compromise on quality or authenticity`,
+
+  "southern gospel": `\n\nGENRE GUIDANCE — SOUTHERN GOSPEL (2024-2026):
+Think Gaither Vocal Band, The Cathedrals, Ernie Haase & Signature Sound, Gold City, The Hoppers, Legacy Five.
+- Four-part vocal harmony is EVERYTHING — tenor, lead, baritone, bass singing in tight formation
+- Chorus: singalong-ready with rich harmonies — the kind of hook that makes a church homecoming crowd stand up
+- Verses: testimony and storytelling — personal faith journeys, heaven-bound hope, God's faithfulness through trials
+- Bridge: often a key change or dramatic modulation that lifts the song to its emotional peak
+- Piano is the foundation instrument — gospel piano runs, fills between phrases, supporting the harmony
+- Themes: heaven, salvation, the blood of Jesus, testimony, faithfulness, reunion, the old rugged cross
+- Southern gospel has country and bluegrass influences — steel guitar, fiddle accents are welcome
+- Lyrics should be warm, sincere, and rooted in traditional Christian theology — not trendy, but timeless
+- Think Gaither Homecoming warmth meets quartet precision meets front-porch testimony`,
+
+  "hymns": `\n\nGENRE GUIDANCE — HYMNS / TRADITIONAL CHRISTIAN (2024-2026):
+Think Keith & Kristyn Getty, Indelible Grace, Reawaken Hymns, Norton Hall Band, modern hymn writers.
+- Theologically rich, poetically crafted — every word carries doctrinal weight and beauty
+- Verses: each verse develops a theological idea — creation, fall, redemption, glory — building a complete picture
+- Chorus/Refrain: simple, memorable, congregational — designed for untrained voices to sing together
+- Use elevated but accessible language — not archaic "thee/thou" but not casual either
+- Imagery from scripture and nature: mountains, rivers, light, storms, the cross, the throne
+- Structure: verse-verse-chorus or verse-refrain pattern — traditional hymn form
+- Modern hymn writing (Getty style) combines theological depth with contemporary melodic sensibility
+- Themes: God's attributes (holiness, sovereignty, love), the gospel story, the church, eternal hope
+- Think "In Christ Alone" meets "It Is Well" — timeless truth in singable form
+- The goal is a song that could be sung 100 years from now and still be relevant`,
+
+  "praise & worship": `\n\nGENRE GUIDANCE — PRAISE & WORSHIP / HIGH ENERGY WORSHIP (2024-2026):
+Think Planetshakers, Jesus Culture, Passion, Hillsong Young & Free, Bethel (praise side), Housefires.
+- HIGH ENERGY celebration — this is the "jump up and down" side of worship
+- Chorus: explosive, celebratory, the kind of hook that makes a room erupt — clapping, shouting, dancing
+- Verses: building anticipation, declaring God's goodness, testifying to His faithfulness
+- Bridge: the "praise break" moment — repeated simple phrase building in intensity until the room is on fire
+- Driving drums, electric guitar riffs, bass-heavy groove, high energy throughout
+- Themes: celebration, joy, praise, God's greatness, freedom, breakthrough, dancing before the Lord
+- This is NOT contemplative worship — this is David-dancing-before-the-ark energy
+- Use exclamatory language: "Come on!", "Let's go!", "Everybody!", "One more time!"
+- Think festival worship meets Sunday morning praise set meets spontaneous celebration
+- The energy should make it impossible to sit still`,
+
+  "christian r&b": `\n\nGENRE GUIDANCE — CHRISTIAN R&B / GOSPEL R&B (2024-2026):
+Think Jonathan McReynolds, DOE, Koryn Hawthorne, Mali Music, Erica Campbell, Tobe Nwigwe, PJ Morton.
+- Smooth, soulful R&B production with faith woven naturally into every line
+- Chorus: melodic, groove-based, the kind of hook you sing in the shower — smooth and catchy
+- Verses: intimate storytelling about faith in everyday life — relationships, self-worth, purpose, grace in the mundane
+- Bridge: the vulnerable moment — stripped back, honest, then building to a soulful climax
+- Neo-soul keys, warm bass grooves, smooth drums, gospel vocal runs over R&B production
+- Themes: God's love as the ultimate relationship, identity, purpose, grace in real life, faith and romance
+- Modern Christian R&B is radio-friendly — it sounds like mainstream R&B but the lyrics point to something higher
+- Vocal delivery should be smooth and soulful with gospel-influenced runs and ad-libs
+- Think Jonathan McReynolds' effortless cool meets DOE's vulnerability meets PJ Morton's musicianship
+- The best Christian R&B makes secular R&B fans say "wait, this is gospel?"`,
 };
 
 export function getGenreGuidance(genre: string | null): string {
@@ -395,6 +471,36 @@ const GENRE_PRODUCTION: Record<string, { bpm: string; instruments: string; produ
     instruments: "punchy pop drums with claps and snaps, layered synth pads and arpeggios, clean electric guitar with chorus effect, acoustic guitar strumming, bass guitar with pop groove, piano hooks, string accents for emotional moments, vocal harmonies and gang vocals in choruses",
     production: "polished mainstream pop production with faith-forward lyrics, radio-ready mix with bright vocal presence, punchy and compressed drums, wide stereo synths, catchy melodic hooks, sidechain compression for energy, big chorus production with layered vocals and harmonies, sounds like it belongs on both K-LOVE and mainstream pop radio, Lauren Daigle and for KING & COUNTRY level polish",
   },
+  "christian rock": {
+    bpm: "120-145",
+    instruments: "heavy distorted electric guitars with power chords, driving rock drums with crashes and tom fills, bass guitar with grit and drive, rhythm guitar chugging, lead guitar solos, orchestral strings for cinematic moments (Skillet style), synth accents for modern edge",
+    production: "raw arena rock energy with faith conviction, guitar amp crunch and warmth, room mics on drums for live concert feel, dynamic range from stripped-back verses to wall-of-sound choruses, punchy bass cutting through the mix, anthemic reverb on snare, gang vocal shouts in choruses, Winter Jam festival-ready loudness",
+  },
+  "christian hip hop": {
+    bpm: "75-140",
+    instruments: "deep 808 bass with sub presence, trap hi-hats with rolls and patterns, snappy snare and claps, dark atmospheric pads, piano chords and melodies, vocal chops, percussion layers, synth leads, choir samples for gospel moments",
+    production: "heavy low-end with 808 sub bass, spacious mix with room for vocal delivery, tape saturation and analog warmth, modern trap production quality matching mainstream hip hop, half-time and double-time switches, atmospheric reverb on melodic elements, distorted 808 slides, Reach Records / Lecrae level polish",
+  },
+  "southern gospel": {
+    bpm: "80-120",
+    instruments: "grand piano as foundation with gospel runs and fills, four-part vocal harmony (tenor, lead, baritone, bass), upright bass or bass guitar, light drums with brushes, steel guitar accents, fiddle, acoustic guitar, occasional organ",
+    production: "warm and traditional mix with vocal harmony front and center, piano prominent in the mix, natural room reverb like a church auditorium, clear separation between vocal parts, gentle compression preserving dynamics, country-influenced warmth, Gaither Homecoming feel, quartet precision with front-porch intimacy",
+  },
+  "hymns": {
+    bpm: "60-100",
+    instruments: "pipe organ or Hammond organ, grand piano, choir (SATB), strings (violin, cello), acoustic guitar for modern arrangements, gentle percussion if any, harp arpeggios, brass for majestic moments",
+    production: "reverent and timeless mix, cathedral reverb with long tails, organ filling the low and mid frequencies, choir with natural room ambience, piano with warm close-mic tone, minimal processing to preserve authenticity, dynamic range from whispered prayer to full congregational singing, Getty-style modern hymn polish when contemporary",
+  },
+  "praise & worship": {
+    bpm: "120-145",
+    instruments: "driving drums with heavy kick and crash cymbals, electric guitar riffs and power chords, bass guitar with aggressive groove, keys/synth pads, claps and tambourine, gang vocals and crowd sounds, horn stabs for accents, percussion layers",
+    production: "high energy festival worship mix, driving and relentless rhythm section, electric guitar cutting through with riffs, bass-heavy groove that makes you move, drums punchy and loud, wide stereo field with energy in every frequency, crowd energy and clapping feel, Planetshakers and Jesus Culture level intensity, praise break sections with building repetition",
+  },
+  "christian r&b": {
+    bpm: "70-100",
+    instruments: "neo-soul Rhodes and Wurlitzer keys, warm fingerstyle bass with gospel runs, finger snaps and soft percussion, lush string pads, subtle guitar licks with clean tone, soft kick drum, vinyl texture, gospel choir accents, saxophone for smooth moments",
+    production: "smooth and soulful mix with warmth throughout, intimate vocal presence with gospel-influenced runs and ad-libs, gentle sidechain compression, late-night atmosphere with spiritual depth, analog warmth and tape saturation, wide stereo pads, R&B groove with gospel heart, Jonathan McReynolds and DOE level sophistication",
+  },
 };
 
 const MOOD_PRODUCTION: Record<string, string> = {
@@ -431,6 +537,18 @@ const CHRISTIAN_SONIC_SIGNATURES: Record<string, string> = {
   "christian modern": `\nMODERN WORSHIP SONIC IDENTITY: This must sound like a modern worship night at Elevation Church or Bethel. Key sonic markers: (1) THE GUITAR TONE: Electric guitar with dotted-eighth-note delay (the "Edge" / "worship guitar" sound) — this is the #1 identifier of modern worship music. Shimmer reverb, volume swells, ambient picking patterns. (2) Atmospheric pads that never stop — warm analog-style synth pads sustaining underneath everything, creating a continuous sonic bed. (3) Drums that serve the song dynamics: rimshot and minimal kick in verses, full kit with room reverb in choruses, building tom fills into big moments. (4) Bass that's felt more than heard — deep, warm, following the root movement. (5) The BUILD is everything: songs should go from near-silence to massive walls of sound. (6) Vocal production: intimate and close in verses (like the singer is right next to you), then layered and powerful in choruses. (7) Bridge section should feel like spontaneous worship — simple repeated phrase building in layers and intensity. (8) Post-rock influenced crescendos with tremolo picking and delay swells. Reference sound: "Graves Into Gardens" (Elevation), "Goodness of God" (Bethel), Phil Wickham's "Battle Belongs".`,
 
   "christian pop": `\nCHRISTIAN POP SONIC IDENTITY: This must sound like it belongs on K-LOVE radio alongside mainstream pop hits. Key sonic markers: (1) Pop-forward production: punchy, compressed drums with claps/snaps, bright and present mix, catchy melodic hooks. (2) The production quality should be INDISTINGUISHABLE from mainstream pop — if you heard it on the radio, you wouldn't immediately know it's Christian until you listen to the lyrics. (3) Synth-driven with layered pads, arpeggiated patterns, and modern pop sound design. (4) Acoustic guitar as a texture element (strumming patterns, fingerpicking in verses) blended with electronic production. (5) Big, anthemic choruses with gang vocals, layered harmonies, and melodic hooks that stick in your head. (6) Lyrics should be hopeful and faith-inspired but use everyday language — coffee shops, highways, phone calls, real life. (7) Bridge should have an emotional lift — the "goosebump moment" where the message hits home. (8) Clean, bright, radio-ready mastering. Reference sound: Lauren Daigle "You Say", for KING & COUNTRY "God Only Knows", TobyMac, Casting Crowns "Nobody".`,
+
+  "christian rock": `\nCHRISTIAN ROCK SONIC IDENTITY: This must sound like arena-filling Christian rock — raw, powerful, and uncompromising. Key sonic markers: (1) HEAVY GUITARS are the backbone — distorted power chords, palm-muted chugging in verses, open ringing chords in choruses, lead guitar solos with feeling. (2) Drums should be DRIVING and aggressive — four-on-the-floor kick in choruses, crash cymbals on every downbeat, tom fills building into big moments, double-kick accents for intensity. (3) Bass guitar with grit and presence — following the guitar riffs but adding low-end weight. (4) Skillet-style orchestral elements: strings and synths layered under the rock for cinematic, epic moments. (5) Vocal delivery should be PASSIONATE and raw — not polished pop vocals but gritty, convicted, shouting-your-faith delivery. (6) Dynamic contrast: stripped acoustic/clean guitar verses building to MASSIVE distorted choruses. (7) Gang vocal shouts in choruses — "Hey!" chants, unison declarations. (8) The energy should feel like a Winter Jam or Creation Festival main stage. Reference sound: Skillet "Monster"/"Feel Invincible", Switchfoot "Dare You To Move", Newsboys "God's Not Dead", RED, Thousand Foot Krutch.`,
+
+  "christian hip hop": `\nCHRISTIAN HIP HOP SONIC IDENTITY: This must sound like mainstream hip hop with the same production quality — the faith is in the message, not the sound. Key sonic markers: (1) 808 BASS is essential — deep, sub-heavy, with slides and distortion matching current trap production. (2) Hi-hat patterns: rapid rolls, triplet patterns, open/closed variations — modern trap programming. (3) Snare/clap on 2 and 4 with layered percussion for groove. (4) Atmospheric pads and dark ambient textures for mood. (5) Piano or melodic elements for hooks — modern CHH is melodic, not just bars. (6) Vocal delivery should vary: aggressive bars, melodic hooks, introspective spoken-word moments. (7) Gospel choir samples or sung hooks for the faith element — this is what distinguishes CHH sonically. (8) The production should be COMPETITIVE with secular hip hop — same 808s, same mixing quality, same modern sound design. (9) Ad-libs and vocal effects matching current hip hop trends. Reference sound: Lecrae "Coming In Hot"/"Blessings", NF "Let You Down", Andy Mineo, KB, GAWVI, Hulvey.`,
+
+  "southern gospel": `\nSOUTHERN GOSPEL SONIC IDENTITY: This must sound like an authentic Southern Gospel quartet performance. Key sonic markers: (1) FOUR-PART VOCAL HARMONY is the defining element — tenor (highest), lead (melody), baritone (harmony), bass (lowest, anchor). The voices should blend tightly with clear separation. (2) PIANO is the foundation instrument — gospel piano with runs between chord changes, fills during vocal pauses, supporting the harmony. (3) The feel should be warm, sincere, and traditional — not trendy or modern. (4) Country and bluegrass influences: steel guitar slides, fiddle accents, acoustic guitar strumming. (5) Light drums with brushes on ballads, more driving on uptempo numbers. (6) Key changes (modulations up) in the final chorus for emotional lift — this is a Southern Gospel trademark. (7) Bass voice should have moments to shine — deep, resonant, anchoring the harmony. (8) The overall feel should be like a Gaither Homecoming concert — warm, joyful, testimony-driven, making you feel like you're at a church homecoming. Reference sound: Gaither Vocal Band, The Cathedrals "Champion of Love", Ernie Haase & Signature Sound, Gold City.`,
+
+  "hymns": `\nHYMNS SONIC IDENTITY: This must sound like a reverent, timeless hymn — whether traditional or with modern arrangement. Key sonic markers: (1) ORGAN (pipe organ or Hammond) is the signature instrument — sustained chords, majestic registration, filling the room with warmth. (2) PIANO as primary or secondary instrument — classical voicings, gentle arpeggios, supporting the melody. (3) CHOIR (SATB) for congregational feel — soprano, alto, tenor, bass singing in traditional four-part harmony. (4) Cathedral/church reverb — long tails, spacious, the sound of a sacred space. (5) Strings (violin, cello) for emotional depth and beauty. (6) Minimal or no drums — if percussion is used, it should be subtle (timpani for majestic moments, gentle hand percussion). (7) The pace should be unhurried and reverent — give each word and phrase space to breathe. (8) For modern hymn arrangements (Getty style): add acoustic guitar, gentle percussion, and contemporary melodic sensibility while preserving the theological weight and singability. (9) The goal is TIMELESSNESS — this should sound like it could be sung in any century. Reference sound: "In Christ Alone" (Getty), "It Is Well" (traditional), "Be Thou My Vision", Indelible Grace, Reawaken Hymns.`,
+
+  "praise & worship": `\nPRAISE & WORSHIP SONIC IDENTITY: This must sound like HIGH ENERGY celebration worship — the "jump up and down" side of church. Key sonic markers: (1) DRIVING DRUMS are the engine — heavy kick, loud snare, crash cymbals on every downbeat, fills building into big moments, the kind of drums that make you move. (2) Electric guitar with RIFFS — not ambient worship guitar, but driving rock-influenced riffs, power chords, rhythmic strumming. (3) Bass guitar with aggressive, driving groove — locked in with the kick drum, propelling the song forward. (4) Keys/synths providing energy — bright pads, rhythmic patterns, not just ambient wash. (5) CLAPPING and TAMBOURINE on the backbeat — the sound of a congregation praising. (6) Gang vocals and crowd energy — the sound of hundreds of voices singing together, shouts of "Come on!" and "Let's go!". (7) PRAISE BREAK sections: simple repeated phrase building in intensity over 8-16 bars, adding layers until the room erupts. (8) The energy should be RELENTLESS — this is not contemplative worship, this is David-dancing-before-the-ark celebration. Reference sound: Planetshakers, Jesus Culture "Your Love Never Fails", Hillsong Young & Free, Passion "Glorious Day".`,
+
+  "christian r&b": `\nCHRISTIAN R&B SONIC IDENTITY: This must sound like smooth, soulful R&B with faith woven naturally into the fabric. Key sonic markers: (1) NEO-SOUL KEYS are essential — Rhodes, Wurlitzer, or warm electric piano with gospel-influenced chord voicings (9ths, 11ths, 13ths). (2) BASS with groove and gospel runs — warm, fingerstyle feel, melodic movement between chord changes. (3) Smooth drums: finger snaps, soft kick, brushed or programmed with a laid-back groove. (4) Lush string pads for emotional depth — sustained, warm, filling the background. (5) Guitar with clean tone — subtle licks, jazz-influenced chords, not distorted. (6) Vocal delivery is KEY: smooth and soulful with GOSPEL-INFLUENCED RUNS and ad-libs — melismatic singing, vocal riffs, the intersection of R&B technique and gospel soul. (7) Saxophone or flute for smooth moments — jazz-influenced instrumental color. (8) The overall vibe should be intimate, warm, and sophisticated — late-night worship meets Sunday morning soul. (9) Production should be radio-friendly R&B quality — secular R&B fans should be drawn in by the sound before they realize the message. Reference sound: Jonathan McReynolds "Not Lucky, I'm Loved", DOE "When I Pray", Koryn Hawthorne, Mali Music, PJ Morton.`,
 };
 
 // Christian-specific arrangement templates that override the generic ones
@@ -454,6 +572,36 @@ const CHRISTIAN_ARRANGEMENTS: Record<string, Record<string, string>> = {
     short: `Arrangement: Catchy synth/guitar intro hook → verse (rhythmic, relatable) → chorus (big pop hook, singalong) → short outro.`,
     medium: `Arrangement: Hooky intro (synth riff or guitar pattern) → verse 1 (conversational, relatable story) → pre-chorus (lifting energy, building anticipation) → chorus (massive pop hook, layered vocals, claps) → verse 2 (deeper story, fuller production) → chorus 2 (bigger, add gang vocals) → bridge (emotional pivot — stripped back then building to goosebump moment) → final chorus (biggest, all harmonies, maximum energy) → outro (callback to intro hook).`,
     long: `Arrangement: Atmospheric intro building to hooky riff → verse 1 (intimate, storytelling) → pre-chorus (building hope) → chorus 1 (full pop production, catchy hook) → post-chorus (instrumental hook) → verse 2 (deeper, fuller) → pre-chorus 2 (more intense) → chorus 2 (bigger, gang vocals, harmonies) → bridge (emotional breakdown — quiet confession building to powerful declaration of faith) → final chorus (maximum pop energy, all layers, anthemic) → outro (reflective, fading with the hook).`,
+  },
+  "christian rock": {
+    short: `Arrangement: Distorted guitar riff intro → verse (driving rhythm, gritty vocals) → chorus (full power, anthemic, gang vocals) → hard stop ending.`,
+    medium: `Arrangement: Powerful guitar riff intro (4 bars) → verse 1 (clean/acoustic guitar, building tension) → pre-chorus (drums intensify, distortion creeping in) → chorus (FULL POWER — distorted guitars, crashing drums, anthemic vocals, gang shouts) → verse 2 (heavier than verse 1, bass driving) → chorus 2 (bigger, add vocal harmonies) → bridge (strip to clean guitar and voice, then BUILD — drums enter, bass enters, guitars layer up to MASSIVE final explosion) → final chorus (maximum intensity, double-tracked everything) → outro (riff callback, hard stop or feedback fade).`,
+    long: `Arrangement: Atmospheric clean guitar intro building tension → verse 1 (restrained, clean tone, intimate) → pre-chorus (distortion building, drums intensifying) → chorus 1 (full rock power, anthemic) → post-chorus riff → verse 2 (heavier, driving) → pre-chorus 2 (more intense) → chorus 2 (bigger, gang vocals, guitar harmonies) → bridge (breakdown — half-time, heavy, then guitar solo building to crescendo) → final chorus (maximum power, every instrument firing, voices screaming the hook) → extended outro (epic, cinematic, strings under distortion, fading to silence).`,
+  },
+  "christian hip hop": {
+    short: `Arrangement: 808 beat drop intro → verse (bars with flow switches) → hook (melodic, catchy) → beat fade.`,
+    medium: `Arrangement: Atmospheric intro with 808 drop → verse 1 (aggressive bars, personal testimony, flow switches) → hook (melodic, memorable, gospel choir sample underneath) → verse 2 (deeper, more vulnerable, different flow pattern) → hook 2 (bigger, add vocal layers) → bridge (stripped — spoken word or introspective bars over minimal beat, then beat drops back HARD) → final hook (maximum energy, ad-libs, choir) → outro (beat riding out with ad-libs).`,
+    long: `Arrangement: Cinematic intro building atmosphere → verse 1 (storytelling bars, setting the scene) → pre-hook (melody building) → hook 1 (catchy, melodic, gospel elements) → verse 2 (harder bars, deeper testimony) → hook 2 (bigger) → verse 3 (most intense, fastest flow, climactic bars) → bridge (spoken word testimony over ambient pads, building to choir moment) → final hook (everything — 808s, choir, ad-libs, maximum energy) → outro (reflective, fading).`,
+  },
+  "southern gospel": {
+    short: `Arrangement: Piano intro with gospel feel → verse (lead vocal with harmony, testimony) → chorus (full quartet harmony, joyful) → tag ending.`,
+    medium: `Arrangement: Piano intro with gentle gospel runs → verse 1 (lead vocal, piano and bass, testimony) → chorus (full four-part harmony, piano fills, warm and joyful) → verse 2 (add steel guitar, deeper testimony) → chorus 2 (bigger harmony, add light drums) → bridge (bass voice feature or key change setup) → final chorus (KEY CHANGE UP — full quartet, maximum harmony, piano runs, joyful celebration) → tag ending (repeated hook fading with harmony).`,
+    long: `Arrangement: Gentle piano intro → verse 1 (lead vocal solo, piano accompaniment, personal testimony) → chorus 1 (quartet harmony enters, warm and inviting) → verse 2 (add bass, steel guitar, fuller) → chorus 2 (bigger harmony, drums enter) → verse 3 (full band, most passionate testimony) → bridge (bass voice solo moment, building to key change) → KEY CHANGE → final chorus (full quartet at maximum, piano runs, steel guitar crying, joyful celebration) → extended tag (repeated hook with vocal ad-libs, harmony fading to piano alone).`,
+  },
+  "hymns": {
+    short: `Arrangement: Organ intro (majestic registration) → verse (congregational singing, organ and piano) → final verse (add strings, fuller) → sustained "Amen" ending.`,
+    medium: `Arrangement: Organ prelude (4 bars, establishing the hymn tune) → verse 1 (unison singing, organ accompaniment) → verse 2 (add four-part harmony, piano joins) → verse 3 (add strings, fuller registration, building majesty) → verse 4 or chorus (FULL — organ at full registration, choir in harmony, strings soaring, brass if majestic) → "Amen" or sustained final chord with organ.`,
+    long: `Arrangement: Extended organ prelude establishing the hymn melody → verse 1 (solo voice or unison, organ gentle registration) → verse 2 (add harmony voices, piano joins) → instrumental interlude (organ or strings playing the melody) → verse 3 (fuller, add strings, more voices) → verse 4 (building to climax, organ adding stops) → final verse (FULL REGISTRATION — organ, choir, strings, brass, timpani, maximum majesty and reverence) → extended "Amen" cadence with organ sustaining into silence.`,
+  },
+  "praise & worship": {
+    short: `Arrangement: Driving drum intro with guitar riff → verse (energetic, building) → chorus (explosive celebration, clapping, gang vocals) → hard ending.`,
+    medium: `Arrangement: High-energy intro (drums, guitar riff, crowd energy) → verse 1 (driving rhythm, building anticipation, declaring God's goodness) → pre-chorus (lifting, "Come on!" energy) → chorus (EXPLOSIVE celebration — clapping, gang vocals, driving drums, guitar riffs) → verse 2 (higher energy, fuller) → chorus 2 (bigger, more crowd energy) → praise break (simple repeated phrase building 8-16 bars — adding layers, intensity rising, crowd going wild) → final chorus (maximum celebration, everything firing) → outro (crowd energy fading, drums driving to hard stop).`,
+    long: `Arrangement: Building intro (drums counting in, guitar riff, crowd cheering) → verse 1 (driving, declarative) → pre-chorus (building) → chorus 1 (celebration explosion) → verse 2 (higher energy) → chorus 2 (bigger) → extended praise break (16+ bars — simple phrase repeated, building from just drums and voice to FULL BAND with crowd, intensity peaking) → bridge (new melodic idea, still high energy) → final chorus (maximum everything) → outro praise break (spontaneous, crowd-led, fading).`,
+  },
+  "christian r&b": {
+    short: `Arrangement: Smooth keys intro with groove → verse (intimate, soulful) → chorus (melodic hook with gospel runs) → outro groove.`,
+    medium: `Arrangement: Smooth intro (Rhodes/keys with bass groove) → verse 1 (intimate, conversational, soulful delivery) → pre-chorus (melody lifting, building warmth) → chorus (smooth hook, gospel vocal runs, layered harmonies) → verse 2 (deeper, add strings, fuller groove) → chorus 2 (bigger, more ad-libs and runs) → bridge (stripped to keys and voice — vulnerable, honest, then building to soulful climax with gospel choir) → final chorus (full R&B production, vocal runs, ad-libs, saxophone) → outro (groove riding out, ad-libs fading).`,
+    long: `Arrangement: Extended smooth intro (keys establishing groove, bass entering, drums settling in) → verse 1 (intimate, just voice and keys) → pre-chorus (adding layers) → chorus 1 (smooth hook, harmonies) → verse 2 (fuller, strings, deeper story) → chorus 2 (bigger, gospel choir enters) → bridge (breakdown — spoken word or vulnerable moment over minimal groove, then building with gospel choir to emotional peak) → final chorus (maximum soul — full band, choir, vocal runs, saxophone solo) → extended outro (groove with ad-libs, sax, fading into warmth).`,
   },
 };
 
