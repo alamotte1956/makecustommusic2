@@ -1149,6 +1149,46 @@ RULES:
         await deleteMp3SheetJob(input.jobId, ctx.user.id);
         return { success: true };
       }),
+
+    // Save MP3 sheet music result as a song in the user's library
+    saveMp3SheetToLibrary: protectedProcedure
+      .input(z.object({
+        jobId: z.number(),
+        title: z.string().min(1).max(255).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Fetch the completed job
+        const job = await getMp3SheetJob(input.jobId, ctx.user.id);
+        if (!job) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
+        }
+        if (job.status !== "done") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Job is not completed yet" });
+        }
+        if (!job.abcNotation) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No sheet music notation available" });
+        }
+
+        // Derive a title from the filename if not provided
+        const title = input.title || job.fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Untitled";
+
+        // Create the song in the library
+        const song = await createSong({
+          userId: ctx.user.id,
+          title,
+          keywords: `mp3 transcription, ${job.fileName}`,
+          abcNotation: null,
+          sheetMusicAbc: job.abcNotation,
+          lyrics: job.lyrics || null,
+          audioUrl: job.audioUrl || null,
+          engine: "mp3-transcription",
+          genre: null,
+          mood: null,
+          duration: null,
+        });
+
+        return { songId: song!.id, title: song!.title };
+      }),
   }),
 
   favorites: router({

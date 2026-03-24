@@ -3,12 +3,14 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Music, FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Download, Play, Pause, Volume2, VolumeX, RefreshCw, WifiOff,
-  Clock, Trash2, ChevronDown, ChevronUp, Eye,
+  Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
@@ -91,7 +93,11 @@ export default function Mp3ToSheetMusic() {
   });
 
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [file, setFile] = useState<File | null>(null);
+  const [savedSongId, setSavedSongId] = useState<number | null>(null);
+  const [saveTitle, setSaveTitle] = useState("");
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [step, setStep] = useState<ProcessingStep>("idle");
   const [abcNotation, setAbcNotation] = useState<string | null>(null);
@@ -127,6 +133,7 @@ export default function Mp3ToSheetMusic() {
   const progressRef = useRef<HTMLDivElement>(null);
 
   const startJobMutation = trpc.songs.startMp3SheetJob.useMutation();
+  const saveToLibraryMutation = trpc.songs.saveMp3SheetToLibrary.useMutation();
   const trpcUtils = trpc.useUtils();
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
@@ -467,6 +474,31 @@ export default function Mp3ToSheetMusic() {
     }
   }, [file, selectedKey, originalKey]);
 
+  const handleSaveToLibrary = useCallback(async () => {
+    if (!activeJobId && !abcNotation) return;
+    const jobId = activeJobId;
+    if (!jobId) {
+      toast.error("No active job to save");
+      return;
+    }
+    try {
+      const result = await saveToLibraryMutation.mutateAsync({
+        jobId,
+        title: saveTitle.trim() || undefined,
+      });
+      setSavedSongId(result.songId);
+      setShowSaveDialog(false);
+      toast.success(`"${result.title}" saved to your library!`, {
+        action: {
+          label: "View Song",
+          onClick: () => navigate(`/songs/${result.songId}`),
+        },
+      });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save to library");
+    }
+  }, [activeJobId, abcNotation, saveTitle, saveToLibraryMutation, navigate]);
+
   const handleReset = useCallback(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
@@ -481,6 +513,9 @@ export default function Mp3ToSheetMusic() {
     setSelectedKey("original");
     setIsRendered(false);
     setErrorInfo(null);
+    setSavedSongId(null);
+    setSaveTitle("");
+    setShowSaveDialog(false);
   }, [stopPreview]);
 
   // ─── AUTH GATE ───
@@ -880,8 +915,73 @@ export default function Mp3ToSheetMusic() {
                     )}
                     Regenerate
                   </Button>
+
+                  {/* Save to Library */}
+                  {savedSongId ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
+                      onClick={() => navigate(`/songs/${savedSongId}`)}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      View in Library
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
+                      onClick={() => {
+                        const defaultTitle = file?.name?.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "";
+                        setSaveTitle(defaultTitle);
+                        setShowSaveDialog(true);
+                      }}
+                      disabled={saveToLibraryMutation.isPending}
+                    >
+                      {saveToLibraryMutation.isPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Library className="w-3.5 h-3.5" />
+                      )}
+                      Save to Library
+                    </Button>
+                  )}
                 </div>
               </div>
+
+              {/* Save to Library dialog */}
+              {showSaveDialog && (
+                <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-end gap-3">
+                  <div className="flex-1 w-full">
+                    <label className="text-sm font-medium text-violet-900 mb-1 block">Song Title</label>
+                    <Input
+                      value={saveTitle}
+                      onChange={(e) => setSaveTitle(e.target.value)}
+                      placeholder="Enter a title for this song..."
+                      className="bg-white"
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveToLibrary(); }}
+                      autoFocus
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">This will appear in your song library alongside your AI-generated songs.</p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button variant="ghost" size="sm" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
+                    <Button
+                      size="sm"
+                      className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
+                      onClick={handleSaveToLibrary}
+                      disabled={saveToLibraryMutation.isPending}
+                    >
+                      {saveToLibraryMutation.isPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5" />
+                      )}
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Playback controls with note highlighting and progress tracking */}
               <PlaybackControls

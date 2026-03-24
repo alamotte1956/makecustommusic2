@@ -1016,3 +1016,12 @@
 - [x] Show percentage of 16MB limit used with color-coded bar (green < 50%, amber 50-80%, red > 80%)
 - [x] Display remaining MB of 16MB limit, or "At file size limit" at 100%
 - [x] Added 14 tests for percentage calculation, color thresholds, remaining space, and edge cases — 936 tests passing
+
+## Save MP3 Sheet Music to Library
+- [x] Add backend tRPC route saveMp3SheetToLibrary (validates job status, derives title, creates song with engine='mp3-transcription')
+- [x] Add "Save to Library" button on the MP3-to-Sheet-Music results page with inline title editor dialog
+- [x] Pre-fill title from filename with smart formatting (remove extension, replace dashes/underscores, title case)
+- [x] Navigate to saved song via toast action ("View Song") and "View in Library" button after saving
+- [x] Show success toast and swap button to "View in Library" after saving (prevents duplicates)
+- [x] Reset save state on handleReset
+- [x] Added 21 tests for title derivation, validation rules, data mapping, and UI state transitions — 957 tests passing
