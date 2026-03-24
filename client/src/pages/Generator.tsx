@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import AudioPlayer from "@/components/AudioPlayer";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
@@ -66,11 +67,11 @@ const MOODS = [
 ];
 
 const VOCAL_OPTIONS = [
-  { value: "none", label: "No Vocals", icon: MicOff },
-  { value: "male", label: "Male", icon: Mic },
-  { value: "female", label: "Female", icon: Mic },
-  { value: "mixed", label: "Duet", icon: Mic },
-  { value: "male_and_female", label: "Male & Female", icon: Users },
+  { value: "none", label: "No Vocals", icon: MicOff, tooltip: "Instrumental only \u2014 no singing" },
+  { value: "male", label: "Male", icon: Mic, tooltip: "Solo male vocalist with chest resonance and warmth" },
+  { value: "female", label: "Female", icon: Mic, tooltip: "Solo female vocalist with clarity and airiness" },
+  { value: "mixed", label: "Duet", icon: Mic, tooltip: "Male and female trading lines and harmonizing" },
+  { value: "male_and_female", label: "Male & Female", icon: Users, tooltip: "Both voices singing together in blended harmony" },
 ] as const;
 
 const DURATION_PRESETS = [
@@ -852,21 +853,27 @@ export default function Generator() {
             {/* Vocals — compact row */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vocals</label>
-              <div className="flex gap-2">
-                {VOCAL_OPTIONS.map(({ value, label, icon: Icon }) => (
-                  <button
-                    key={value}
-                    onClick={() => setVocalType(value)}
-                    disabled={isGenerating}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 transition-all text-xs font-medium ${
-                      vocalType === value
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-muted-foreground/40"
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {label}
-                  </button>
+              <div className="flex flex-wrap gap-2">
+                {VOCAL_OPTIONS.map(({ value, label, icon: Icon, tooltip }) => (
+                  <Tooltip key={value}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setVocalType(value)}
+                        disabled={isGenerating}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 transition-all text-xs font-medium ${
+                          vocalType === value
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {label}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" sideOffset={6}>
+                      {tooltip}
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </div>
             </div>

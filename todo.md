@@ -1133,3 +1133,11 @@
 - [x] Add male_and_female vocal guidance to lyrics generation (unified pair, not trading lines)
 - [x] Distinct from "Duet" (mixed): Duet = call-and-response, Male & Female = blended unison throughout
 - [x] Add 10 tests for male_and_female vocal type — 1083 tests passing across 52 files
+
+## Vocal Option Tooltips
+- [x] Add descriptive tooltip to each vocal option using shadcn Tooltip component
+- [x] No Vocals: "Instrumental only — no singing"
+- [x] Male: "Solo male vocalist with chest resonance and warmth"
+- [x] Female: "Solo female vocalist with clarity and airiness"
+- [x] Duet: "Male and female trading lines and harmonizing"
+- [x] Male & Female: "Both voices singing together in blended harmony"
