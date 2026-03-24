@@ -144,20 +144,56 @@ export default function Mp3ToSheetMusic() {
     };
   }, [previewUrl]);
 
+  // Track render attempt counter for ResizeObserver-triggered re-renders
+  const [renderAttempt, setRenderAttempt] = useState(0);
+
+  // ResizeObserver: detect when the container becomes visible (non-zero width)
+  // This prevents abcjs from rendering into a zero-width container, which produces
+  // a minimal SVG with only the title text and no musical notation.
+  useEffect(() => {
+    const container = sheetRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && sanitisedDisplayAbc) {
+          setRenderAttempt((n) => n + 1);
+        }
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [sanitisedDisplayAbc]);
+
   // Render ABC notation using abcjs
   useEffect(() => {
     if (!sanitisedDisplayAbc || !sheetRef.current) return;
+
+    const container = sheetRef.current;
+    const rect = container.getBoundingClientRect();
+    // CRITICAL: Do not render if container has zero width (hidden tab, collapsed section)
+    if (rect.width < 10) return;
+
     setIsRendered(false);
-    import("abcjs").then((mod) => {
+
+    import("abcjs").then(async (mod) => {
       const abcjs = mod.default || mod;
       if (!sheetRef.current) return;
       sheetRef.current.innerHTML = "";
-      // Ensure the container has an id for abcjs (use string id for cross-bundler compatibility)
       if (!sheetRef.current.id) sheetRef.current.id = "mp3-sheet-music-render";
+
+      // Wait for next animation frame to ensure layout is fully computed
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      if (!sheetRef.current) return;
+
+      const postRafRect = sheetRef.current.getBoundingClientRect();
+      if (postRafRect.width < 10) return;
+
       try {
-        const visualObj = abcjs.renderAbc(sheetRef.current.id, sanitisedDisplayAbc, {
+        const visualObj = abcjs.renderAbc(sheetRef.current, sanitisedDisplayAbc, {
           responsive: "resize",
-          staffwidth: 700,
+          staffwidth: Math.max(600, Math.floor(postRafRect.width - 40)),
           paddingtop: 20,
           paddingbottom: 20,
           paddingleft: 15,
@@ -175,7 +211,7 @@ export default function Mp3ToSheetMusic() {
     }).catch(() => {
       toast.error("Failed to load sheet music renderer");
     });
-  }, [sanitisedDisplayAbc]);
+  }, [sanitisedDisplayAbc, renderAttempt]);
 
   const stopPreview = useCallback(() => {
     if (audioRef.current) {

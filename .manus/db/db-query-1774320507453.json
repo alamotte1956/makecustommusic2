@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, LENGTH(sheetMusicAbc) as total_len, LENGTH(REPLACE(sheetMusicAbc, '\\n', '')) as without_newlines, (LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, '\\n', ''))) as newline_count, (LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, ';', ''))) as semicolon_count FROM songs WHERE sheetMusicAbc IS NOT NULL ORDER BY id DESC LIMIT 3",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, LENGTH(sheetMusicAbc) as total_len, LENGTH(REPLACE(sheetMusicAbc, '\\n', '')) as without_newlines, (LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, '\\n', ''))) as newline_count, (LENGTH(sheetMusicAbc) - LENGTH(REPLACE(sheetMusicAbc, ';', ''))) as semicolon_count FROM songs WHERE sheetMusicAbc IS NOT NULL ORDER BY id DESC LIMIT 3",
+  "rows": [
+    {
+      "id": "570003",
+      "total_len": "2297",
+      "without_newlines": "2234",
+      "newline_count": "63",
+      "semicolon_count": "0"
+    },
+    {
+      "id": "570002",
+      "total_len": "1864",
+      "without_newlines": "1811",
+      "newline_count": "53",
+      "semicolon_count": "0"
+    },
+    {
+      "id": "570001",
+      "total_len": "2761",
+      "without_newlines": "2685",
+      "newline_count": "76",
+      "semicolon_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotal_len\twithout_newlines\tnewline_count\tsemicolon_count\n570003\t2297\t2234\t63\t0\n570002\t1864\t1811\t53\t0\n570001\t2761\t2685\t76\t0\n",
+  "stderr": "",
+  "execution_time_ms": 348
+}

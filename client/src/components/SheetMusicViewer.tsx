@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Music, RefreshCw, FileAudio, AlertCircle, WifiOff } from "lucide-react";
@@ -10,7 +10,6 @@ import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
-import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
 
 interface SheetMusicViewerProps {
@@ -56,7 +55,7 @@ function classifyError(error: any): ErrorState {
     lowerMsg.includes("unexpected token '<'") ||
     lowerMsg.includes("<!doctype") ||
     lowerMsg.includes("is not valid json") ||
-    lowerMsg.includes("unexpected token") && lowerMsg.includes("json")
+    (lowerMsg.includes("unexpected token") && lowerMsg.includes("json"))
   ) {
     return {
       type: "network",
@@ -84,7 +83,6 @@ function classifyError(error: any): ErrorState {
     return { type: "rendering", message: "Failed to render the sheet music.", detail: message };
   }
 
-  // Extract a user-friendly message from TRPCError
   const friendlyMessage = lowerMsg.includes("sheet music generation failed")
     ? "Sheet music generation failed. The AI service may be temporarily unavailable."
     : message;
@@ -92,14 +90,38 @@ function classifyError(error: any): ErrorState {
   return { type: "generation", message: friendlyMessage, detail: message !== friendlyMessage ? message : undefined };
 }
 
+/** Sanitise ABC notation for abcjs rendering */
+function sanitiseAbc(raw: string): string {
+  return raw
+    .split("\n")
+    .filter((l) => {
+      const t = l.trim();
+      if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
+      if (/^![pmf]{1,3}!$/.test(t)) return false;
+      return true;
+    })
+    .map((l) => {
+      const t = l.trim();
+      if (/^\[P:.*\]$/.test(t)) return `% ${t}`;
+      return l;
+    })
+    .join("\n")
+    .trim();
+}
+
 export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature }: SheetMusicViewerProps) {
-  const { sheetRef, onActiveNoteChange } = useNoteHighlight();
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const prevHighlightRef = useRef<Element | null>(null);
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
   const [isRendered, setIsRendered] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>("original");
   const [generateInKey, setGenerateInKey] = useState<string>("auto");
   const [error, setError] = useState<ErrorState | null>(null);
+  // Counter to force re-render attempts
+  const [renderAttempt, setRenderAttempt] = useState(0);
+  // Track whether the container has a non-zero width (visible)
+  const [containerVisible, setContainerVisible] = useState(false);
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
 
@@ -122,6 +144,67 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     setPlaybackIsPlaying(state.isPlaying);
   }, []);
 
+  // Note highlighting callback
+  const onActiveNoteChange = useCallback((noteIndex: number) => {
+    const container = sheetRef.current;
+    if (!container) return;
+    if (prevHighlightRef.current) {
+      prevHighlightRef.current.classList.remove("abcjs-note-active");
+      prevHighlightRef.current = null;
+    }
+    if (noteIndex < 0) return;
+    const noteEl = container.querySelector(`.abcjs-n${noteIndex}`);
+    if (noteEl) {
+      noteEl.classList.add("abcjs-note-active");
+      prevHighlightRef.current = noteEl;
+      // Auto-scroll to keep active note visible
+      const containerRect = container.getBoundingClientRect();
+      const noteRect = noteEl.getBoundingClientRect();
+      if (noteRect.left < containerRect.left + 60) {
+        container.scrollBy({ left: noteRect.left - containerRect.left - 60, behavior: "smooth" });
+      } else if (noteRect.right > containerRect.right - 60) {
+        container.scrollBy({ left: noteRect.right - containerRect.right + 60, behavior: "smooth" });
+      }
+      if (noteRect.top < containerRect.top + 40) {
+        container.scrollBy({ top: noteRect.top - containerRect.top - 40, behavior: "smooth" });
+      } else if (noteRect.bottom > containerRect.bottom - 40) {
+        container.scrollBy({ top: noteRect.bottom - containerRect.bottom + 40, behavior: "smooth" });
+      }
+    }
+  }, []);
+
+  // ─── ResizeObserver: detect when the container becomes visible (non-zero width) ───
+  // This is critical for tabs: when the sheet music tab is hidden, the container has
+  // width 0. abcjs with responsive:'resize' computes staff width from container width,
+  // producing a minimal SVG with only the title when width is 0.
+  useEffect(() => {
+    const container = sheetRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        if (width > 0) {
+          setContainerVisible(true);
+          // Force a re-render when the container becomes visible
+          setRenderAttempt((n) => n + 1);
+        } else {
+          setContainerVisible(false);
+        }
+      }
+    });
+
+    observer.observe(container);
+
+    // Check initial width
+    const rect = container.getBoundingClientRect();
+    if (rect.width > 0) {
+      setContainerVisible(true);
+    }
+
+    return () => observer.disconnect();
+  }, [abc]); // Re-attach when abc changes (component may re-mount)
+
   // Detect the original key from ABC notation
   const originalKey = useMemo(() => {
     if (!abc) return null;
@@ -140,6 +223,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     return extractChordsFromABC(displayAbc);
   }, [displayAbc]);
 
+  // Frontend-side ABC sanitisation
+  const sanitisedDisplayAbc = useMemo(() => {
+    if (!displayAbc) return null;
+    return sanitiseAbc(displayAbc);
+  }, [displayAbc]);
+
   const handleGenerate = useCallback(async () => {
     setError(null);
     try {
@@ -147,6 +236,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const result = await generateMutation.mutateAsync({ songId, key: keyParam });
       setAbc(result.abcNotation);
       setSelectedKey("original");
+      setRenderAttempt((n) => n + 1);
       utils.songs.getById.invalidate({ id: songId });
       toast.success("Sheet music generated!");
     } catch (err: any) {
@@ -155,76 +245,112 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [songId, generateInKey, generateMutation, utils]);
 
-  // Frontend-side ABC sanitisation: strip V: directives and %%staves as a safety net
-  const sanitisedDisplayAbc = useMemo(() => {
-    if (!displayAbc) return null;
-    return displayAbc
-      .split("\n")
-      .filter((l) => {
-        const t = l.trim();
-        // Strip voice directives and stave layout
-        if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
-        // Strip standalone dynamics on their own line (e.g. !mp!, !mf!, !p!, !f!, !ff!, !pp!)
-        if (/^![pmf]{1,3}!$/.test(t)) return false;
-        // Convert [P:...] part markers to comments so abcjs doesn't choke
-        return true;
-      })
-      .map((l) => {
-        const t = l.trim();
-        // Convert [P:...] section markers to comment lines for abcjs compatibility
-        if (/^\[P:.*\]$/.test(t)) return `% ${t}`;
-        return l;
-      })
-      .join("\n")
-      .trim();
-  }, [displayAbc]);
-
-  // Render ABC notation using abcjs
+  // ─── Core rendering effect ───
+  // Renders the ABC notation using abcjs when:
+  // 1. We have sanitised ABC notation
+  // 2. The container is in the DOM
+  // 3. The container has a non-zero width (visible — not in a hidden tab)
+  // Uses renderAttempt as a dependency to allow forced re-renders.
   useEffect(() => {
-    if (!sanitisedDisplayAbc || !sheetRef.current) return;
+    if (!sanitisedDisplayAbc) return;
 
-    setIsRendered(false);
-    // Clear any previous rendering error when attempting to render new ABC
-    setError((prev) => (prev?.type === "rendering" ? null : prev));
+    let cancelled = false;
 
-    import("abcjs").then((mod) => {
-      const abcjs = mod.default || mod;
-      if (!sheetRef.current) return;
-      sheetRef.current.innerHTML = "";
-      // Ensure the container has an id for abcjs (use string id for cross-bundler compatibility)
-      if (!sheetRef.current.id) sheetRef.current.id = "sheet-music-render";
+    async function doRender() {
+      const container = sheetRef.current;
+      if (!container) return;
+
+      // CRITICAL: Check that the container has a non-zero width.
+      // When inside a hidden tab (e.g., Radix TabsContent), the container exists
+      // in the DOM but has width 0. abcjs with responsive:'resize' computes staff
+      // width from the container width — with width 0, it produces a minimal SVG
+      // containing only the title text and no musical notation.
+      const rect = container.getBoundingClientRect();
+      if (rect.width < 10) {
+        // Container is not visible yet — the ResizeObserver will trigger
+        // a re-render when it becomes visible
+        return;
+      }
+
+      setIsRendered(false);
+      setError((prev) => (prev?.type === "rendering" ? null : prev));
+
       try {
-        const visualObj = abcjs.renderAbc(sheetRef.current.id, sanitisedDisplayAbc, {
+        const mod = await import("abcjs");
+        if (cancelled) return;
+
+        const abcjs = mod.default || mod;
+        const renderTarget = container;
+
+        // Clear previous content
+        renderTarget.innerHTML = "";
+
+        // Ensure the container has an ID
+        if (!renderTarget.id) renderTarget.id = "sheet-music-render";
+
+        // Wait for next animation frame to ensure layout is fully computed
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        if (cancelled) return;
+
+        // Double-check width after rAF
+        const postRafRect = renderTarget.getBoundingClientRect();
+        if (postRafRect.width < 10) return;
+
+        // Render the ABC notation
+        const visualObj = abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
           responsive: "resize",
-          staffwidth: 700,
+          staffwidth: Math.max(600, Math.floor(postRafRect.width - 40)),
           paddingtop: 20,
           paddingbottom: 20,
           paddingleft: 15,
           paddingright: 15,
           add_classes: true,
         });
-        // Check if rendering produced actual content
-        if (visualObj && visualObj.length > 0 && visualObj[0].warnings && visualObj[0].warnings.length > 0) {
+
+        if (cancelled) return;
+
+        // Log warnings for debugging
+        if (visualObj?.[0]?.warnings?.length) {
           console.warn("[SheetMusic] abcjs warnings:", visualObj[0].warnings);
         }
+
+        // Verify that actual music content was rendered (not just title)
+        const svg = renderTarget.querySelector("svg");
+        if (svg) {
+          const noteElements = renderTarget.querySelectorAll("[data-name]");
+          const pathElements = svg.querySelectorAll("path");
+          const noteClasses = renderTarget.querySelectorAll("[class*='abcjs-n']");
+          console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, ${noteElements.length} data-name elements, ${noteClasses.length} note classes, container width: ${postRafRect.width}`);
+
+          // If we got an SVG but no paths (just title), the render failed silently
+          if (pathElements.length < 5) {
+            console.warn("[SheetMusic] Very few paths rendered — possible zero-width issue. Will retry on next resize.");
+          }
+        }
+
         setIsRendered(true);
-      } catch (renderErr: any) {
-        setError({ type: "rendering", message: "Failed to render the sheet music notation.", detail: renderErr?.message });
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error("[SheetMusic] Render error:", err);
+          setError({ type: "rendering", message: "Failed to render the sheet music notation.", detail: err?.message });
+        }
       }
-    }).catch((importErr: any) => {
-      setError({ type: "rendering", message: "Failed to load the sheet music renderer.", detail: importErr?.message });
-    });
-  }, [sanitisedDisplayAbc]);
+    }
+
+    doRender();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sanitisedDisplayAbc, renderAttempt, containerVisible]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!sheetRef.current) return;
-
     const svgElement = sheetRef.current.querySelector("svg");
     if (!svgElement) {
       toast.error("No sheet music to export");
       return;
     }
-
     setExporting(true);
     try {
       const keyLabel = selectedKey === "original"
@@ -302,10 +428,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               size="sm"
               onClick={() => {
                 setError(null);
-                // Force re-render by toggling abc
-                const current = abc;
-                setAbc(null);
-                requestAnimationFrame(() => setAbc(current));
+                setRenderAttempt((n) => n + 1);
               }}
             >
               Re-render
@@ -317,7 +440,6 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   };
 
   // Check if background generation might still be in progress
-  // (song exists but no sheet music yet and no user-triggered error)
   const isPreparing = !abc && !error && !generateMutation.isPending;
 
   // No ABC notation yet — show preparing state, key picker + generate button, or error

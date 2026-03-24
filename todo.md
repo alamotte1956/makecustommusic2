@@ -945,3 +945,15 @@
 - [x] Fix: Updated both SheetMusicViewer and Mp3ToSheetMusic error handling
 - [x] Fix: Removed [P:] markers and standalone dynamics from all LLM prompts to prevent rendering issues
 - [x] Fix: Added user-friendly error messages for all error types
+
+## Bug Fix: Sheet Music STILL Not Rendering (Critical)
+- [x] Root cause identified: abcjs with `responsive: 'resize'` computes staff width from container width. When inside hidden Radix TabsContent (default tab is 'lyrics'), container has width 0, causing abcjs to render only title text with no musical notation.
+- [x] Fix SheetMusicViewer: Added ResizeObserver to detect when container becomes visible (non-zero width) and trigger re-render
+- [x] Fix SheetMusicViewer: Added width guard (skip render if container width < 10px) before calling renderAbc
+- [x] Fix SheetMusicViewer: Added requestAnimationFrame wait to ensure layout is computed before rendering
+- [x] Fix SheetMusicViewer: Compute staffwidth dynamically from actual container width instead of fixed 700
+- [x] Fix Mp3ToSheetMusic: Applied same ResizeObserver + width guard + rAF pattern
+- [x] Fix Mp3ToSheetMusic: Changed from string ID to DOM element for renderAbc call
+- [x] Cleaned up debug endpoint from server/_core/index.ts
+- [x] Added 16 new tests for sanitiseAbc, zero-width guard logic, and real ABC notation processing
+- [x] All 849 tests passing (39 test files)
