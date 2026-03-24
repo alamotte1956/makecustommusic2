@@ -1040,3 +1040,11 @@
 - [x] Icon swaps to green checkmark for 2 seconds after copying
 - [x] Mobile menu shows "Link Copied!" text feedback
 - [x] All 957 tests passing
+
+## "Transcribed from Audio" Badge
+- [x] Add teal "Transcribed from Audio" badge (with FileAudio icon) to SongDetail page for engine='mp3-transcription'
+- [x] Add teal "Transcribed" badge to History page song cards
+- [x] Add teal "Transcribed" badge to Favorites page (replaces ElevenLabs badge conditionally)
+- [x] Add teal "Transcribed" badge to Discover page (overlay on card image)
+- [x] Styled with distinct teal-600 color to differentiate from violet ElevenLabs badges
+- [x] All 957 tests passing

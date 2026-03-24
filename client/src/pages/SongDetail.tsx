@@ -15,7 +15,7 @@ import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import { exportLyricsPDF } from "@/lib/pdfExport";
 import {
   Music, FileText, Guitar, Download, Share2, ArrowLeft,
-  Clock, Gauge, Tag, Mic, Loader2
+  Clock, Gauge, Tag, Mic, Loader2, FileAudio
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -134,9 +134,16 @@ export default function SongDetail() {
                   {song.postProcessPreset}
                 </Badge>
               )}
-              <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">
-                ElevenLabs
-              </Badge>
+              {song.engine === "mp3-transcription" ? (
+                <Badge variant="default" className="bg-teal-600 hover:bg-teal-700 gap-1">
+                  <FileAudio className="w-3 h-3" />
+                  Transcribed from Audio
+                </Badge>
+              ) : (
+                <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">
+                  ElevenLabs
+                </Badge>
+              )}
             </div>
           </div>
         </CardHeader>

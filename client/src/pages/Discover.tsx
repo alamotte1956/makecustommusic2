@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   Globe, Play, Pause, Heart, Music, Clock, ChevronDown,
-  Headphones, Sparkles, User, Loader2
+  Headphones, Sparkles, User, Loader2, FileAudio
 } from "lucide-react";
 import { Link } from "wouter";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -194,6 +194,12 @@ export default function Discover() {
                         </button>
                         {/* Badges */}
                         <div className="absolute top-2 left-2 flex gap-1">
+                          {song.engine === "mp3-transcription" && (
+                            <Badge variant="default" className="text-xs bg-teal-600/90 text-white border-0 backdrop-blur-sm gap-1">
+                              <FileAudio className="w-3 h-3" />
+                              Transcribed
+                            </Badge>
+                          )}
                           {song.genre && (
                             <Badge variant="secondary" className="text-xs bg-black/40 text-white border-0 backdrop-blur-sm">
                               {song.genre}

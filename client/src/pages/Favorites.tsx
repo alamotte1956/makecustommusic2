@@ -9,7 +9,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Heart, Download, Loader2, Trash2,
-  ChevronDown, ChevronUp, Play, Share2, ListMusic, Pause, Pencil
+  ChevronDown, ChevronUp, Play, Share2, ListMusic, Pause, Pencil, FileAudio
 } from "lucide-react";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import EditSongDialog from "@/components/EditSongDialog";
@@ -247,9 +247,16 @@ export default function Favorites() {
                               Now Playing
                             </Badge>
                           )}
-                          <Badge variant="default" className="text-xs bg-gradient-to-r from-violet-600 to-indigo-600">
-                            ElevenLabs
-                          </Badge>
+                          {song.engine === "mp3-transcription" ? (
+                            <Badge variant="default" className="text-xs bg-teal-600 hover:bg-teal-700 gap-1">
+                              <FileAudio className="w-3 h-3" />
+                              Transcribed
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="text-xs bg-gradient-to-r from-violet-600 to-indigo-600">
+                              ElevenLabs
+                            </Badge>
+                          )}
                           {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
                           {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
                           {song.vocalType && song.vocalType !== "none" && (

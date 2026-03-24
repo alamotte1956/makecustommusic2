@@ -8,7 +8,7 @@ import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic, FileText, Globe, Lock
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic, FileText, Globe, Lock, FileAudio
 } from "lucide-react";
 import { Link } from "wouter";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -338,8 +338,14 @@ export default function History() {
 
                         {/* Badges */}
                         <div className="flex flex-wrap gap-1.5 mt-2">
-                          {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
-                          {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
+                          {song.engine === "mp3-transcription" && (
+                            <Badge variant="default" className="text-xs bg-teal-600 hover:bg-teal-700 gap-1">
+                              <FileAudio className="w-3 h-3" />
+                              Transcribed
+                            </Badge>
+                          )}
+                           {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
+                           {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
                           {song.tempo && <Badge variant="outline" className="text-xs">{song.tempo} BPM</Badge>}
                           {song.duration && <Badge variant="outline" className="text-xs">{Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}</Badge>}
                         </div>
