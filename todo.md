@@ -980,3 +980,14 @@
 - [x] Backend: getRecentMp3SheetJobs + deleteMp3SheetJob routes, getUserMp3SheetJobs + deleteMp3SheetJob DB helpers
 - [x] Added 18 tests for history feature and progress UI — 893 tests passing
 - [ ] Verify the MP3-to-Sheet-Music flow end-to-end on production (user to test after publish)
+
+## Audio Waveform Visualization
+- [x] Create AudioWaveform component using Web Audio API + Canvas (no external deps)
+- [x] Decode uploaded audio file to extract amplitude data (extractPeaks function)
+- [x] Render waveform with played/unplayed color differentiation and cursor line
+- [x] Integrated waveform into Mp3ToSheetMusic upload preview (replaces thin progress bar)
+- [x] Click-to-seek on waveform + hover indicator with dashed line
+- [x] Animated skeleton bars while audio is decoding
+- [x] ResizeObserver for responsive bar count (1 bar per 3px)
+- [x] HiDPI canvas rendering (devicePixelRatio support)
+- [x] Added 17 tests for extractPeaks, rendering calculations, and skeleton — 910 tests passing

@@ -18,6 +18,7 @@ import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
+import AudioWaveform from "@/components/AudioWaveform";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
 
@@ -527,6 +528,21 @@ export default function Mp3ToSheetMusic() {
                     className="mt-4 bg-white/80 rounded-xl border border-violet-200 p-4"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {/* Waveform Visualization */}
+                    <div className="mb-3">
+                      <AudioWaveform
+                        file={file}
+                        currentTime={currentTime}
+                        duration={audioDuration}
+                        onSeek={(time) => {
+                          if (audioRef.current) audioRef.current.currentTime = time;
+                        }}
+                        isPlaying={isPlaying}
+                        height={56}
+                      />
+                    </div>
+
+                    {/* Controls row */}
                     <div className="flex items-center gap-3">
                       <button
                         onClick={togglePlayPause}
@@ -536,21 +552,7 @@ export default function Mp3ToSheetMusic() {
                       </button>
 
                       <div className="flex-1 min-w-0">
-                        <div
-                          ref={progressRef}
-                          onClick={handleSeek}
-                          className="relative h-2 bg-violet-100 rounded-full cursor-pointer group"
-                        >
-                          <div
-                            className="absolute inset-y-0 left-0 bg-violet-500 rounded-full transition-all"
-                            style={{ width: audioDuration ? `${(currentTime / audioDuration) * 100}%` : "0%" }}
-                          />
-                          <div
-                            className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-violet-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ left: audioDuration ? `calc(${(currentTime / audioDuration) * 100}% - 7px)` : "0" }}
-                          />
-                        </div>
-                        <div className="flex justify-between mt-1">
+                        <div className="flex justify-between">
                           <span className="text-xs text-muted-foreground font-mono">{formatTime(currentTime)}</span>
                           <span className="text-xs text-muted-foreground font-mono">{formatTime(audioDuration)}</span>
                         </div>
