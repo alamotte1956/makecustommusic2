@@ -1025,3 +1025,18 @@
 - [x] Show success toast and swap button to "View in Library" after saving (prevents duplicates)
 - [x] Reset save state on handleReset
 - [x] Added 21 tests for title derivation, validation rules, data mapping, and UI state transitions — 957 tests passing
+
+## Bug Fix: LLM 500 Error During MP3-to-Sheet-Music
+- [x] Root cause: Forge API proxy doesn't reliably support file_url audio content in LLM calls
+- [x] Fix: Switched mp3SheetProcessor to use text-only generateAbcNotation() from backgroundSheetMusic.ts (Whisper transcribes → text-only LLM generates ABC)
+- [x] Removed direct audio-to-LLM pipeline entirely
+- [ ] Needs publish to production to take effect
+
+## Share Button on Nav Bar
+- [x] Add share button (Share2 icon) to desktop nav bar next to help/tour button
+- [x] Add "Share This Page" option in mobile menu
+- [x] Copies current page URL to clipboard with fallback for older browsers
+- [x] Shows toast confirmation ("Link copied to clipboard!") via sonner
+- [x] Icon swaps to green checkmark for 2 seconds after copying
+- [x] Mobile menu shows "Link Copied!" text feedback
+- [x] All 957 tests passing

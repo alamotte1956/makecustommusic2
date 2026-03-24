@@ -2,7 +2,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift, FileAudio } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift, FileAudio, Share2, Check } from "lucide-react";
+import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
 import CookieConsent from "@/components/CookieConsent";
 import { useState } from "react";
@@ -40,6 +41,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { queue } = useQueuePlayer();
   const hasQueue = queue.length > 0;
   const { startTour } = useOnboarding();
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   // Fetch plan info for authenticated users
   const { data: summary } = trpc.credits.summary.useQuery(undefined, {
@@ -124,6 +146,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-sm text-muted-foreground">
                   {user?.name || user?.email || "User"}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="text-muted-foreground hover:text-foreground"
+                  title="Share this page"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -224,6 +255,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="pt-2 border-t border-border space-y-1">
               {isAuthenticated ? (
                 <>
+                  <button
+                    onClick={() => { handleShare(); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                    {copied ? "Link Copied!" : "Share This Page"}
+                  </button>
                   <button
                     onClick={() => { startTour(); setMobileMenuOpen(false); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"

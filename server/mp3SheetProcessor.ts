@@ -3,6 +3,13 @@
  * Runs transcription + LLM generation asynchronously so the HTTP request
  * returns immediately with a jobId that the frontend can poll.
  *
+ * Architecture:
+ *   Step 1: Whisper transcribes audio → lyrics text
+ *   Step 2: Text-only LLM generates ABC notation from lyrics + metadata
+ *           (We do NOT send audio to the LLM — the Forge API proxy does not
+ *            reliably support file_url audio content. Instead we use the same
+ *            proven text-only approach as backgroundSheetMusic.ts.)
+ *
  * Error codes stored in mp3_sheet_jobs.errorCode:
  *   - transcription_failed    Whisper could not process the audio
  *   - transcription_timeout   Whisper took too long to respond
@@ -15,10 +22,9 @@
  *   - unknown                 Unexpected / unclassified error
  */
 
-import { invokeLLM } from "./_core/llm";
+import { generateAbcNotation } from "./backgroundSheetMusic";
 import { updateMp3SheetJob } from "./db";
 import { deductCredits } from "./credits";
-import { sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
 
 /** Maximum audio duration we support (10 minutes) */
 const MAX_AUDIO_DURATION_SEC = 600;
@@ -59,10 +65,16 @@ function classifyError(err: any, phase: "transcription" | "generation" | "valida
 
   // LLM-specific errors
   if (phase === "generation") {
+    if (lowerMsg.includes("500") || lowerMsg.includes("bad response") || lowerMsg.includes("upstream")) {
+      return {
+        code: "generation_failed",
+        message: "The AI service encountered an internal error. Please try again in a few moments.",
+      };
+    }
     if (lowerMsg.includes("400") || lowerMsg.includes("bad request")) {
       return {
         code: "generation_failed",
-        message: "The AI could not process this audio file. The format may not be supported. Please try converting to MP3 and uploading again.",
+        message: "The AI could not process this request. Please try again or try a different audio file.",
       };
     }
     if (lowerMsg.includes("empty content") || lowerMsg.includes("empty response")) {
@@ -116,6 +128,19 @@ function classifyError(err: any, phase: "transcription" | "generation" | "valida
   };
 }
 
+/**
+ * Derive a clean song title from the uploaded filename.
+ */
+function deriveTitleFromFilename(fileName: string): string {
+  return fileName
+    .replace(/\.[^.]+$/, "")          // remove extension
+    .replace(/[-_]+/g, " ")           // dashes/underscores → spaces
+    .replace(/\s+/g, " ")             // collapse whitespace
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase()) // title case
+    || "Untitled";
+}
+
 export async function processMp3SheetJob(
   jobId: number,
   userId: number,
@@ -123,7 +148,7 @@ export async function processMp3SheetJob(
   fileName: string
 ): Promise<void> {
   try {
-    // ── Step 1: Transcribe audio ──────────────────────────────────────
+    // ── Step 1: Transcribe audio with Whisper ────────────────────────
     console.log(`[Mp3SheetJob ${jobId}] Starting transcription...`);
     await updateMp3SheetJob(jobId, { status: "transcribing" });
 
@@ -138,11 +163,9 @@ export async function processMp3SheetJob(
       });
 
       if ("error" in transcription) {
-        // Transcription returned a structured error — log but continue
-        // (we can still attempt generation without lyrics)
         console.warn(`[Mp3SheetJob ${jobId}] Transcription warning: ${transcription.code} — ${transcription.error}`);
 
-        // If the error is fatal (file too large, invalid format), stop here
+        // Fatal transcription errors
         if (transcription.code === "FILE_TOO_LARGE") {
           throw Object.assign(new Error(transcription.error), { _phase: "transcription" as const });
         }
@@ -167,10 +190,9 @@ export async function processMp3SheetJob(
       }
     } catch (transcriptionErr: any) {
       if (transcriptionErr._phase === "transcription") throw transcriptionErr;
-      // Unexpected transcription error — classify and store
       const classified = classifyError(transcriptionErr, "transcription");
       console.error(`[Mp3SheetJob ${jobId}] Transcription error:`, transcriptionErr?.message);
-      // Continue without lyrics if possible, but log the issue
+      // Continue without lyrics — we can still attempt generation
       console.warn(`[Mp3SheetJob ${jobId}] Continuing without lyrics due to transcription failure.`);
     }
 
@@ -179,90 +201,21 @@ export async function processMp3SheetJob(
       await updateMp3SheetJob(jobId, { lyrics: lyricsText });
     }
 
-    // ── Step 2: Generate ABC notation via LLM ─────────────────────────
-    console.log(`[Mp3SheetJob ${jobId}] Starting ABC generation...`);
+    // ── Step 2: Generate ABC notation via text-only LLM ──────────────
+    // We use the same proven generateAbcNotation() from backgroundSheetMusic.ts
+    // which sends text (title + lyrics + metadata) to Claude — no audio file.
+    console.log(`[Mp3SheetJob ${jobId}] Starting ABC generation (text-only LLM)...`);
     await updateMp3SheetJob(jobId, { status: "generating" });
 
-    const analysisMessages: any[] = [
-      {
-        role: "system" as const,
-        content: `You are an expert music transcriber and arranger. You will analyze an audio file and produce professional ABC notation for a lead sheet.
+    const title = deriveTitleFromFilename(fileName);
 
-Your task:
-1. Listen carefully to the audio and identify: key signature, time signature, tempo (BPM), melody, chord progressions, and song structure
-2. Generate valid ABC notation that accurately represents the music
-
-REQUIRED HEADERS (must all be present, each on its own line):
-- X: reference number (always 1)
-- T: title (use the filename or identify from audio)
-- C: composer/artist if identifiable
-- M: time signature (e.g., 4/4, 3/4, 6/8) — ALWAYS include, detect from audio
-- L: default note length (e.g., 1/8)
-- Q: tempo marking (e.g., 1/4=120) — ALWAYS include, detect BPM from audio
-- K: key signature (e.g., C, Am, F#m) — ALWAYS include, detect from audio, must be the LAST header line
-
-STRICT FORMAT RULES:
-- Output ONLY valid ABC notation text, nothing else
-- Do NOT wrap the output in markdown code fences or backticks
-- Do NOT include any JSON, XML, or other structured data formats
-- Do NOT include any explanatory text before or after the notation
-- Do NOT use V: (voice) directives — write a single-voice lead sheet only
-- Do NOT use %%staves or multi-staff directives
-
-TRANSCRIPTION RULES:
-- Output ONLY valid ABC notation, no explanations or commentary
-- Write the melody line as accurately as possible from what you hear
-- Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
-- If lyrics are provided, align them under notes using w: lines
-
-MUSICAL COMPLETENESS:
-- Use proper bar lines | at every measure boundary
-- Use repeat signs |: and :| for repeated sections (verses, choruses)
-- Use comments to label sections: % Intro, % Verse 1, % Chorus, % Bridge, % Outro
-- Use first/second endings [1 and [2 where appropriate
-- Do NOT use [P:] section markers — use % comments instead
-- Do NOT include standalone dynamics (!p!, !mp!, !mf!, !f!, !ff!) on their own lines
-- Do NOT include !crescendo! or !diminuendo! decorations
-- Use ties - between notes of the same pitch that span bar lines
-- Use slurs () to group legato phrases
-- Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)
-- Ensure every measure has the correct number of beats matching the time signature
-
-QUALITY:
-- The transcription should capture the essential musical content faithfully
-- Keep the notation clean and professional — this will be rendered as printable sheet music
-- The output must be parseable by the abcjs library
-- Ensure the piece has a clear structure matching what you hear in the audio`,
-      },
-      {
-        role: "user" as const,
-        content: [
-          {
-            type: "file_url" as const,
-            file_url: {
-              url: audioUrl,
-              mime_type: "audio/mpeg" as const,
-            },
-          },
-          {
-            type: "text" as const,
-            text: `Please transcribe this audio into ABC notation for a lead sheet.\n\nFile: ${fileName}${lyricsText ? `\n\nDetected lyrics:\n${lyricsText}` : "\n\nNo lyrics detected — this appears to be instrumental."}${audioDuration ? `\nAudio duration: ${Math.round(audioDuration)} seconds` : ""}`,
-          },
-        ],
-      },
-    ];
-
-    let abcRaw: string | null = null;
+    let cleanAbc: string;
     try {
-      const response = await invokeLLM({
-        messages: analysisMessages,
+      cleanAbc = await generateAbcNotation({
+        title,
+        lyrics: lyricsText,
+        // We don't have genre/mood/key from audio, but the LLM will infer from lyrics
       });
-
-      const rawContent = response.choices?.[0]?.message?.content;
-      abcRaw = typeof rawContent === "string" ? rawContent.trim() : null;
-      if (!abcRaw) {
-        throw new Error("AI returned empty content.");
-      }
     } catch (genErr: any) {
       const classified = classifyError(genErr, "generation");
       console.error(`[Mp3SheetJob ${jobId}] Generation error [${classified.code}]:`, genErr?.message);
@@ -274,26 +227,7 @@ QUALITY:
       return;
     }
 
-    // ── Step 3: Sanitise and validate ─────────────────────────────────
-    let cleanAbc: string;
-    try {
-      cleanAbc = sanitiseAbc(abcRaw);
-      const validationError = validateAbc(cleanAbc);
-      if (validationError) {
-        throw new Error(validationError);
-      }
-    } catch (valErr: any) {
-      const classified = classifyError(valErr, "validation");
-      console.error(`[Mp3SheetJob ${jobId}] Validation error [${classified.code}]:`, valErr?.message);
-      await updateMp3SheetJob(jobId, {
-        status: "error",
-        errorCode: classified.code,
-        errorMessage: classified.message,
-      }).catch(() => {});
-      return;
-    }
-
-    // ── Step 4: Deduct credit ─────────────────────────────────────────
+    // ── Step 3: Deduct credit ────────────────────────────────────────
     try {
       await deductCredits(userId, 1, "generation", `Sheet music from MP3: ${fileName}`);
     } catch (creditErr: any) {
@@ -307,7 +241,7 @@ QUALITY:
       return;
     }
 
-    // ── Step 5: Mark done ─────────────────────────────────────────────
+    // ── Step 4: Mark done ────────────────────────────────────────────
     await updateMp3SheetJob(jobId, {
       status: "done",
       abcNotation: cleanAbc,
