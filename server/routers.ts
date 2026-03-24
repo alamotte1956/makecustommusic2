@@ -28,6 +28,7 @@ import { isElevenLabsAvailable, generateMusic, textToSpeech, getVoices } from ".
 import { getGenreGuidance, getMoodGuidance, buildProductionPrompt } from "./songwritingHelpers";
 import { postProcessAudio, mixVocalInstrumental, prepareStemDownloads, getPresets, type ProcessingPreset } from "./audioProcessor";
 import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssmlBuilder";
+import { buildCoverArtPrompt } from "./coverArtMotifs";
 import {
   getUserPlan, getCreditBalance, deductCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
@@ -1026,17 +1027,14 @@ RULES:
           throw new Error("Song not found");
         }
 
-        const genre = song.genre || "eclectic";
-        const mood = song.mood || "expressive";
-        const instruments = Array.isArray(song.instruments) ? song.instruments.slice(0, 5).join(", ") : "";
-
-        const prompt = `Create a stunning, professional single cover art for a song titled "${song.title}". ` +
-          `The music style is ${genre} with a ${mood} atmosphere. ` +
-          (instruments ? `Featured instruments include ${instruments}. ` : "") +
-          (song.keywords ? `Inspired by: ${song.keywords}. ` : "") +
-          `The design should be artistic, visually striking, and suitable as a square song cover. ` +
-          `Use rich colors, abstract or symbolic imagery that evokes the music's mood. ` +
-          `No text or typography on the image. Professional quality, high detail.`;
+        const prompt = buildCoverArtPrompt({
+          title: song.title || "Untitled",
+          genres: [song.genre].filter(Boolean) as string[],
+          moods: [song.mood].filter(Boolean) as string[],
+          instruments: Array.isArray(song.instruments) ? song.instruments : [],
+          keywords: song.keywords || undefined,
+          type: "song",
+        });
 
         const { url } = await generateImage({ prompt });
 
@@ -1367,21 +1365,18 @@ RULES:
 
         const songList = await getAlbumSongs(input.albumId);
 
-        const genres = Array.from(new Set(songList.map((s: any) => s?.genre).filter(Boolean)));
-        const moods = Array.from(new Set(songList.map((s: any) => s?.mood).filter(Boolean)));
-        const instruments = Array.from(new Set(songList.flatMap((s: any) => s?.instruments || []).filter(Boolean)));
+        const genres = Array.from(new Set(songList.map((s: any) => s?.genre).filter(Boolean))) as string[];
+        const moods = Array.from(new Set(songList.map((s: any) => s?.mood).filter(Boolean))) as string[];
+        const instruments = Array.from(new Set(songList.flatMap((s: any) => s?.instruments || []).filter(Boolean))) as string[];
 
-        const genreStr = genres.length > 0 ? genres.join(", ") : "eclectic";
-        const moodStr = moods.length > 0 ? moods.join(" and ") : "expressive";
-        const instrumentStr = instruments.length > 0 ? instruments.slice(0, 5).join(", ") : "";
-
-        const prompt = `Create a stunning, professional album cover art for a music album titled "${album.title}". ` +
-          `The music style is ${genreStr} with a ${moodStr} atmosphere. ` +
-          (instrumentStr ? `Featured instruments include ${instrumentStr}. ` : "") +
-          (album.description ? `Album description: ${album.description}. ` : "") +
-          `The design should be artistic, visually striking, and suitable as a square album cover. ` +
-          `Use rich colors, abstract or symbolic imagery that evokes the music's mood. ` +
-          `No text or typography on the image. Professional quality, high detail.`;
+        const prompt = buildCoverArtPrompt({
+          title: album.title || "Untitled Album",
+          genres,
+          moods,
+          instruments,
+          description: album.description || undefined,
+          type: "album",
+        });
 
         const { url } = await generateImage({ prompt });
 
@@ -1412,17 +1407,14 @@ RULES:
           const song = s as any;
           if (!song) continue;
           try {
-            const genre = song.genre || "eclectic";
-            const mood = song.mood || "expressive";
-            const instruments = Array.isArray(song.instruments) ? song.instruments.slice(0, 5).join(", ") : "";
-
-            const prompt = `Create a stunning, professional single cover art for a song titled "${song.title}". ` +
-              `The music style is ${genre} with a ${mood} atmosphere. ` +
-              (instruments ? `Featured instruments include ${instruments}. ` : "") +
-              (song.keywords ? `Inspired by: ${song.keywords}. ` : "") +
-              `The design should be artistic, visually striking, and suitable as a square song cover. ` +
-              `Use rich colors, abstract or symbolic imagery that evokes the music's mood. ` +
-              `No text or typography on the image. Professional quality, high detail.`;
+            const prompt = buildCoverArtPrompt({
+              title: song.title || "Untitled",
+              genres: [song.genre].filter(Boolean) as string[],
+              moods: [song.mood].filter(Boolean) as string[],
+              instruments: Array.isArray(song.instruments) ? song.instruments : [],
+              keywords: song.keywords || undefined,
+              type: "song",
+            });
 
             const { url } = await generateImage({ prompt });
             if (url) {

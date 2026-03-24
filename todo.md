@@ -1099,3 +1099,20 @@
 - [x] Update Generator GENRES array with all 6 new sub-genres
 - [x] Update FAQ page to list all 10 Christian sub-genres
 - [x] Add 35 tests for all 6 new sub-genres — 1045 tests passing across 50 test files
+
+## Christian Genre-Specific Album Cover Art
+- [x] Create CHRISTIAN_COVER_ART_MOTIFS mapping with distinct visual styles for each of the 10 Christian sub-genres
+- [x] Enhance album cover prompt builder to detect Christian genres and inject genre-specific visual motifs
+- [x] Christian (CCM): warm golden light rays, sunrise over hills, modern minimalist cross
+- [x] Gospel: vibrant stained glass, church interior, golden light, joyful celebration imagery
+- [x] Christian Modern: atmospheric/moody, dark stage with spotlights, worship night aesthetic
+- [x] Christian Pop: bright, colorful, modern graphic design, clean typography, lifestyle imagery
+- [x] Christian Rock: dark/dramatic, arena lighting, bold typography, gritty textures
+- [x] Christian Hip Hop: urban art, graffiti-inspired, bold colors, street photography aesthetic
+- [x] Southern Gospel: warm pastoral scenes, country church, vintage/nostalgic feel, family warmth
+- [x] Hymns: classic/timeless, cathedral architecture, illuminated manuscript, reverent beauty
+- [x] Praise & Worship: explosive color, concert photography, crowd with hands raised, energy
+- [x] Christian R&B: smooth gradients, warm tones, intimate lighting, elegant/sophisticated
+- [x] Wired buildCoverArtPrompt into all 3 cover generation routes (single song, album, batch songs)
+- [x] Also enhanced non-Christian genres with style hints (Pop, Rock, Jazz, etc.)
+- [x] Write 28 tests for genre-specific cover art prompt generation — 1073 tests passing across 51 files
