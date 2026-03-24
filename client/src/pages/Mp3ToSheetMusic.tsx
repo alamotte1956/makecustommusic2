@@ -554,6 +554,29 @@ export default function Mp3ToSheetMusic() {
                       {(file.size / (1024 * 1024)).toFixed(1)} MB
                       {audioDuration > 0 && ` · ${formatTime(audioDuration)}`}
                     </p>
+                    {/* File size indicator bar */}
+                    {(() => {
+                      const pct = Math.min((file.size / MAX_FILE_SIZE) * 100, 100);
+                      const sizeMB = file.size / (1024 * 1024);
+                      const remainMB = Math.max(16 - sizeMB, 0);
+                      const barColor = pct < 50 ? "bg-green-500" : pct < 80 ? "bg-amber-500" : "bg-red-500";
+                      const textColor = pct < 50 ? "text-green-600" : pct < 80 ? "text-amber-600" : "text-red-600";
+                      return (
+                        <div className="mt-1.5 w-44">
+                          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <p className={`text-[10px] mt-0.5 ${textColor} font-medium`}>
+                            {pct < 100
+                              ? `${remainMB.toFixed(1)} MB remaining of 16 MB`
+                              : "At file size limit"}
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
                   {!isProcessing && (
                     <button

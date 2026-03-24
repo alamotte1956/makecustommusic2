@@ -1010,3 +1010,9 @@
 - [x] Frontend: "Try Again" button hidden for non-retryable errors (file_too_large, empty_file, unsupported_format, insufficient_credits)
 - [x] Frontend: "Back" button text for insufficient_credits instead of "Try Another File"
 - [x] Added 11 tests for error mapping, display, retryability, and code conventions — 922 tests passing
+
+## File Size Indicator Bar
+- [x] Add visual file size indicator bar below the file info in the upload preview
+- [x] Show percentage of 16MB limit used with color-coded bar (green < 50%, amber 50-80%, red > 80%)
+- [x] Display remaining MB of 16MB limit, or "At file size limit" at 100%
+- [x] Added 14 tests for percentage calculation, color thresholds, remaining space, and edge cases — 936 tests passing
