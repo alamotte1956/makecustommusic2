@@ -192,6 +192,12 @@ export function estimateBpmFromGenre(genre: string): number {
     "metal": 140,
     "punk": 160,
     "gospel": 95,
+    "christian": 90,
+    "christian modern": 72,
+    "christian pop": 120,
+    "ccm": 100,
+    "worship": 75,
+    "hymn": 80,
     "drill": 140,
     "afrobeats": 105,
   };

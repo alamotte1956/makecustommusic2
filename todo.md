@@ -1063,3 +1063,23 @@
 - [x] Show animated spinner on processing jobs to signal live updates
 - [x] Auto-stop polling when all jobs reach terminal state (done or error)
 - [x] Added 16 tests for status detection, polling interval logic, and status categories — 988 tests passing
+
+## Christian Music Genre & Styles
+- [x] Add "Christian" / "Gospel" / "Christian Modern" / "Christian Pop" to Generator GENRES array
+- [x] Add Worship / Hymn lyric template to LYRIC_TEMPLATES
+- [x] Add Christian genre guidance to GENRE_GUIDANCE (CCM: Hillsong, Elevation Worship, Lauren Daigle style)
+- [x] Add Gospel genre guidance to GENRE_GUIDANCE (Kirk Franklin, Tasha Cobbs, Maverick City style)
+- [x] Add Christian Modern genre guidance (Bethel, Elevation Worship, Phil Wickham, worship guitar tone)
+- [x] Add Christian Pop genre guidance (Lauren Daigle, for KING & COUNTRY, TobyMac, K-LOVE radio)
+- [x] Add Christian production settings to GENRE_PRODUCTION (ambient delays, pad synths, worship atmosphere)
+- [x] Add Gospel production settings to GENRE_PRODUCTION (Hammond B3, brass, choir, gospel chops)
+- [x] Add Christian Modern production settings (dotted-eighth delay guitar, atmospheric pads, post-rock builds)
+- [x] Add Christian Pop production settings (pop drums, synth arpeggios, radio-ready mix)
+- [x] Add CHRISTIAN_SONIC_SIGNATURES — detailed sonic identity injected into ElevenLabs prompts for each Christian genre
+- [x] Add CHRISTIAN_ARRANGEMENTS — genre-specific arrangement templates (short/medium/long) for all 4 Christian genres
+- [x] Inject sonic signatures into both Simple and Custom mode in buildProductionPrompt
+- [x] Add Christian, Christian Modern, Christian Pop, CCM, Worship, Hymn BPM entries to ssmlBuilder.ts
+- [x] Update FAQ page to mention Christian, Gospel, Christian Modern, Christian Pop genres
+- [x] Add Devotional and Triumphant moods (guidance + production settings) that pair well with Christian genres
+- [x] Update style tags placeholder to mention worship, hymn, praise & worship
+- [x] Add 22 tests for Christian genres (guidance, moods, BPM, prompt builder, sonic signatures) — 1010 tests passing

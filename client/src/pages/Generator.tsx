@@ -48,11 +48,13 @@ type GeneratedSong = {
 const GENRES = [
   "Jazz", "Classical", "Electronic", "Rock", "Ambient", "Pop",
   "Hip Hop", "Country", "R&B", "Folk", "Reggae", "Blues",
+  "Christian", "Gospel", "Christian Modern", "Christian Pop",
 ];
 
 const MOODS = [
   "Happy", "Melancholic", "Energetic", "Calm", "Epic",
   "Romantic", "Dark", "Uplifting", "Mysterious", "Playful",
+  "Devotional", "Triumphant",
 ];
 
 const VOCAL_OPTIONS = [
@@ -95,6 +97,10 @@ const LYRIC_TEMPLATES = [
   {
     label: "Verse-Chorus",
     template: "[Verse 1]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]",
+  },
+  {
+    label: "Worship / Hymn",
+    template: "[Verse 1]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Bridge]\n\n\n[Chorus]\n\n\n[Tag / Outro]",
   },
 ];
 
@@ -564,7 +570,7 @@ export default function Generator() {
                     Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
                   </label>
                   <Input
-                    placeholder="e.g., synthwave, dreamy, slow tempo, reverb, acoustic"
+                    placeholder="e.g., synthwave, dreamy, worship, hymn, praise & worship, acoustic, reverb"
                     value={customStyle}
                     onChange={(e) => setCustomStyle(e.target.value)}
                     maxLength={500}
@@ -701,7 +707,7 @@ export default function Generator() {
                     Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
                   </label>
                   <Input
-                    placeholder="e.g., synthwave, dreamy, slow tempo, reverb, acoustic"
+                    placeholder="e.g., synthwave, dreamy, worship, hymn, praise & worship, acoustic, reverb"
                     value={customStyle}
                     onChange={(e) => setCustomStyle(e.target.value)}
                     maxLength={500}

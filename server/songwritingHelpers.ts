@@ -132,6 +132,56 @@ Think Gary Clark Jr., Christone Kingfish Ingram, Fantastic Negrito, Black Keys i
 - Modern blues blends with rock, soul, and hip hop — keep it fresh
 - Bridge: the cathartic scream or the whispered truth
 - Think Saturday night at a juke joint meets Sunday morning confession`,
+
+  christian: `\n\nGENRE GUIDANCE — CHRISTIAN / CONTEMPORARY CHRISTIAN MUSIC (CCM 2024-2026):
+Think Hillsong, Elevation Worship, Chris Tomlin, Lauren Daigle, for KING & COUNTRY, Maverick City Music.
+- Worship-ready lyrics — singable by a congregation, personal yet universal
+- Themes: faith, grace, redemption, hope, surrender, God's love, spiritual warfare, testimony
+- Chorus must be a declaration or prayer — something a room full of people can lift their voices to
+- Verses: personal testimony or scripture-inspired narrative — specific moments of faith
+- Bridge: the intimate prayer moment or the bold proclamation — often repeated with building intensity
+- Use imagery from scripture naturally: light/darkness, water, mountains, shepherd, refuge, fire
+- Modern CCM blends with pop, rock, and even hip hop — keep it fresh and authentic
+- Avoid being preachy — lead with vulnerability and genuine emotion
+- Think Sunday morning meets arena worship meets personal devotional`,
+
+  gospel: `\n\nGENRE GUIDANCE — GOSPEL (Modern US Gospel 2024-2026):
+Think Kirk Franklin, Tasha Cobbs Leonard, CeCe Winans, Maverick City Music, Tamela Mann, Todd Dunn.
+- Rooted in the Black church tradition — call-and-response, spontaneous worship, Holy Spirit-led moments
+- Chorus: powerful, anthemic, the kind of hook that makes a choir stand up — joyful noise energy
+- Verses: testimony-driven, real-life struggles met with divine intervention
+- Bridge: the "have church" moment — ad-libs, vocal runs, building intensity, spontaneous praise
+- Use rich, soulful vocal arrangements — harmonies, runs, and melismatic passages
+- Themes: praise, deliverance, breakthrough, faithfulness, overcoming, gratitude, the goodness of God
+- Modern gospel blends with R&B, soul, funk, and hip hop — Kirk Franklin pioneered this fusion
+- Energy should build from personal testimony to corporate celebration
+- Think Sunday morning choir meets Saturday night soul meets Wednesday night prayer meeting`,
+
+  "christian modern": `\n\nGENRE GUIDANCE — CHRISTIAN MODERN / CONTEMPORARY WORSHIP (2024-2026):
+Think Bethel Music, Elevation Worship, Hillsong UNITED, Phil Wickham, Brandon Lake, Cody Carnes.
+- Modern worship production with atmospheric electric guitars, ambient pads, and driving rhythms
+- Chorus: singable declaration — the kind of anthem that fills an arena with 10,000 voices
+- Verses: intimate and personal, often starting sparse with just keys or acoustic guitar, building layers
+- Bridge: the spontaneous worship moment — simple repeated phrases that build in intensity, often the emotional peak
+- Use dotted-eighth delay on electric guitar (the signature "worship guitar" sound), ambient reverb, swelling pads
+- Dynamics are EVERYTHING: whisper-to-roar, intimate verse to explosive chorus, stripped bridge to massive final chorus
+- Themes: encountering God's presence, surrender, awe, intimacy with God, declarations of faith, Holy Spirit
+- Lyrics should feel like a prayer set to music — direct address to God ("You are...", "I will...", "We declare...")
+- Modern worship borrows from indie rock, post-rock, and ambient — think Explosions in the Sky meets prayer room
+- Think Bethel's "Goodness of God" meets Elevation's "Graves Into Gardens" — intimate yet anthemic`,
+
+  "christian pop": `\n\nGENRE GUIDANCE — CHRISTIAN POP / CCM POP (2024-2026):
+Think Lauren Daigle, for KING & COUNTRY, TobyMac, Casting Crowns, We The Kingdom, Anne Wilson, Matthew West.
+- Pop-forward production with faith-based lyrics — sounds like mainstream pop but with a message of hope and faith
+- Chorus: massive pop hook that's radio-ready — catchy, singable, the kind of melody that sticks for days
+- Verses: relatable storytelling about real-life struggles, doubt, and finding faith — not preachy, but authentic
+- Bridge: emotional pivot — the breakthrough moment, the answered prayer, the shift from struggle to hope
+- Production mirrors mainstream pop: punchy drums, layered synths, clean guitars, big vocal production
+- Lyrics balance accessibility with depth — someone who doesn't go to church should still connect emotionally
+- Themes: hope in hard times, God's faithfulness, identity and purpose, grace, redemption, love that transforms
+- Use contemporary language naturally — texts, coffee shops, late nights, real-world settings with spiritual undertones
+- Think Lauren Daigle's crossover appeal — faith music that doesn't feel like it's preaching at you
+- The best Christian pop makes you FEEL something before you realize it's about God — lead with emotion, not theology`,
 };
 
 export function getGenreGuidance(genre: string | null): string {
@@ -212,6 +262,22 @@ Channel infectious fun. Think Doja Cat, Lizzo, Bruno Mars.
 - Use pop culture references, food metaphors, playful innuendo
 - The hook should be fun to say out loud — bouncy syllables, satisfying sounds
 - Don't take yourself too seriously — wink at the audience`,
+
+  devotional: `\n\nMOOD — DEVOTIONAL/WORSHIPFUL:
+Channel intimate, reverent worship. Think quiet prayer room, candlelit service, personal time with God.
+- Lyrics should feel like a direct conversation with God — honest, vulnerable, intimate
+- Use imagery of closeness: being held, resting, shelter, still waters, quiet places
+- The hook should be a prayer or declaration that the listener can make their own
+- Pacing should be unhurried — give space for the listener to breathe and reflect
+- Think "It Is Well" energy — peace that transcends circumstances`,
+
+  triumphant: `\n\nMOOD — TRIUMPHANT/VICTORIOUS:
+Channel the moment of breakthrough. Think overcoming the impossible, the battle already won.
+- Use victory imagery: mountains conquered, chains broken, dawn after the darkest night, standing firm
+- The hook should feel like a war cry of faith — bold, declarative, unshakeable
+- Build from acknowledging the struggle to proclaiming the victory
+- Energy should crescendo — start with resolve and build to full celebration
+- Think "Way Maker" meets "Battle Belongs" — faith that moves mountains`,
 };
 
 export function getMoodGuidance(mood: string | null): string {
@@ -309,6 +375,26 @@ const GENRE_PRODUCTION: Record<string, { bpm: string; instruments: string; produ
     instruments: "overdriven electric guitar with bends and vibrato, walking bass line, shuffle drums with hi-hat, Hammond organ, harmonica wails, piano comping",
     production: "raw and gritty, tube amp warmth, natural room sound, dynamic performance feel, smoky atmosphere, juke joint energy, live and breathing",
   },
+  christian: {
+    bpm: "72-128",
+    instruments: "acoustic guitar, electric guitar with ambient delays, piano/keys, pad synths, bass guitar, modern drums with room reverb, strings, atmospheric swells",
+    production: "spacious and reverent mix, lush reverb for worship atmosphere, clear vocal presence front and center, building dynamics from intimate verses to soaring choruses, ambient pads for emotional depth, modern CCM polish meets authentic worship feel",
+  },
+  gospel: {
+    bpm: "80-130",
+    instruments: "Hammond B3 organ, grand piano, bass guitar with gospel runs, drums with gospel chops and fills, brass section (trumpet, trombone, saxophone), choir pads, tambourine, claps",
+    production: "warm and powerful mix, rich low-end from organ and bass, dynamic choir arrangements, call-and-response vocal production, soulful reverb, live church energy, building from testimony to celebration, joyful and full-bodied",
+  },
+  "christian modern": {
+    bpm: "68-76",
+    instruments: "electric guitar with dotted-eighth delay and ambient reverb, acoustic guitar, warm pad synths with slow attack, piano/keys, bass guitar with subtle drive, modern drums with room reverb and rimshot verses, atmospheric swells and risers, strings for emotional builds",
+    production: "spacious and atmospheric mix with massive reverb tails, signature worship guitar tone (dotted-eighth delay, shimmer reverb, volume swells), dynamic range from whisper-quiet verses to wall-of-sound choruses, ambient pads filling the stereo field, drums that breathe in verses and drive in choruses, vocal clarity with intimate proximity effect, post-rock influenced builds and crescendos, the sound of a modern worship night",
+  },
+  "christian pop": {
+    bpm: "110-130",
+    instruments: "punchy pop drums with claps and snaps, layered synth pads and arpeggios, clean electric guitar with chorus effect, acoustic guitar strumming, bass guitar with pop groove, piano hooks, string accents for emotional moments, vocal harmonies and gang vocals in choruses",
+    production: "polished mainstream pop production with faith-forward lyrics, radio-ready mix with bright vocal presence, punchy and compressed drums, wide stereo synths, catchy melodic hooks, sidechain compression for energy, big chorus production with layered vocals and harmonies, sounds like it belongs on both K-LOVE and mainstream pop radio, Lauren Daigle and for KING & COUNTRY level polish",
+  },
 };
 
 const MOOD_PRODUCTION: Record<string, string> = {
@@ -322,6 +408,8 @@ const MOOD_PRODUCTION: Record<string, string> = {
   uplifting: "building energy, major key resolution, layered harmonies, anthemic crescendo, earned triumph, soaring finale",
   mysterious: "ambiguous tonality, unusual textures, space and silence, filtered sounds, dreamlike atmosphere, questions without answers",
   playful: "bouncy rhythm, bright tones, staccato elements, fun sound design, infectious groove, cheeky energy",
+  devotional: "intimate and reverent, warm pads, gentle dynamics, spacious reverb, unhurried pace, prayerful atmosphere, soft piano and acoustic guitar, sustained strings",
+  triumphant: "bold and victorious, major key resolution, powerful drums, brass fanfares, layered choir harmonies, building crescendo, anthem energy, celebratory and declarative",
 };
 
 /**
@@ -329,6 +417,55 @@ const MOOD_PRODUCTION: Record<string, string> = {
  * Transforms simple user inputs into detailed production instructions
  * following ElevenLabs best practices for radio-ready output.
  */
+// ─── Christian Genre Sonic Signatures ───
+// These are appended to the production prompt when a Christian genre is selected,
+// giving ElevenLabs very specific sonic direction that makes the output sound
+// authentically like real Christian music rather than generic pop/rock with
+// vaguely spiritual lyrics.
+
+const CHRISTIAN_SONIC_SIGNATURES: Record<string, string> = {
+  christian: `\nCHRISTIAN MUSIC SONIC IDENTITY: This must sound like authentic Contemporary Christian Music (CCM). Key sonic markers: (1) Warm, reverent atmosphere with spacious reverb — the listener should feel like they're in a worship space. (2) Acoustic guitar or piano-led foundation with layered electric guitar ambience. (3) Dynamics that mirror a worship service — intimate and quiet in verses, building to powerful, declarative choruses. (4) Vocal delivery should be sincere and heartfelt, not performative — think singing TO God, not about God. (5) Pad synths or strings sustaining underneath to create a continuous bed of warmth. (6) The overall feel should evoke hope, peace, and reverence — not generic pop energy. Reference sound: Chris Tomlin, Hillsong Worship, Lauren Daigle ballads.`,
+
+  gospel: `\nGOSPEL MUSIC SONIC IDENTITY: This must sound like authentic Gospel music rooted in the Black church tradition. Key sonic markers: (1) Hammond B3 organ is ESSENTIAL — swirling Leslie speaker tone, sustained chords, and gospel organ runs. (2) Piano with gospel voicings — extended chords, runs between chord changes, call-and-response with the vocalist. (3) Drums with gospel chops — syncopated fills, ghost notes on snare, building intensity through the song. (4) Bass guitar with melodic gospel runs and walking lines, not just root notes. (5) Brass section (trumpet, trombone, sax) for punctuation and celebration moments. (6) Choir or vocal harmonies are critical — layered voices, ad-libs, "yes Lord" and "hallelujah" responses. (7) The energy should build like a church service — start with testimony, build to praise, crescendo into celebration. (8) Tambourine and hand claps on the backbeat. Reference sound: Kirk Franklin, Tasha Cobbs Leonard, Maverick City Music.`,
+
+  "christian modern": `\nMODERN WORSHIP SONIC IDENTITY: This must sound like a modern worship night at Elevation Church or Bethel. Key sonic markers: (1) THE GUITAR TONE: Electric guitar with dotted-eighth-note delay (the "Edge" / "worship guitar" sound) — this is the #1 identifier of modern worship music. Shimmer reverb, volume swells, ambient picking patterns. (2) Atmospheric pads that never stop — warm analog-style synth pads sustaining underneath everything, creating a continuous sonic bed. (3) Drums that serve the song dynamics: rimshot and minimal kick in verses, full kit with room reverb in choruses, building tom fills into big moments. (4) Bass that's felt more than heard — deep, warm, following the root movement. (5) The BUILD is everything: songs should go from near-silence to massive walls of sound. (6) Vocal production: intimate and close in verses (like the singer is right next to you), then layered and powerful in choruses. (7) Bridge section should feel like spontaneous worship — simple repeated phrase building in layers and intensity. (8) Post-rock influenced crescendos with tremolo picking and delay swells. Reference sound: "Graves Into Gardens" (Elevation), "Goodness of God" (Bethel), Phil Wickham's "Battle Belongs".`,
+
+  "christian pop": `\nCHRISTIAN POP SONIC IDENTITY: This must sound like it belongs on K-LOVE radio alongside mainstream pop hits. Key sonic markers: (1) Pop-forward production: punchy, compressed drums with claps/snaps, bright and present mix, catchy melodic hooks. (2) The production quality should be INDISTINGUISHABLE from mainstream pop — if you heard it on the radio, you wouldn't immediately know it's Christian until you listen to the lyrics. (3) Synth-driven with layered pads, arpeggiated patterns, and modern pop sound design. (4) Acoustic guitar as a texture element (strumming patterns, fingerpicking in verses) blended with electronic production. (5) Big, anthemic choruses with gang vocals, layered harmonies, and melodic hooks that stick in your head. (6) Lyrics should be hopeful and faith-inspired but use everyday language — coffee shops, highways, phone calls, real life. (7) Bridge should have an emotional lift — the "goosebump moment" where the message hits home. (8) Clean, bright, radio-ready mastering. Reference sound: Lauren Daigle "You Say", for KING & COUNTRY "God Only Knows", TobyMac, Casting Crowns "Nobody".`,
+};
+
+// Christian-specific arrangement templates that override the generic ones
+const CHRISTIAN_ARRANGEMENTS: Record<string, Record<string, string>> = {
+  christian: {
+    short: `Arrangement: Gentle intro with piano or acoustic guitar → verse (intimate, prayerful) → chorus (lifting, declarative) → short outro with sustained pad.`,
+    medium: `Arrangement: Atmospheric intro with pads and gentle guitar → verse 1 (intimate, personal prayer) → pre-chorus (building hope) → chorus (full band, declarative worship) → verse 2 (deeper, more vulnerable) → chorus 2 (bigger, add harmonies) → bridge (repeated declaration, building intensity) → final chorus (full congregation energy) → outro (gentle, reflective, fading pads).`,
+    long: `Arrangement: Atmospheric intro building from silence (pads, distant guitar) → verse 1 (intimate, just voice and piano/guitar) → pre-chorus (adding layers) → chorus 1 (full band, worship energy) → verse 2 (fuller, adding strings) → chorus 2 (bigger, vocal harmonies) → bridge (stripped to voice and keys, then building — repeated simple phrase gaining intensity, adding layers one by one until massive) → final chorus (everything, maximum worship energy) → extended outro (spontaneous worship feel, fading into reverent silence).`,
+  },
+  gospel: {
+    short: `Arrangement: Organ intro with gospel feel → verse (testimony, call-and-response) → chorus (full choir, celebratory) → tag ending with vocal runs.`,
+    medium: `Arrangement: Organ/piano intro with gospel groove → verse 1 (testimony, building) → chorus (full choir, brass hits, celebration) → verse 2 (deeper testimony) → chorus 2 (bigger, more ad-libs) → bridge ("have church" moment — vocal runs, building intensity, spontaneous praise) → final chorus (maximum celebration, full choir and brass) → vamp outro with ad-libs and organ.`,
+    long: `Arrangement: Slow organ intro building atmosphere → verse 1 (intimate testimony, piano and bass) → pre-chorus (choir enters softly) → chorus 1 (full band, choir, brass punctuation) → verse 2 (fuller, drums driving) → chorus 2 (bigger, more vocal runs) → bridge (breakdown — just organ and voice, then building layer by layer: bass, drums, choir, brass, until explosive praise) → final chorus (maximum energy, full gospel production, ad-libs flying) → extended vamp (repeated hook with spontaneous worship, vocal runs, gradually winding down).`,
+  },
+  "christian modern": {
+    short: `Arrangement: Ambient pad intro with delayed guitar → verse (intimate, sparse) → chorus (full band, anthemic) → ambient outro.`,
+    medium: `Arrangement: Atmospheric intro (pad swell, delayed guitar picking) → verse 1 (intimate — voice, acoustic guitar, soft pad) → pre-chorus (electric guitar enters with delay, building) → chorus (full band explosion, anthemic) → verse 2 (add bass, fuller) → chorus 2 (bigger, add vocal layers) → bridge (strip to voice and pad, simple repeated phrase building in intensity — add guitar, drums, bass one by one until massive crescendo) → final chorus (wall of sound, all instruments, layered vocals) → outro (delayed guitar fading into pad).`,
+    long: `Arrangement: Extended atmospheric intro (ambient pads building from silence, distant delayed guitar notes) → verse 1 (whisper-close vocals, acoustic guitar, gentle pad) → pre-chorus (electric guitar swells, building anticipation) → chorus 1 (full band, anthemic worship) → post-chorus (instrumental, delayed guitar melody) → verse 2 (fuller, bass and light drums) → pre-chorus 2 (more intense build) → chorus 2 (bigger, vocal harmonies, gang vocals) → bridge (the worship moment — strip everything back to voice and keys, simple repeated declaration building for 16+ bars, adding instruments one by one: pad → guitar → bass → drums → strings → full band crescendo) → final chorus (maximum, wall of sound) → extended outro (ambient, fading delayed guitar and pads, reverent).`,
+  },
+  "christian pop": {
+    short: `Arrangement: Catchy synth/guitar intro hook → verse (rhythmic, relatable) → chorus (big pop hook, singalong) → short outro.`,
+    medium: `Arrangement: Hooky intro (synth riff or guitar pattern) → verse 1 (conversational, relatable story) → pre-chorus (lifting energy, building anticipation) → chorus (massive pop hook, layered vocals, claps) → verse 2 (deeper story, fuller production) → chorus 2 (bigger, add gang vocals) → bridge (emotional pivot — stripped back then building to goosebump moment) → final chorus (biggest, all harmonies, maximum energy) → outro (callback to intro hook).`,
+    long: `Arrangement: Atmospheric intro building to hooky riff → verse 1 (intimate, storytelling) → pre-chorus (building hope) → chorus 1 (full pop production, catchy hook) → post-chorus (instrumental hook) → verse 2 (deeper, fuller) → pre-chorus 2 (more intense) → chorus 2 (bigger, gang vocals, harmonies) → bridge (emotional breakdown — quiet confession building to powerful declaration of faith) → final chorus (maximum pop energy, all layers, anthemic) → outro (reflective, fading with the hook).`,
+  },
+};
+
+function getChristianArrangement(genre: string, duration: number): string | null {
+  const key = genre.toLowerCase().trim();
+  const templates = CHRISTIAN_ARRANGEMENTS[key];
+  if (!templates) return null;
+  if (duration <= 30) return templates.short;
+  if (duration <= 90) return templates.medium;
+  return templates.long;
+}
+
 export function buildProductionPrompt(params: {
   keywords: string;
   genre: string | null;
@@ -343,7 +480,11 @@ export function buildProductionPrompt(params: {
   const { keywords, genre, mood, vocalType, duration, mode, customTitle, customLyrics, customStyle } = params;
 
    let forceInstrumental = vocalType === "none";
-  const arrangement = getArrangementTemplate(duration);
+  // Use Christian-specific arrangement if applicable, otherwise generic
+  const christianArrangement = genre ? getChristianArrangement(genre, duration) : null;
+  const arrangement = christianArrangement || getArrangementTemplate(duration);
+  const genreLower = genre?.toLowerCase().trim() || "";
+  const sonicSignature = CHRISTIAN_SONIC_SIGNATURES[genreLower] || "";
 
   if (mode === "custom" && customLyrics && customStyle) {
     // Custom Mode: build a detailed production prompt from lyrics + style + metadata
@@ -379,6 +520,8 @@ export function buildProductionPrompt(params: {
     prompt += `\nDuration: ${duration} seconds.`;
     prompt += `\n\n${arrangement}`;
     prompt += `\n\nProduction notes: Professional mixing with clear separation between instruments. Use sidechain compression on bass elements against the kick. Apply parallel compression on drums for punch and sustain. Create width with stereo delays and panned elements. Use automation for dynamic builds — filter sweeps, volume rides, reverb throws on key phrases. ${MASTERING_CHAIN}`;
+    // Inject Christian sonic signature for genre-authentic sound
+    if (sonicSignature) prompt += sonicSignature;
     prompt += `\n\nLyrics:\n${customLyrics}`;
 
     return { prompt: prompt.substring(0, 4100), forceInstrumental };
@@ -416,6 +559,8 @@ export function buildProductionPrompt(params: {
   prompt += `\nDuration: ${duration} seconds.`;
   prompt += `\n\n${arrangement}`;
   prompt += `\n\nProduction quality: Professional, radio-ready mix. Clear instrument separation with each element occupying its own frequency space. Punchy low-end with tight kick and sub bass. Crisp highs with shimmer and air. Warm, full mids. Use sidechain compression, parallel processing, and automation for dynamic movement. Build tension and release throughout the arrangement. ${MASTERING_CHAIN}`;
+  // Inject Christian sonic signature for genre-authentic sound
+  if (sonicSignature) prompt += sonicSignature;
 
   return { prompt: prompt.substring(0, 4100), forceInstrumental };
 }

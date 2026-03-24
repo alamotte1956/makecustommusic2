@@ -27,7 +27,7 @@ const faqCategories = [
       },
       {
         q: "What genres and moods are available?",
-        a: "We support a wide range of genres including Pop, Rock, Hip-Hop, Jazz, Classical, Electronic, Country, R&B, Latin, and more. Moods range from Energetic and Happy to Melancholic, Chill, Dramatic, and Romantic.",
+        a: "We support a wide range of genres including Pop, Rock, Hip-Hop, Jazz, Classical, Electronic, Country, R&B, Christian, Gospel, Christian Modern, Christian Pop, and more. Moods range from Energetic and Happy to Melancholic, Chill, Dramatic, Romantic, and Uplifting.",
       },
     ],
   },
