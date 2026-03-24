@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -499,4 +499,34 @@ export async function getBlogCommentCount(articleSlug: string): Promise<number> 
     .from(blogComments)
     .where(eq(blogComments.articleSlug, articleSlug));
   return result[0]?.count ?? 0;
+}
+
+
+// ─── MP3 Sheet Music Jobs ───
+
+export async function createMp3SheetJob(data: InsertMp3SheetJob) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(mp3SheetJobs).values(data);
+  return result[0].insertId;
+}
+
+export async function getMp3SheetJob(jobId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select()
+    .from(mp3SheetJobs)
+    .where(and(eq(mp3SheetJobs.id, jobId), eq(mp3SheetJobs.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateMp3SheetJob(
+  jobId: number,
+  data: Partial<Pick<InsertMp3SheetJob, "status" | "audioUrl" | "abcNotation" | "lyrics" | "errorMessage">>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(mp3SheetJobs).set(data).where(eq(mp3SheetJobs.id, jobId));
 }

@@ -17,7 +17,8 @@ import {
   publishSong, unpublishSong, getPublicSongs, getPublicSongCount,
   createNotification, getUserNotifications, getUnreadNotificationCount,
   markNotificationRead, markAllNotificationsRead, deleteNotification,
-  getBlogComments, createBlogComment, deleteBlogComment, getBlogCommentCount
+  getBlogComments, createBlogComment, deleteBlogComment, getBlogCommentCount,
+  createMp3SheetJob, getMp3SheetJob, updateMp3SheetJob,
 } from "./db";
 import type { ChordProgressionData } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
@@ -40,6 +41,7 @@ import Stripe from "stripe";
 import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
 import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
+import { processMp3SheetJob } from "./mp3SheetProcessor";
 
 function getStripe(): Stripe | null {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -1046,7 +1048,8 @@ RULES:
       }),
 
     // Generate sheet music from an uploaded MP3 file
-    generateSheetMusicFromMp3: protectedProcedure
+    // Start an MP3-to-sheet-music background job (returns quickly with a jobId)
+    startMp3SheetJob: protectedProcedure
       .input(z.object({
         fileData: z.string().min(1), // base64 encoded MP3
         fileName: z.string().min(1).max(255),
@@ -1074,123 +1077,38 @@ RULES:
         const fileKey = `mp3-to-sheet/${ctx.user.id}/${nanoid()}.${ext}`;
         const { url: audioUrl } = await storagePut(fileKey, buffer, input.mimeType);
 
-        // Step 1: Transcribe audio to get lyrics/vocal content
-        const { transcribeAudio } = await import("./_core/voiceTranscription");
-        const transcription = await transcribeAudio({
+        // Create a job record
+        const jobId = await createMp3SheetJob({
+          userId: ctx.user.id,
+          fileName: input.fileName,
           audioUrl,
-          prompt: "Transcribe the song lyrics. Include all sung words.",
+          status: "transcribing",
         });
 
-        const hasLyrics = !("error" in transcription) && transcription.text && transcription.text.trim().length > 10;
-        const lyricsText = hasLyrics && !("error" in transcription) ? transcription.text : null;
-        const audioDuration = !("error" in transcription) ? transcription.duration : null;
+        // Fire-and-forget: run the heavy work in the background
+        processMp3SheetJob(jobId, ctx.user.id, audioUrl, input.fileName).catch((err: any) => {
+          console.error(`[Mp3SheetJob] Unhandled error for job ${jobId}:`, err);
+        });
 
-        // Step 2: Use LLM with audio file to analyze musical elements and generate ABC notation
-        const analysisMessages: any[] = [
-          {
-            role: "system" as const,
-            content: `You are an expert music transcriber and arranger. You will analyze an audio file and produce professional ABC notation for a lead sheet.
+        return { jobId, audioUrl };
+      }),
 
-Your task:
-1. Listen carefully to the audio and identify: key signature, time signature, tempo (BPM), melody, chord progressions, and song structure
-2. Generate valid ABC notation that accurately represents the music
-
-REQUIRED HEADERS (must all be present, each on its own line):
-- X: reference number (always 1)
-- T: title (use the filename or identify from audio)
-- C: composer/artist if identifiable
-- M: time signature (e.g., 4/4, 3/4, 6/8) — ALWAYS include, detect from audio
-- L: default note length (e.g., 1/8)
-- Q: tempo marking (e.g., 1/4=120) — ALWAYS include, detect BPM from audio
-- K: key signature (e.g., C, Am, F#m) — ALWAYS include, detect from audio, must be the LAST header line
-
-STRICT FORMAT RULES:
-- Output ONLY valid ABC notation text, nothing else
-- Do NOT wrap the output in markdown code fences or backticks
-- Do NOT include any JSON, XML, or other structured data formats
-- Do NOT include any explanatory text before or after the notation
-- Do NOT use V: (voice) directives — write a single-voice lead sheet only
-- Do NOT use %%staves or multi-staff directives
-
-TRANSCRIPTION RULES:
-- Output ONLY valid ABC notation, no explanations or commentary
-- Write the melody line as accurately as possible from what you hear
-- Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C
-- If lyrics are provided, align them under notes using w: lines
-
-MUSICAL COMPLETENESS:
-- Use proper bar lines | at every measure boundary
-- Use repeat signs |: and :| for repeated sections (verses, choruses)
-- Use comments to label sections: % Intro, % Verse 1, % Chorus, % Bridge, % Outro
-- Use first/second endings [1 and [2 where appropriate
-- Do NOT use [P:] section markers — use % comments instead
-- Do NOT include standalone dynamics (!p!, !mp!, !mf!, !f!, !ff!) on their own lines
-- Do NOT include !crescendo! or !diminuendo! decorations
-- Use ties - between notes of the same pitch that span bar lines
-- Use slurs () to group legato phrases
-- Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)
-- Ensure every measure has the correct number of beats matching the time signature
-
-QUALITY:
-- The transcription should capture the essential musical content faithfully
-- Keep the notation clean and professional — this will be rendered as printable sheet music
-- The output must be parseable by the abcjs library
-- Ensure the piece has a clear structure matching what you hear in the audio`,
-          },
-          {
-            role: "user" as const,
-            content: [
-              {
-                type: "file_url" as const,
-                file_url: {
-                  url: audioUrl,
-                  mime_type: "audio/mpeg" as const,
-                },
-              },
-              {
-                type: "text" as const,
-                text: `Please transcribe this audio into ABC notation for a lead sheet.\n\nFile: ${input.fileName}${lyricsText ? `\n\nDetected lyrics:\n${lyricsText}` : "\n\nNo lyrics detected — this appears to be instrumental."}${audioDuration ? `\nAudio duration: ${Math.round(audioDuration)} seconds` : ""}`,
-              },
-            ],
-          },
-        ];
-
-        try {
-          const response = await invokeLLM({
-            model: "claude-sonnet-4-20250514",
-            messages: analysisMessages,
-          });
-
-          const rawContent = response.choices?.[0]?.message?.content;
-          const abcRaw = typeof rawContent === "string" ? rawContent.trim() : null;
-          if (!abcRaw) {
-            throw new Error("AI returned empty content. Please try again.");
-          }
-
-          // Sanitise and validate the ABC notation
-          const cleanAbc = sanitiseAbc(abcRaw);
-          const validationError = validateAbc(cleanAbc);
-          if (validationError) {
-            throw new Error(`Generated sheet music failed validation: ${validationError}. Please try again.`);
-          }
-
-          // Deduct credit
-          await deductCredits(ctx.user.id, 1, "generation", `Sheet music from MP3: ${input.fileName}`);
-
-          return {
-            abcNotation: cleanAbc,
-            lyrics: lyricsText,
-            audioUrl,
-            fileName: input.fileName,
-          };
-        } catch (err: any) {
-          console.error(`[SheetMusicFromMp3] Generation failed:`, err?.message || err);
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Sheet music generation failed: ${err?.message || "Unknown error"}. Please try again.`,
-          });
+    // Poll the status of an MP3-to-sheet-music job
+    getMp3SheetJobStatus: protectedProcedure
+      .input(z.object({ jobId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const job = await getMp3SheetJob(input.jobId, ctx.user.id);
+        if (!job) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
         }
+        return {
+          status: job.status,
+          abcNotation: job.abcNotation,
+          lyrics: job.lyrics,
+          audioUrl: job.audioUrl,
+          fileName: job.fileName,
+          errorMessage: job.errorMessage,
+        };
       }),
   }),
 

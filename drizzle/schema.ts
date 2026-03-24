@@ -222,6 +222,24 @@ export type PlanName = keyof typeof PLAN_LIMITS;
 export const licenseTypes = ["personal", "commercial_social", "commercial_full", "commercial_sync"] as const;
 export type LicenseType = typeof licenseTypes[number];
 
+// ─── MP3 to Sheet Music Jobs ───
+
+export const mp3SheetJobs = mysqlTable("mp3_sheet_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  status: mysqlEnum("status", ["uploading", "transcribing", "generating", "done", "error"]).default("uploading").notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  audioUrl: text("audioUrl"),
+  abcNotation: text("abcNotation"),
+  lyrics: text("lyrics"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Mp3SheetJob = typeof mp3SheetJobs.$inferSelect;
+export type InsertMp3SheetJob = typeof mp3SheetJobs.$inferInsert;
+
 // ─── Notifications ───
 
 export const notifications = mysqlTable("notifications", {

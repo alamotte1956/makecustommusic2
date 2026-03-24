@@ -964,3 +964,12 @@
 - [x] Show skeleton in Mp3ToSheetMusic while abcjs is rendering
 - [x] Smooth fade transition from skeleton to rendered notation (500ms opacity ease-in-out)
 - [x] Added 12 tests for skeleton design constants and visibility logic — 861 tests passing
+
+## Bug Fix: "Unexpected token '<' is not valid JSON" Server Timeout
+- [x] Root cause: generateSheetMusicFromMp3 ran transcription + LLM in a single request (60-120s), exceeding production proxy timeout
+- [x] Added mp3_sheet_jobs table to track background job status
+- [x] Split into startMp3SheetJob (quick: upload + create job) + processMp3SheetJob (background: transcribe + generate)
+- [x] Added getMp3SheetJobStatus query for frontend polling (3s interval)
+- [x] Updated Mp3ToSheetMusic frontend to use polling pattern instead of single long request
+- [x] Updated handleReset to clean up polling interval and active job state
+- [x] Added 14 tests for job architecture, polling logic, and status transitions — 875 tests passing

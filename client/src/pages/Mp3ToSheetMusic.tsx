@@ -80,7 +80,17 @@ export default function Mp3ToSheetMusic() {
   const prevVolumeRef = useRef(1);
   const progressRef = useRef<HTMLDivElement>(null);
 
-  const generateMutation = trpc.songs.generateSheetMusicFromMp3.useMutation();
+  const startJobMutation = trpc.songs.startMp3SheetJob.useMutation();
+  const trpcUtils = trpc.useUtils();
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [activeJobId, setActiveJobId] = useState<number | null>(null);
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   // Detect original key from ABC
   const originalKey = useMemo(() => {
@@ -322,38 +332,73 @@ export default function Mp3ToSheetMusic() {
     });
   }, []);
 
+  const pollJobStatus = useCallback((jobId: number) => {
+    // Clear any existing polling
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const result = await trpcUtils.songs.getMp3SheetJobStatus.fetch({ jobId });
+
+        // Update step based on server status
+        if (result.status === "transcribing") {
+          setStep("transcribing");
+        } else if (result.status === "generating") {
+          setStep("generating");
+        } else if (result.status === "done") {
+          if (pollingRef.current) clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setActiveJobId(null);
+          setAbcNotation(result.abcNotation || null);
+          setLyrics(result.lyrics || null);
+          setStep("done");
+          toast.success("Sheet music generated successfully!");
+        } else if (result.status === "error") {
+          if (pollingRef.current) clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setActiveJobId(null);
+          setStep("error");
+          setErrorInfo({
+            type: "generation",
+            message: result.errorMessage || "Sheet music generation failed. Please try again.",
+          });
+        }
+      } catch (pollErr: any) {
+        // Don't stop polling on transient network errors — just log
+        console.warn("[Mp3Sheet] Poll error:", pollErr?.message);
+      }
+    }, 3000);
+  }, [trpcUtils]);
+
   const handleGenerate = useCallback(async () => {
     if (!file) return;
     setStep("uploading");
+    setErrorInfo(null);
     try {
       const base64 = await readFileAsBase64(file);
-      setStep("analyzing");
-      const result = await generateMutation.mutateAsync({
+      setStep("transcribing");
+      const { jobId } = await startJobMutation.mutateAsync({
         fileData: base64,
         fileName: file.name,
         mimeType: file.type || "audio/mpeg",
       });
-      setAbcNotation(result.abcNotation);
-      setLyrics(result.lyrics || null);
-      setStep("done");
-      toast.success("Sheet music generated successfully!");
+      setActiveJobId(jobId);
+      // Start polling for job completion
+      pollJobStatus(jobId);
     } catch (err: any) {
       setStep("error");
       const msg = err?.message || "";
       const lowerMsg = msg.toLowerCase();
-      const isHtmlResponse = lowerMsg.includes("unexpected token") || lowerMsg.includes("<!doctype") || lowerMsg.includes("is not valid json");
-      const isNetwork = isHtmlResponse || lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout") || lowerMsg.includes("aborted");
+      const isNetwork = lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("timeout");
       setErrorInfo({
         type: isNetwork ? "network" : "generation",
         message: isNetwork
-          ? "The server encountered an error. The request may have timed out. Please try again."
-          : (lowerMsg.includes("sheet music generation failed")
-            ? "Sheet music generation failed. The AI service may be temporarily unavailable."
-            : (msg || "Failed to generate sheet music.")),
+          ? "Network error. Please check your connection and try again."
+          : (msg || "Failed to start sheet music generation."),
         detail: msg || undefined,
       });
     }
-  }, [file, readFileAsBase64, generateMutation]);
+  }, [file, readFileAsBase64, startJobMutation, pollJobStatus]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!sheetRef.current) return;
@@ -378,6 +423,11 @@ export default function Mp3ToSheetMusic() {
   }, [file, selectedKey, originalKey]);
 
   const handleReset = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    setActiveJobId(null);
     stopPreview();
     setFile(null);
     setAbcNotation(null);
@@ -385,6 +435,7 @@ export default function Mp3ToSheetMusic() {
     setStep("idle");
     setSelectedKey("original");
     setIsRendered(false);
+    setErrorInfo(null);
   }, [stopPreview]);
 
   // ─── AUTH GATE ───
@@ -720,10 +771,10 @@ export default function Mp3ToSheetMusic() {
                     variant="ghost"
                     size="sm"
                     onClick={handleGenerate}
-                    disabled={generateMutation.isPending}
+                    disabled={startJobMutation.isPending || !!activeJobId}
                     className="gap-1.5"
                   >
-                    {generateMutation.isPending ? (
+                    {startJobMutation.isPending || !!activeJobId ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <RefreshCw className="w-3.5 h-3.5" />
