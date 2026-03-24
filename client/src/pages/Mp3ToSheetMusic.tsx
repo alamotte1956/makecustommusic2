@@ -1093,10 +1093,26 @@ interface RecentJob {
 
 function RecentJobsSection({ onLoadJob }: { onLoadJob: (job: RecentJob) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [pollActive, setPollActive] = useState(false);
   const { data: jobs, isLoading, refetch } = trpc.songs.getRecentMp3SheetJobs.useQuery(
     undefined,
-    { enabled: expanded }
+    {
+      enabled: expanded,
+      refetchInterval: pollActive ? 3000 : false,
+    }
   );
+
+  // Update polling state whenever jobs data changes
+  useEffect(() => {
+    if (!jobs) {
+      setPollActive(false);
+      return;
+    }
+    const hasProcessing = jobs.some((j) =>
+      ["uploading", "transcribing", "generating"].includes(j.status)
+    );
+    setPollActive(hasProcessing);
+  }, [jobs]);
   const deleteMutation = trpc.songs.deleteMp3SheetJob.useMutation({
     onSuccess: () => {
       refetch();

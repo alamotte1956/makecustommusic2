@@ -1056,3 +1056,10 @@
 - [x] Refetch jobs list after successful retry; toast confirmation "Retrying conversion..."
 - [x] Error toast on failed retry with specific error message
 - [x] Added 15 tests for route validation, UI state logic, and status transitions — 972 tests passing
+
+## Auto-Polling for Processing Jobs in Recent Conversions
+- [x] Detect when any job in the list has a processing status (uploading, transcribing, generating)
+- [x] Enable tRPC refetchInterval (3s) when processing jobs exist, disable when all are done/error
+- [x] Show animated spinner on processing jobs to signal live updates
+- [x] Auto-stop polling when all jobs reach terminal state (done or error)
+- [x] Added 16 tests for status detection, polling interval logic, and status categories — 988 tests passing
