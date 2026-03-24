@@ -12,9 +12,9 @@ import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Download, Music, Loader2,
-  ChevronDown, ChevronUp, Clock, Guitar, Gauge,
-  Share2, RefreshCw, Mic, MicOff,
-  FileText, Tag, Wand2, PenLine, MessageSquareText
+  ChevronDown, ChevronUp, ChevronRight, Clock, Guitar, Gauge,
+  Share2, RefreshCw, Mic, MicOff, Users,
+  FileText, Tag, Wand2, PenLine, MessageSquareText, Cross
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
@@ -45,13 +45,19 @@ type GeneratedSong = {
   duration: number | null;
 };
 
-const GENRES = [
+const MAIN_GENRES = [
   "Jazz", "Classical", "Electronic", "Rock", "Ambient", "Pop",
   "Hip Hop", "Country", "R&B", "Folk", "Reggae", "Blues",
+];
+
+const CHRISTIAN_GENRES = [
   "Christian", "Gospel", "Christian Modern", "Christian Pop",
   "Christian Rock", "Christian Hip Hop", "Southern Gospel",
   "Hymns", "Praise & Worship", "Christian R&B",
 ];
+
+// Combined flat list for backward compatibility
+const GENRES = [...MAIN_GENRES, ...CHRISTIAN_GENRES];
 
 const MOODS = [
   "Happy", "Melancholic", "Energetic", "Calm", "Epic",
@@ -64,6 +70,7 @@ const VOCAL_OPTIONS = [
   { value: "male", label: "Male", icon: Mic },
   { value: "female", label: "Female", icon: Mic },
   { value: "mixed", label: "Duet", icon: Mic },
+  { value: "male_and_female", label: "Male & Female", icon: Users },
 ] as const;
 
 const DURATION_PRESETS = [
@@ -158,6 +165,96 @@ function ChipGroup({
 }
 
 /* ─────────────────────────────────────────────────────── */
+/* Genre selector with collapsible Christian section        */
+/* ─────────────────────────────────────────────────────── */
+function GenreSelector({
+  selected,
+  onSelect,
+  disabled,
+}: {
+  selected: string | null;
+  onSelect: (v: string | null) => void;
+  disabled?: boolean;
+}) {
+  const [christianExpanded, setChristianExpanded] = useState(
+    // Auto-expand if a Christian genre is already selected
+    () => selected !== null && CHRISTIAN_GENRES.includes(selected)
+  );
+
+  const isChristianSelected = selected !== null && CHRISTIAN_GENRES.includes(selected);
+
+  return (
+    <div className="space-y-2">
+      {/* Main genres */}
+      <div className="flex flex-wrap gap-1.5">
+        {MAIN_GENRES.map((opt) => (
+          <button
+            key={opt}
+            onClick={() => onSelect(selected === opt ? null : opt)}
+            disabled={disabled}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+              selected === opt
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground"
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+
+        {/* Christian group toggle chip */}
+        <button
+          onClick={() => setChristianExpanded(!christianExpanded)}
+          disabled={disabled}
+          className={`px-3 py-1 rounded-full text-xs font-medium border transition-all flex items-center gap-1 ${
+            isChristianSelected && !christianExpanded
+              ? "bg-primary text-primary-foreground border-primary"
+              : christianExpanded
+                ? "border-primary/50 bg-primary/5 text-primary"
+                : "border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground"
+          }`}
+        >
+          <Cross className="w-3 h-3" />
+          Christian
+          {isChristianSelected && !christianExpanded && (
+            <span className="ml-0.5 opacity-75">— {selected}</span>
+          )}
+          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${
+            christianExpanded ? "rotate-180" : ""
+          }`} />
+        </button>
+      </div>
+
+      {/* Collapsible Christian sub-genres */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          christianExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="pl-2 pt-1 pb-1 border-l-2 border-primary/20">
+          <div className="flex flex-wrap gap-1.5">
+            {CHRISTIAN_GENRES.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => onSelect(selected === opt ? null : opt)}
+                disabled={disabled}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                  selected === opt
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── */
 /* Main Component                                          */
 /* ─────────────────────────────────────────────────────── */
 export default function Generator() {
@@ -193,7 +290,7 @@ export default function Generator() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
   // Step 4: Voice & Duration
-  const [vocalType, setVocalType] = useState<"none" | "male" | "female" | "mixed">("none");
+  const [vocalType, setVocalType] = useState<"none" | "male" | "female" | "mixed" | "male_and_female">("none");
   const [duration, setDuration] = useState(30);
 
   // Generation state
@@ -733,7 +830,7 @@ export default function Generator() {
           <div className="pl-10 space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Genre</label>
-              <ChipGroup options={GENRES} selected={selectedGenre} onSelect={setSelectedGenre} disabled={isGenerating} />
+              <GenreSelector selected={selectedGenre} onSelect={setSelectedGenre} disabled={isGenerating} />
             </div>
 
             <div className="space-y-1.5">

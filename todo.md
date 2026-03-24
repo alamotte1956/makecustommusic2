@@ -1116,3 +1116,20 @@
 - [x] Wired buildCoverArtPrompt into all 3 cover generation routes (single song, album, batch songs)
 - [x] Also enhanced non-Christian genres with style hints (Pop, Rock, Jazz, etc.)
 - [x] Write 28 tests for genre-specific cover art prompt generation — 1073 tests passing across 51 files
+
+## Collapsible Christian Genre Group in Dropdown
+- [x] Group all 10 Christian sub-genres under a collapsible "Christian" section in the genre selector
+- [x] Keep non-Christian genres (Jazz, Classical, etc.) as flat chips above the Christian group
+- [x] Add expand/collapse toggle with Cross icon, chevron, and highlighted border
+- [x] Show selected Christian sub-genre name when collapsed (e.g. "Christian — Gospel")
+- [x] Auto-expand Christian section when a Christian genre is already selected
+- [x] Collapsible section uses smooth CSS transition (max-h + opacity)
+- [x] Maintain visual consistency with primary/accent color scheme
+
+## Male & Female Combined Vocal Option
+- [x] Add "Male & Female" vocal option (value: male_and_female) with Users icon to Generator VOCAL_OPTIONS
+- [x] Update vocalType state type and all 3 backend zod enums to include male_and_female
+- [x] Add male_and_female entry to VOCAL_PRODUCTION (blended unison, worship-team blend, thirds/sixths harmonies)
+- [x] Add male_and_female vocal guidance to lyrics generation (unified pair, not trading lines)
+- [x] Distinct from "Duet" (mixed): Duet = call-and-response, Male & Female = blended unison throughout
+- [x] Add 10 tests for male_and_female vocal type — 1083 tests passing across 52 files

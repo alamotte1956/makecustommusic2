@@ -76,7 +76,7 @@ export const appRouter = router({
         engine: z.enum(["elevenlabs"]).default("elevenlabs"),
         genre: z.string().max(100).optional(),
         mood: z.string().max(100).optional(),
-        vocalType: z.enum(["none", "male", "female", "mixed"]).optional(),
+        vocalType: z.enum(["none", "male", "female", "mixed", "male_and_female"]).optional(),
         duration: z.number().min(15).max(240).optional(),
         // Custom Mode fields
         mode: z.enum(["simple", "custom"]).optional(),
@@ -170,7 +170,7 @@ export const appRouter = router({
         subject: z.string().min(1).max(500),
         genre: z.string().max(100).optional(),
         mood: z.string().max(100).optional(),
-        vocalType: z.enum(["none", "male", "female", "mixed"]).optional(),
+        vocalType: z.enum(["none", "male", "female", "mixed", "male_and_female"]).optional(),
         length: z.enum(["standard", "extended"]).default("standard"),
       }))
       .mutation(async ({ input }) => {
@@ -180,6 +180,8 @@ export const appRouter = router({
         let vocalGuidance = "";
         if (vocalType === "mixed") {
           vocalGuidance = `\n\nVOCAL ARRANGEMENT: This is a DUET for male and female voices. Use [Male], [Female], and [Both] markers within sections to indicate who sings what. Create call-and-response moments, harmonized lines, and distinct perspectives for each voice. The interplay between voices should tell the story from two angles.`;
+        } else if (vocalType === "male_and_female") {
+          vocalGuidance = `\n\nVOCAL ARRANGEMENT: This song features BOTH a male and female singer performing together throughout. They sing in unison and harmony, blending their voices as a unified pair rather than trading lines. Write lyrics that feel natural for both voices singing together — powerful unison verses, layered harmonies in choruses, and moments where both voices lift the melody. Think worship team, husband-and-wife duo, or ensemble vocal blend.`;
         } else if (vocalType === "male") {
           vocalGuidance = `\n\nVOCAL STYLE: Written for a male vocalist. Consider the natural range and emotional expression of male voices — from chest-voice power to falsetto vulnerability. Write lines that feel natural in a male register.`;
         } else if (vocalType === "female") {
@@ -379,7 +381,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           chordProgression: z.array(z.string()),
         }),
         lyrics: z.string().optional(),
-        vocalType: z.enum(["none", "male", "female", "mixed"]).default("none"),
+        vocalType: z.enum(["none", "male", "female", "mixed", "male_and_female"]).default("none"),
         duration: z.number().min(15).max(300).default(60),
       }))
       .mutation(async ({ ctx, input }) => {

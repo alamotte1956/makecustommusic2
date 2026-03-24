@@ -384,6 +384,7 @@ const VOCAL_PRODUCTION: Record<string, string> = {
   male: "male vocals with chest resonance and warmth, double-tracked in choruses, subtle pitch correction, de-essed and compressed for presence, reverb plate with pre-delay for depth, ad-libs and vocal runs in final chorus",
   female: "female vocals with clarity and airiness, layered harmonies in choruses, subtle pitch correction, de-essed with bright EQ presence, lush reverb with stereo widening, melodic ad-libs and runs in final chorus",
   mixed: "male and female vocal duet with call-and-response verses, layered harmonies in choruses, both voices double-tracked, blended reverb spaces, trading lines in the bridge, powerful unison in final chorus",
+  male_and_female: "male and female voices singing together in blended unison and harmony throughout, both voices present in every section, layered vocal stacking with male providing warmth and foundation while female adds brightness and air, tight harmonies in thirds and sixths, worship-team vocal blend, both voices double-tracked and compressed together for cohesion, shared reverb space for unity, powerful combined crescendo in final chorus",
 };
 
 // ─── Mastering Chain Description ───
