@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Music, FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Download, Play, Pause, Volume2, VolumeX, RefreshCw, WifiOff,
+  Clock, Trash2, ChevronDown, ChevronUp, Eye,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
@@ -603,38 +604,63 @@ export default function Mp3ToSheetMusic() {
               <div className="relative">
                 <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
               </div>
-              <div>
-                <p className="font-semibold text-black">{STEP_LABELS[step]}</p>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-black">{STEP_LABELS[step]}</p>
+                  <span className="text-sm font-medium text-violet-600">
+                    {step === "uploading" ? "15%" : step === "transcribing" ? "40%" : step === "analyzing" ? "60%" : step === "generating" ? "80%" : ""}
+                  </span>
+                </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This may take 30-60 seconds depending on the audio length.
+                  {step === "uploading"
+                    ? "Preparing your audio file..."
+                    : step === "transcribing"
+                    ? "Estimated time: 20-40 seconds remaining"
+                    : step === "generating"
+                    ? "Estimated time: 15-30 seconds remaining"
+                    : "Processing..."}
                 </p>
               </div>
             </div>
 
+            {/* Progress bar */}
+            <div className="mt-4 h-2 bg-violet-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: step === "uploading" ? "15%" : step === "transcribing" ? "40%" : step === "analyzing" ? "60%" : step === "generating" ? "80%" : "0%",
+                }}
+              />
+            </div>
+
             {/* Progress steps */}
             <div className="mt-6 space-y-3">
-              {(["uploading", "analyzing", "generating"] as ProcessingStep[]).map((s, i) => {
-                const stepOrder = ["uploading", "analyzing", "generating"];
+              {(["uploading", "transcribing", "generating"] as ProcessingStep[]).map((s, i) => {
+                const stepOrder = ["uploading", "transcribing", "generating"];
                 const currentIdx = stepOrder.indexOf(step);
                 const thisIdx = i;
                 const isDone = thisIdx < currentIdx;
-                const isCurrent = s === step;
+                const isCurrent = s === step || (step === "analyzing" && s === "transcribing");
+                const isDoneOrPast = isDone || (step === "generating" && s === "transcribing") || (step === "analyzing" && s === "uploading");
                 return (
                   <div key={s} className="flex items-center gap-3">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      isDone ? "bg-green-500 text-white" :
+                      isDoneOrPast ? "bg-green-500 text-white" :
                       isCurrent ? "bg-violet-600 text-white" :
                       "bg-muted text-muted-foreground"
                     }`}>
-                      {isDone ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                      {isDoneOrPast ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                     </div>
                     <span className={`text-sm ${
-                      isDone ? "text-green-600 font-medium" :
+                      isDoneOrPast ? "text-green-600 font-medium" :
                       isCurrent ? "text-black font-medium" :
                       "text-muted-foreground"
                     }`}>
-                      {["Upload & prepare audio", "Analyze musical elements with AI", "Generate ABC notation"][i]}
+                      {["Upload & prepare audio", "Transcribe audio with AI", "Generate sheet music notation"][i]}
                     </span>
+                    {isCurrent && !isDoneOrPast && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+                    )}
                   </div>
                 );
               })}
@@ -847,6 +873,18 @@ export default function Mp3ToSheetMusic() {
           </div>
         )}
 
+        {/* Recent Jobs */}
+        <RecentJobsSection
+          onLoadJob={(job) => {
+            setAbcNotation(job.abcNotation);
+            setLyrics(job.lyrics || null);
+            setStep("done");
+            setSelectedKey("original");
+            setIsRendered(false);
+            toast.success(`Loaded sheet music for "${job.fileName}"`);
+          }}
+        />
+
         {/* Info Box */}
         <div className="mt-8 bg-muted/50 rounded-xl p-5 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-violet-500 mt-0.5 shrink-0" />
@@ -862,6 +900,134 @@ export default function Mp3ToSheetMusic() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+// ─── Recent Jobs Section ───
+
+interface RecentJob {
+  id: number;
+  fileName: string;
+  status: string;
+  abcNotation: string | null;
+  lyrics: string | null;
+  audioUrl: string | null;
+  errorMessage: string | null;
+  createdAt: Date;
+}
+
+function RecentJobsSection({ onLoadJob }: { onLoadJob: (job: RecentJob) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const { data: jobs, isLoading, refetch } = trpc.songs.getRecentMp3SheetJobs.useQuery(
+    undefined,
+    { enabled: expanded }
+  );
+  const deleteMutation = trpc.songs.deleteMp3SheetJob.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast.success("Job deleted");
+    },
+    onError: () => toast.error("Failed to delete job"),
+  });
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case "done":
+        return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full"><CheckCircle2 className="h-3 w-3" /> Done</span>;
+      case "error":
+        return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full"><AlertCircle className="h-3 w-3" /> Failed</span>;
+      case "transcribing":
+      case "generating":
+      case "uploading":
+        return <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full"><Loader2 className="h-3 w-3 animate-spin" /> Processing</span>;
+      default:
+        return <span className="inline-flex items-center text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{status}</span>;
+    }
+  };
+
+  return (
+    <div className="mt-8">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between p-4 bg-card rounded-xl border hover:bg-accent/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-violet-500" />
+          <span className="font-semibold text-sm text-foreground">Recent Conversions</span>
+        </div>
+        {expanded ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
+      </button>
+
+      {expanded && (
+        <div className="mt-2 bg-card rounded-xl border overflow-hidden">
+          {isLoading ? (
+            <div className="p-6 text-center">
+              <Loader2 className="h-5 w-5 animate-spin text-violet-500 mx-auto" />
+              <p className="text-sm text-muted-foreground mt-2">Loading history...</p>
+            </div>
+          ) : !jobs || jobs.length === 0 ? (
+            <div className="p-6 text-center">
+              <FileAudio className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+              <p className="text-sm text-muted-foreground mt-2">No previous conversions yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Your converted sheet music will appear here.</p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {jobs.map((job) => (
+                <div key={job.id} className="flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors">
+                  <div className="flex-shrink-0">
+                    <Music className="h-5 w-5 text-violet-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{job.fileName}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {statusBadge(job.status)}
+                      <span className="text-xs text-muted-foreground">{formatDate(job.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {job.status === "done" && job.abcNotation && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onLoadJob(job as RecentJob)}
+                        className="h-8 px-2.5 text-violet-600 hover:text-violet-700 hover:bg-violet-50 gap-1"
+                      >
+                        <Eye className="h-3.5 w-3.5" /> View
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteMutation.mutate({ jobId: job.id })}
+                      disabled={deleteMutation.isPending}
+                      className="h-8 px-2 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

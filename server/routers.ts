@@ -18,7 +18,7 @@ import {
   createNotification, getUserNotifications, getUnreadNotificationCount,
   markNotificationRead, markAllNotificationsRead, deleteNotification,
   getBlogComments, createBlogComment, deleteBlogComment, getBlogCommentCount,
-  createMp3SheetJob, getMp3SheetJob, updateMp3SheetJob,
+  createMp3SheetJob, getMp3SheetJob, updateMp3SheetJob, getUserMp3SheetJobs, deleteMp3SheetJob,
 } from "./db";
 import type { ChordProgressionData } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
@@ -1109,6 +1109,32 @@ RULES:
           fileName: job.fileName,
           errorMessage: job.errorMessage,
         };
+      }),
+
+    // Get recent MP3-to-sheet-music jobs for the current user
+    getRecentMp3SheetJobs: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+      .query(async ({ ctx, input }) => {
+        const limit = input?.limit ?? 20;
+        const jobs = await getUserMp3SheetJobs(ctx.user.id, limit);
+        return jobs.map((j) => ({
+          id: j.id,
+          fileName: j.fileName,
+          status: j.status,
+          abcNotation: j.abcNotation,
+          lyrics: j.lyrics,
+          audioUrl: j.audioUrl,
+          errorMessage: j.errorMessage,
+          createdAt: j.createdAt,
+        }));
+      }),
+
+    // Delete an MP3-to-sheet-music job
+    deleteMp3SheetJob: protectedProcedure
+      .input(z.object({ jobId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteMp3SheetJob(input.jobId, ctx.user.id);
+        return { success: true };
       }),
   }),
 

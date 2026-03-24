@@ -973,3 +973,10 @@
 - [x] Updated Mp3ToSheetMusic frontend to use polling pattern instead of single long request
 - [x] Updated handleReset to clean up polling interval and active job state
 - [x] Added 14 tests for job architecture, polling logic, and status transitions — 875 tests passing
+
+## MP3-to-Sheet-Music Improvements
+- [x] Add progress percentage and estimated time remaining to the polling UI (gradient progress bar, step percentages, time estimates)
+- [x] Add "Recent Jobs" history with collapsible section, status badges, view/delete actions, date formatting
+- [x] Backend: getRecentMp3SheetJobs + deleteMp3SheetJob routes, getUserMp3SheetJobs + deleteMp3SheetJob DB helpers
+- [x] Added 18 tests for history feature and progress UI — 893 tests passing
+- [ ] Verify the MP3-to-Sheet-Music flow end-to-end on production (user to test after publish)

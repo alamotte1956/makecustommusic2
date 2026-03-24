@@ -530,3 +530,23 @@ export async function updateMp3SheetJob(
   if (!db) throw new Error("Database not available");
   await db.update(mp3SheetJobs).set(data).where(eq(mp3SheetJobs.id, jobId));
 }
+
+
+export async function getUserMp3SheetJobs(userId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db
+    .select()
+    .from(mp3SheetJobs)
+    .where(eq(mp3SheetJobs.userId, userId))
+    .orderBy(desc(mp3SheetJobs.createdAt))
+    .limit(limit);
+}
+
+export async function deleteMp3SheetJob(jobId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .delete(mp3SheetJobs)
+    .where(and(eq(mp3SheetJobs.id, jobId), eq(mp3SheetJobs.userId, userId)));
+}
