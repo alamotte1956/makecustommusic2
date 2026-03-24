@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Music, FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Download, Play, Pause, Volume2, VolumeX, RefreshCw, WifiOff,
-  Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save,
+  Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save, RotateCcw,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
@@ -1104,6 +1104,13 @@ function RecentJobsSection({ onLoadJob }: { onLoadJob: (job: RecentJob) => void 
     },
     onError: () => toast.error("Failed to delete job"),
   });
+  const retryMutation = trpc.songs.retryMp3SheetJob.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast.success("Retrying conversion...");
+    },
+    onError: (err) => toast.error(err.message || "Failed to retry job"),
+  });
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString(undefined, {
@@ -1183,6 +1190,22 @@ function RecentJobsSection({ onLoadJob }: { onLoadJob: (job: RecentJob) => void 
                         className="h-8 px-2.5 text-violet-600 hover:text-violet-700 hover:bg-violet-50 gap-1"
                       >
                         <Eye className="h-3.5 w-3.5" /> View
+                      </Button>
+                    )}
+                    {job.status === "error" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => retryMutation.mutate({ jobId: job.id })}
+                        disabled={retryMutation.isPending}
+                        className="h-8 px-2.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 gap-1"
+                      >
+                        {retryMutation.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        )}
+                        Retry
                       </Button>
                     )}
                     <Button

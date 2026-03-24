@@ -1150,6 +1150,36 @@ RULES:
         return { success: true };
       }),
 
+    // Retry a failed MP3-to-sheet-music job
+    retryMp3SheetJob: protectedProcedure
+      .input(z.object({ jobId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        // Fetch the job and verify ownership + failed status
+        const job = await getMp3SheetJob(input.jobId, ctx.user.id);
+        if (!job) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
+        }
+        if (job.status !== "error") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Only failed jobs can be retried" });
+        }
+        if (!job.audioUrl) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No audio URL available for retry" });
+        }
+        // Reset the job status to transcribing
+        await updateMp3SheetJob(input.jobId, {
+          status: "transcribing",
+          errorMessage: null,
+          errorCode: null,
+          abcNotation: null,
+          lyrics: null,
+        });
+        // Re-trigger background processing (fire and forget)
+        processMp3SheetJob(input.jobId, ctx.user.id, job.audioUrl, job.fileName).catch((err) => {
+          console.error(`[retryMp3SheetJob] Background processing failed for job ${input.jobId}:`, err);
+        });
+        return { jobId: input.jobId, status: "transcribing" as const };
+      }),
+
     // Save MP3 sheet music result as a song in the user's library
     saveMp3SheetToLibrary: protectedProcedure
       .input(z.object({

@@ -1048,3 +1048,11 @@
 - [x] Add teal "Transcribed" badge to Discover page (overlay on card image)
 - [x] Styled with distinct teal-600 color to differentiate from violet ElevenLabs badges
 - [x] All 957 tests passing
+
+## Retry Button for Failed Jobs in Recent Conversions
+- [x] Add backend retryMp3SheetJob route (validates ownership, error status, audioUrl; resets fields; re-triggers processMp3SheetJob)
+- [x] Add amber retry button (RotateCcw icon) on failed job cards in RecentJobsSection
+- [x] Show Loader2 spinner on retry button while mutation is pending
+- [x] Refetch jobs list after successful retry; toast confirmation "Retrying conversion..."
+- [x] Error toast on failed retry with specific error message
+- [x] Added 15 tests for route validation, UI state logic, and status transitions — 972 tests passing
