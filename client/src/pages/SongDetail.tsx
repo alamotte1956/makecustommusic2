@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -16,7 +16,7 @@ import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import { exportLyricsPDF } from "@/lib/pdfExport";
 import {
   Music, FileText, Guitar, Download, Share2, ArrowLeft,
-  Clock, Gauge, Tag, Mic, Loader2, FileAudio
+  Clock, Gauge, Tag, Mic, Loader2, FileAudio, Pencil, Check, X
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,6 +46,52 @@ export default function SongDetail() {
   );
 
   const [activeTab, setActiveTab] = useState("lyrics");
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const utils = trpc.useUtils();
+
+  const renameMutation = trpc.songs.update.useMutation({
+    onSuccess: () => {
+      utils.songs.getById.invalidate({ id: songId! });
+      utils.songs.list.invalidate();
+      setIsRenaming(false);
+      toast.success("Song renamed!");
+    },
+    onError: (err) => toast.error(err.message || "Failed to rename song"),
+  });
+
+  const startRename = () => {
+    if (song) {
+      setRenameValue(song.title);
+      setIsRenaming(true);
+    }
+  };
+
+  const confirmRename = () => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      toast.error("Title cannot be empty");
+      return;
+    }
+    if (trimmed === song?.title) {
+      setIsRenaming(false);
+      return;
+    }
+    renameMutation.mutate({ id: songId!, title: trimmed });
+  };
+
+  const cancelRename = () => {
+    setIsRenaming(false);
+    setRenameValue("");
+  };
+
+  useEffect(() => {
+    if (isRenaming && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [isRenaming]);
 
   if (authLoading || isLoading) {
     return (
@@ -119,7 +165,51 @@ export default function SongDetail() {
             <div className="space-y-1 min-w-0">
               <CardTitle className="text-2xl flex items-center gap-2">
                 <Music className="w-6 h-6 text-primary shrink-0" />
-                <span className="truncate">{song.title}</span>
+                {isRenaming ? (
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <input
+                      ref={renameInputRef}
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") confirmRename();
+                        if (e.key === "Escape") cancelRename();
+                      }}
+                      maxLength={255}
+                      disabled={renameMutation.isPending}
+                      className="flex-1 min-w-0 bg-muted/50 border border-border rounded-md px-2 py-1 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      onClick={confirmRename}
+                      disabled={renameMutation.isPending}
+                      className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors"
+                      title="Save"
+                    >
+                      {renameMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={cancelRename}
+                      disabled={renameMutation.isPending}
+                      className="p-1 text-muted-foreground hover:bg-muted rounded transition-colors"
+                      title="Cancel"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <span
+                    className="truncate group cursor-pointer hover:text-primary transition-colors"
+                    onClick={startRename}
+                    title="Click to rename"
+                  >
+                    {song.title}
+                    <Pencil className="w-3.5 h-3.5 inline-block ml-2 opacity-0 group-hover:opacity-60 transition-opacity" />
+                  </span>
+                )}
               </CardTitle>
               {song.musicDescription && (
                 <p className="text-sm text-muted-foreground line-clamp-2">

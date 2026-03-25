@@ -1320,3 +1320,18 @@
 ## Admin Notifications
 - [ ] Send owner notification when a new subscription is created
 - [ ] Send owner notification when a payment fails
+
+## Song Rename
+- [x] Add rename song mutation (backend) (already existed via songs.update)
+- [x] Add inline rename UI on SongDetail page
+- [x] Add rename option on History page
+- [x] Write tests for song rename (covered by existing songs.update tests)
+
+## Progressive Web App (PWA)
+- [x] Create web app manifest (manifest.json) with icons, theme color, display mode
+- [x] Create service worker for offline caching (app shell, audio files)
+- [x] Register service worker in main.tsx
+- [x] Add meta tags for PWA in index.html (theme-color, apple-touch-icon, etc.)
+- [x] Add install prompt banner/button for "Add to Home Screen"
+- [x] Generate PWA icons in multiple sizes
+- [x] Write tests for PWA setup

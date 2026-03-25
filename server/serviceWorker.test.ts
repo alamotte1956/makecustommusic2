@@ -70,7 +70,7 @@ describe("Service Worker", () => {
       const content = fs.readFileSync(SW_PATH, "utf-8");
       expect(content).toContain("isHashedAsset");
       // Should match patterns like /assets/index-abc12345.js
-      expect(content).toMatch(/\/assets\//);
+      expect(content).toMatch(/\\\/assets\\\//);
     });
 
     it("calls skipWaiting on install", () => {

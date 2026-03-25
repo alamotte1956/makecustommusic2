@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AudioPlayer from "@/components/AudioPlayer";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import {
   History as HistoryIcon, Music, Download, Trash2,
-  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic, FileText, Globe, Lock, FileAudio
+  Loader2, ChevronDown, ChevronUp, Disc3, Play, Pause, Pencil, ListMusic, FileText, Globe, Lock, FileAudio, Check, X
 } from "lucide-react";
 import { Link } from "wouter";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -64,6 +64,45 @@ export default function History() {
   const [filters, setFilters] = useState<SongFilters>({ search: "", genre: "__all__", mood: "__all__" });
   const [editingSong, setEditingSong] = useState<any>(null);
   const [deletingSong, setDeletingSong] = useState<{ id: number; title: string } | null>(null);
+  const [renamingSongId, setRenamingSongId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const renameMutation = trpc.songs.update.useMutation({
+    onSuccess: () => {
+      utils.songs.list.invalidate();
+      setRenamingSongId(null);
+      setRenameValue("");
+      toast.success("Song renamed!");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to rename"),
+  });
+
+  const startRename = useCallback((song: any) => {
+    setRenamingSongId(song.id);
+    setRenameValue(song.title);
+  }, []);
+
+  const confirmRename = useCallback(() => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) { toast.error("Title cannot be empty"); return; }
+    if (renamingSongId === null) return;
+    const currentSong = songs?.find((s) => s.id === renamingSongId);
+    if (trimmed === currentSong?.title) { setRenamingSongId(null); return; }
+    renameMutation.mutate({ id: renamingSongId, title: trimmed });
+  }, [renameValue, renamingSongId, songs, renameMutation]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingSongId(null);
+    setRenameValue("");
+  }, []);
+
+  useEffect(() => {
+    if (renamingSongId !== null && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingSongId]);
 
   const filteredSongs = filterSongs(songs, filters);
 
@@ -320,7 +359,47 @@ export default function History() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="font-semibold text-foreground truncate">{song.title}</h3>
+                            {renamingSongId === song.id ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  ref={renameInputRef}
+                                  value={renameValue}
+                                  onChange={(e) => setRenameValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") confirmRename();
+                                    if (e.key === "Escape") cancelRename();
+                                  }}
+                                  maxLength={255}
+                                  disabled={renameMutation.isPending}
+                                  className="flex-1 min-w-0 bg-muted/50 border border-border rounded px-1.5 py-0.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                                <button
+                                  onClick={confirmRename}
+                                  disabled={renameMutation.isPending}
+                                  className="p-0.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors"
+                                  title="Save"
+                                >
+                                  {renameMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                  onClick={cancelRename}
+                                  disabled={renameMutation.isPending}
+                                  className="p-0.5 text-muted-foreground hover:bg-muted rounded transition-colors"
+                                  title="Cancel"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <h3
+                                className="font-semibold text-foreground truncate group/title cursor-pointer hover:text-primary transition-colors"
+                                onClick={() => startRename(song)}
+                                title="Click to rename"
+                              >
+                                {song.title}
+                                <Pencil className="w-3 h-3 inline-block ml-1.5 opacity-0 group-hover/title:opacity-60 transition-opacity" />
+                              </h3>
+                            )}
                             <p className="text-sm text-muted-foreground mt-0.5 truncate">
                               Keywords: {song.keywords}
                             </p>

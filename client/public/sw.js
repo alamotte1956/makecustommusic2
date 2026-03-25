@@ -1,8 +1,10 @@
-// ─── Service Worker: Cache-first for static assets, network-first for API ───
-const CACHE_NAME = "mcm-cache-v1";
+// ─── Service Worker: PWA with offline support & audio caching ───
+const CACHE_NAME = "mcm-cache-v2";
+const AUDIO_CACHE_NAME = "mcm-audio-v1";
+const MAX_AUDIO_CACHE_ITEMS = 50; // Limit cached audio files
 
 // Static assets to pre-cache on install (shell resources)
-const PRECACHE_URLS = ["/", "/robots.txt"];
+const PRECACHE_URLS = ["/", "/manifest.json"];
 
 // ─── Install: pre-cache shell resources ───
 self.addEventListener("install", (event) => {
@@ -16,13 +18,14 @@ self.addEventListener("install", (event) => {
 
 // ─── Activate: clean up old caches ───
 self.addEventListener("activate", (event) => {
+  const validCaches = [CACHE_NAME, AUDIO_CACHE_NAME];
   event.waitUntil(
     caches
       .keys()
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => !validCaches.includes(key))
             .map((key) => caches.delete(key))
         )
       )
@@ -51,6 +54,12 @@ self.addEventListener("fetch", (event) => {
     url.pathname.includes("/umami") ||
     url.pathname.startsWith("/__manus__")
   ) {
+    return;
+  }
+
+  // ── Audio files (mp3, wav, ogg, m4a, webm) → cache-first with LRU ──
+  if (isAudioFile(url.pathname) || isAudioFile(url.href)) {
+    event.respondWith(audioCacheFirst(request));
     return;
   }
 
@@ -107,6 +116,30 @@ async function cacheFirst(request) {
   }
 }
 
+/** Audio cache-first with LRU eviction */
+async function audioCacheFirst(request) {
+  const cache = await caches.open(AUDIO_CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      // Clone and cache
+      cache.put(request, response.clone());
+      // Evict old entries if over limit
+      trimAudioCache();
+    }
+    return response;
+  } catch {
+    // If offline and not cached, return error
+    return new Response("Audio unavailable offline", {
+      status: 503,
+      statusText: "Service Unavailable",
+    });
+  }
+}
+
 /** Network-first: try network, fall back to cache */
 async function networkFirst(request) {
   try {
@@ -119,6 +152,9 @@ async function networkFirst(request) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
+    // Return the cached index.html for SPA navigation
+    const fallback = await caches.match("/");
+    if (fallback) return fallback;
     return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
   }
 }
@@ -142,11 +178,29 @@ async function staleWhileRevalidate(request) {
 
 // ─── Helpers ───
 
-/** Check if a URL path looks like a Vite hashed asset (e.g. /assets/index-abc123.js) */
+/** Check if a URL path looks like a Vite hashed asset */
 function isHashedAsset(pathname) {
   return /\/assets\/.*-[a-f0-9]{8,}\.(js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|webp|avif|gif|ico)$/i.test(
     pathname
   );
+}
+
+/** Check if a URL looks like an audio file */
+function isAudioFile(str) {
+  return /\.(mp3|wav|ogg|m4a|webm|aac|flac)(\?.*)?$/i.test(str);
+}
+
+/** Trim audio cache to MAX_AUDIO_CACHE_ITEMS entries (LRU) */
+async function trimAudioCache() {
+  const cache = await caches.open(AUDIO_CACHE_NAME);
+  const keys = await cache.keys();
+  if (keys.length > MAX_AUDIO_CACHE_ITEMS) {
+    // Remove oldest entries (first in list)
+    const toRemove = keys.length - MAX_AUDIO_CACHE_ITEMS;
+    for (let i = 0; i < toRemove; i++) {
+      await cache.delete(keys[i]);
+    }
+  }
 }
 
 // ─── Message handling for cache management ───
@@ -156,5 +210,13 @@ self.addEventListener("message", (event) => {
   }
   if (event.data === "clearCache") {
     caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+  }
+  // Cache a specific audio URL for offline playback
+  if (event.data && event.data.type === "cacheAudio" && event.data.url) {
+    caches.open(AUDIO_CACHE_NAME).then((cache) => {
+      cache.add(event.data.url).catch(() => {
+        // Silent fail for audio caching
+      });
+    });
   }
 });

@@ -8,6 +8,7 @@ import { QueuePlayerProvider } from "./contexts/QueuePlayerContext";
 import QueuePlayerBar from "./components/QueuePlayerBar";
 import TourTooltip from "./components/TourTooltip";
 import OfflineIndicator from "./components/OfflineIndicator";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 import { useReferral } from "./hooks/useReferral";
 import { lazy, Suspense } from "react";
 
@@ -99,6 +100,7 @@ function App() {
               <Router />
             </Layout>
             <QueuePlayerBar />
+            <PWAInstallBanner />
             <TourTooltip />
             <ReferralCapture />
           </TooltipProvider>
