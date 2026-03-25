@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift, FileAudio, Share2, Check, Shield } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift, FileAudio, Share2, Check, Shield, Search } from "lucide-react";
 import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
 import CookieConsent from "@/components/CookieConsent";
@@ -12,14 +12,14 @@ import { useOnboarding } from "@/contexts/OnboardingContext";
 import { trpc } from "@/lib/trpc";
 
 const navItems = [
-  { href: "/generate", label: "Create Music", icon: Sparkles },
-  { href: "/discover", label: "Discover", icon: Globe },
-  { href: "/history", label: "My Songs", icon: History },
+  { href: "/generate", label: "Create", icon: Sparkles },
+  { href: "/discover", label: "Explore", icon: Globe },
+  { href: "/history", label: "Library", icon: History },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/albums", label: "Albums", icon: Disc3 },
   { href: "/upload", label: "Upload", icon: Upload },
-  { href: "/mp3-to-sheet-music", label: "MP3 to Sheet Music", icon: FileAudio },
-  { href: "/referrals", label: "Invite Friends", icon: Gift },
+  { href: "/mp3-to-sheet-music", label: "MP3 to Sheet", icon: FileAudio },
+  { href: "/referrals", label: "Invite", icon: Gift },
 ];
 
 function AdminNavLink({ location, mobile, onClick }: { location: string; mobile?: boolean; onClick?: () => void }) {
@@ -32,15 +32,15 @@ function AdminNavLink({ location, mobile, onClick }: { location: string; mobile?
     return (
       <Link href="/admin">
         <span
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
-            location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
+            location === "/admin" ? "bg-purple-500/20 text-purple-300" : "text-white/60 hover:text-white hover:bg-white/5"
           }`}
           onClick={onClick}
         >
           <Shield className="w-4 h-4" />
-          Admin Dashboard
+          Admin
           {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full ml-auto">
+            <span className="bg-orange-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full ml-auto">
               {unreadCount}
             </span>
           )}
@@ -51,13 +51,13 @@ function AdminNavLink({ location, mobile, onClick }: { location: string; mobile?
 
   return (
     <Link href="/admin">
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline relative ${
-        location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline relative ${
+        location === "/admin" ? "bg-purple-500/20 text-purple-300" : "text-white/60 hover:text-white hover:bg-white/5"
       }`}>
         <Shield className="w-3.5 h-3.5" />
         Admin
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -67,15 +67,15 @@ function AdminNavLink({ location, mobile, onClick }: { location: string; mobile?
 }
 
 const planLabel: Record<string, string> = {
-  free: "No Plan",
+  free: "Free",
   creator: "Creator",
   professional: "Pro",
 };
 
 const planBadgeStyle: Record<string, string> = {
-  free: "bg-gray-100 text-gray-600 border-gray-200",
-  creator: "bg-violet-100 text-violet-700 border-violet-200",
-  professional: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  free: "bg-white/10 text-white/70 border-white/10",
+  creator: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  professional: "bg-gradient-to-r from-purple-500/20 to-orange-500/20 text-orange-300 border-orange-500/30",
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -94,7 +94,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       toast.success("Link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {
-      // Fallback for older browsers
       const input = document.createElement("input");
       input.value = url;
       document.body.appendChild(input);
@@ -107,51 +106,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Fetch plan info for authenticated users
   const { data: summary } = trpc.credits.summary.useQuery(undefined, {
     enabled: isAuthenticated,
-    staleTime: 60_000, // cache for 1 minute
+    staleTime: 60_000,
   });
 
   const currentPlan = summary?.plan ?? "free";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
-        <div className="container flex items-center justify-between h-20">
-          {/* Logo */}
+      {/* Header — Suno-style minimal dark header */}
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-background/90 backdrop-blur-xl">
+        <div className="container flex items-center justify-between h-16">
+          {/* Logo — Bold uppercase like Suno */}
           <Link href="/" className="flex items-center gap-2.5 no-underline shrink-0">
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp"
               alt="MakeCustomMusic logo"
-              width={56}
-              height={56}
-              className="w-14 h-14 rounded-lg object-contain"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-lg object-contain"
               onError={(e) => {
                 const target = e.currentTarget;
                 target.style.display = 'none';
               }}
             />
-            <span className="text-lg font-bold text-foreground">
-              Make Custom Music
+            <span className="text-base font-bold text-white tracking-tight uppercase">
+              MakeCustomMusic
             </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Desktop Nav — Clean, minimal like Suno */}
+          <nav className="hidden lg:flex items-center gap-0.5">
             {navItems.map((item) => {
               const isActive = location === item.href;
               return (
                 <Link key={item.href} href={item.href}>
                   <span
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors no-underline ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline ${
                       isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
                     }`}
                   >
-                    <item.icon className="w-4 h-4" />
+                    <item.icon className="w-3.5 h-3.5" />
                     {item.label}
                   </span>
                 </Link>
@@ -159,18 +157,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          {/* Auth + Plan Badge */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Right side — Auth + Actions */}
+          <div className="hidden lg:flex items-center gap-2">
             <Link href="/pricing">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
-                location === "/pricing" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline ${
+                location === "/pricing" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
               }`}>
                 <CreditCard className="w-3.5 h-3.5" />
                 Pricing
               </span>
             </Link>
             {isAuthenticated ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {/* Plan Badge */}
                 <Link href="/usage">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border no-underline transition-colors hover:opacity-80 ${planBadgeStyle[currentPlan] ?? planBadgeStyle.free}`}>
@@ -179,8 +177,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </span>
                 </Link>
                 <Link href="/usage">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
-                    location === "/usage" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline ${
+                    location === "/usage" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}>
                     <BarChart3 className="w-3.5 h-3.5" />
                     Usage
@@ -190,23 +188,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <AdminNavLink location={location} />
                 )}
                 <NotificationCenter />
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-white/50 max-w-[120px] truncate">
                   {user?.name || user?.email || "User"}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleShare}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-white/40 hover:text-white hover:bg-white/5"
                   title="Share this page"
                 >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                  {copied ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => startTour()}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-white/40 hover:text-white hover:bg-white/5"
                   title="Start guided tour"
                 >
                   <HelpCircle className="w-4 h-4" />
@@ -215,27 +213,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => logout()}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-white/40 hover:text-white hover:bg-white/5"
                 >
-                  <LogOut className="w-4 h-4 mr-1" />
-                  Logout
+                  <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             ) : (
-              <Button asChild size="sm">
-                <a href={getLoginUrl()} className="no-underline text-primary-foreground">
-                  <LogIn className="w-4 h-4 mr-1" />
+              <div className="flex items-center gap-2">
+                <a href={getLoginUrl()} className="text-sm text-white/60 hover:text-white transition-colors no-underline">
                   Sign In
                 </a>
-              </Button>
+                <Button asChild size="sm" className="rounded-full bg-white text-black hover:bg-white/90 font-semibold px-5">
+                  <a href={getLoginUrl()} className="no-underline">
+                    Sign Up
+                  </a>
+                </Button>
+              </div>
             )}
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-2">
-            {/* Mobile Notification Bell */}
+          <div className="lg:hidden flex items-center gap-2">
             {isAuthenticated && <NotificationCenter />}
-            {/* Mobile Plan Badge */}
             {isAuthenticated && (
               <Link href="/usage">
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border no-underline ${planBadgeStyle[currentPlan] ?? planBadgeStyle.free}`}>
@@ -245,7 +244,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             )}
             <button
-              className="p-2 rounded-lg hover:bg-accent"
+              className="p-2 rounded-xl hover:bg-white/5 text-white/60"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -253,18 +252,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile Nav */}
+        {/* Mobile Nav — Dark overlay */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border bg-background p-4 space-y-2">
+          <div className="lg:hidden border-t border-white/5 bg-background/95 backdrop-blur-xl p-4 space-y-1">
             {navItems.map((item) => {
               const isActive = location === item.href;
               return (
                 <Link key={item.href} href={item.href}>
                   <span
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
                       isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-accent"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -274,11 +273,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
-            {/* Pricing & Usage links */}
             <Link href="/pricing">
               <span
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
-                  location === "/pricing" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
+                  location === "/pricing" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -289,8 +287,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {isAuthenticated && (
               <Link href="/usage">
                 <span
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
-                    location === "/usage" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
+                    location === "/usage" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -299,7 +297,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </span>
               </Link>
             )}
-            <div className="pt-2 border-t border-border space-y-1">
+            <div className="pt-2 border-t border-white/5 space-y-1">
               {isAuthenticated ? (
                 <>
                   {user?.role === "admin" && (
@@ -307,21 +305,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   )}
                   <button
                     onClick={() => { handleShare(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/5 w-full transition-colors"
                   >
-                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                    {copied ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
                     {copied ? "Link Copied!" : "Share This Page"}
                   </button>
                   <button
                     onClick={() => { startTour(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/5 w-full transition-colors"
                   >
                     <HelpCircle className="w-4 h-4" />
                     Guided Tour
                   </button>
                   <button
                     onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/5 w-full transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     Logout
@@ -330,7 +328,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               ) : (
                 <a
                   href={getLoginUrl()}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-primary no-underline"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white no-underline"
                 >
                   <LogIn className="w-4 h-4" />
                   Sign In
@@ -349,31 +347,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Cookie Consent Banner */}
       <CookieConsent />
 
-      {/* Footer */}
-      <footer className={`border-t border-border py-6 mt-auto ${hasQueue ? "pb-24" : ""}`}>
-        <div className="container text-center text-sm text-muted-foreground space-y-2">
-          <div className="flex items-center justify-center gap-4">
+      {/* Footer — Suno-style minimal dark footer */}
+      <footer className={`border-t border-white/5 py-6 mt-auto ${hasQueue ? "pb-24" : ""}`}>
+        <div className="container text-center text-sm text-white/30 space-y-2">
+          <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/privacy">
-              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Privacy Policy</span>
+              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
             </Link>
-            <span className="text-border">|</span>
+            <span className="text-white/10">|</span>
             <Link href="/terms">
-              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Terms of Service</span>
+              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Terms of Service</span>
             </Link>
-            <span className="text-border">|</span>
+            <span className="text-white/10">|</span>
             <Link href="/faq">
-              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">FAQ</span>
+              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">FAQ</span>
             </Link>
-            <span className="text-border">|</span>
+            <span className="text-white/10">|</span>
             <Link href="/blog">
-              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Blog</span>
+              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Blog</span>
             </Link>
-            <span className="text-border">|</span>
+            <span className="text-white/10">|</span>
             <Link href="/referrals">
-              <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Invite Friends</span>
+              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Invite Friends</span>
             </Link>
           </div>
-          <p>© 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com</p>
+          <p className="text-white/20">&copy; 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com</p>
         </div>
       </footer>
     </div>

@@ -1383,3 +1383,14 @@
 - [x] Add settings link/tab in admin dashboard navigation
 - [x] Integrate preferences check into webhook notification dispatch
 - [x] Write tests for notification preferences
+
+## Suno.com Design Match
+- [x] Study Suno.com color palette, layout, typography, and navigation
+- [x] Update global CSS variables and theme to match Suno dark theme
+- [x] Update font to match Suno typography
+- [x] Redesign navigation/sidebar to match Suno layout
+- [x] Redesign landing/home page to match Suno style
+- [x] Redesign generator page to match Suno create flow (global theme applies)
+- [x] Redesign history/library page to match Suno library (global theme applies)
+- [x] Update all page backgrounds, cards, and components to match Suno
+- [x] Verify visual consistency across all pages
