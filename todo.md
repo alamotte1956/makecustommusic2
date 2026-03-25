@@ -1313,3 +1313,10 @@
 - [x] Add admin nav link in header for admin users
 - [x] Register /admin route in App.tsx
 - [x] Write tests for admin procedures
+
+## Admin Credits Exclusion
+- [x] Exclude admin/owner account from total credits in circulation count
+
+## Admin Notifications
+- [ ] Send owner notification when a new subscription is created
+- [ ] Send owner notification when a payment fails

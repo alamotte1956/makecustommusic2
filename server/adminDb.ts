@@ -271,12 +271,14 @@ export async function getAdminSiteStats(): Promise<AdminSiteStats> {
     subCounts[row.plan] = row.count;
   }
 
-  // Total credits in circulation
+  // Total credits in circulation (exclude admin users)
   const [creditsResult] = await db
     .select({
       total: sql<number>`COALESCE(SUM(${creditBalances.monthlyCredits} + ${creditBalances.bonusCredits} + ${creditBalances.purchasedCredits}), 0)`,
     })
-    .from(creditBalances);
+    .from(creditBalances)
+    .innerJoin(users, eq(creditBalances.userId, users.id))
+    .where(sql`${users.role} != 'admin'`);
 
   return {
     totalUsers: totalUsersResult?.count ?? 0,

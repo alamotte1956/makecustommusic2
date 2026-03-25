@@ -1,0 +1,24 @@
+{
+  "query": "SELECT id, openId, name, email, role FROM users WHERE email LIKE '%alamotte%' OR email LIKE '%1956%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, openId, name, email, role FROM users WHERE email LIKE '%alamotte%' OR email LIKE '%1956%';",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "8G5UWiUw5SpYmgTTxtTTXU",
+      "name": "Albert LaMotte",
+      "email": "alamotte1956@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "420661",
+      "openId": "mZSasy5ZMcwW2waCnPU8Tu",
+      "name": "alamotte19562",
+      "email": "alamotte19562@gmail.com",
+      "role": "user"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\trole\n1\t8G5UWiUw5SpYmgTTxtTTXU\tAlbert LaMotte\talamotte1956@gmail.com\tadmin\n420661\tmZSasy5ZMcwW2waCnPU8Tu\talamotte19562\talamotte19562@gmail.com\tuser\n",
+  "stderr": "",
+  "execution_time_ms": 343
+}
