@@ -1368,3 +1368,8 @@
 
 ## Payment Error Fix
 - [x] Investigate and fix payment errors when subscribing (stale Stripe customer ID - added retry without old customer)
+
+## Email Forwarding for Critical Notifications
+- [x] Implement email sending for payment failure notifications
+- [x] Implement email sending for subscription cancellation notifications
+- [x] Write tests for email forwarding

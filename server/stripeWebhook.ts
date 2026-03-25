@@ -9,6 +9,7 @@ import { users, userSubscriptions } from "../drizzle/schema";
 import type { PlanName } from "../drizzle/schema";
 import { notifyOwner } from "./_core/notification";
 import { createAdminNotification } from "./adminNotificationDb";
+import { sendAdminEmail } from "./emailNotification";
 
 function getStripe(): Stripe {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -275,6 +276,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       const notifTitle = `New Subscription: ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} Plan`;
       const notifContent = `A user has subscribed to the ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} plan.\n\nUser: ${userName}\nEmail: ${userEmail}\nBilling: ${billingLabel}\nSubscription ID: ${subscription.id}`;
       await notifyOwner({ title: notifTitle, content: notifContent });
+      await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "subscription_new" });
       await createAdminNotification({
         type: "subscription_new",
         title: notifTitle,
@@ -330,6 +332,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     const notifTitle = `Subscription Canceled: ${previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1)} Plan`;
     const notifContent = `A user has canceled their subscription.\n\nUser: ${userName}\nEmail: ${userEmail}\nPrevious Plan: ${previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1)}\nCancellation Reason: ${cancelReason}\nFeedback: ${cancelFeedback}\nSubscription ID: ${subscription.id}`;
     await notifyOwner({ title: notifTitle, content: notifContent });
+    await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "subscription_canceled" });
     await createAdminNotification({
       type: "subscription_canceled",
       title: notifTitle,
@@ -401,6 +404,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     const notifTitle = "Payment Failed";
     const notifContent = `A payment has failed for a subscriber.\n\nUser: ${userName}\nEmail: ${userEmail}\nAmount Due: ${amountDue}\nInvoice ID: ${invoice.id}\n\nThe user's subscription status has been set to past_due. They may need to update their payment method.`;
     await notifyOwner({ title: notifTitle, content: notifContent });
+    await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "payment_failed" });
     await createAdminNotification({
       type: "payment_failed",
       title: notifTitle,
