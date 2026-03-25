@@ -1360,3 +1360,11 @@
 - [x] Update pricing page UI
 - [x] Update credit allocation logic
 - [x] Update tests for new pricing
+
+## Subscription Cancellation Notification
+- [x] Add subscription_canceled notification in Stripe webhook when user cancels
+- [x] Include user details, plan tier, and cancellation reason in notification
+- [x] Write tests for cancellation notification
+
+## Payment Error Fix
+- [x] Investigate and fix payment errors when subscribing (stale Stripe customer ID - added retry without old customer)

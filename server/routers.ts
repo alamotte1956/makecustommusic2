@@ -1579,8 +1579,22 @@ RULES:
         // Allow promotion codes for discounts
         sessionParams.allow_promotion_codes = true;
 
-        const session = await stripe.checkout.sessions.create(sessionParams);
-        return { url: session.url, sessionId: session.id };
+        try {
+          const session = await stripe.checkout.sessions.create(sessionParams);
+          return { url: session.url, sessionId: session.id };
+        } catch (err: any) {
+          // If the stored Stripe customer ID is invalid/deleted, retry without it
+          if (err?.code === "resource_missing" || err?.message?.includes("No such customer")) {
+            console.warn(`[Stripe] Stale customer ID ${existingSub?.stripeCustomerId} for user ${ctx.user.id}, retrying without it`);
+            delete sessionParams.customer;
+            if (ctx.user.email) {
+              sessionParams.customer_email = ctx.user.email;
+            }
+            const session = await stripe.checkout.sessions.create(sessionParams);
+            return { url: session.url, sessionId: session.id };
+          }
+          throw err;
+        }
       }),
 
     // Create a Stripe Customer Portal session for billing management
@@ -1597,12 +1611,18 @@ RULES:
           throw new Error("No billing account found. Please subscribe to a plan first.");
         }
 
-        const session = await stripe.billingPortal.sessions.create({
-          customer: sub.stripeCustomerId,
-          return_url: input.returnUrl,
-        });
-
-        return { url: session.url };
+        try {
+          const session = await stripe.billingPortal.sessions.create({
+            customer: sub.stripeCustomerId,
+            return_url: input.returnUrl,
+          });
+          return { url: session.url };
+        } catch (err: any) {
+          if (err?.code === "resource_missing" || err?.message?.includes("No such customer")) {
+            throw new Error("Your billing account could not be found. Please contact support or re-subscribe.");
+          }
+          throw err;
+        }
       }),
 
     // Check if Stripe is configured

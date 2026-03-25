@@ -299,6 +299,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     return;
   }
 
+  // Get the user's current plan before downgrading
+  const existingSub = await getUserSubscription(userId);
+  const previousPlan = existingSub?.plan ?? "unknown";
+
   // Downgrade to free plan
   await upsertSubscription(userId, {
     plan: "free",
@@ -308,6 +312,34 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   });
 
   console.log(`[Stripe Webhook] Subscription canceled for user ${userId}, downgraded to free`);
+
+  // Notify owner about subscription cancellation
+  try {
+    const db = await getDb();
+    let userName = "Unknown";
+    let userEmail = "Unknown";
+    if (db) {
+      const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (u) {
+        userName = u.name ?? "Unknown";
+        userEmail = u.email ?? "Unknown";
+      }
+    }
+    const cancelReason = (subscription as any).cancellation_details?.reason ?? "not provided";
+    const cancelFeedback = (subscription as any).cancellation_details?.feedback ?? "none";
+    const notifTitle = `Subscription Canceled: ${previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1)} Plan`;
+    const notifContent = `A user has canceled their subscription.\n\nUser: ${userName}\nEmail: ${userEmail}\nPrevious Plan: ${previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1)}\nCancellation Reason: ${cancelReason}\nFeedback: ${cancelFeedback}\nSubscription ID: ${subscription.id}`;
+    await notifyOwner({ title: notifTitle, content: notifContent });
+    await createAdminNotification({
+      type: "subscription_canceled",
+      title: notifTitle,
+      content: notifContent,
+      relatedUserId: userId,
+      metadata: { previousPlan, cancelReason, cancelFeedback, subscriptionId: subscription.id },
+    });
+  } catch (err) {
+    console.warn("[Stripe Webhook] Failed to send cancellation notification:", err);
+  }
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
