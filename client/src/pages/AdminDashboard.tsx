@@ -24,8 +24,10 @@ import {
   Plus,
   Minus,
   AlertTriangle,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import AdminNotificationCenter from "@/components/AdminNotificationCenter";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -507,14 +509,22 @@ export default function AdminDashboard() {
   return (
     <div className="container py-8 space-y-8">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Shield className="w-6 h-6 text-violet-500" />
-          Admin Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Manage users, track revenue, and monitor site activity.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Shield className="w-6 h-6 text-violet-500" />
+            Admin Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage users, track revenue, and monitor site activity.
+          </p>
+        </div>
+        <Link href="/admin/settings">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Settings className="w-4 h-4" />
+            Settings
+          </Button>
+        </Link>
       </div>
 
       {/* Revenue Cards */}

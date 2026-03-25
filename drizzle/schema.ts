@@ -303,3 +303,15 @@ export const adminNotifications = mysqlTable("admin_notifications", {
 
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 export type InsertAdminNotification = typeof adminNotifications.$inferInsert;
+
+// ─── Admin Notification Preferences ────────────────────────────────────────
+export const adminNotificationPreferences = mysqlTable("admin_notification_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  notificationType: mysqlEnum("notificationType", ["subscription_new", "payment_failed", "subscription_canceled"]).notNull(),
+  emailEnabled: boolean("emailEnabled").default(true).notNull(),
+  inAppEnabled: boolean("inAppEnabled").default(true).notNull(),
+  pushEnabled: boolean("pushEnabled").default(false).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AdminNotificationPreference = typeof adminNotificationPreferences.$inferSelect;
+export type InsertAdminNotificationPreference = typeof adminNotificationPreferences.$inferInsert;

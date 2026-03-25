@@ -36,6 +36,7 @@ const Blog = lazy(() => import("./pages/Blog"));
 const Mp3ToSheetMusic = lazy(() => import("./pages/Mp3ToSheetMusic"));
 const BlogArticle = lazy(() => import("./pages/BlogArticle"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const SheetMusicDebug = lazy(() => import("./pages/SheetMusicDebug"));
 
@@ -76,6 +77,7 @@ function Router() {
         <Route path={"/blog/:slug"} component={BlogArticle} />
         <Route path={"/debug-sheet"} component={SheetMusicDebug} />
         <Route path={"/admin"} component={AdminDashboard} />
+        <Route path={"/admin/settings"} component={AdminSettings} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
       </Switch>

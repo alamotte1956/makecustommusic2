@@ -141,6 +141,13 @@
       "when": 1774441149941,
       "tag": "0019_narrow_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1774447368694,
+      "tag": "0020_premium_reavers",
+      "breakpoints": true
     }
   ]
 }

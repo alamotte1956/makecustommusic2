@@ -10,6 +10,7 @@ import type { PlanName } from "../drizzle/schema";
 import { notifyOwner } from "./_core/notification";
 import { createAdminNotification } from "./adminNotificationDb";
 import { sendAdminEmail } from "./emailNotification";
+import { getPreferenceForType } from "./adminPreferencesDb";
 
 function getStripe(): Stripe {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -275,15 +276,22 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       const billingLabel = billingCycle === "annual" ? "yearly" : "monthly";
       const notifTitle = `New Subscription: ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} Plan`;
       const notifContent = `A user has subscribed to the ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} plan.\n\nUser: ${userName}\nEmail: ${userEmail}\nBilling: ${billingLabel}\nSubscription ID: ${subscription.id}`;
-      await notifyOwner({ title: notifTitle, content: notifContent });
-      await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "subscription_new" });
-      await createAdminNotification({
-        type: "subscription_new",
-        title: notifTitle,
-        content: notifContent,
-        relatedUserId: userId,
-        metadata: { planTier, billingCycle: billingLabel, subscriptionId: subscription.id },
-      });
+      const subNewPref = await getPreferenceForType("subscription_new");
+      if (subNewPref.pushEnabled) {
+        await notifyOwner({ title: notifTitle, content: notifContent });
+      }
+      if (subNewPref.emailEnabled) {
+        await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "subscription_new" });
+      }
+      if (subNewPref.inAppEnabled) {
+        await createAdminNotification({
+          type: "subscription_new",
+          title: notifTitle,
+          content: notifContent,
+          relatedUserId: userId,
+          metadata: { planTier, billingCycle: billingLabel, subscriptionId: subscription.id },
+        });
+      }
     } catch (err) {
       console.warn("[Stripe Webhook] Failed to send subscription notification:", err);
     }
@@ -331,15 +339,22 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     const cancelFeedback = (subscription as any).cancellation_details?.feedback ?? "none";
     const notifTitle = `Subscription Canceled: ${previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1)} Plan`;
     const notifContent = `A user has canceled their subscription.\n\nUser: ${userName}\nEmail: ${userEmail}\nPrevious Plan: ${previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1)}\nCancellation Reason: ${cancelReason}\nFeedback: ${cancelFeedback}\nSubscription ID: ${subscription.id}`;
-    await notifyOwner({ title: notifTitle, content: notifContent });
-    await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "subscription_canceled" });
-    await createAdminNotification({
-      type: "subscription_canceled",
-      title: notifTitle,
-      content: notifContent,
-      relatedUserId: userId,
-      metadata: { previousPlan, cancelReason, cancelFeedback, subscriptionId: subscription.id },
-    });
+    const cancelPref = await getPreferenceForType("subscription_canceled");
+    if (cancelPref.pushEnabled) {
+      await notifyOwner({ title: notifTitle, content: notifContent });
+    }
+    if (cancelPref.emailEnabled) {
+      await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "subscription_canceled" });
+    }
+    if (cancelPref.inAppEnabled) {
+      await createAdminNotification({
+        type: "subscription_canceled",
+        title: notifTitle,
+        content: notifContent,
+        relatedUserId: userId,
+        metadata: { previousPlan, cancelReason, cancelFeedback, subscriptionId: subscription.id },
+      });
+    }
   } catch (err) {
     console.warn("[Stripe Webhook] Failed to send cancellation notification:", err);
   }
@@ -403,15 +418,22 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       : "Unknown";
     const notifTitle = "Payment Failed";
     const notifContent = `A payment has failed for a subscriber.\n\nUser: ${userName}\nEmail: ${userEmail}\nAmount Due: ${amountDue}\nInvoice ID: ${invoice.id}\n\nThe user's subscription status has been set to past_due. They may need to update their payment method.`;
-    await notifyOwner({ title: notifTitle, content: notifContent });
-    await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "payment_failed" });
-    await createAdminNotification({
-      type: "payment_failed",
-      title: notifTitle,
-      content: notifContent,
-      relatedUserId: userId,
-      metadata: { amountDue, invoiceId: invoice.id, customerId },
-    });
+    const failPref = await getPreferenceForType("payment_failed");
+    if (failPref.pushEnabled) {
+      await notifyOwner({ title: notifTitle, content: notifContent });
+    }
+    if (failPref.emailEnabled) {
+      await sendAdminEmail({ subject: notifTitle, body: notifContent, type: "payment_failed" });
+    }
+    if (failPref.inAppEnabled) {
+      await createAdminNotification({
+        type: "payment_failed",
+        title: notifTitle,
+        content: notifContent,
+        relatedUserId: userId,
+        metadata: { amountDue, invoiceId: invoice.id, customerId },
+      });
+    }
   } catch (err) {
     console.warn("[Stripe Webhook] Failed to send payment failure notification:", err);
   }

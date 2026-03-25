@@ -2025,6 +2025,26 @@ RULES:
         await deleteNotification(input.id);
         return { success: true };
       }),
+
+    // Notification preferences
+    getNotificationPreferences: adminProcedure
+      .query(async () => {
+        const { getNotificationPreferences } = await import("./adminPreferencesDb");
+        return getNotificationPreferences();
+      }),
+
+    updateNotificationPreference: adminProcedure
+      .input(z.object({
+        notificationType: z.enum(["subscription_new", "payment_failed", "subscription_canceled"]),
+        emailEnabled: z.boolean().optional(),
+        inAppEnabled: z.boolean().optional(),
+        pushEnabled: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { updateNotificationPreference } = await import("./adminPreferencesDb");
+        const { notificationType, ...updates } = input;
+        return updateNotificationPreference(notificationType, updates);
+      }),
   }),
 });
 

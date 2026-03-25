@@ -1373,3 +1373,13 @@
 - [x] Implement email sending for payment failure notifications
 - [x] Implement email sending for subscription cancellation notifications
 - [x] Write tests for email forwarding
+
+## Admin Notification Settings Page
+- [x] Create admin_notification_preferences database table
+- [x] Push database migration
+- [x] Create DB helpers for getting/updating notification preferences
+- [x] Create tRPC procedures for reading and updating preferences
+- [x] Build admin settings UI page with toggles for each notification type and channel
+- [x] Add settings link/tab in admin dashboard navigation
+- [x] Integrate preferences check into webhook notification dispatch
+- [x] Write tests for notification preferences
