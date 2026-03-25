@@ -1404,3 +1404,20 @@
 
 ## Bright White Typeface
 - [x] Update all text to bright white (#ffffff) on dark backgrounds and very black (#000000) on light backgrounds
+
+## Persistent Left Sidebar Navigation
+- [ ] Create SidebarLayout component for logged-in users (Suno-style)
+- [ ] Add sidebar nav items: Create, Library/History, Favorites, Albums, Discover
+- [ ] Add user profile section at bottom of sidebar with avatar, name, logout
+- [ ] Add admin link in sidebar for admin users
+- [ ] Keep top nav Layout for non-authenticated visitors
+- [ ] Switch between top nav and sidebar layout based on auth state
+- [ ] Make sidebar collapsible on mobile (hamburger toggle)
+- [ ] Ensure queue player works with sidebar layout
+- [ ] Write tests for sidebar layout
+
+## Pricing Page Text Fix
+- [x] Fix pricing page text colors to be bright white on dark background
+
+## Landing Page Title Update
+- [x] Change hero title to "Make any Song you can Imagine"

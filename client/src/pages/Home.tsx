@@ -60,10 +60,10 @@ export default function Home() {
         <div className="container relative py-16 md:py-24">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white leading-[1.05]">
-              Make a{" "}
-              <span className="suno-gradient-text">song</span>
-              {" "}about{" "}
-              <span className="text-white/80">anything</span>
+              Make any{" "}
+              <span className="suno-gradient-text">Song</span>
+              {" "}you can{" "}
+              <span className="text-white/80">Imagine</span>
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed">
               Describe the music you imagine, and our AI will compose it for you instantly.

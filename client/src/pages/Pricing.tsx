@@ -80,7 +80,7 @@ export default function Pricing() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-fuchsia-500/5" />
         <div className="relative max-w-7xl mx-auto px-4 pt-20 pb-16 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
             Simple, Transparent Pricing
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -108,7 +108,7 @@ export default function Pricing() {
               }`}
             >
               Annual
-              <span className="ml-1.5 text-xs text-violet-600 font-semibold">Save 20%</span>
+              <span className="ml-1.5 text-xs text-violet-400 font-semibold">Save 20%</span>
             </button>
           </div>
         </div>
@@ -140,11 +140,11 @@ export default function Pricing() {
 
                 {/* Plan header */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 rounded-lg ${plan.popular ? "bg-violet-100 text-violet-600" : "bg-muted text-muted-foreground"}`}>
+                  <div className={`p-2 rounded-lg ${plan.popular ? "bg-violet-500/20 text-violet-300" : "bg-muted text-muted-foreground"}`}>
                     {planIcons[plan.id]}
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg text-black">{plan.name}</h3>
+                    <h3 className="font-bold text-lg text-white">{plan.name}</h3>
                     <p className="text-xs text-muted-foreground">{plan.tagline}</p>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ export default function Pricing() {
                 {/* Price */}
                 <div className="mb-6">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-black">
+                    <span className="text-4xl font-bold text-white">
                       ${price}
                     </span>
                     {plan.monthlyPrice > 0 && (
@@ -200,7 +200,7 @@ export default function Pricing() {
                 <ul className="space-y-3 flex-1">
                   {plan.features.map((feature: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-violet-600 mt-0.5 shrink-0" />
+                      <Check className="h-4 w-4 text-violet-400 mt-0.5 shrink-0" />
                       <span className="text-foreground">{feature}</span>
                     </li>
                   ))}
@@ -212,7 +212,7 @@ export default function Pricing() {
 
         {/* FAQ */}
         <div className="mt-20 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-black text-center mb-8">Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold text-white text-center mb-8">Frequently Asked Questions</h2>
           <div className="space-y-6">
             {[
               {
@@ -249,7 +249,7 @@ export default function Pricing() {
               },
             ].map((faq, i) => (
               <div key={i} className="border-b pb-4">
-                <h3 className="font-semibold text-black">{faq.q}</h3>
+                <h3 className="font-semibold text-white">{faq.q}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{faq.a}</p>
               </div>
             ))}
