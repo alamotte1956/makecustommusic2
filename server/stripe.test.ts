@@ -34,14 +34,14 @@ describe("stripeProducts", () => {
     }
   });
 
-  it("creator plan should cost $19.99/mo", async () => {
+  it("creator (Pro) plan should cost $8/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1999);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(800);
   });
 
-  it("professional plan should cost $34.99/mo", async () => {
+  it("professional (Premier) plan should cost $24/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(3499);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2400);
   });
 
   describe("getPlanFromMetadata", () => {
@@ -105,9 +105,9 @@ describe("Stripe-credits integration", () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
     const { PLAN_LIMITS } = await import("../drizzle/schema");
 
-    // Creator: 30 credits
+    // Pro: 500 credits
     expect(parseInt(STRIPE_PLANS.creator.metadata.monthly_credits)).toBe(PLAN_LIMITS.creator.monthlyCredits);
-    // Professional: 60 credits
+    // Premier: 2000 credits
     expect(parseInt(STRIPE_PLANS.professional.metadata.monthly_credits)).toBe(PLAN_LIMITS.professional.monthlyCredits);
   });
 });

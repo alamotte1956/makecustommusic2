@@ -219,25 +219,25 @@ describe("Admin nav unread badge", () => {
 
 // ─── Pricing update tests ──────────────────────────────────────────────────
 
-describe("competitive pricing with free credits", () => {
-  it("creator plan should be $19.99/mo", async () => {
+describe("competitive pricing matching Suno tiers", () => {
+  it("Pro (creator) plan should be $8/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1999);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(800);
   });
 
-  it("professional plan should be $34.99/mo", async () => {
+  it("Premier (professional) plan should be $24/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(3499);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2400);
   });
 
-  it("creator annual should be $192/yr", async () => {
+  it("Pro annual should be $72/yr (saves $24)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.annual).toBe(19200);
+    expect(STRIPE_PLANS.creator.prices.annual).toBe(7200);
   });
 
-  it("professional annual should be $336/yr", async () => {
+  it("Premier annual should be $216/yr (saves $72)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.annual).toBe(33600);
+    expect(STRIPE_PLANS.professional.prices.annual).toBe(21600);
   });
 
   it("webhook should award 2 free bonus credits on new subscription", () => {
@@ -249,11 +249,14 @@ describe("competitive pricing with free credits", () => {
     expect(webhookContent).toContain("Welcome bonus: 2 free credits");
   });
 
-  it("allPlans should mention 2 free bonus credits in features", () => {
+  it("allPlans should list Suno-matching features", () => {
     const routerContent = fs.readFileSync(
       path.resolve(__dirname, "routers.ts"),
       "utf-8"
     );
-    expect(routerContent).toContain("2 free bonus credits on signup");
+    expect(routerContent).toContain("2,500 credits (up to 500 songs)");
+    expect(routerContent).toContain("10,000 credits (up to 2,000 songs)");
+    expect(routerContent).toContain("Commercial use rights for new songs made");
+    expect(routerContent).toContain("Priority queue, up to 10 songs at once");
   });
 });

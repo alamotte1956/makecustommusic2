@@ -1472,3 +1472,8 @@
 - [x] Spell out "Make Custom Music" in full everywhere (no abbreviations like MCM)
 - [x] Generate revised Terms of Service incorporating comparison report recommendations (arbitration clause, anti-competition, service discontinuation refund, free tier limits, marketing opt-out, storage limits, updated pricing)
 - [x] Use consistent typeface/font for website name "Make Custom Music" in upper left corner across all layouts (desktop sidebar, mobile header, mobile menu, visitor nav)
+- [x] Update Pricing page to match Suno's exact feature lists and prices (Pro $8/mo, Premier $24/mo)
+- [x] Update Pro plan features: Access to latest v5 model, 2500 credits (500 songs), commercial use rights, Standard + Pro features (personas and advanced editing), split songs into 12 stems, upload 8 min audio, add vocals/instrumentals to existing songs, early access, add-on credits, priority queue up to 10 songs
+- [x] Update Premier plan features: Access to Suno Studio, all Pro features plus 10000 credits (2000 songs), same feature list with Studio access highlighted
+- [x] Update stripe products and backend plan definitions to match new pricing ($8/mo Pro, $24/mo Premier)
+- [x] Update Terms of Service pricing table to match new prices

@@ -1,8 +1,7 @@
 /**
  * Stripe Products & Prices Configuration
  * 
- * Two subscription tiers: Creator and Professional.
- * Competitively priced below major competitors (AIVA Pro $49/mo, Soundraw $50/mo).
+ * Two subscription tiers: Pro and Premier (matching Suno pricing).
  * Each new subscription includes 2 free bonus credits.
  * 
  * Price IDs will be created dynamically on first use if they don't exist,
@@ -31,28 +30,28 @@ export interface StripePlan {
 export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
   creator: {
     id: "creator",
-    name: "Creator",
-    description: "50 songs/month, unlimited sheet music, 192kbps MP3, commercial use for social media, 2 free bonus credits",
+    name: "Pro",
+    description: "500 songs/month, commercial use rights, personas & advanced editing, stem separation, 8 min audio uploads, priority queue",
     prices: {
-      monthly: 1999,   // $19.99/mo
-      annual: 19200,   // $192/yr ($16/mo — 20% savings)
+      monthly: 800,    // $8/mo
+      annual: 7200,    // $72/yr ($6/mo — saves $24/yr)
     },
     metadata: {
       plan_tier: "creator",
-      monthly_credits: "50",
+      monthly_credits: "500",
     },
   },
   professional: {
     id: "professional",
-    name: "Professional",
-    description: "100 songs/month, unlimited sheet music, 192kbps MP3, full commercial rights, stem separation, MIDI export, 2 free bonus credits",
+    name: "Premier",
+    description: "2,000 songs/month, access to Studio, all Pro features, 10,000 credits, early access to new features",
     prices: {
-      monthly: 3499,   // $34.99/mo
-      annual: 33600,   // $336/yr ($28/mo — 20% savings)
+      monthly: 2400,   // $24/mo
+      annual: 21600,   // $216/yr ($18/mo — saves $72/yr)
     },
     metadata: {
       plan_tier: "professional",
-      monthly_credits: "100",
+      monthly_credits: "2000",
     },
   },
 };

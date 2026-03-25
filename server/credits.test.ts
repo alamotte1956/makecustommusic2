@@ -12,19 +12,19 @@ describe("Credits Module", () => {
       expect(limits.audioQuality).toBe("128kbps");
     });
 
-    it("returns correct limits for creator plan", () => {
+    it("returns correct limits for creator (Pro) plan", () => {
       const limits = getPlanLimits("creator");
       expect(limits).toEqual(PLAN_LIMITS.creator);
-      expect(limits.monthlyCredits).toBe(50);
-      expect(limits.dailySongLimit).toBe(15);
+      expect(limits.monthlyCredits).toBe(500);
+      expect(limits.dailySongLimit).toBe(50);
       expect(limits.audioQuality).toBe("192kbps");
     });
 
-    it("returns correct limits for professional plan", () => {
+    it("returns correct limits for professional (Premier) plan", () => {
       const limits = getPlanLimits("professional");
       expect(limits).toEqual(PLAN_LIMITS.professional);
-      expect(limits.monthlyCredits).toBe(100);
-      expect(limits.dailySongLimit).toBe(30);
+      expect(limits.monthlyCredits).toBe(2000);
+      expect(limits.dailySongLimit).toBe(100);
     });
   });
 

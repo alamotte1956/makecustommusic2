@@ -38,6 +38,11 @@ export default function Pricing() {
     professional: <Crown className="h-6 w-6" />,
   };
 
+  const annualSavings: Record<string, number> = {
+    creator: 24,      // $8*12 - $72 = $24
+    professional: 72,  // $24*12 - $216 = $72
+  };
+
   const planColors: Record<string, string> = {
     creator: "border-violet-500 ring-2 ring-violet-500/20",
     professional: "border-violet-600",
@@ -160,10 +165,13 @@ export default function Pricing() {
                     )}
                   </div>
                   {billingCycle === "annual" && plan.annualPrice > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ${totalAnnual}/year billed annually
+                    <p className="text-xs text-green-400 mt-1">
+                      Saves ${annualSavings[plan.id] ?? 0} by billing yearly!
                     </p>
                   )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Taxes calculated at checkout
+                  </p>
 
                 </div>
 
@@ -217,19 +225,19 @@ export default function Pricing() {
             {[
               {
                 q: "What counts as a credit?",
-                a: "Each song generation costs 1 credit. Sheet music, chord progressions, and MP3-to-sheet-music conversions are free on paid plans.",
+                a: "Each song generation costs approximately 5 credits. The Pro plan gives you 2,500 credits (up to 500 songs) and Premier gives you 10,000 credits (up to 2,000 songs) per month.",
               },
               {
                 q: "Do unused credits roll over?",
-                a: "Monthly credits reset each billing cycle. Upgrade to Professional for 100 songs/month.",
+                a: "Monthly credits refresh each billing cycle and do not roll over. Both paid plans allow you to purchase add-on credits if you need more.",
               },
               {
                 q: "Can I use the music commercially?",
-                a: "Creator plan includes personal and social media rights. Professional plan includes full commercial rights including sync licensing.",
+                a: "Both Pro and Premier plans include commercial use rights for all new songs you create. Free tier songs are for personal use only.",
               },
               {
-                q: "What audio formats are supported?",
-                a: "All plans export MP3 at 192kbps. Professional plan also includes stem separation and MIDI export.",
+                q: "What's the difference between Pro and Premier?",
+                a: "Premier includes everything in Pro plus access to Make Custom Music Studio, 10,000 credits (up to 2,000 songs) per month instead of 2,500, and early access to new features.",
               },
               {
                 q: "Who owns the music I create?",
