@@ -122,7 +122,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-2.5 no-underline shrink-0">
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp"
-              alt="MakeCustomMusic logo"
+              alt="Make Custom Music logo"
               width={40}
               height={40}
               className="w-10 h-10 rounded-lg object-contain"
@@ -132,7 +132,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }}
             />
             <span className="text-base font-bold text-white tracking-tight uppercase">
-              MakeCustomMusic
+              MAKE CUSTOM MUSIC
             </span>
           </Link>
 
