@@ -1394,3 +1394,10 @@
 - [x] Redesign history/library page to match Suno library (global theme applies)
 - [x] Update all page backgrounds, cards, and components to match Suno
 - [x] Verify visual consistency across all pages
+
+## FAQ Section Update
+- [x] Update FAQ content to reflect current pricing ($19.99/$34.99)
+- [x] Update FAQ to reflect 2 free bonus credits with subscriptions
+- [x] Update FAQ to match current features (Custom Mode, AI lyrics, albums, etc.)
+- [x] Update FAQ styling to match new Suno dark theme
+- [x] Update support email to gs@safarilegacy.org

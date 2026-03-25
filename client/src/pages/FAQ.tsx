@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { HelpCircle, Music, CreditCard, Shield, Headphones, FileText } from "lucide-react";
+import { HelpCircle, Music, CreditCard, Shield, Headphones, FileText, Sparkles } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import {
   Accordion,
@@ -11,85 +11,101 @@ import {
 const faqCategories = [
   {
     title: "Getting Started",
-    icon: <Music className="h-5 w-5 text-violet-600" />,
+    icon: <Music className="h-5 w-5" />,
     items: [
       {
         q: "What is Make Custom Music?",
-        a: "Make Custom Music is an AI-powered music generation platform. Describe the music you imagine — choose a genre, mood, and vocal style — and our AI composes a unique song for you in seconds. You can download it as MP3, view sheet music, and organize songs into albums.",
+        a: "Make Custom Music is an AI-powered music generation platform. Describe the music you imagine — choose a genre, mood, and vocal style — and our AI composes a unique, full-production song for you in seconds. You can download it as MP3, view sheet music, organize songs into albums, and share them publicly.",
       },
       {
         q: "How do I create my first song?",
-        a: "Click 'Create Music' in the navigation bar. Enter a description of the song you want (e.g., 'upbeat indie rock anthem about chasing dreams'), select a genre, mood, and vocal type, then click 'Generate Song'. Your song will be ready in 30–120 seconds.",
+        a: "Click 'Create Music' in the navigation bar. You have two modes: Simple Mode — enter a description (e.g., 'upbeat indie rock anthem about chasing dreams'), select a genre, mood, vocal type, and duration, then click 'Generate Song'. Custom Mode — write or generate your own lyrics, add style tags, and set a custom title for full creative control. Your song will be ready in 30–120 seconds.",
       },
       {
         q: "Do I need an account to use the service?",
-        a: "You can browse the Discover page without an account, but generating songs, saving favorites, and creating albums requires you to log in.",
+        a: "You can browse the Discover page to listen to community songs without an account. However, generating songs, saving favorites, creating albums, and downloading music requires you to sign in.",
       },
       {
         q: "What genres and moods are available?",
         a: "We support a wide range of genres including Pop, Rock, Hip-Hop, Jazz, Classical, Electronic, Country, R&B, and an extensive Christian music family: Christian (CCM), Gospel, Christian Modern, Christian Pop, Christian Rock, Christian Hip Hop, Southern Gospel, Hymns, Praise & Worship, and Christian R&B. Moods range from Energetic and Happy to Melancholic, Calm, Dramatic, Romantic, Uplifting, Devotional, and Triumphant.",
       },
+      {
+        q: "What is Custom Mode?",
+        a: "Custom Mode gives you full creative control over your song. You can write your own lyrics (or use our AI Lyrics Generator to create them from a topic), add style tags to guide the genre and feel (e.g., 'synthwave, male vocals, slow tempo'), and set a custom title. It's perfect for artists who want a specific vision brought to life.",
+      },
+      {
+        q: "What is the AI Lyrics Generator?",
+        a: "In Custom Mode, you can enter a subject or topic and click 'Generate Lyrics' to have our AI write complete song lyrics for you. The lyrics are automatically placed in the lyrics field, and you can edit them before generating the song.",
+      },
     ],
   },
   {
-    title: "Plans & Credits",
-    icon: <CreditCard className="h-5 w-5 text-violet-600" />,
+    title: "Plans & Pricing",
+    icon: <CreditCard className="h-5 w-5" />,
     items: [
       {
-        q: "What does the Free plan include?",
-        a: "The Free plan gives you 2 songs per month, 1 sheet music per month, 128kbps MP3 quality, and personal use only. It's a great way to try the platform before upgrading.",
+        q: "What plans do you offer?",
+        a: "We offer two subscription plans: Creator ($19.99/month or $192/year) with 50 credits per month, unlimited sheet music, 192kbps MP3 quality, and commercial use for social media. Professional ($34.99/month or $336/year) with 100 credits per month, unlimited sheet music, 192kbps MP3 quality, full commercial rights, stem separation, and MIDI export. Both plans include 2 free bonus credits when you first subscribe.",
       },
       {
-        q: "What are the paid plans?",
-        a: "We offer three paid tiers: Creator ($8/mo) with 125 songs and commercial use for social media, Professional ($19/mo) with 500 songs and full commercial rights, and Studio ($39/mo) with 2,500 songs and full commercial + sync licensing. All paid plans include unlimited sheet music and 192kbps MP3 quality.",
+        q: "What are credits and how do they work?",
+        a: "Each song generation costs 1 credit. Credits are allocated monthly based on your plan — 50 credits for Creator and 100 credits for Professional. Sheet music generation, chord progressions, and AI lyrics generation are included with your plan at no additional credit cost.",
       },
       {
-        q: "What counts as a credit?",
-        a: "Each song generation costs 1 credit. Sheet music and chord progression generation are included with your plan (limited on Free, unlimited on paid plans).",
+        q: "Do I get any free credits when I subscribe?",
+        a: "Yes! When you first subscribe to either the Creator or Professional plan, you receive 2 free bonus credits on top of your monthly allocation. This lets you start creating right away.",
       },
       {
         q: "Do unused credits roll over?",
-        a: "Monthly credits reset each billing cycle. If you need more songs, upgrade to a higher plan for a larger monthly allowance.",
+        a: "Monthly credits reset each billing cycle. If you consistently need more songs, consider upgrading to the Professional plan for a larger monthly allowance.",
+      },
+      {
+        q: "Can I save money with annual billing?",
+        a: "Yes, annual billing saves you approximately 20% compared to monthly billing. Creator is $192/year ($16/month effective) and Professional is $336/year ($28/month effective).",
       },
       {
         q: "Can I cancel my subscription anytime?",
-        a: "Yes, you can cancel at any time from the Usage Dashboard. You'll retain access to your current plan until the end of your billing period. Your generated songs remain accessible after cancellation.",
+        a: "Yes, you can cancel at any time from the Usage Dashboard. You'll retain access to your current plan and remaining credits until the end of your billing period. All your generated songs remain accessible after cancellation.",
       },
     ],
   },
   {
     title: "Audio & Quality",
-    icon: <Headphones className="h-5 w-5 text-violet-600" />,
+    icon: <Headphones className="h-5 w-5" />,
     items: [
       {
         q: "What audio format are songs exported in?",
-        a: "All songs are exported as MP3 files. Free plan songs are at 128kbps quality, while all paid plans provide 192kbps quality.",
+        a: "All songs are exported as high-quality MP3 files at 192kbps. Files are compatible with all major players including Safari, iTunes, and standard MP3 players on Mac, Windows, Android, and iOS.",
       },
       {
         q: "How long can a generated song be?",
-        a: "Songs can be generated up to 120 seconds in length. You can choose shorter durations (30s, 60s, 90s) when creating your song.",
+        a: "Songs can be generated from 15 seconds up to 4 minutes in length. Use the duration slider when creating your song to choose your preferred length.",
       },
       {
         q: "Can I choose between male and female vocals?",
-        a: "Yes, you can select Male, Female, or No Vocals (instrumental only) when generating a song.",
+        a: "Yes, you can select Male Singer, Female Singer, Both Singers, or Instrumental (no vocals) when generating a song. The vocal type selection is available in both Simple and Custom modes.",
       },
       {
-        q: "What is the Studio feature?",
-        a: "The Studio lets you add vocals to your generated instrumental tracks using text-to-speech synthesis. Write or paste lyrics, choose a voice, and the system will produce a vocal track mixed with your instrumental.",
+        q: "Can I play songs offline on my phone?",
+        a: "Yes! Make Custom Music is a Progressive Web App (PWA). Install it on your phone by tapping 'Add to Home Screen' in your browser. Once installed, recently played songs are cached for offline playback — up to 50 songs are stored locally.",
+      },
+      {
+        q: "What is the queue player?",
+        a: "The queue player lets you play songs sequentially. Use 'Play All' on your History, Favorites, or Album pages to load all songs into a playlist. You can skip forward/back, shuffle, and the player persists at the bottom of the screen as you browse.",
       },
     ],
   },
   {
     title: "Sheet Music & Chords",
-    icon: <FileText className="h-5 w-5 text-violet-600" />,
+    icon: <FileText className="h-5 w-5" />,
     items: [
       {
         q: "How does sheet music generation work?",
-        a: "After generating a song, you can request sheet music which creates a musical notation representation of your track. This includes melody lines, chord symbols, and basic arrangement information.",
+        a: "After generating a song, you can request sheet music which creates a musical notation representation of your track. This includes melody lines, chord symbols, and basic arrangement information. You can also print the sheet music directly from the viewer.",
       },
       {
         q: "Can I transpose sheet music?",
-        a: "Yes, the sheet music viewer includes a transpose feature that lets you shift the key up or down by any number of semitones.",
+        a: "Yes, the sheet music viewer includes a transpose feature that lets you shift the key up or down by any number of semitones — useful for adapting songs to your vocal range or instrument.",
       },
       {
         q: "Are chord progressions included?",
@@ -98,42 +114,76 @@ const faqCategories = [
     ],
   },
   {
-    title: "Licensing & Commercial Use",
-    icon: <Shield className="h-5 w-5 text-violet-600" />,
+    title: "Features & Organization",
+    icon: <Sparkles className="h-5 w-5" />,
     items: [
       {
-        q: "Can I use generated music commercially?",
-        a: "It depends on your plan. Free plan songs are for personal use only. Creator plan includes rights for personal and social media use. Professional and Studio plans include full commercial rights, with Studio adding sync licensing for film, TV, and advertising.",
+        q: "How do albums work?",
+        a: "You can create albums to organize your songs into collections. Add songs to albums, reorder tracks with drag-and-drop, generate AI album cover art, and download the entire album as a ZIP file. Albums can also be shared publicly on the Discover page.",
       },
       {
-        q: "Do I own the music I generate?",
-        a: "You receive a license to use the generated music according to your plan tier. The specific rights and limitations are detailed in our Terms of Service.",
+        q: "Can I edit my songs after generating them?",
+        a: "Yes, you can edit the title, lyrics, genre, mood, and style tags of any song at any time. Click the edit button on any song card in your History, Favorites, or Album pages. You can also rename songs by clicking directly on the title.",
+      },
+      {
+        q: "How does sharing work?",
+        a: "Each song has a unique share link. Click the share button on any song to copy a public link that anyone can use to listen — no account required. Share links provide playback, download, and sheet music viewing.",
+      },
+      {
+        q: "What is the Discover page?",
+        a: "The Discover page showcases songs and albums that users have published to the community. Browse, listen, and get inspired by what others are creating. You can publish your own songs and albums to Discover from their detail pages.",
       },
       {
         q: "Can I upload my own music?",
         a: "Yes, the Upload feature lets you add your own MP3 files to your library. Uploaded songs can be organized into albums alongside AI-generated tracks.",
       },
+      {
+        q: "How do favorites work?",
+        a: "Click the heart icon on any song to add it to your Favorites. Your Favorites page gives you quick access to your best songs with search, filtering, and Play All functionality.",
+      },
+    ],
+  },
+  {
+    title: "Licensing & Commercial Use",
+    icon: <Shield className="h-5 w-5" />,
+    items: [
+      {
+        q: "Can I use generated music commercially?",
+        a: "It depends on your plan. The Creator plan includes rights for personal use and social media content. The Professional plan includes full commercial rights, including sync licensing for film, TV, and advertising.",
+      },
+      {
+        q: "Do I own the music I generate?",
+        a: "You receive a license to use the generated music according to your plan tier. The specific rights and limitations are detailed in our Terms of Service. Copyright notice: © Albert LaMotte.",
+      },
     ],
   },
   {
     title: "Account & Support",
-    icon: <HelpCircle className="h-5 w-5 text-violet-600" />,
+    icon: <HelpCircle className="h-5 w-5" />,
     items: [
       {
         q: "How do I manage my subscription?",
-        a: "Visit the Usage Dashboard and click 'Manage Billing' to access the billing portal where you can update payment methods, change plans, or cancel.",
+        a: "Visit the Usage Dashboard and click 'Manage Billing' to access the Stripe billing portal where you can update payment methods, change plans, view invoices, or cancel.",
       },
       {
         q: "What payment methods do you accept?",
-        a: "We accept all major credit cards, debit cards, and digital wallets through Stripe.",
+        a: "We accept all major credit cards, debit cards, and digital wallets through Stripe. Payments are processed securely — we never store your card details.",
+      },
+      {
+        q: "Can I install Make Custom Music as an app?",
+        a: "Yes! Make Custom Music is a Progressive Web App. On Android, tap the install banner or use your browser menu to 'Add to Home Screen'. On iOS, open the site in Safari, tap the share button, and select 'Add to Home Screen'. You'll get an app icon and a native app-like experience.",
       },
       {
         q: "How do I contact support?",
-        a: "You can reach us at support@makecustommusic.com for any questions, issues, or feedback. We aim to respond within 24 hours.",
+        a: "You can reach us at gs@safarilegacy.org for any questions, issues, or feedback. We aim to respond within 24 hours.",
       },
       {
         q: "Is my data secure?",
-        a: "Yes, we take data security seriously. We use industry-standard encryption, secure authentication, and do not sell your personal information to third parties. See our Privacy Policy for full details.",
+        a: "Yes, we take data security seriously. We use industry-standard encryption, secure authentication via OAuth, and do not sell your personal information to third parties. See our Privacy Policy for full details.",
+      },
+      {
+        q: "Can I refer friends?",
+        a: "Yes! Every account has a unique referral code. Share it with friends — when they sign up using your code, both of you benefit. Check your profile for your referral code.",
       },
     ],
   },
@@ -149,20 +199,20 @@ export default function FAQ() {
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-fuchsia-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-orange-500/5" />
         <div className="relative container max-w-4xl py-16 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-sm text-violet-700 mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/70 mb-6">
             <HelpCircle className="h-4 w-4" />
             Help Center
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-black sm:text-5xl">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Frequently Asked Questions
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-white/60 max-w-2xl mx-auto">
             Everything you need to know about Make Custom Music. Can't find what you're looking for?{" "}
             <a
-              href="mailto:support@makecustommusic.com"
-              className="text-violet-600 hover:text-violet-700 underline"
+              href="mailto:gs@safarilegacy.org"
+              className="text-purple-400 hover:text-purple-300 underline"
             >
               Contact us
             </a>
@@ -175,18 +225,18 @@ export default function FAQ() {
       <div className="container max-w-4xl pb-20">
         <div className="space-y-8">
           {faqCategories.map((category) => (
-            <div key={category.title} className="rounded-xl border bg-card p-6">
+            <div key={category.title} className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <div className="flex items-center gap-3 mb-4">
-                {category.icon}
-                <h2 className="text-xl font-semibold text-black">{category.title}</h2>
+                <div className="text-purple-400">{category.icon}</div>
+                <h2 className="text-xl font-semibold text-white">{category.title}</h2>
               </div>
               <Accordion type="single" collapsible className="w-full">
                 {category.items.map((item, idx) => (
-                  <AccordionItem key={idx} value={`${category.title}-${idx}`}>
-                    <AccordionTrigger className="text-left text-black hover:no-underline">
+                  <AccordionItem key={idx} value={`${category.title}-${idx}`} className="border-white/10">
+                    <AccordionTrigger className="text-left text-white/90 hover:text-white hover:no-underline">
                       {item.q}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground leading-relaxed">
+                    <AccordionContent className="text-white/60 leading-relaxed">
                       {item.a}
                     </AccordionContent>
                   </AccordionItem>
@@ -197,25 +247,25 @@ export default function FAQ() {
         </div>
 
         {/* Still need help */}
-        <div className="mt-12 rounded-xl border bg-gradient-to-r from-violet-50 to-fuchsia-50 p-8 text-center">
-          <h2 className="text-2xl font-bold text-black">Still have questions?</h2>
-          <p className="mt-2 text-muted-foreground max-w-lg mx-auto">
+        <div className="mt-12 rounded-xl border border-white/10 bg-gradient-to-r from-purple-500/10 to-orange-500/10 p-8 text-center">
+          <h2 className="text-2xl font-bold text-white">Still have questions?</h2>
+          <p className="mt-2 text-white/60 max-w-lg mx-auto">
             We're here to help. Reach out to our support team and we'll get back to you within 24 hours.
           </p>
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="mailto:support@makecustommusic.com"
-              className="inline-flex items-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white px-6 py-2.5 text-sm font-medium transition-colors"
+              href="mailto:gs@safarilegacy.org"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-500 hover:to-orange-400 text-white px-6 py-2.5 text-sm font-medium transition-all"
             >
               Email Support
             </a>
             <Link href="/privacy">
-              <span className="text-sm text-violet-600 hover:text-violet-700 cursor-pointer">
+              <span className="text-sm text-purple-400 hover:text-purple-300 cursor-pointer">
                 Privacy Policy
               </span>
             </Link>
             <Link href="/terms">
-              <span className="text-sm text-violet-600 hover:text-violet-700 cursor-pointer">
+              <span className="text-sm text-purple-400 hover:text-purple-300 cursor-pointer">
                 Terms of Service
               </span>
             </Link>
