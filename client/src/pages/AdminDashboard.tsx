@@ -26,6 +26,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import AdminNotificationCenter from "@/components/AdminNotificationCenter";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -784,6 +785,9 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Notification Center */}
+      <AdminNotificationCenter />
 
       {/* User Detail Modal */}
       {selectedUserId && (

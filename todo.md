@@ -1340,3 +1340,23 @@
 - [x] Add notifyOwner call for new subscription events in Stripe webhook
 - [x] Add notifyOwner call for failed payment events in Stripe webhook
 - [x] Write tests for admin notification triggers
+
+## Admin Notification Center
+- [x] Create admin_notifications database table (title, content, type, read status, timestamps)
+- [x] Push database migration
+- [x] Create DB helpers for listing, creating, marking read, and deleting notifications
+- [x] Create tRPC procedures for admin notification CRUD
+- [x] Update Stripe webhook to persist notifications to DB alongside notifyOwner
+- [x] Build notification center tab/section in admin dashboard UI
+- [x] Add filtering by type and read/unread status
+- [x] Add mark as read / mark all as read functionality
+- [x] Add unread notification badge in admin nav
+- [x] Write tests for notification center
+
+## Pricing Update & Free Credits
+- [x] Make subscription prices more competitive (lower prices)
+- [x] Add 2 free credits with each new subscription
+- [x] Update Stripe product definitions
+- [x] Update pricing page UI
+- [x] Update credit allocation logic
+- [x] Update tests for new pricing

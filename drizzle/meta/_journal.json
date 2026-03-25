@@ -134,6 +134,13 @@
       "when": 1774325944649,
       "tag": "0018_greedy_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1774441149941,
+      "tag": "0019_narrow_sinister_six",
+      "breakpoints": true
     }
   ]
 }

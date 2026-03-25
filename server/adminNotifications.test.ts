@@ -60,7 +60,7 @@ describe("Admin Notifications in Stripe Webhook", () => {
 
   describe("payment failure notification content", () => {
     it("includes 'Payment Failed' in notification title", () => {
-      expect(content).toContain('title: "Payment Failed"');
+      expect(content).toContain('"Payment Failed"');
     });
 
     it("includes user details in failure notification", () => {

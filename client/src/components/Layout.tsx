@@ -22,6 +22,50 @@ const navItems = [
   { href: "/referrals", label: "Invite Friends", icon: Gift },
 ];
 
+function AdminNavLink({ location, mobile, onClick }: { location: string; mobile?: boolean; onClick?: () => void }) {
+  const { data: unreadData } = trpc.admin.unreadNotificationCount.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
+  const unreadCount = unreadData?.count ?? 0;
+
+  if (mobile) {
+    return (
+      <Link href="/admin">
+        <span
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
+            location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
+          }`}
+          onClick={onClick}
+        >
+          <Shield className="w-4 h-4" />
+          Admin Dashboard
+          {unreadCount > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full ml-auto">
+              {unreadCount}
+            </span>
+          )}
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <Link href="/admin">
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline relative ${
+        location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
+      }`}>
+        <Shield className="w-3.5 h-3.5" />
+        Admin
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </span>
+    </Link>
+  );
+}
+
 const planLabel: Record<string, string> = {
   free: "No Plan",
   creator: "Creator",
@@ -143,14 +187,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </span>
                 </Link>
                 {user?.role === "admin" && (
-                  <Link href="/admin">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
-                      location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
-                    }`}>
-                      <Shield className="w-3.5 h-3.5" />
-                      Admin
-                    </span>
-                  </Link>
+                  <AdminNavLink location={location} />
                 )}
                 <NotificationCenter />
                 <span className="text-sm text-muted-foreground">
@@ -266,17 +303,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {isAuthenticated ? (
                 <>
                   {user?.role === "admin" && (
-                    <Link href="/admin">
-                      <span
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
-                          location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
-                        }`}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Shield className="w-4 h-4" />
-                        Admin Dashboard
-                      </span>
-                    </Link>
+                    <AdminNavLink location={location} mobile onClick={() => setMobileMenuOpen(false)} />
                   )}
                   <button
                     onClick={() => { handleShare(); setMobileMenuOpen(false); }}

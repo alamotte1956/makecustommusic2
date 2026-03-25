@@ -1,13 +1,14 @@
 import express from "express";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
-import { upsertSubscription, getUserSubscription, refillMonthlyCredits } from "./credits";
+import { upsertSubscription, getUserSubscription, refillMonthlyCredits, addBonusCredits } from "./credits";
 import { getPlanFromMetadata } from "./stripeProducts";
 import { getDb } from "./db";
 import { eq } from "drizzle-orm";
 import { users, userSubscriptions } from "../drizzle/schema";
 import type { PlanName } from "../drizzle/schema";
 import { notifyOwner } from "./_core/notification";
+import { createAdminNotification } from "./adminNotificationDb";
 
 function getStripe(): Stripe {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -244,8 +245,21 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   console.log(`[Stripe Webhook] Updated subscription for user ${userId}: plan=${planTier}, status=${status}`);
 
-  // Notify owner about new/updated subscriptions (only for active subscriptions)
+  // Award 2 free bonus credits for new active subscriptions
   if (status === "active") {
+    try {
+      // Check if this is a new subscription (not a renewal) by checking if user had no prior active subscription
+      const existingSub = await getUserSubscription(userId);
+      const isNewSubscription = !existingSub || existingSub.status !== "active" || existingSub.stripeSubscriptionId !== subscription.id;
+      if (isNewSubscription) {
+        await addBonusCredits(userId, 2, "Welcome bonus: 2 free credits with new subscription");
+        console.log(`[Stripe Webhook] Awarded 2 free bonus credits to user ${userId} for new ${planTier} subscription`);
+      }
+    } catch (err) {
+      console.warn("[Stripe Webhook] Failed to award bonus credits:", err);
+    }
+
+    // Notify owner about new/updated subscriptions
     try {
       const db = await getDb();
       let userName = "Unknown";
@@ -258,9 +272,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         }
       }
       const billingLabel = billingCycle === "annual" ? "yearly" : "monthly";
-      await notifyOwner({
-        title: `New Subscription: ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} Plan`,
-        content: `A user has subscribed to the ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} plan.\n\nUser: ${userName}\nEmail: ${userEmail}\nBilling: ${billingLabel}\nSubscription ID: ${subscription.id}`,
+      const notifTitle = `New Subscription: ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} Plan`;
+      const notifContent = `A user has subscribed to the ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} plan.\n\nUser: ${userName}\nEmail: ${userEmail}\nBilling: ${billingLabel}\nSubscription ID: ${subscription.id}`;
+      await notifyOwner({ title: notifTitle, content: notifContent });
+      await createAdminNotification({
+        type: "subscription_new",
+        title: notifTitle,
+        content: notifContent,
+        relatedUserId: userId,
+        metadata: { planTier, billingCycle: billingLabel, subscriptionId: subscription.id },
       });
     } catch (err) {
       console.warn("[Stripe Webhook] Failed to send subscription notification:", err);
@@ -346,9 +366,15 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     const amountDue = (invoice as any).amount_due
       ? `$${((invoice as any).amount_due / 100).toFixed(2)}`
       : "Unknown";
-    await notifyOwner({
-      title: "Payment Failed",
-      content: `A payment has failed for a subscriber.\n\nUser: ${userName}\nEmail: ${userEmail}\nAmount Due: ${amountDue}\nInvoice ID: ${invoice.id}\n\nThe user's subscription status has been set to past_due. They may need to update their payment method.`,
+    const notifTitle = "Payment Failed";
+    const notifContent = `A payment has failed for a subscriber.\n\nUser: ${userName}\nEmail: ${userEmail}\nAmount Due: ${amountDue}\nInvoice ID: ${invoice.id}\n\nThe user's subscription status has been set to past_due. They may need to update their payment method.`;
+    await notifyOwner({ title: notifTitle, content: notifContent });
+    await createAdminNotification({
+      type: "payment_failed",
+      title: notifTitle,
+      content: notifContent,
+      relatedUserId: userId,
+      metadata: { amountDue, invoiceId: invoice.id, customerId },
     });
   } catch (err) {
     console.warn("[Stripe Webhook] Failed to send payment failure notification:", err);

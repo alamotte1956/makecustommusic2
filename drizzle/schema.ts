@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -287,3 +287,19 @@ export const blogComments = mysqlTable("blog_comments", {
 
 export type BlogComment = typeof blogComments.$inferSelect;
 export type InsertBlogComment = typeof blogComments.$inferInsert;
+
+// ─── Admin Notifications ───────────────────────────────────────────────────
+
+export const adminNotifications = mysqlTable("admin_notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["subscription_new", "payment_failed", "subscription_canceled", "system", "other"]).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  isRead: boolean("isRead").default(false).notNull(),
+  relatedUserId: int("relatedUserId"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AdminNotification = typeof adminNotifications.$inferSelect;
+export type InsertAdminNotification = typeof adminNotifications.$inferInsert;

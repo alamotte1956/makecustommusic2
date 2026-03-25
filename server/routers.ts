@@ -1472,12 +1472,13 @@ RULES:
             id: "creator",
             name: "Creator",
             tagline: "For content creators & hobbyists",
-            monthlyPrice: 29.99,
-            annualPrice: 288,
+            monthlyPrice: 19.99,
+            annualPrice: 192,
             popular: true,
             limits: PLAN_LIMITS.creator,
             features: [
               "50 songs per month",
+              "2 free bonus credits on signup",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Commercial use (personal & social)",
@@ -1489,12 +1490,13 @@ RULES:
             id: "professional",
             name: "Professional",
             tagline: "For serious musicians & businesses",
-            monthlyPrice: 49.99,
-            annualPrice: 479,
+            monthlyPrice: 34.99,
+            annualPrice: 336,
             popular: false,
             limits: PLAN_LIMITS.professional,
             features: [
               "100 songs per month",
+              "2 free bonus credits on signup",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Full commercial rights",
@@ -1953,6 +1955,54 @@ RULES:
       .mutation(async ({ input }) => {
         const { addBonusCredits } = await import("./credits");
         await addBonusCredits(input.userId, input.amount, `Admin adjustment: ${input.reason}`);
+        return { success: true };
+      }),
+
+    // ─── Notification Center ──────────────────────────────────────────
+
+    // List notifications with filtering
+    notifications: adminProcedure
+      .input(z.object({
+        type: z.string().optional(),
+        isRead: z.boolean().optional(),
+        limit: z.number().min(1).max(100).optional(),
+        offset: z.number().min(0).optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const { getAdminNotifications } = await import("./adminNotificationDb");
+        return getAdminNotifications(input ?? {});
+      }),
+
+    // Get unread notification count
+    unreadNotificationCount: adminProcedure
+      .query(async () => {
+        const { getUnreadNotificationCount } = await import("./adminNotificationDb");
+        return { count: await getUnreadNotificationCount() };
+      }),
+
+    // Mark a single notification as read
+    markNotificationRead: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const { markNotificationRead } = await import("./adminNotificationDb");
+        await markNotificationRead(input.id);
+        return { success: true };
+      }),
+
+    // Mark all notifications as read
+    markAllNotificationsRead: adminProcedure
+      .mutation(async () => {
+        const { markAllNotificationsRead } = await import("./adminNotificationDb");
+        await markAllNotificationsRead();
+        return { success: true };
+      }),
+
+    // Delete a notification
+    deleteNotification: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const { deleteNotification } = await import("./adminNotificationDb");
+        await deleteNotification(input.id);
         return { success: true };
       }),
   }),

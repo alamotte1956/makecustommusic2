@@ -34,14 +34,14 @@ describe("stripeProducts", () => {
     }
   });
 
-  it("creator plan should cost $29.99/mo", async () => {
+  it("creator plan should cost $19.99/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(2999);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1999);
   });
 
-  it("professional plan should cost $49.99/mo", async () => {
+  it("professional plan should cost $34.99/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(4999);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(3499);
   });
 
   describe("getPlanFromMetadata", () => {
