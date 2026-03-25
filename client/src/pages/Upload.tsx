@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { classifyAudioError, audioRetryToast } from "@/lib/audioRetryToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,9 +16,9 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 
 type UploadMode = "audio" | "sheet-music";
 
-const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"];
+const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const SHEET_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf", "text/xml", "application/xml"];
-const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.mp4";
+const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.mp4,.aiff,.aif";
 const SHEET_ACCEPT = ".png,.jpg,.jpeg,.webp,.pdf,.xml,.musicxml";
 
 export default function UploadPage() {
@@ -106,6 +107,13 @@ export default function UploadPage() {
         setIsPlaying(false);
         setCurrentTime(0);
       });
+      audio.addEventListener("error", () => {
+        setIsPlaying(false);
+        const msg = classifyAudioError(audio.error ?? undefined);
+        audioRetryToast(msg, () => {
+          audio.load();
+        }, "upload-preview-error");
+      });
       audio.volume = volume;
       audioRef.current = audio;
     }
@@ -119,9 +127,12 @@ export default function UploadPage() {
     } else {
       audioRef.current.play().then(() => {
         setIsPlaying(true);
-      }).catch(() => {
-        // Safari/mobile may block autoplay without user gesture
+      }).catch((err) => {
         setIsPlaying(false);
+        const msg = classifyAudioError(err);
+        audioRetryToast(msg, () => {
+          audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+        }, "upload-play-error");
       });
     }
   }, [isPlaying]);
@@ -164,9 +175,9 @@ export default function UploadPage() {
 
   const validateAndSetFile = useCallback((f: File) => {
     const validTypes = mode === "audio" ? AUDIO_TYPES : SHEET_TYPES;
-    if (!validTypes.some(t => f.type === t || f.name.endsWith(".musicxml"))) {
+    if (!validTypes.some(t => f.type === t || f.name.endsWith(".musicxml") || (mode === "audio" && /\.(aiff?|m4a)$/i.test(f.name)))) {
       toast.error(mode === "audio"
-        ? "Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC)"
+        ? "Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC, AIFF)"
         : "Please upload an image (PNG, JPG), PDF, or MusicXML file");
       return;
     }

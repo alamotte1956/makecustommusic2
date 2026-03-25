@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
@@ -19,6 +19,7 @@ import {
   markNotificationRead, markAllNotificationsRead, deleteNotification,
   getBlogComments, createBlogComment, deleteBlogComment, getBlogCommentCount,
   createMp3SheetJob, getMp3SheetJob, updateMp3SheetJob, getUserMp3SheetJobs, deleteMp3SheetJob,
+  getDb,
 } from "./db";
 import type { ChordProgressionData } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
@@ -43,6 +44,9 @@ import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
 import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
 import { processMp3SheetJob } from "./mp3SheetProcessor";
+import { getAdminUserList, getAdminUserDetail, getAdminSiteStats, type AdminRevenueStats } from "./adminDb";
+import { eq } from "drizzle-orm";
+import { users as usersTable } from "../drizzle/schema";
 
 function getStripe(): Stripe | null {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -291,7 +295,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
       .input(z.object({
         fileName: z.string().min(1).max(255),
         fileData: z.string().min(1), // base64 encoded
-        mimeType: z.string().refine(t => ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"].includes(t), "Unsupported audio format"),
+        mimeType: z.string().refine(t => ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"].includes(t), "Unsupported audio format"),
         title: z.string().min(1).max(200).optional(),
         genre: z.string().max(100).optional(),
         mood: z.string().max(100).optional(),
@@ -305,7 +309,8 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         const buffer = Buffer.from(input.fileData, "base64");
         if (buffer.length > 50 * 1024 * 1024) throw new Error("File too large. Maximum size is 50MB.");
 
-        const ext = input.mimeType.split("/")[1] === "mpeg" ? "mp3" : input.mimeType.split("/")[1];
+        const mimeSubtype = input.mimeType.split("/")[1];
+        const ext = mimeSubtype === "mpeg" ? "mp3" : mimeSubtype === "x-m4a" ? "m4a" : mimeSubtype === "x-aiff" ? "aiff" : mimeSubtype;
         const fileKey = `uploads/${ctx.user.id}/${nanoid()}.${ext}`;
         const { url: audioUrl } = await storagePut(fileKey, buffer, input.mimeType);
 
@@ -1054,8 +1059,8 @@ RULES:
         fileData: z.string().min(1), // base64 encoded MP3
         fileName: z.string().min(1).max(255),
         mimeType: z.string().refine(
-          t => ["audio/mpeg", "audio/wav", "audio/mp4", "audio/ogg", "audio/flac", "audio/x-m4a", "audio/aac"].includes(t),
-          "Unsupported audio format. Please upload MP3, WAV, FLAC, OGG, or M4A."
+          t => ["audio/mpeg", "audio/wav", "audio/mp4", "audio/ogg", "audio/flac", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"].includes(t),
+          "Unsupported audio format. Please upload MP3, WAV, FLAC, OGG, M4A, or AIFF."
         ),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -1085,7 +1090,8 @@ RULES:
         }
 
         // Upload to S3 for processing
-        const ext = input.mimeType.split("/")[1] === "mpeg" ? "mp3" : input.mimeType.split("/")[1];
+        const mimeSubtype = input.mimeType.split("/")[1];
+        const ext = mimeSubtype === "mpeg" ? "mp3" : mimeSubtype === "x-m4a" ? "m4a" : mimeSubtype === "x-aiff" ? "aiff" : mimeSubtype;
         const fileKey = `mp3-to-sheet/${ctx.user.id}/${nanoid()}.${ext}`;
         const { url: audioUrl } = await storagePut(fileKey, buffer, input.mimeType);
 
@@ -1466,29 +1472,37 @@ RULES:
             id: "creator",
             name: "Creator",
             tagline: "For content creators & hobbyists",
-            monthlyPrice: 15,
-            annualPrice: 132,
+            monthlyPrice: 29.99,
+            annualPrice: 288,
             popular: true,
             limits: PLAN_LIMITS.creator,
             features: [
-              "30 songs per month",
+              "50 songs per month",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Commercial use (personal & social)",
+              "Album creation & cover art",
+              "MP3 to sheet music conversion",
             ],
           },
           {
             id: "professional",
             name: "Professional",
             tagline: "For serious musicians & businesses",
-            monthlyPrice: 29,
-            annualPrice: 264,
+            monthlyPrice: 49.99,
+            annualPrice: 479,
+            popular: false,
             limits: PLAN_LIMITS.professional,
             features: [
-              "60 songs per month",
+              "100 songs per month",
               "Unlimited sheet music & chords",
               "192kbps MP3 quality",
               "Full commercial rights",
+              "Album creation & cover art",
+              "MP3 to sheet music conversion",
+              "Stem separation",
+              "MIDI export",
+              "Priority generation queue",
             ],
           },
         ],
@@ -1783,6 +1797,162 @@ RULES:
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         await deleteBlogComment(input.id, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Admin Dashboard ───
+  admin: router({
+    // Get site-wide statistics
+    stats: adminProcedure.query(async () => {
+      return getAdminSiteStats();
+    }),
+
+    // Get paginated user list with search
+    users: adminProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(200).default(50),
+        offset: z.number().min(0).default(0),
+        search: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getAdminUserList(
+          input?.limit ?? 50,
+          input?.offset ?? 0,
+          input?.search
+        );
+      }),
+
+    // Get detailed user info with transaction history
+    userDetail: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const detail = await getAdminUserDetail(input.userId);
+        if (!detail) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        return detail;
+      }),
+
+    // Get Stripe revenue stats
+    revenue: adminProcedure.query(async () => {
+      const stripe = getStripe();
+      if (!stripe) {
+        return {
+          totalRevenue: 0,
+          revenueThisMonth: 0,
+          revenueLastMonth: 0,
+          activeSubscriptions: 0,
+          mrr: 0,
+          recentCharges: [],
+        } satisfies AdminRevenueStats;
+      }
+
+      try {
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        // Get balance transactions for revenue
+        const [thisMonthCharges, lastMonthCharges, activeSubsList, recentChargesList] = await Promise.all([
+          stripe.charges.list({
+            created: { gte: Math.floor(thisMonthStart.getTime() / 1000) },
+            limit: 100,
+          }),
+          stripe.charges.list({
+            created: {
+              gte: Math.floor(lastMonthStart.getTime() / 1000),
+              lt: Math.floor(thisMonthStart.getTime() / 1000),
+            },
+            limit: 100,
+          }),
+          stripe.subscriptions.list({ status: "active", limit: 100 }),
+          stripe.charges.list({ limit: 20 }),
+        ]);
+
+        const revenueThisMonth = thisMonthCharges.data
+          .filter((c) => c.status === "succeeded")
+          .reduce((sum, c) => sum + c.amount, 0);
+
+        const revenueLastMonth = lastMonthCharges.data
+          .filter((c) => c.status === "succeeded")
+          .reduce((sum, c) => sum + c.amount, 0);
+
+        // Calculate MRR from active subscriptions
+        const mrr = activeSubsList.data.reduce((sum, sub) => {
+          const item = sub.items.data[0];
+          if (!item?.price?.unit_amount) return sum;
+          const amount = item.price.unit_amount;
+          const interval = item.price.recurring?.interval;
+          if (interval === "year") return sum + Math.round(amount / 12);
+          return sum + amount;
+        }, 0);
+
+        // Total all-time revenue: sum all succeeded charges
+        // For a more accurate total, we'd need to paginate through all charges
+        // For now, use the balance
+        let totalRevenue = 0;
+        try {
+          const balance = await stripe.balance.retrieve();
+          totalRevenue = balance.available.reduce((sum, b) => sum + b.amount, 0)
+            + balance.pending.reduce((sum, b) => sum + b.amount, 0);
+        } catch {
+          totalRevenue = revenueThisMonth + revenueLastMonth;
+        }
+
+        return {
+          totalRevenue,
+          revenueThisMonth,
+          revenueLastMonth,
+          activeSubscriptions: activeSubsList.data.length,
+          mrr,
+          recentCharges: recentChargesList.data.map((c) => ({
+            id: c.id,
+            amount: c.amount,
+            currency: c.currency,
+            status: c.status,
+            customerEmail: c.billing_details?.email ?? null,
+            description: c.description,
+            created: c.created,
+          })),
+        } satisfies AdminRevenueStats;
+      } catch (err: any) {
+        console.error("[Admin] Failed to fetch Stripe revenue:", err.message);
+        return {
+          totalRevenue: 0,
+          revenueThisMonth: 0,
+          revenueLastMonth: 0,
+          activeSubscriptions: 0,
+          mrr: 0,
+          recentCharges: [],
+        } satisfies AdminRevenueStats;
+      }
+    }),
+
+    // Update user role (promote/demote admin)
+    updateUserRole: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        role: z.enum(["user", "admin"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot change your own role" });
+        }
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        await db.update(usersTable).set({ role: input.role }).where(eq(usersTable.id, input.userId));
+        return { success: true };
+      }),
+
+    // Manually adjust user credits
+    adjustCredits: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        amount: z.number().min(-10000).max(10000),
+        reason: z.string().min(1).max(500),
+      }))
+      .mutation(async ({ input }) => {
+        const { addBonusCredits } = await import("./credits");
+        await addBonusCredits(input.userId, input.amount, `Admin adjustment: ${input.reason}`);
         return { success: true };
       }),
   }),

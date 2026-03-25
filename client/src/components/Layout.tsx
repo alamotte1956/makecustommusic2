@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift, FileAudio, Share2, Check } from "lucide-react";
+import { Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart, CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift, FileAudio, Share2, Check, Shield } from "lucide-react";
 import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
 import CookieConsent from "@/components/CookieConsent";
@@ -142,6 +142,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     Usage
                   </span>
                 </Link>
+                {user?.role === "admin" && (
+                  <Link href="/admin">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors no-underline ${
+                      location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
+                    }`}>
+                      <Shield className="w-3.5 h-3.5" />
+                      Admin
+                    </span>
+                  </Link>
+                )}
                 <NotificationCenter />
                 <span className="text-sm text-muted-foreground">
                   {user?.name || user?.email || "User"}
@@ -255,6 +265,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="pt-2 border-t border-border space-y-1">
               {isAuthenticated ? (
                 <>
+                  {user?.role === "admin" && (
+                    <Link href="/admin">
+                      <span
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline ${
+                          location === "/admin" ? "bg-amber-100 text-amber-700" : "text-amber-600 hover:bg-amber-50"
+                        }`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Shield className="w-4 h-4" />
+                        Admin Dashboard
+                      </span>
+                    </Link>
+                  )}
                   <button
                     onClick={() => { handleShare(); setMobileMenuOpen(false); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent w-full"
@@ -323,7 +346,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-black hover:text-violet-600 transition-colors cursor-pointer">Invite Friends</span>
             </Link>
           </div>
-          <p>© 2026 MakeCustomMusic.com</p>
+          <p>© 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com</p>
         </div>
       </footer>
     </div>

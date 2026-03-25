@@ -7,6 +7,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { classifyAudioError, audioRetryToast } from "@/lib/audioRetryToast";
 
 
 export type QueueSong = {
@@ -134,6 +135,10 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
     const onError = () => {
       setIsLoading(false);
       setIsPlaying(false);
+      const msg = classifyAudioError(audio.error ?? undefined);
+      audioRetryToast(msg, () => {
+        audio.load();
+      }, "queue-player-error");
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
@@ -241,10 +246,14 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       await audio.play();
       setIsPlaying(true);
-    } catch {
+    } catch (err) {
       if (!controller.signal.aborted) {
         setIsLoading(false);
         setIsPlaying(false);
+        const msg = classifyAudioError(err);
+        audioRetryToast(msg, () => {
+          loadAndPlayRef.current?.(idx);
+        }, `queue-load-${song.id}`);
       }
     }
   };
@@ -289,6 +298,10 @@ export function QueuePlayerProvider({ children }: { children: ReactNode }) {
     audio.play().then(() => setIsPlaying(true)).catch((err) => {
       console.warn("Playback blocked:", err?.message);
       setIsPlaying(false);
+      const msg = classifyAudioError(err);
+      audioRetryToast(msg, () => {
+        audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      }, "queue-play-error");
     });
   }, []);
 

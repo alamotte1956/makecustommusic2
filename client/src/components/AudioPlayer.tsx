@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { classifyAudioError, audioRetryToast } from "@/lib/audioRetryToast";
 
 interface AudioPlayerProps {
   src: string;
@@ -268,17 +269,26 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
       }
     };
     const handleEnded = () => setIsPlaying(false);
+    const handleError = () => {
+      setIsPlaying(false);
+      const msg = classifyAudioError(audio.error ?? undefined);
+      audioRetryToast(msg, () => {
+        audio.load();
+      }, `audio-player-${src}`);
+    };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("durationchange", handleDurationChange);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("durationchange", handleDurationChange);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
     };
   }, [src]);
 
@@ -305,6 +315,10 @@ export default function AudioPlayer({ src, title, compact = false }: AudioPlayer
       // Handle autoplay restrictions (common on mobile Safari/Chrome)
       console.warn("Playback failed:", err);
       setIsPlaying(false);
+      const msg = classifyAudioError(err);
+      audioRetryToast(msg, () => {
+        audioRef.current?.load();
+      }, `audio-player-${src}`);
     }
   }, [isPlaying]);
 

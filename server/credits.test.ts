@@ -15,16 +15,16 @@ describe("Credits Module", () => {
     it("returns correct limits for creator plan", () => {
       const limits = getPlanLimits("creator");
       expect(limits).toEqual(PLAN_LIMITS.creator);
-      expect(limits.monthlyCredits).toBe(30);
-      expect(limits.dailySongLimit).toBe(10);
+      expect(limits.monthlyCredits).toBe(50);
+      expect(limits.dailySongLimit).toBe(15);
       expect(limits.audioQuality).toBe("192kbps");
     });
 
     it("returns correct limits for professional plan", () => {
       const limits = getPlanLimits("professional");
       expect(limits).toEqual(PLAN_LIMITS.professional);
-      expect(limits.monthlyCredits).toBe(60);
-      expect(limits.dailySongLimit).toBe(20);
+      expect(limits.monthlyCredits).toBe(100);
+      expect(limits.dailySongLimit).toBe(30);
     });
   });
 

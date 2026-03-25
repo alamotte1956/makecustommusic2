@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { downloadFile, sanitizeFilename } from "@/lib/safariDownload";
+import { classifyAudioError, audioRetryToast } from "@/lib/audioRetryToast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -114,10 +115,18 @@ export default function StudioProducer({ song }: Props) {
     audioRef.current = audio;
     audio.play().then(() => {
       setPlayingTake(takeIndex);
-    }).catch(() => {
-      // Safari/mobile may block autoplay
+    }).catch((err) => {
       setPlayingTake(null);
+      const msg = classifyAudioError(err);
+      audioRetryToast(msg, () => {
+        audio.play().then(() => setPlayingTake(takeIndex)).catch(() => setPlayingTake(null));
+      }, `studio-take-${takeIndex}`);
     });
+    audio.onerror = () => {
+      setPlayingTake(null);
+      const msg = classifyAudioError(audio.error ?? undefined);
+      audioRetryToast(msg, () => { audio.load(); }, `studio-load-${takeIndex}`);
+    };
     audio.onended = () => setPlayingTake(null);
   };
 

@@ -199,16 +199,16 @@ export const PLAN_LIMITS = {
     audioQuality: "128kbps",
   },
   creator: {
-    monthlyCredits: 30,
-    dailySongLimit: 10,
+    monthlyCredits: 50,
+    dailySongLimit: 15,
     dailySheetMusicLimit: -1, // unlimited
     dailyChordLimit: -1,
     commercialUse: "personal", // personal + social media
     audioQuality: "192kbps",
   },
   professional: {
-    monthlyCredits: 60,
-    dailySongLimit: 20,
+    monthlyCredits: 100,
+    dailySongLimit: 30,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
     commercialUse: "full",

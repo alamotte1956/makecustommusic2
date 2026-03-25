@@ -243,6 +243,66 @@ input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
 }
 
+/* iOS safe-area insets for notch/home indicator */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Prevent iOS Safari from zooming on input focus (font-size must be >= 16px) */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* iOS Safari 100vh fix — use dvh where supported */
+@supports (height: 100dvh) {
+  .h-screen {
+    height: 100dvh;
+  }
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+/* Prevent iOS rubber-banding on modals/overlays */
+[data-slot="dialog-overlay"],
+[data-slot="drawer-overlay"],
+[data-slot="sheet-overlay"] {
+  -webkit-overflow-scrolling: auto;
+  overscroll-behavior: contain;
+}
+
+[data-slot="dialog-content"],
+[data-slot="drawer-content"],
+[data-slot="sheet-content"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* iOS Safari tap highlight removal */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Fix iOS Safari button styling */
+button {
+  -webkit-appearance: none;
+}
+
 @media print {
   .no-print {
     display: none !important;

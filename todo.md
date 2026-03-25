@@ -1157,3 +1157,159 @@
 - [x] M4A/macOS format support verified: audio/x-m4a and audio/mp4 accepted in Upload, Mp3ToSheetMusic, and server
 - [x] AlbumDetail zip download: added delayed cleanup (setTimeout 250ms) for Safari
 - [x] Added 28 Safari compatibility tests — 1111 tests passing across 53 files
+
+## Audio Load Failure Toast with Retry Button
+- [x] Created shared audioRetryToast utility (client/src/lib/audioRetryToast.ts) with retry callback and descriptive error messages
+- [x] Add retry toast to AudioPlayer on network/load errors (onerror event handler)
+- [x] Add retry toast to QueuePlayerContext on network/load errors (onerror event handler)
+- [x] Add retry toast to Upload.tsx audio preview on load failure
+- [x] Add retry toast to Mp3ToSheetMusic.tsx audio preview on load failure
+- [x] Add retry toast to StudioProducer.tsx on playback failure
+- [x] Add retry toast to ListenToLyricsButton.tsx on playback failure
+
+## Comprehensive Legal Terms (Privacy Policy & Terms of Service)
+- [x] Rewrote Terms of Service: user retains all IP rights to generated music, lyrics, sheet music, MIDI, stems, and cover art
+- [x] Added commercial use license, performance rights, derivative works rights for users
+- [x] Added platform license (limited, non-exclusive) for hosting/serving content
+- [x] Added AI-generated content disclaimers (no guarantee of uniqueness, similarity risk)
+- [x] Added DMCA/copyright infringement takedown procedure
+- [x] Added platform IP section (© 2026 Albert LaMotte for platform itself)
+- [x] Added limitation of liability, indemnification, and governing law sections
+- [x] Rewrote Privacy Policy: comprehensive AI music data handling, uploaded content, voice cloning data
+- [x] Added CCPA and GDPR compliance sections
+- [x] Added international data transfers section
+- [x] Added third-party services table with data shared column
+- [x] Added data retention schedule (account, content, voice samples, payment, logs)
+- [x] Added "What We Do NOT Do" section (no selling data, no AI training without consent)
+
+## Copyright Notice - Albert LaMotte
+- [ ] Add "© Albert LaMotte" to site footer
+- [ ] Add copyright notice to Terms of Service page
+- [ ] Add copyright notice to Privacy Policy page
+- [ ] Add copyright notice to About/FAQ page if appropriate
+
+## Comprehensive Legal Terms (Privacy Policy & Terms of Service)
+- [x] Rewrote Terms of Service: user retains all IP rights to generated music, lyrics, sheet music, MIDI, stems, and cover art
+- [x] Added commercial use license, performance rights, derivative works rights for users
+- [x] Added platform license (limited, non-exclusive) for hosting/serving content
+- [x] Added AI-generated content disclaimers (no guarantee of uniqueness, similarity risk)
+- [x] Added DMCA/copyright infringement takedown procedure
+- [x] Added platform IP section (© 2026 Albert LaMotte for platform itself)
+- [x] Added limitation of liability, indemnification, and governing law sections
+- [x] Rewrote Privacy Policy: comprehensive AI music data handling, uploaded content, voice cloning data
+- [x] Added CCPA and GDPR compliance sections
+- [x] Added international data transfers section
+- [x] Added third-party services table with data shared column
+- [x] Added data retention schedule (account, content, voice samples, payment, logs)
+- [x] Added "What We Do NOT Do" section (no selling data, no AI training without consent)
+
+## Copyright Notice - © 2026 Albert LaMotte
+- [x] Updated global site footer: "© 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com"
+- [x] Copyright notice in Terms of Service page (section 6 + footer)
+- [x] Copyright notice in Privacy Policy page (footer)
+- [x] Added meta copyright tag in index.html
+- [x] Updated meta author tag to "Albert LaMotte"
+
+## Song Extension / Continuation Feature
+- [ ] Add backend route to extend/continue an existing song (add verse, bridge, outro)
+- [ ] Use ElevenLabs/Suno API to generate continuation audio from existing song context
+- [ ] Add "Extend Song" button on SongDetail page
+- [ ] Allow user to choose extension type (verse, chorus, bridge, outro, instrumental break)
+- [ ] Concatenate or stitch extended audio with original
+- [ ] Save extended version as new take or update existing song
+- [ ] Add extension history tracking
+- [ ] Write tests for song extension
+
+## Stem Separation Feature
+- [ ] Add backend route for stem separation using AI
+- [ ] Separate audio into stems (vocals, drums, bass, other/instruments)
+- [ ] Add "Separate Stems" button on SongDetail page
+- [ ] Display individual stem players with solo/mute controls
+- [ ] Allow downloading individual stems
+- [ ] Store separated stems in S3 and link to song record
+- [ ] Write tests for stem separation
+
+## Audio-to-Audio (Melody/Humming to Full Song)
+- [ ] Add upload endpoint for melody/humming audio input
+- [ ] Process uploaded audio and use as reference for AI generation
+- [ ] Add "Create from Melody" page/section in the UI
+- [ ] Allow user to hum, whistle, or play a melody and generate a full song
+- [ ] Write tests for audio-to-audio feature
+
+## MIDI Export
+- [ ] Convert ABC notation (from sheet music) to MIDI format
+- [ ] Add "Download MIDI" button on SongDetail page alongside sheet music
+- [ ] Implement server-side ABC-to-MIDI conversion
+- [ ] Write tests for MIDI export
+
+## Voice Cloning / Personas
+- [ ] Allow users to upload a voice sample (~10 seconds)
+- [ ] Create a "persona" from the voice sample
+- [ ] Use persona voice when generating songs
+- [ ] Add Personas management page (create, name, delete personas)
+- [ ] Write tests for voice cloning feature
+
+## Ringtone Creator
+- [ ] Add "Create Ringtone" button on SongDetail page
+- [ ] Allow user to select start/end time for ringtone clip
+- [ ] Trim audio to selected range (max 30 seconds)
+- [ ] Export in ringtone-friendly format (M4R for iPhone, MP3 for Android)
+- [ ] Write tests for ringtone creator
+
+## Audio Format Converter
+- [ ] Add audio format converter tool page
+- [ ] Support conversion between MP3, WAV, FLAC, OGG formats
+- [ ] Allow upload of any supported format and download in chosen format
+- [ ] Write tests for audio format converter
+
+## Collaboration (Multi-User Albums/Songs)
+- [ ] Add collaboration invite system for albums
+- [ ] Allow album owner to invite collaborators by email/username
+- [ ] Collaborators can add songs to shared albums
+- [ ] Add collaborator role permissions (view, add, edit, admin)
+- [ ] Show collaborator list on album detail page
+- [ ] Write tests for collaboration feature
+
+## Full Apple/macOS/iOS Compatibility (Import, Processing, Export)
+- [ ] Audit all file upload accept attributes for Apple audio formats (M4A, AAC, AIFF, CAF, Apple Lossless)
+- [ ] Ensure server-side MIME type validation accepts Apple-specific types (audio/x-m4a, audio/aac, audio/aiff, audio/x-caf)
+- [ ] Fix iOS Safari audio autoplay restrictions (require user gesture, use AudioContext resume)
+- [ ] Ensure all CSS animations use -webkit prefixes where needed for Safari
+- [ ] Fix iOS Safari viewport issues (100vh, safe-area-inset, notch handling)
+- [ ] Ensure file downloads work on iOS Safari (no blob URL issues, proper Content-Disposition)
+- [ ] Test and fix touch events for all interactive elements (sliders, drag-and-drop)
+- [ ] Ensure audio recording (if any) uses MediaRecorder with Safari-compatible codecs
+- [ ] Fix iOS Safari input zoom issue (font-size >= 16px on inputs)
+- [ ] Ensure PWA meta tags are present for iOS home screen support
+- [ ] Add apple-touch-icon for iOS bookmarks
+- [ ] Fix iOS Safari rubber-banding / overscroll on modals and drawers
+- [ ] Ensure sheet music PDF export works on Safari/macOS Preview
+- [ ] Ensure exported audio files play in Apple Music, QuickTime, GarageBand
+- [ ] Write Apple compatibility tests
+
+## Pricing Update - Match Highest Competitor
+- [ ] Update pricing to match highest competitor (AIVA Pro $49/mo, Soundraw Unlimited $50/mo)
+- [ ] Update Stripe products/prices configuration
+- [ ] Update Pricing page UI with new prices
+- [ ] Update any hardcoded price references across the app
+
+## Admin Dashboard
+- [x] Create admin-only backend procedures (list users, user details, spending stats)
+- [x] Track user signups with names, emails, signup dates
+- [x] Track total money spent per user (from Stripe payment history)
+- [x] Track total credits used and remaining per user
+- [x] Show total Stripe revenue summary (total collected, this month, active subscribers)
+- [x] Build admin UI page with sortable/searchable user table
+- [x] Add revenue overview cards at top of admin page
+- [x] Add admin route protection (only role=admin can access)
+- [x] Add admin nav link in sidebar/header for admin users
+- [x] Write tests for admin procedures
+
+## Admin Dashboard
+- [x] Create admin DB helpers (getAllUsers, getUserDetails, getAdminStats, getRevenueStats)
+- [x] Create admin tRPC procedures (users list, user details, revenue summary, site stats)
+- [x] Build admin dashboard frontend page with revenue cards and user table
+- [x] Add admin route protection (only role=admin can access)
+- [x] Add admin nav link in header for admin users
+- [x] Register /admin route in App.tsx
+- [x] Write tests for admin procedures

@@ -108,7 +108,7 @@ export default function Pricing() {
               }`}
             >
               Annual
-              <span className="ml-1.5 text-xs text-violet-600 font-semibold">Save up to 26%</span>
+              <span className="ml-1.5 text-xs text-violet-600 font-semibold">Save 20%</span>
             </button>
           </div>
         </div>
@@ -217,19 +217,23 @@ export default function Pricing() {
             {[
               {
                 q: "What counts as a credit?",
-                a: "Each song generation costs 1 credit. Sheet music and chord progression generation are free on paid plans.",
+                a: "Each song generation costs 1 credit. Sheet music, chord progressions, and MP3-to-sheet-music conversions are free on paid plans.",
               },
               {
                 q: "Do unused credits roll over?",
-                a: "Monthly credits reset each billing cycle. Upgrade to a higher plan for more credits.",
+                a: "Monthly credits reset each billing cycle. Upgrade to Professional for 100 songs/month.",
               },
               {
                 q: "Can I use the music commercially?",
-                a: "Creator plan includes social media rights. Professional plan includes full commercial rights.",
+                a: "Creator plan includes personal and social media rights. Professional plan includes full commercial rights including sync licensing.",
               },
               {
                 q: "What audio formats are supported?",
-                a: "All plans export MP3 at 192kbps high quality.",
+                a: "All plans export MP3 at 192kbps. Professional plan also includes stem separation and MIDI export.",
+              },
+              {
+                q: "Who owns the music I create?",
+                a: "You retain all intellectual property rights to music, lyrics, sheet music, and cover art you generate. See our Terms of Service for details.",
               },
               {
                 q: "Can I cancel anytime?",

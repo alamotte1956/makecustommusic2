@@ -5,6 +5,14 @@
  * This utility fetches the file as a blob first, creates an object URL,
  * and then triggers the download. Falls back to window.open for errors.
  */
+/** Detect iOS Safari (including iPadOS) */
+function isIOSSafari(): boolean {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS/.test(ua);
+  return isIOS && isSafari;
+}
+
 export async function downloadFile(url: string, filename: string): Promise<void> {
   try {
     // Fetch the file as a blob to bypass Safari's cross-origin download restriction
@@ -13,6 +21,15 @@ export async function downloadFile(url: string, filename: string): Promise<void>
 
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
+
+    // iOS Safari doesn't support the download attribute on blob URLs reliably.
+    // Open in a new tab so the user can use the native share sheet / "Save to Files".
+    if (isIOSSafari()) {
+      window.open(objectUrl, "_blank");
+      // Delay cleanup so iOS has time to handle the blob
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      return;
+    }
 
     const a = document.createElement("a");
     a.href = objectUrl;

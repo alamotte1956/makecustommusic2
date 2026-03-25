@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
+import { classifyAudioError, audioRetryToast } from "@/lib/audioRetryToast";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +25,8 @@ import AudioWaveform from "@/components/AudioWaveform";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
 
-const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac"];
-const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac";
+const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
+const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.aiff,.aif";
 const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB for Whisper
 
 type ProcessingStep = "idle" | "uploading" | "transcribing" | "analyzing" | "generating" | "done" | "error";
@@ -304,6 +305,11 @@ export default function Mp3ToSheetMusic() {
     });
     audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
     audio.addEventListener("ended", () => { setIsPlaying(false); setCurrentTime(0); });
+    audio.addEventListener("error", () => {
+      setIsPlaying(false);
+      const msg = classifyAudioError(audio.error ?? undefined);
+      audioRetryToast(msg, () => { audio.load(); }, "mp3-sheet-preview-error");
+    });
     audio.volume = volume;
     audioRef.current = audio;
   }, [stopPreview, volume]);
@@ -316,9 +322,12 @@ export default function Mp3ToSheetMusic() {
     } else {
       audioRef.current.play().then(() => {
         setIsPlaying(true);
-      }).catch(() => {
-        // Safari/mobile may block autoplay without user gesture
+      }).catch((err) => {
         setIsPlaying(false);
+        const msg = classifyAudioError(err);
+        audioRetryToast(msg, () => {
+          audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+        }, "mp3-sheet-play-error");
       });
     }
   }, [isPlaying]);
@@ -360,8 +369,8 @@ export default function Mp3ToSheetMusic() {
   };
 
   const validateAndSetFile = useCallback((f: File) => {
-    if (!AUDIO_TYPES.some(t => f.type === t)) {
-      toast.error("Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC)");
+    if (!AUDIO_TYPES.some(t => f.type === t) && !/\.(aiff?|m4a)$/i.test(f.name)) {
+      toast.error("Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC, AIFF)");
       return;
     }
     if (f.size > MAX_FILE_SIZE) {

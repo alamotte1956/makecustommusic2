@@ -24,6 +24,7 @@ import {
 import VoiceSelector from "./VoiceSelector";
 import { Volume2, Loader2, Square, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
+import { classifyAudioError, audioRetryToast } from "@/lib/audioRetryToast";
 
 interface ListenToLyricsButtonProps {
   lyrics: string;
@@ -108,8 +109,9 @@ export default function ListenToLyricsButton({
       };
 
       audio.onerror = () => {
-        toast.error("Failed to play audio");
         setIsPlaying(false);
+        const msg = classifyAudioError(audio.error ?? undefined);
+        audioRetryToast(msg, () => { audio.load(); }, "lyrics-audio-error");
       };
 
       await audio.play();
@@ -131,8 +133,12 @@ export default function ListenToLyricsButton({
     } else {
       audioRef.current.play().then(() => {
         setIsPlaying(true);
-      }).catch(() => {
+      }).catch((err) => {
         setIsPlaying(false);
+        const msg = classifyAudioError(err);
+        audioRetryToast(msg, () => {
+          audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+        }, "lyrics-resume-error");
       });
     }
   }, [isPlaying]);
