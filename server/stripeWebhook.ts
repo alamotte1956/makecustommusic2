@@ -7,6 +7,7 @@ import { getDb } from "./db";
 import { eq } from "drizzle-orm";
 import { users, userSubscriptions } from "../drizzle/schema";
 import type { PlanName } from "../drizzle/schema";
+import { notifyOwner } from "./_core/notification";
 
 function getStripe(): Stripe {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -242,6 +243,29 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   });
 
   console.log(`[Stripe Webhook] Updated subscription for user ${userId}: plan=${planTier}, status=${status}`);
+
+  // Notify owner about new/updated subscriptions (only for active subscriptions)
+  if (status === "active") {
+    try {
+      const db = await getDb();
+      let userName = "Unknown";
+      let userEmail = "Unknown";
+      if (db) {
+        const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        if (u) {
+          userName = u.name ?? "Unknown";
+          userEmail = u.email ?? "Unknown";
+        }
+      }
+      const billingLabel = billingCycle === "annual" ? "yearly" : "monthly";
+      await notifyOwner({
+        title: `New Subscription: ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} Plan`,
+        content: `A user has subscribed to the ${planTier.charAt(0).toUpperCase() + planTier.slice(1)} plan.\n\nUser: ${userName}\nEmail: ${userEmail}\nBilling: ${billingLabel}\nSubscription ID: ${subscription.id}`,
+      });
+    } catch (err) {
+      console.warn("[Stripe Webhook] Failed to send subscription notification:", err);
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -305,5 +329,28 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       stripeCustomerId: customerId,
     });
     console.log(`[Stripe Webhook] Payment failed for user ${userId}, status set to past_due`);
+  }
+
+  // Notify owner about failed payment
+  try {
+    const db = await getDb();
+    let userName = "Unknown";
+    let userEmail = "Unknown";
+    if (db) {
+      const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (u) {
+        userName = u.name ?? "Unknown";
+        userEmail = u.email ?? "Unknown";
+      }
+    }
+    const amountDue = (invoice as any).amount_due
+      ? `$${((invoice as any).amount_due / 100).toFixed(2)}`
+      : "Unknown";
+    await notifyOwner({
+      title: "Payment Failed",
+      content: `A payment has failed for a subscriber.\n\nUser: ${userName}\nEmail: ${userEmail}\nAmount Due: ${amountDue}\nInvoice ID: ${invoice.id}\n\nThe user's subscription status has been set to past_due. They may need to update their payment method.`,
+    });
+  } catch (err) {
+    console.warn("[Stripe Webhook] Failed to send payment failure notification:", err);
   }
 }

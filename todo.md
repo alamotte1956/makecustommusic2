@@ -1318,8 +1318,8 @@
 - [x] Exclude admin/owner account from total credits in circulation count
 
 ## Admin Notifications
-- [ ] Send owner notification when a new subscription is created
-- [ ] Send owner notification when a payment fails
+- [x] Send owner notification when a new subscription is created
+- [x] Send owner notification when a payment fails
 
 ## Song Rename
 - [x] Add rename song mutation (backend) (already existed via songs.update)
@@ -1335,3 +1335,8 @@
 - [x] Add install prompt banner/button for "Add to Home Screen"
 - [x] Generate PWA icons in multiple sizes
 - [x] Write tests for PWA setup
+
+## Admin Notifications Implementation
+- [x] Add notifyOwner call for new subscription events in Stripe webhook
+- [x] Add notifyOwner call for failed payment events in Stripe webhook
+- [x] Write tests for admin notification triggers
