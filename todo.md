@@ -1401,3 +1401,6 @@
 - [x] Update FAQ to match current features (Custom Mode, AI lyrics, albums, etc.)
 - [x] Update FAQ styling to match new Suno dark theme
 - [x] Update support email to gs@safarilegacy.org
+
+## Bright White Typeface
+- [x] Update all text to bright white (#ffffff) on dark backgrounds and very black (#000000) on light backgrounds

@@ -33,7 +33,7 @@ function AdminNavLink({ location, mobile, onClick }: { location: string; mobile?
       <Link href="/admin">
         <span
           className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
-            location === "/admin" ? "bg-purple-500/20 text-purple-300" : "text-white/60 hover:text-white hover:bg-white/5"
+            location === "/admin" ? "bg-purple-500/20 text-purple-300" : "text-white/80 hover:text-white hover:bg-white/5"
           }`}
           onClick={onClick}
         >
@@ -52,7 +52,7 @@ function AdminNavLink({ location, mobile, onClick }: { location: string; mobile?
   return (
     <Link href="/admin">
       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline relative ${
-        location === "/admin" ? "bg-purple-500/20 text-purple-300" : "text-white/60 hover:text-white hover:bg-white/5"
+        location === "/admin" ? "bg-purple-500/20 text-purple-300" : "text-white/80 hover:text-white hover:bg-white/5"
       }`}>
         <Shield className="w-3.5 h-3.5" />
         Admin
@@ -146,7 +146,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline ${
                       isActive
                         ? "bg-white/10 text-white"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
+                        : "text-white/80 hover:text-white hover:bg-white/5"
                     }`}
                   >
                     <item.icon className="w-3.5 h-3.5" />
@@ -161,7 +161,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="hidden lg:flex items-center gap-2">
             <Link href="/pricing">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline ${
-                location === "/pricing" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+                location === "/pricing" ? "bg-white/10 text-white" : "text-white/80 hover:text-white hover:bg-white/5"
               }`}>
                 <CreditCard className="w-3.5 h-3.5" />
                 Pricing
@@ -178,7 +178,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
                 <Link href="/usage">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors no-underline ${
-                    location === "/usage" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+                    location === "/usage" ? "bg-white/10 text-white" : "text-white/80 hover:text-white hover:bg-white/5"
                   }`}>
                     <BarChart3 className="w-3.5 h-3.5" />
                     Usage
@@ -188,14 +188,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <AdminNavLink location={location} />
                 )}
                 <NotificationCenter />
-                <span className="text-sm text-white/50 max-w-[120px] truncate">
+                <span className="text-sm text-white/80 max-w-[120px] truncate">
                   {user?.name || user?.email || "User"}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleShare}
-                  className="text-white/40 hover:text-white hover:bg-white/5"
+                  className="text-white/70 hover:text-white hover:bg-white/5"
                   title="Share this page"
                 >
                   {copied ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
@@ -204,7 +204,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => startTour()}
-                  className="text-white/40 hover:text-white hover:bg-white/5"
+                  className="text-white/70 hover:text-white hover:bg-white/5"
                   title="Start guided tour"
                 >
                   <HelpCircle className="w-4 h-4" />
@@ -213,14 +213,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => logout()}
-                  className="text-white/40 hover:text-white hover:bg-white/5"
+                  className="text-white/70 hover:text-white hover:bg-white/5"
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <a href={getLoginUrl()} className="text-sm text-white/60 hover:text-white transition-colors no-underline">
+                <a href={getLoginUrl()} className="text-sm text-white/80 hover:text-white transition-colors no-underline">
                   Sign In
                 </a>
                 <Button asChild size="sm" className="rounded-full bg-white text-black hover:bg-white/90 font-semibold px-5">
@@ -244,7 +244,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             )}
             <button
-              className="p-2 rounded-xl hover:bg-white/5 text-white/60"
+              className="p-2 rounded-xl hover:bg-white/5 text-white/80"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -263,7 +263,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
                       isActive
                         ? "bg-white/10 text-white"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
+                        : "text-white/80 hover:text-white hover:bg-white/5"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -276,7 +276,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/pricing">
               <span
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
-                  location === "/pricing" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+                  location === "/pricing" ? "bg-white/10 text-white" : "text-white/80 hover:text-white hover:bg-white/5"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -288,7 +288,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/usage">
                 <span
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium no-underline transition-colors ${
-                    location === "/usage" ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+                    location === "/usage" ? "bg-white/10 text-white" : "text-white/80 hover:text-white hover:bg-white/5"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -305,21 +305,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   )}
                   <button
                     onClick={() => { handleShare(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/5 w-full transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 w-full transition-colors"
                   >
                     {copied ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
                     {copied ? "Link Copied!" : "Share This Page"}
                   </button>
                   <button
                     onClick={() => { startTour(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/5 w-full transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 w-full transition-colors"
                   >
                     <HelpCircle className="w-4 h-4" />
                     Guided Tour
                   </button>
                   <button
                     onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/5 w-full transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 w-full transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     Logout
@@ -349,29 +349,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Footer — Suno-style minimal dark footer */}
       <footer className={`border-t border-white/5 py-6 mt-auto ${hasQueue ? "pb-24" : ""}`}>
-        <div className="container text-center text-sm text-white/30 space-y-2">
+        <div className="container text-center text-sm text-white/50 space-y-2">
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/privacy">
-              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
+              <span className="text-white/60 hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
             </Link>
             <span className="text-white/10">|</span>
             <Link href="/terms">
-              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Terms of Service</span>
+              <span className="text-white/60 hover:text-white transition-colors cursor-pointer">Terms of Service</span>
             </Link>
             <span className="text-white/10">|</span>
             <Link href="/faq">
-              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">FAQ</span>
+              <span className="text-white/60 hover:text-white transition-colors cursor-pointer">FAQ</span>
             </Link>
             <span className="text-white/10">|</span>
             <Link href="/blog">
-              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Blog</span>
+              <span className="text-white/60 hover:text-white transition-colors cursor-pointer">Blog</span>
             </Link>
             <span className="text-white/10">|</span>
             <Link href="/referrals">
-              <span className="text-white/40 hover:text-white transition-colors cursor-pointer">Invite Friends</span>
+              <span className="text-white/60 hover:text-white transition-colors cursor-pointer">Invite Friends</span>
             </Link>
           </div>
-          <p className="text-white/20">&copy; 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com</p>
+          <p className="text-white/40">&copy; 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com</p>
         </div>
       </footer>
     </div>

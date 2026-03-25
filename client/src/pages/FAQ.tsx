@@ -201,14 +201,14 @@ export default function FAQ() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-orange-500/5" />
         <div className="relative container max-w-4xl py-16 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/70 mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/90 mb-6">
             <HelpCircle className="h-4 w-4" />
             Help Center
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Frequently Asked Questions
           </h1>
-          <p className="mt-4 text-lg text-white/60 max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-white/80 max-w-2xl mx-auto">
             Everything you need to know about Make Custom Music. Can't find what you're looking for?{" "}
             <a
               href="mailto:gs@safarilegacy.org"
@@ -236,7 +236,7 @@ export default function FAQ() {
                     <AccordionTrigger className="text-left text-white/90 hover:text-white hover:no-underline">
                       {item.q}
                     </AccordionTrigger>
-                    <AccordionContent className="text-white/60 leading-relaxed">
+                    <AccordionContent className="text-white/80 leading-relaxed">
                       {item.a}
                     </AccordionContent>
                   </AccordionItem>
@@ -249,7 +249,7 @@ export default function FAQ() {
         {/* Still need help */}
         <div className="mt-12 rounded-xl border border-white/10 bg-gradient-to-r from-purple-500/10 to-orange-500/10 p-8 text-center">
           <h2 className="text-2xl font-bold text-white">Still have questions?</h2>
-          <p className="mt-2 text-white/60 max-w-lg mx-auto">
+          <p className="mt-2 text-white/80 max-w-lg mx-auto">
             We're here to help. Reach out to our support team and we'll get back to you within 24 hours.
           </p>
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">

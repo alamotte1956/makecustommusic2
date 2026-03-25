@@ -65,7 +65,7 @@ export default function Home() {
               {" "}about{" "}
               <span className="text-white/80">anything</span>
             </h1>
-            <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed">
               Describe the music you imagine, and our AI will compose it for you instantly.
               Download as MP3, view sheet music, and build your own album collection.
             </p>
@@ -115,7 +115,7 @@ export default function Home() {
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How It Works</h2>
-            <p className="text-white/40 text-lg">Three simple steps to create your music</p>
+            <p className="text-white/80 text-lg">Three simple steps to create your music</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
@@ -128,7 +128,7 @@ export default function Home() {
                   {item.step}
                 </div>
                 <h3 className="text-xl font-semibold text-white">{item.title}</h3>
-                <p className="text-white/40 leading-relaxed">{item.desc}</p>
+                <p className="text-white/80 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -140,7 +140,7 @@ export default function Home() {
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Features</h2>
-            <p className="text-white/40 text-lg">Everything you need to create and manage your music</p>
+            <p className="text-white/80 text-lg">Everything you need to create and manage your music</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {features.map((feature) => (
@@ -152,7 +152,7 @@ export default function Home() {
                   <feature.icon className="w-5 h-5 text-purple-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-white/40 leading-relaxed">{feature.description}</p>
+                <p className="text-sm text-white/80 leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -164,7 +164,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/10 via-pink-900/5 to-orange-900/10" />
         <div className="container relative text-center space-y-8">
           <h2 className="text-3xl md:text-4xl font-bold text-white">Ready to Create?</h2>
-          <p className="text-lg text-white/40 max-w-xl mx-auto">
+          <p className="text-lg text-white/80 max-w-xl mx-auto">
             Start generating unique AI music today. No musical knowledge required.
           </p>
           {isAuthenticated ? (
