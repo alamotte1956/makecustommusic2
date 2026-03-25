@@ -1421,3 +1421,54 @@
 
 ## Landing Page Title Update
 - [x] Change hero title to "Make any Song you can Imagine"
+
+## Full Suno-Identical Redesign
+### Global Theme & Cross-Browser
+- [ ] Rewrite index.css with Suno-exact colors (pure black bg, white text, pink/coral CTA gradient)
+- [ ] Add cross-browser CSS prefixes (-webkit, -moz, -ms) for all animations and transforms
+- [ ] Add Safari-specific fixes (backdrop-filter, scrollbar, flexbox)
+- [ ] Add Firefox-specific fixes (scrollbar styling, smooth scrolling)
+- [ ] Ensure Edge/Brave compatibility
+
+### Layout & Navigation (Suno-style)
+- [ ] Create Suno-style left sidebar for logged-in users (Home, Create, Library, Favorites, Albums, Discover)
+- [ ] Add MAKE CUSTOM MUSIC logo at top of sidebar (bold white caps)
+- [ ] Add user profile/credits section in sidebar
+- [ ] Add "Go Pro" upgrade card at bottom of sidebar
+- [ ] Keep minimal top nav for non-authenticated visitors
+- [ ] Add bottom persistent player bar matching Suno style
+- [ ] Add prompt bar at top of main content area ("Create your own song")
+
+### Home/Landing Page (Suno-style)
+- [ ] Redesign hero to match Suno's landing page style
+- [ ] Add feature showcase sections matching Suno layout
+- [ ] Add pricing preview section on landing page
+- [ ] Add FAQ section on landing page matching Suno style
+
+### Pricing (Suno's exact tiers)
+- [ ] Update to 3-tier pricing: Free ($0), Pro ($10/mo or $8/mo annual), Premier ($30/mo or $24/mo annual)
+- [ ] Update Stripe products/prices for new tiers
+- [ ] Update pricing page layout to match Suno's card-based design
+- [ ] Update backend plan definitions with new pricing
+
+### Legal Pages (Suno-style)
+- [ ] Create Terms of Service page matching Suno's structure and style
+- [ ] Create Privacy Policy/Notice page matching Suno's structure and style
+- [ ] Add legal page links to footer
+- [ ] Style legal pages with dark theme, proper typography
+
+### Remaining Pages
+- [ ] Restyle Generator page with Suno dark theme
+- [ ] Restyle History page with Suno dark theme
+- [ ] Restyle Favorites page with Suno dark theme
+- [ ] Restyle Albums pages with Suno dark theme
+- [ ] Restyle Admin pages with Suno dark theme
+- [ ] Restyle FAQ page with Suno dark theme
+
+### Download App Page (Sonos.com-style)
+- [ ] Research Sonos.com download/app page design
+- [ ] Create Download App page with Sonos-style layout (hero, platform cards, features)
+- [ ] Add route and navigation link for Download App page
+- [x] Spell out "Make Custom Music" in full everywhere (no abbreviations like MCM)
+- [x] Generate revised Terms of Service incorporating comparison report recommendations (arbitration clause, anti-competition, service discontinuation refund, free tier limits, marketing opt-out, storage limits, updated pricing)
+- [x] Use consistent typeface/font for website name "Make Custom Music" in upper left corner across all layouts (desktop sidebar, mobile header, mobile menu, visitor nav)

@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -44,77 +44,77 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Suno-inspired dark theme — warm, near-black backgrounds with purple-to-orange gradient accents */
+/* ─── Suno-identical dark theme ─── */
+/* Pure black backgrounds, white text, pink/coral CTA accents */
 :root {
-  --radius: 0.75rem;
-  /* Dark mode as default (Suno style) */
-  --primary: oklch(0.62 0.26 285);
+  --radius: 0.625rem;
+  --primary: oklch(0.65 0.2 350);
   --primary-foreground: oklch(1 0 0);
-  --background: oklch(0.08 0.005 60);
+  --background: oklch(0.05 0 0);
   --foreground: oklch(1 0 0);
-  --card: oklch(0.12 0.005 60);
+  --card: oklch(0.1 0 0);
   --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.14 0.005 60);
+  --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(1 0 0);
-  --secondary: oklch(0.16 0.005 60);
+  --secondary: oklch(0.14 0 0);
   --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.18 0.005 60);
-  --muted-foreground: oklch(0.75 0 0);
-  --accent: oklch(0.18 0.01 60);
+  --muted: oklch(0.16 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.14 0 0);
   --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.62 0.22 25);
+  --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.22 0.005 60);
-  --input: oklch(0.18 0.005 60);
-  --ring: oklch(0.62 0.26 285);
-  --chart-1: oklch(0.62 0.26 285);
-  --chart-2: oklch(0.68 0.22 330);
-  --chart-3: oklch(0.72 0.2 50);
-  --chart-4: oklch(0.65 0.18 300);
-  --chart-5: oklch(0.58 0.2 270);
-  --sidebar: oklch(0.10 0.005 60);
+  --border: oklch(0.18 0 0);
+  --input: oklch(0.16 0 0);
+  --ring: oklch(0.65 0.2 350);
+  --chart-1: oklch(0.65 0.2 350);
+  --chart-2: oklch(0.7 0.18 30);
+  --chart-3: oklch(0.6 0.22 280);
+  --chart-4: oklch(0.65 0.15 160);
+  --chart-5: oklch(0.7 0.2 60);
+  --sidebar: oklch(0.07 0 0);
   --sidebar-foreground: oklch(1 0 0);
-  --sidebar-primary: oklch(0.62 0.26 285);
+  --sidebar-primary: oklch(0.65 0.2 350);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.18 0.01 60);
+  --sidebar-accent: oklch(0.14 0 0);
   --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.22 0.005 60);
-  --sidebar-ring: oklch(0.62 0.26 285);
+  --sidebar-border: oklch(0.16 0 0);
+  --sidebar-ring: oklch(0.65 0.2 350);
 }
 
 .dark {
-  --primary: oklch(0.62 0.26 285);
+  --primary: oklch(0.65 0.2 350);
   --primary-foreground: oklch(1 0 0);
-  --background: oklch(0.08 0.005 60);
+  --background: oklch(0.05 0 0);
   --foreground: oklch(1 0 0);
-  --card: oklch(0.12 0.005 60);
+  --card: oklch(0.1 0 0);
   --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.14 0.005 60);
+  --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(1 0 0);
-  --secondary: oklch(0.16 0.005 60);
+  --secondary: oklch(0.14 0 0);
   --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.18 0.005 60);
-  --muted-foreground: oklch(0.75 0 0);
-  --accent: oklch(0.18 0.01 60);
+  --muted: oklch(0.16 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.14 0 0);
   --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.62 0.22 25);
+  --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.22 0.005 60);
-  --input: oklch(0.18 0.005 60);
-  --ring: oklch(0.62 0.26 285);
-  --chart-1: oklch(0.62 0.26 285);
-  --chart-2: oklch(0.68 0.22 330);
-  --chart-3: oklch(0.72 0.2 50);
-  --chart-4: oklch(0.65 0.18 300);
-  --chart-5: oklch(0.58 0.2 270);
-  --sidebar: oklch(0.10 0.005 60);
+  --border: oklch(0.18 0 0);
+  --input: oklch(0.16 0 0);
+  --ring: oklch(0.65 0.2 350);
+  --chart-1: oklch(0.65 0.2 350);
+  --chart-2: oklch(0.7 0.18 30);
+  --chart-3: oklch(0.6 0.22 280);
+  --chart-4: oklch(0.65 0.15 160);
+  --chart-5: oklch(0.7 0.2 60);
+  --sidebar: oklch(0.07 0 0);
   --sidebar-foreground: oklch(1 0 0);
-  --sidebar-primary: oklch(0.62 0.26 285);
+  --sidebar-primary: oklch(0.65 0.2 350);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.18 0.01 60);
+  --sidebar-accent: oklch(0.14 0 0);
   --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.22 0.005 60);
-  --sidebar-ring: oklch(0.62 0.26 285);
+  --sidebar-border: oklch(0.16 0 0);
+  --sidebar-ring: oklch(0.65 0.2 350);
 }
 
 @layer base {
@@ -123,6 +123,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -166,28 +169,58 @@
     }
   }
 
-  /* Suno-style gradient accent for buttons and highlights */
+  /* Suno-style pink/coral CTA gradient */
   .suno-gradient {
-    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #f97316 100%);
+    background: linear-gradient(135deg, #e8457e 0%, #f0695c 50%, #f5a623 100%);
   }
 
   .suno-gradient-text {
-    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #f97316 100%);
+    background: linear-gradient(135deg, #e8457e 0%, #f0695c 50%, #f5a623 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    color: transparent;
+  }
+
+  /* Suno-style hover card */
+  .suno-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .suno-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 
-/* ABC.js sheet music styling */
+/* ─── Cross-browser scrollbar styling ─── */
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* ─── ABC.js sheet music styling ─── */
 .abcjs-container svg {
   max-width: 100%;
   height: auto;
-}
-
-/* ─── Real-time note highlighting during playback ─── */
-.abcjs-note-active {
-  /* Highlight the note head, stem, beam, and any associated elements */
 }
 
 .abcjs-note-active path,
@@ -196,19 +229,19 @@
 .abcjs-note-active rect,
 .abcjs-note-active line,
 .abcjs-note-active polygon {
-  fill: #7c3aed !important;
-  stroke: #7c3aed !important;
+  fill: #e8457e !important;
+  stroke: #e8457e !important;
+  -webkit-transition: fill 0.08s ease, stroke 0.08s ease;
+  -moz-transition: fill 0.08s ease, stroke 0.08s ease;
   transition: fill 0.08s ease, stroke 0.08s ease;
 }
 
-/* Glow effect around the active note for better visibility */
 .abcjs-note-active {
-  filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.5));
+  -webkit-filter: drop-shadow(0 0 4px rgba(232, 69, 126, 0.5));
+  filter: drop-shadow(0 0 4px rgba(232, 69, 126, 0.5));
 }
 
 /* ─── Safari / WebKit compatibility ─── */
-
-/* Safari requires -webkit-backdrop-filter prefix */
 @supports not (backdrop-filter: blur(1px)) {
   .backdrop-blur-lg,
   .backdrop-blur-2xl,
@@ -217,19 +250,18 @@
   }
 }
 
-/* Ensure backdrop-filter always has webkit prefix for Safari */
 @layer base {
   [class*="backdrop-blur"] {
     -webkit-backdrop-filter: var(--tw-backdrop-blur);
   }
 }
 
-/* Safari smooth scrolling */
 html {
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
-/* Safari input appearance fix */
+/* Safari & Firefox input appearance fix */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -242,14 +274,13 @@ select {
   appearance: none;
 }
 
-/* Safari audio element styling */
 audio {
   width: 100%;
 }
 
-/* Safari range input fix */
 input[type="range"] {
   -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
 }
 
@@ -257,7 +288,11 @@ input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
 }
 
-/* iOS safe-area insets for notch/home indicator */
+input[type="range"]::-moz-range-thumb {
+  border: none;
+}
+
+/* iOS safe-area insets */
 @supports (padding: env(safe-area-inset-bottom)) {
   body {
     padding-top: env(safe-area-inset-top);
@@ -267,7 +302,7 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
-/* Prevent iOS Safari from zooming on input focus (font-size must be >= 16px) */
+/* Prevent iOS Safari zoom on input focus */
 @supports (-webkit-touch-callout: none) {
   input[type="text"],
   input[type="email"],
@@ -282,7 +317,7 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
-/* iOS Safari 100vh fix — use dvh where supported */
+/* iOS Safari 100vh fix */
 @supports (height: 100dvh) {
   .h-screen {
     height: 100dvh;
@@ -292,7 +327,7 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
-/* Prevent iOS rubber-banding on modals/overlays */
+/* Prevent iOS rubber-banding on modals */
 [data-slot="dialog-overlay"],
 [data-slot="drawer-overlay"],
 [data-slot="sheet-overlay"] {
@@ -315,6 +350,43 @@ input[type="range"]::-webkit-slider-thumb {
 /* Fix iOS Safari button styling */
 button {
   -webkit-appearance: none;
+}
+
+/* ─── Cross-browser animation prefixes ─── */
+@-webkit-keyframes spin {
+  to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@keyframes spin {
+  to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@-webkit-keyframes pulse {
+  50% { opacity: .5; }
+}
+@keyframes pulse {
+  50% { opacity: .5; }
+}
+
+/* ─── Firefox-specific fixes ─── */
+@-moz-document url-prefix() {
+  /* Firefox smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Firefox focus ring */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* ─── Edge/Brave compatibility ─── */
+@supports (-ms-ime-align: auto) {
+  /* Edge-specific fixes */
+  .backdrop-blur-lg {
+    background: rgba(0, 0, 0, 0.9);
+  }
 }
 
 @media print {
