@@ -111,7 +111,6 @@ export async function submitMusicGeneration(
   const model = mapModelToSonic(params.model ?? "V4_5PLUS");
 
   const body: Record<string, unknown> = {
-    task_type: "create_music",
     mv: model,
     custom_mode: params.customMode ?? false,
   };
@@ -131,7 +130,7 @@ export async function submitMusicGeneration(
   }
 
   const response = await axios.post(
-    `${MUSIC_API_BASE}/sonic/create-music`,
+    `${MUSIC_API_BASE}/sonic/create`,
     body,
     {
       headers: {
@@ -142,14 +141,14 @@ export async function submitMusicGeneration(
     }
   );
 
-  if (response.data.code !== 200) {
+  if (response.data.code && response.data.code !== 200) {
     throw new Error(`Music API error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
-  // musicapi.ai returns task_id in the response
-  const taskId = response.data.data?.task_id || response.data.data?.taskId;
+  // musicapi.ai returns task_id at top level or nested in data
+  const taskId = response.data.task_id || response.data.data?.task_id || response.data.data?.taskId;
   if (!taskId) {
-    throw new Error("Music API did not return a task ID");
+    throw new Error("Music API did not return a task ID. Response: " + JSON.stringify(response.data).substring(0, 200));
   }
 
   return taskId;
@@ -176,7 +175,7 @@ export async function getTaskStatus(taskId: string): Promise<SunoTaskResponse> {
     }
   );
 
-  if (response.data.code !== 200) {
+  if (response.data.code && response.data.code !== 200) {
     throw new Error(`Music API error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
@@ -321,11 +320,9 @@ export async function submitLyricsGeneration(prompt: string): Promise<string> {
 
   // musicapi.ai uses the same create-music endpoint with auto_lyrics mode
   const response = await axios.post(
-    `${MUSIC_API_BASE}/sonic/create-music`,
+    `${MUSIC_API_BASE}/sonic/create`,
     {
-      task_type: "create_music",
       custom_mode: true,
-      auto_lyrics: true,
       mv: "sonic-v4-5-plus",
       prompt: prompt,
     },
@@ -338,11 +335,11 @@ export async function submitLyricsGeneration(prompt: string): Promise<string> {
     }
   );
 
-  if (response.data.code !== 200) {
+  if (response.data.code && response.data.code !== 200) {
     throw new Error(`Music API lyrics error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
-  return response.data.data?.task_id || response.data.data?.taskId;
+  return response.data.task_id || response.data.data?.task_id || response.data.data?.taskId;
 }
 
 /**
@@ -385,7 +382,7 @@ export async function submitStemSeparation(
 
   // musicapi.ai uses get-vox for vocal extraction
   const response = await axios.post(
-    `${MUSIC_API_BASE}/sonic/get-vox`,
+    `${MUSIC_API_BASE}/sonic/vox`,
     {
       clip_id: audioId,
     },
@@ -398,11 +395,11 @@ export async function submitStemSeparation(
     }
   );
 
-  if (response.data.code !== 200) {
+  if (response.data.code && response.data.code !== 200) {
     throw new Error(`Stem separation error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
-  return response.data.data?.task_id || response.data.data?.taskId || audioId;
+  return response.data.task_id || response.data.data?.task_id || response.data.data?.taskId || audioId;
 }
 
 /**
@@ -425,7 +422,7 @@ export async function getStemSeparationStatus(taskId: string): Promise<StemSepar
     }
   );
 
-  if (response.data.code !== 200) {
+  if (response.data.code && response.data.code !== 200) {
     throw new Error(`Stem separation error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 

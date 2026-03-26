@@ -1711,5 +1711,10 @@
 - [x] Update all page meta tags (title, description) with Christian-themed keywords
 - [x] Add meta keywords tag support to usePageMeta hook and HTML head
 - [x] Update index.html default meta tags with Christian music keywords
-- [ ] Update all email addresses across the site to support@createchristianmusic.com
+- [x] Update all email addresses across the site to support@createchristianmusic.com
 - [x] Implement recommended SEO keywords from report across all pages
+- [ ] Write and publish blog post: "How to Write a Worship Song for Beginners"
+- [x] Comprehensive site functionality audit (all pages, API, Stripe, music generation)
+- [x] Fix musicapi.ai endpoint: /sonic/create-music -> /sonic/create
+- [x] Fix musicapi.ai endpoint: /sonic/get-vox -> /sonic/vox
+- [x] Fix response parsing for musicapi.ai top-level task_id format
