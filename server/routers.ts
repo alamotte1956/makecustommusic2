@@ -39,6 +39,7 @@ import {
   getUserPlan, getCreditBalance, deductCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
   getUserSubscription, canUserGenerate, checkMonthlyBonus, useMonthlyBonus,
+  getDailyUsageChart,
 } from "./credits";
 import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName, LITURGICAL_SEASONS, SERVICE_SEGMENTS, BAND_INSTRUMENTS, CHOIR_PARTS } from "../drizzle/schema";
 import { getArticleBySlug } from "../shared/blogArticles";
@@ -1443,6 +1444,13 @@ RULES:
       .input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional())
       .query(async ({ ctx, input }) => {
         return getTransactionHistory(ctx.user.id, input?.limit ?? 50);
+      }),
+
+    // Get daily/weekly usage chart data
+    usageChart: protectedProcedure
+      .input(z.object({ days: z.number().min(7).max(90).default(30) }).optional())
+      .query(async ({ ctx, input }) => {
+        return getDailyUsageChart(ctx.user.id, input?.days ?? 30);
       }),
 
     // Get plan limits for display

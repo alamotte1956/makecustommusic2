@@ -477,3 +477,112 @@ export async function getUsageSummary(userId: number) {
     },
   };
 }
+
+// ─── Chart data for usage dashboard ────────────────────────────────────────
+
+export async function getDailyUsageChart(userId: number, days: number = 30) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  startDate.setHours(0, 0, 0, 0);
+
+  // Get daily aggregated usage (debits only)
+  const rows = await db
+    .select({
+      day: sql<string>`DATE(${creditTransactions.createdAt})`,
+      type: creditTransactions.type,
+      totalUsed: sql<number>`COALESCE(SUM(ABS(${creditTransactions.amount})), 0)`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        sql`${creditTransactions.amount} < 0`,
+        gte(creditTransactions.createdAt, startDate)
+      )
+    )
+    .groupBy(sql`DATE(${creditTransactions.createdAt})`, creditTransactions.type)
+    .orderBy(sql`DATE(${creditTransactions.createdAt}) ASC`);
+
+  // Get daily credits added (refills, purchases, bonuses)
+  const addedRows = await db
+    .select({
+      day: sql<string>`DATE(${creditTransactions.createdAt})`,
+      type: creditTransactions.type,
+      totalAdded: sql<number>`COALESCE(SUM(${creditTransactions.amount}), 0)`,
+    })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        sql`${creditTransactions.amount} > 0`,
+        gte(creditTransactions.createdAt, startDate)
+      )
+    )
+    .groupBy(sql`DATE(${creditTransactions.createdAt})`, creditTransactions.type)
+    .orderBy(sql`DATE(${creditTransactions.createdAt}) ASC`);
+
+  // Build a complete date range with zero-filled days
+  const chartData: Array<{
+    date: string;
+    generation: number;
+    tts: number;
+    takes: number;
+    total: number;
+    added: number;
+    songCount: number;
+  }> = [];
+
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    const dateStr = d.toISOString().split("T")[0];
+
+    const dayUsage = rows.filter((r) => r.day === dateStr);
+    const dayAdded = addedRows.filter((r) => r.day === dateStr);
+
+    const generation = dayUsage.find((r) => r.type === "generation")?.totalUsed ?? 0;
+    const tts = dayUsage.find((r) => r.type === "tts")?.totalUsed ?? 0;
+    const takes = dayUsage.find((r) => r.type === "takes")?.totalUsed ?? 0;
+    const songCount = dayUsage.find((r) => r.type === "generation")?.count ?? 0;
+    const added = dayAdded.reduce((sum, r) => sum + (r.totalAdded ?? 0), 0);
+
+    chartData.push({
+      date: dateStr,
+      generation,
+      tts,
+      takes,
+      total: generation + tts + takes,
+      added,
+      songCount,
+    });
+  }
+
+  // Weekly aggregation
+  const weeklyData: Array<{
+    week: string;
+    generation: number;
+    tts: number;
+    takes: number;
+    total: number;
+    songCount: number;
+  }> = [];
+
+  for (let i = 0; i < chartData.length; i += 7) {
+    const weekSlice = chartData.slice(i, i + 7);
+    const weekStart = weekSlice[0].date;
+    weeklyData.push({
+      week: weekStart,
+      generation: weekSlice.reduce((s, d) => s + d.generation, 0),
+      tts: weekSlice.reduce((s, d) => s + d.tts, 0),
+      takes: weekSlice.reduce((s, d) => s + d.takes, 0),
+      total: weekSlice.reduce((s, d) => s + d.total, 0),
+      songCount: weekSlice.reduce((s, d) => s + d.songCount, 0),
+    });
+  }
+
+  return { daily: chartData, weekly: weeklyData };
+}

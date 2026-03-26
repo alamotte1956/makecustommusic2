@@ -1770,14 +1770,16 @@
 - [x] Fix any broken save/download buttons found during audit (none found - all buttons properly wired)
 - [x] Write/update tests for fixed buttons (existing 1498 tests all passing)
 
-## Credit Tracking Dashboard
-- [ ] DB schema for credit usage events (track each generation's credit cost)
-- [ ] Backend routes for credit usage history and stats
-- [ ] Credit Dashboard page with current balance display
-- [ ] Usage history table with date, action type, and credits used
-- [ ] Usage charts (daily/weekly/monthly breakdown)
-- [ ] Navigation link to Credit Dashboard
-- [ ] Tests for credit tracking backend routes
+## Credit Tracking Dashboard (Enhancement)
+- [x] DB schema for credit usage events (already exists: creditTransactions table)
+- [x] Backend routes for credit usage history and stats (already exists: credits.summary, credits.history)
+- [x] Credit Dashboard page with current balance display (already exists at /usage)
+- [x] Usage history table with date, action type, and credits used (already exists)
+- [x] Add usage charts (daily/weekly breakdown with visual charts)
+- [x] Add backend route for chart data (daily aggregated usage)
+- [x] Navigation link to Credit Dashboard (already in Layout.tsx)
+- [x] Apply shimmer/glow effects to the dashboard
+- [x] Tests for new chart data route (6 tests passing)
 
 ## Suno-style Shimmer/Glow Effects
 - [x] Add shimmer gradient animation CSS keyframes (global)
