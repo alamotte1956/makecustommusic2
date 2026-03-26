@@ -1,4 +1,23 @@
 import { useState, useCallback, useMemo } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +39,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import {
   PenLine, Plus, Trash2, GripVertical, ChevronDown, ChevronUp,
   Wand2, Sparkles, Loader2, Music, Download, Share2, RefreshCw,
-  BookOpen, Cross, Mic, MicOff, FileText, ArrowUp, ArrowDown,
+  BookOpen, Cross, Mic, MicOff, FileText,
   Save, FolderOpen, Copy, RotateCcw, Eye, EyeOff, Heart
 } from "lucide-react";
 
@@ -164,6 +183,156 @@ const SONG_TEMPLATES = [
 let sectionCounter = 0;
 function newId() { return `sec_${++sectionCounter}_${Date.now()}`; }
 
+/* ─── Sortable Section Card ─── */
+function SortableSectionCard({
+  section,
+  isExpanded,
+  isRefining,
+  sectionCount,
+  onToggle,
+  onUpdate,
+  onChangeType,
+  onDuplicate,
+  onRemove,
+  onRefine,
+}: {
+  section: LyricSection;
+  isExpanded: boolean;
+  isRefining: boolean;
+  sectionCount: number;
+  onToggle: (id: string) => void;
+  onUpdate: (id: string, content: string) => void;
+  onChangeType: (id: string, type: SectionType) => void;
+  onDuplicate: (id: string) => void;
+  onRemove: (id: string) => void;
+  onRefine: (id: string, mode: "polish" | "rhyme" | "restructure" | "rewrite") => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  const typeInfo = SECTION_TYPES.find(t => t.value === section.type)!;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className={`border-border/40 bg-card/50 backdrop-blur group ${
+        isDragging ? "ring-2 ring-primary/30 shadow-xl" : ""
+      }`}>
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/20">
+          {/* Drag handle */}
+          <button
+            {...attributes}
+            {...listeners}
+            className="w-6 h-8 flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
+            aria-label="Drag to reorder section"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${typeInfo.color}`}>
+            {typeInfo.label}
+          </Badge>
+          <select
+            value={section.type}
+            onChange={e => onChangeType(section.id, e.target.value as SectionType)}
+            className="text-[11px] bg-transparent border-0 text-muted-foreground cursor-pointer focus:outline-none"
+          >
+            {SECTION_TYPES.map(t => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <span className="text-[10px] text-muted-foreground ml-auto">
+            {section.content.trim().split(/\s+/).filter(Boolean).length} words
+          </span>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onDuplicate(section.id)}>
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Duplicate</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => onRemove(section.id)} disabled={sectionCount <= 1}>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete</TooltipContent>
+            </Tooltip>
+          </div>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onToggle(section.id)}>
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </Button>
+        </div>
+        {isExpanded && (
+          <CardContent className="p-4 pt-3 space-y-2">
+            <Textarea
+              value={section.content}
+              onChange={e => onUpdate(section.id, e.target.value)}
+              placeholder={`Write your ${typeInfo.label.toLowerCase()} lyrics here...\nEach line will be a line in the song.`}
+              className="min-h-[100px] resize-y bg-transparent border-border/20 text-sm leading-relaxed font-mono"
+            />
+            {/* AI Refine buttons */}
+            {section.content.trim() && (
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-[10px] text-muted-foreground self-center mr-1">AI:</span>
+                {(["polish", "rhyme", "restructure", "rewrite"] as const).map(mode => (
+                  <Button
+                    key={mode}
+                    variant="ghost"
+                    size="sm"
+                    className="text-[10px] h-6 px-2 gap-1"
+                    disabled={isRefining}
+                    onClick={() => onRefine(section.id, mode)}
+                  >
+                    {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Drag Overlay Preview ─── */
+function SectionCardOverlay({ section }: { section: LyricSection }) {
+  const typeInfo = SECTION_TYPES.find(t => t.value === section.type)!;
+  const preview = section.content.trim()
+    ? section.content.trim().split("\n").slice(0, 2).join(" / ")
+    : "(empty)";
+
+  return (
+    <Card className="border-primary/40 bg-card/95 backdrop-blur shadow-2xl ring-2 ring-primary/20 cursor-grabbing">
+      <div className="flex items-center gap-2 px-4 py-2.5">
+        <GripVertical className="w-4 h-4 text-primary/60" />
+        <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${typeInfo.color}`}>
+          {typeInfo.label}
+        </Badge>
+        <span className="text-xs text-muted-foreground truncate max-w-[300px]">
+          {preview}
+        </span>
+      </div>
+    </Card>
+  );
+}
+
 /* ─── Component ─── */
 export default function WriteLyrics() {
   usePageMeta({ title: "Write Your Own Lyrics", description: "Write, structure, and generate songs from your own lyrics with AI assistance." });
@@ -270,22 +439,35 @@ export default function WriteLyrics() {
     setSections(prev => prev.map(s => s.id === id ? { ...s, type } : s));
   }, []);
 
-  const moveSection = useCallback((id: string, direction: "up" | "down") => {
-    setSections(prev => {
-      const idx = prev.findIndex(s => s.id === id);
-      if (direction === "up" && idx > 0) {
-        const next = [...prev];
-        [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-        return next;
-      }
-      if (direction === "down" && idx < prev.length - 1) {
-        const next = [...prev];
-        [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-        return next;
-      }
-      return prev;
-    });
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
   }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setSections(prev => {
+        const oldIndex = prev.findIndex(s => s.id === String(active.id));
+        const newIndex = prev.findIndex(s => s.id === String(over.id));
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+    }
+  }, []);
+
+  const handleDragCancel = useCallback(() => {
+    setActiveDragId(null);
+  }, []);
+
+  const sectionIds = useMemo(() => sections.map(s => s.id), [sections]);
+  const activeDragSection = activeDragId ? sections.find(s => s.id === activeDragId) : null;
 
   const duplicateSection = useCallback((id: string) => {
     setSections(prev => {
@@ -606,112 +788,50 @@ export default function WriteLyrics() {
             ))}
           </div>
 
-          {/* Sections */}
-          <div className="space-y-3">
-            {sections.map((section, idx) => {
-              const typeInfo = SECTION_TYPES.find(t => t.value === section.type)!;
-              const isExpanded = expandedSections.has(section.id);
-              const isRefiningThis = isRefining && refiningSection === section.id;
+          {/* Sections with Drag & Drop */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {sections.map((section) => (
+                  <SortableSectionCard
+                    key={section.id}
+                    section={section}
+                    isExpanded={expandedSections.has(section.id)}
+                    isRefining={isRefining && refiningSection === section.id}
+                    sectionCount={sections.length}
+                    onToggle={toggleSection}
+                    onUpdate={updateSection}
+                    onChangeType={changeSectionType}
+                    onDuplicate={duplicateSection}
+                    onRemove={removeSection}
+                    onRefine={handleRefineSection}
+                  />
+                ))}
+              </div>
+            </SortableContext>
 
-              return (
-                <Card key={section.id} className="border-border/40 bg-card/50 backdrop-blur group">
-                  <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/20">
-                    <GripVertical className="w-4 h-4 text-muted-foreground/40 cursor-grab" />
-                    <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${typeInfo.color}`}>
-                      {typeInfo.label}
-                    </Badge>
-                    <select
-                      value={section.type}
-                      onChange={e => changeSectionType(section.id, e.target.value as SectionType)}
-                      className="text-[11px] bg-transparent border-0 text-muted-foreground cursor-pointer focus:outline-none"
-                    >
-                      {SECTION_TYPES.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                    <span className="text-[10px] text-muted-foreground ml-auto">
-                      {section.content.trim().split(/\s+/).filter(Boolean).length} words
-                    </span>
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => moveSection(section.id, "up")} disabled={idx === 0}>
-                            <ArrowUp className="w-3 h-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Move up</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => moveSection(section.id, "down")} disabled={idx === sections.length - 1}>
-                            <ArrowDown className="w-3 h-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Move down</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => duplicateSection(section.id)}>
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Duplicate</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => removeSection(section.id)} disabled={sections.length <= 1}>
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete</TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toggleSection(section.id)}>
-                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </Button>
-                  </div>
-                  {isExpanded && (
-                    <CardContent className="p-4 pt-3 space-y-2">
-                      <Textarea
-                        value={section.content}
-                        onChange={e => updateSection(section.id, e.target.value)}
-                        placeholder={`Write your ${typeInfo.label.toLowerCase()} lyrics here...\nEach line will be a line in the song.`}
-                        className="min-h-[100px] resize-y bg-transparent border-border/20 text-sm leading-relaxed font-mono"
-                      />
-                      {/* AI Refine buttons */}
-                      {section.content.trim() && (
-                        <div className="flex flex-wrap gap-1.5">
-                          <span className="text-[10px] text-muted-foreground self-center mr-1">AI:</span>
-                          {(["polish", "rhyme", "restructure", "rewrite"] as const).map(mode => (
-                            <Button
-                              key={mode}
-                              variant="ghost"
-                              size="sm"
-                              className="text-[10px] h-6 px-2 gap-1"
-                              disabled={isRefiningThis}
-                              onClick={() => handleRefineSection(section.id, mode)}
-                            >
-                              {isRefiningThis ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                              {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })}
+            {/* Drag overlay: shows a floating preview of the dragged section */}
+            <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
+              {activeDragSection ? (
+                <SectionCardOverlay section={activeDragSection} />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
 
-            {/* Add Section */}
-            <div className="flex flex-wrap gap-2 justify-center py-2">
-              <span className="text-xs text-muted-foreground self-center mr-1">Add:</span>
-              {SECTION_TYPES.map(t => (
-                <Button key={t.value} variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => addSection(t.value)}>
-                  <Plus className="w-3 h-3" /> {t.label}
-                </Button>
-              ))}
-            </div>
+          {/* Add Section */}
+          <div className="flex flex-wrap gap-2 justify-center py-2">
+            <span className="text-xs text-muted-foreground self-center mr-1">Add:</span>
+            {SECTION_TYPES.map(t => (
+              <Button key={t.value} variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => addSection(t.value)}>
+                <Plus className="w-3 h-3" /> {t.label}
+              </Button>
+            ))}
           </div>
 
           {/* Generate Button */}

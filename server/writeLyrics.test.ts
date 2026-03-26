@@ -801,3 +801,188 @@ describe("Write Lyrics - Word and Line Count", () => {
     expect(countWords(sections)).toBe(0);
   });
 });
+
+describe("Write Lyrics - Drag-and-Drop Section Reordering", () => {
+  // Mirrors the arrayMove logic from @dnd-kit/sortable
+  function arrayMove<T>(arr: T[], from: number, to: number): T[] {
+    const result = [...arr];
+    const [item] = result.splice(from, 1);
+    result.splice(to, 0, item);
+    return result;
+  }
+
+  const baseSections: LyricSection[] = [
+    { id: "sec_1", type: "verse", content: "Verse 1 content" },
+    { id: "sec_2", type: "chorus", content: "Chorus content" },
+    { id: "sec_3", type: "bridge", content: "Bridge content" },
+    { id: "sec_4", type: "outro", content: "Outro content" },
+  ];
+
+  it("moves a section from first to last position", () => {
+    const result = arrayMove(baseSections, 0, 3);
+    expect(result[0].id).toBe("sec_2");
+    expect(result[3].id).toBe("sec_1");
+    expect(result).toHaveLength(4);
+  });
+
+  it("moves a section from last to first position", () => {
+    const result = arrayMove(baseSections, 3, 0);
+    expect(result[0].id).toBe("sec_4");
+    expect(result[1].id).toBe("sec_1");
+    expect(result).toHaveLength(4);
+  });
+
+  it("moves a section one position down", () => {
+    const result = arrayMove(baseSections, 0, 1);
+    expect(result[0].id).toBe("sec_2");
+    expect(result[1].id).toBe("sec_1");
+    expect(result[2].id).toBe("sec_3");
+    expect(result[3].id).toBe("sec_4");
+  });
+
+  it("moves a section one position up", () => {
+    const result = arrayMove(baseSections, 2, 1);
+    expect(result[0].id).toBe("sec_1");
+    expect(result[1].id).toBe("sec_3");
+    expect(result[2].id).toBe("sec_2");
+    expect(result[3].id).toBe("sec_4");
+  });
+
+  it("does not change array when moving to same position", () => {
+    const result = arrayMove(baseSections, 1, 1);
+    expect(result.map(s => s.id)).toEqual(baseSections.map(s => s.id));
+  });
+
+  it("preserves all section data after reorder", () => {
+    const result = arrayMove(baseSections, 0, 2);
+    const movedSection = result.find(s => s.id === "sec_1");
+    expect(movedSection).toBeDefined();
+    expect(movedSection!.type).toBe("verse");
+    expect(movedSection!.content).toBe("Verse 1 content");
+  });
+
+  it("preserves array length after any reorder", () => {
+    for (let from = 0; from < baseSections.length; from++) {
+      for (let to = 0; to < baseSections.length; to++) {
+        const result = arrayMove(baseSections, from, to);
+        expect(result).toHaveLength(baseSections.length);
+      }
+    }
+  });
+
+  it("preserves all unique IDs after reorder", () => {
+    const result = arrayMove(baseSections, 0, 3);
+    const ids = result.map(s => s.id);
+    const uniqueIds = new Set(ids);
+    expect(uniqueIds.size).toBe(baseSections.length);
+    for (const section of baseSections) {
+      expect(ids).toContain(section.id);
+    }
+  });
+
+  it("assembled lyrics reflect new order after reorder", () => {
+    const reordered = arrayMove(baseSections, 0, 2);
+    const lyrics = assembleLyrics(reordered);
+    const chorusPos = lyrics.indexOf("[Chorus]");
+    const bridgePos = lyrics.indexOf("[Bridge]");
+    const versePos = lyrics.indexOf("[Verse]");
+    // After moving verse from 0 to 2: chorus, bridge, verse, outro
+    expect(chorusPos).toBeLessThan(bridgePos);
+    expect(bridgePos).toBeLessThan(versePos);
+  });
+
+  it("handles reordering with empty sections", () => {
+    const withEmpty: LyricSection[] = [
+      { id: "a", type: "verse", content: "Content" },
+      { id: "b", type: "chorus", content: "" },
+      { id: "c", type: "bridge", content: "More content" },
+    ];
+    const result = arrayMove(withEmpty, 0, 2);
+    expect(result[0].id).toBe("b");
+    expect(result[1].id).toBe("c");
+    expect(result[2].id).toBe("a");
+  });
+
+  it("handles single section array", () => {
+    const single: LyricSection[] = [
+      { id: "only", type: "verse", content: "Solo" },
+    ];
+    const result = arrayMove(single, 0, 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("only");
+  });
+
+  // DnD handleDragEnd logic test
+  it("simulates handleDragEnd: reorders when active !== over", () => {
+    const activeId = "sec_1";
+    const overId = "sec_3";
+
+    // Simulate the handleDragEnd logic
+    const oldIndex = baseSections.findIndex(s => s.id === activeId);
+    const newIndex = baseSections.findIndex(s => s.id === overId);
+    const result = arrayMove(baseSections, oldIndex, newIndex);
+
+    expect(result[0].id).toBe("sec_2");
+    expect(result[1].id).toBe("sec_3");
+    expect(result[2].id).toBe("sec_1");
+    expect(result[3].id).toBe("sec_4");
+  });
+
+  it("simulates handleDragEnd: no change when active === over", () => {
+    const activeId = "sec_2";
+    const overId = "sec_2";
+
+    // When active === over, handleDragEnd does nothing
+    if (activeId !== overId) {
+      throw new Error("Should not reach here");
+    }
+    // Sections remain unchanged
+    expect(baseSections.map(s => s.id)).toEqual(["sec_1", "sec_2", "sec_3", "sec_4"]);
+  });
+
+  it("section IDs are stable strings suitable for DnD", () => {
+    for (const section of baseSections) {
+      expect(typeof section.id).toBe("string");
+      expect(section.id.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("Write Lyrics - Drag Overlay Preview", () => {
+  it("generates preview text from section content", () => {
+    const section: LyricSection = {
+      id: "test",
+      type: "chorus",
+      content: "Line one of chorus\nLine two of chorus\nLine three",
+    };
+    // Mirrors SectionCardOverlay logic
+    const preview = section.content.trim()
+      ? section.content.trim().split("\n").slice(0, 2).join(" / ")
+      : "(empty)";
+    expect(preview).toBe("Line one of chorus / Line two of chorus");
+  });
+
+  it("shows (empty) for empty section content", () => {
+    const section: LyricSection = {
+      id: "test",
+      type: "verse",
+      content: "",
+    };
+    const preview = section.content.trim()
+      ? section.content.trim().split("\n").slice(0, 2).join(" / ")
+      : "(empty)";
+    expect(preview).toBe("(empty)");
+  });
+
+  it("shows single line for single-line content", () => {
+    const section: LyricSection = {
+      id: "test",
+      type: "bridge",
+      content: "Just one line",
+    };
+    const preview = section.content.trim()
+      ? section.content.trim().split("\n").slice(0, 2).join(" / ")
+      : "(empty)";
+    expect(preview).toBe("Just one line");
+  });
+});

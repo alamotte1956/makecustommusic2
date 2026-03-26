@@ -1580,3 +1580,11 @@
 - [x] Add save draft functionality for work-in-progress lyrics (localStorage)
 - [x] Add route in App.tsx and navigation link in sidebar
 - [x] Write tests for the lyrics page features (55 tests, all 1,342 total passing)
+
+## Drag-and-Drop Section Reordering (Write Lyrics Page)
+- [x] Replace up/down arrow buttons with @dnd-kit drag-and-drop reordering
+- [x] Add drag handle with visual grab indicator on each section card
+- [x] Add drag overlay with section preview during drag
+- [x] Add visual drop indicators and smooth animations
+- [x] Maintain section expand/collapse state after reordering
+- [x] Update tests for drag-and-drop reordering (17 new tests, all 1,359 total passing)
