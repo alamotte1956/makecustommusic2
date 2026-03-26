@@ -1,8 +1,8 @@
 import { Resend } from "resend";
 import { ENV } from "./_core/env";
 
-const ADMIN_EMAIL = "gs@safarilegacy.org";
-const FROM_EMAIL = "MakeCustomMusic <notifications@makecustommusic.com>";
+const ADMIN_EMAIL = "support@createchristianmusic.com";
+const FROM_EMAIL = "Create Christian Music <notifications@createchristianmusic.com>";
 
 function getResend(): Resend | null {
   if (!ENV.RESEND_API_KEY) {
@@ -15,7 +15,7 @@ function getResend(): Resend | null {
 export type EmailNotificationPayload = {
   subject: string;
   body: string;
-  type: "payment_failed" | "subscription_canceled" | "subscription_new";
+  type: "payment_failed" | "subscription_canceled" | "subscription_new" | "low_credits";
 };
 
 /**
@@ -31,6 +31,7 @@ export async function sendAdminEmail(payload: EmailNotificationPayload): Promise
     payment_failed: "🚨 Payment Failed",
     subscription_canceled: "📉 Subscription Canceled",
     subscription_new: "🎉 New Subscription",
+    low_credits: "⚠️ Low API Credits",
   };
 
   const badge = typeLabels[payload.type] ?? payload.type;
@@ -38,8 +39,8 @@ export async function sendAdminEmail(payload: EmailNotificationPayload): Promise
   // Build a clean HTML email
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: ${payload.type === "payment_failed" ? "#fef2f2" : payload.type === "subscription_canceled" ? "#fffbeb" : "#f0fdf4"}; border-left: 4px solid ${payload.type === "payment_failed" ? "#ef4444" : payload.type === "subscription_canceled" ? "#f59e0b" : "#22c55e"}; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
-        <strong style="font-size: 16px; color: ${payload.type === "payment_failed" ? "#dc2626" : payload.type === "subscription_canceled" ? "#d97706" : "#16a34a"};">${badge}</strong>
+      <div style="background: ${payload.type === "payment_failed" ? "#fef2f2" : payload.type === "subscription_canceled" ? "#fffbeb" : payload.type === "low_credits" ? "#fefce8" : "#f0fdf4"}; border-left: 4px solid ${payload.type === "payment_failed" ? "#ef4444" : payload.type === "subscription_canceled" ? "#f59e0b" : payload.type === "low_credits" ? "#eab308" : "#22c55e"}; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+        <strong style="font-size: 16px; color: ${payload.type === "payment_failed" ? "#dc2626" : payload.type === "subscription_canceled" ? "#d97706" : payload.type === "low_credits" ? "#ca8a04" : "#16a34a"};">${badge}</strong>
       </div>
       <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
         <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; line-height: 1.6; color: #374151;">${escapeHtml(payload.body)}</pre>

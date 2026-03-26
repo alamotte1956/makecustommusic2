@@ -771,7 +771,8 @@ function WorshipSetDetail({
 export default function WorshipSetBuilder() {
   usePageMeta({
     title: "Worship Set Builder",
-    description: "Plan worship services with AI-powered suggestions. Build service flows with songs, prayers, scripture readings, and more.",
+    description: "Plan church worship services with AI-powered song suggestions. Build service flows with hymns, prayers, and scripture readings.",
+    keywords: "worship set builder, church service planner, worship setlist generator, praise song order, church music planning, worship leader tool, service flow builder, Sunday worship planner, church worship order, praise and worship set list",
     canonicalPath: "/worship",
   });
 

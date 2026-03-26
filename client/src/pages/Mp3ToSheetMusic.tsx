@@ -88,8 +88,9 @@ const STEP_LABELS: Record<ProcessingStep, string> = {
 
 export default function Mp3ToSheetMusic() {
   usePageMeta({
-    title: "MP3 to Sheet Music",
-    description: "Convert your MP3 audio files into professional sheet music with AI. Upload any song and get printable lead sheets with melody, chords, and lyrics.",
+    title: "MP3 to Sheet Music Converter",
+    description: "Convert worship songs and hymns from MP3 to professional sheet music with AI. Get printable lead sheets with chords and lyrics.",
+    keywords: "MP3 to sheet music, worship song transcription, hymn sheet music converter, church music notation, chord chart generator, lead sheet maker, worship chord charts, gospel sheet music, church choir music notation, praise song chords",
     canonicalPath: "/mp3-to-sheet-music",
   });
 

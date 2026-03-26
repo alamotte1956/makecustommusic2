@@ -12,9 +12,9 @@ function buildBlogListingJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "AI Music Blog - Tips, Guides & News",
+    name: "Worship Music Blog — Tips, Guides & News",
     description:
-      "Read expert guides on AI music generation, songwriting tips, licensing advice, and creative tutorials for content creators and musicians.",
+      "Tips, guides, and news for worship leaders, church musicians, and Christian creators using AI to make music.",
     url: `${BASE_URL}/blog`,
     isPartOf: {
       "@type": "WebSite",
@@ -57,9 +57,9 @@ function buildBlogBreadcrumbJsonLd() {
 
 export default function Blog() {
   usePageMeta({
-    title: "Blog - AI Music Tips, Guides & News",
-    description:
-      "Read expert guides on AI music generation, songwriting tips, licensing advice, and creative tutorials for content creators and musicians.",
+    title: "Blog — Worship Music Tips & Guides",
+    description: "Tips, guides, and news for worship leaders, church musicians, and Christian creators using AI to make music.",
+    keywords: "worship music tips, christian songwriting guide, AI music for churches, worship leader resources, gospel music production tips, church musician blog, worship song tutorials, christian music creation guides, AI worship technology",
     canonicalPath: "/blog",
   });
 

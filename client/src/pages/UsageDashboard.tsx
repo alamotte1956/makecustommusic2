@@ -24,7 +24,8 @@ function ProgressBar({ value, max, color = "bg-violet-600" }: { value: number; m
 export default function UsageDashboard() {
   usePageMeta({
     title: "Usage Dashboard",
-    description: "Track your AI music generation credits, subscription plan, and usage history.",
+    description: "Track your worship music generation credits, subscription plan, and usage history on Create Christian Music.",
+    keywords: "music generation credits, worship song usage, christian music subscription tracker, AI song credits, worship music plan usage, church music account",
     canonicalPath: "/usage",
   });
   const { user, loading } = useAuth();

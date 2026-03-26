@@ -18,7 +18,7 @@ describe("Email Notification Helper", () => {
   });
 
   it("sends email to the correct admin address", () => {
-    expect(emailContent).toContain("gs@safarilegacy.org");
+    expect(emailContent).toContain("support@createchristianmusic.com");
   });
 
   it("sends from the makecustommusic.com domain", () => {

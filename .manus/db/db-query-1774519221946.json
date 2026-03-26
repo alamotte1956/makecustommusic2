@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total FROM songs WHERE visibility = 'public';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT COUNT(*) as total FROM songs WHERE visibility = 'public';",
+  "rows": [
+    {
+      "total": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n1\n",
+  "stderr": "",
+  "execution_time_ms": 641
+}

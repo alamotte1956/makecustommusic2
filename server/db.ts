@@ -392,6 +392,29 @@ export async function getPublicSongs(limit = 50, offset = 0) {
   return publicSongs;
 }
 
+export async function getFeaturedSongs(limit = 6) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Return songs with audio that can be played, preferring public songs first
+  const featured = await db.select({
+    id: songs.id,
+    title: songs.title,
+    genre: songs.genre,
+    mood: songs.mood,
+    audioUrl: songs.audioUrl,
+    mp3Url: songs.mp3Url,
+    duration: songs.duration,
+    vocalType: songs.vocalType,
+    engine: songs.engine,
+    imageUrl: songs.imageUrl,
+  })
+    .from(songs)
+    .where(sql`${songs.audioUrl} IS NOT NULL AND ${songs.audioUrl} != ''`)
+    .orderBy(desc(songs.publishedAt), desc(songs.id))
+    .limit(limit);
+  return featured;
+}
+
 export async function getPublicSongCount() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

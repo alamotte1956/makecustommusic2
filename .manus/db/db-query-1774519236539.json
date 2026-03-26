@@ -1,0 +1,49 @@
+{
+  "query": "SELECT COUNT(*) as total FROM songs; SELECT id, title, genre, mood, audioUrl, duration, vocalType, engine FROM songs WHERE audioUrl IS NOT NULL AND audioUrl != '' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT COUNT(*) as total FROM songs; SELECT id, title, genre, mood, audioUrl, duration, vocalType, engine FROM songs WHERE audioUrl IS NOT NULL AND audioUrl != '' LIMIT 10;",
+  "rows": [
+    {
+      "total": "17"
+    },
+    {
+      "total": "id\ttitle\tgenre\tmood\taudioUrl\tduration\tvocalType\tengine"
+    },
+    {
+      "total": "210035\tMen of The Father's House\tChristian praise\tUpbeat Worship\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/uploads/1/Es2l4p2U6s-5u2YPuwoNC.mp3\t0\tnone\tupload"
+    },
+    {
+      "total": "300001\tColossians 3:14\tRock\tUplifting\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/WXINq0eQf1OOYdDZmdZmj.mp3\t60\tmixed\televenlabs"
+    },
+    {
+      "total": "330001\tCustom Song\tR&B\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/iMxzIJ3S8yWdHuW8ogWlA.mp3\t30\tmale\televenlabs"
+    },
+    {
+      "total": "330002\tCustom Song\tR&B\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/8kHO0SZjcTnpCyvxZsojH.mp3\t30\tmale\televenlabs"
+    },
+    {
+      "total": "330003\tCustom Song\tR&B\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/kF1ZtzzTP73HWAoUmclPX.mp3\t30\tmale\televenlabs"
+    },
+    {
+      "total": "360013\tPsalm 91\tJazz\tUplifting\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/NZXVR9jWKEFyuktD7KPNA.mp3\t120\tmixed\televenlabs"
+    },
+    {
+      "total": "450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\tNULL\tMelancholic\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1230001/BVUo8rQKYiojM6o5iPgwh.mp3\t30\tnone\televenlabs"
+    },
+    {
+      "total": "480001\tTraditional folk"
+    },
+    {
+      "total": "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tNULL\tNULL\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1290001/JXOd0RCS0PBfTMnKTSgeF.mp3\t120\tnone\televenlabs"
+    },
+    {
+      "total": "510001\tplayful jazz piano\tClassical\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/UHkeCBhNH4XWFEmTfzuiV.mp3\t120\tnone\televenlabs"
+    },
+    {
+      "total": "510002\tplayful happy piano, light and bouncy\tClassical\tNULL\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/MvW4pJY0BsgahhD_ISMwe.mp3\t120\tnone\televenlabs"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n17\nid\ttitle\tgenre\tmood\taudioUrl\tduration\tvocalType\tengine\n210035\tMen of The Father's House\tChristian praise\tUpbeat Worship\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/uploads/1/Es2l4p2U6s-5u2YPuwoNC.mp3\t0\tnone\tupload\n300001\tColossians 3:14\tRock\tUplifting\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/WXINq0eQf1OOYdDZmdZmj.mp3\t60\tmixed\televenlabs\n330001\tCustom Song\tR&B\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/iMxzIJ3S8yWdHuW8ogWlA.mp3\t30\tmale\televenlabs\n330002\tCustom Song\tR&B\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/8kHO0SZjcTnpCyvxZsojH.mp3\t30\tmale\televenlabs\n330003\tCustom Song\tR&B\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/kF1ZtzzTP73HWAoUmclPX.mp3\t30\tmale\televenlabs\n360013\tPsalm 91\tJazz\tUplifting\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/750001/NZXVR9jWKEFyuktD7KPNA.mp3\t120\tmixed\televenlabs\n450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\tNULL\tMelancholic\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1230001/BVUo8rQKYiojM6o5iPgwh.mp3\t30\tnone\televenlabs\n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tNULL\tNULL\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1290001/JXOd0RCS0PBfTMnKTSgeF.mp3\t120\tnone\televenlabs\n510001\tplayful jazz piano\tClassical\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/UHkeCBhNH4XWFEmTfzuiV.mp3\t120\tnone\televenlabs\n510002\tplayful happy piano, light and bouncy\tClassical\tNULL\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/MvW4pJY0BsgahhD_ISMwe.mp3\t120\tnone\televenlabs\n",
+  "stderr": "",
+  "execution_time_ms": 394
+}

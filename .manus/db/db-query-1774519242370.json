@@ -1,0 +1,103 @@
+{
+  "query": "SELECT id, title, genre, mood, audioUrl, duration, vocalType, engine FROM songs WHERE audioUrl IS NOT NULL AND audioUrl != '' ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, genre, mood, audioUrl, duration, vocalType, engine FROM songs WHERE audioUrl IS NOT NULL AND audioUrl != '' ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "570003",
+      "title": "Forward moving song with a slow moody slow start with a guitar and piano and certain horns but incre",
+      "genre": "Folk",
+      "mood": "Uplifting",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1590001/IUOT3XlzZi4_2qIbz3K6T.mp3",
+      "duration": "150",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "570002",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "genre": "Folk",
+      "mood": "Uplifting",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1590001/0Ij6OiNox8vJtqYDz1AfZ.mp3",
+      "duration": "150",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "570001",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "genre": "Folk",
+      "mood": "Uplifting",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1590001/q5hJvA5NNnL00VdPFMxr-.mp3",
+      "duration": "150",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "genre": "Folk",
+      "mood": "Playful",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/uluXWzEanFqdIC2BPwZjv.mp3",
+      "duration": "120",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "genre": "Classical",
+      "mood": "Playful",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/k9RkIZh4am9YfWOT6CrJq.mp3",
+      "duration": "120",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "genre": "Classical",
+      "mood": "Playful",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/Jxvjgg79RKSRHmuN-up4R.mp3",
+      "duration": "120",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "genre": "Jazz",
+      "mood": "Romantic",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/c1BT4L9by3nIsZEj1UA2m.mp3",
+      "duration": "120",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "genre": "Classical",
+      "mood": "NULL",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/MvW4pJY0BsgahhD_ISMwe.mp3",
+      "duration": "120",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "genre": "Classical",
+      "mood": "Happy",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/UHkeCBhNH4XWFEmTfzuiV.mp3",
+      "duration": "120",
+      "vocalType": "none",
+      "engine": "elevenlabs"
+    }
+  ],
+  "messages": [
+    "480001\tTraditional folk",
+    "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tNULL\tNULL\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1290001/JXOd0RCS0PBfTMnKTSgeF.mp3\t120\tnone\televenlabs"
+  ],
+  "stdout": "id\ttitle\tgenre\tmood\taudioUrl\tduration\tvocalType\tengine\n570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\tFolk\tUplifting\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1590001/IUOT3XlzZi4_2qIbz3K6T.mp3\t150\tnone\televenlabs\n570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tFolk\tUplifting\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1590001/0Ij6OiNox8vJtqYDz1AfZ.mp3\t150\tnone\televenlabs\n570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tFolk\tUplifting\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1590001/q5hJvA5NNnL00VdPFMxr-.mp3\t150\tnone\televenlabs\n540003\tonly relaxed piano\tFolk\tPlayful\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/uluXWzEanFqdIC2BPwZjv.mp3\t120\tnone\televenlabs\n540002\tonly relaxed piano\tClassical\tPlayful\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/k9RkIZh4am9YfWOT6CrJq.mp3\t120\tnone\televenlabs\n540001\trelaxed piano\tClassical\tPlayful\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/Jxvjgg79RKSRHmuN-up4R.mp3\t120\tnone\televenlabs\n510003\tplayful happy piano, light and bouncy\tJazz\tRomantic\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/c1BT4L9by3nIsZEj1UA2m.mp3\t120\tnone\televenlabs\n510002\tplayful happy piano, light and bouncy\tClassical\tNULL\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/MvW4pJY0BsgahhD_ISMwe.mp3\t120\tnone\televenlabs\n510001\tplayful jazz piano\tClassical\tHappy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1320001/UHkeCBhNH4XWFEmTfzuiV.mp3\t120\tnone\televenlabs\n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tNULL\tNULL\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/songs/1290001/JXOd0RCS0PBfTMnKTSgeF.mp3\t120\tnone\televenlabs\n",
+  "stderr": "",
+  "execution_time_ms": 347
+}

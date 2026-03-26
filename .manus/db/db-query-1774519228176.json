@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, title, genre, mood, audioUrl, mp3Url, duration, vocalType, engine FROM songs WHERE visibility = 'public' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, genre, mood, audioUrl, mp3Url, duration, vocalType, engine FROM songs WHERE visibility = 'public' LIMIT 5;",
+  "rows": [
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "genre": "Christian praise",
+      "mood": "Upbeat Worship",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/uploads/1/Es2l4p2U6s-5u2YPuwoNC.mp3",
+      "mp3Url": "NULL",
+      "duration": "0",
+      "vocalType": "none",
+      "engine": "upload"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tgenre\tmood\taudioUrl\tmp3Url\tduration\tvocalType\tengine\n210035\tMen of The Father's House\tChristian praise\tUpbeat Worship\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/uploads/1/Es2l4p2U6s-5u2YPuwoNC.mp3\tNULL\t0\tnone\tupload\n",
+  "stderr": "",
+  "execution_time_ms": 343
+}

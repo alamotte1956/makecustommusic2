@@ -1,22 +1,25 @@
 import { useEffect } from "react";
 
-const DEFAULT_TITLE = "Create Christian Music - AI Music Generator & Composer";
+const DEFAULT_TITLE = "Create Christian Music — AI Worship Song Generator";
 const DEFAULT_DESCRIPTION =
-  "Create AI-generated music from text descriptions. Compose songs, download MP3s, view sheet music, and build albums instantly.";
+  "Generate original worship songs, hymns, and gospel music with AI. Sheet music, chord charts, stem separation, and 16 Christian genres for churches and creators.";
+const DEFAULT_KEYWORDS =
+  "christian music generator, AI worship song generator, create worship music, gospel music maker, hymn generator, church music creator, praise and worship AI, christian song maker, worship leader tools, church music director, scripture songs, christian lyrics generator, worship set builder, christian chord charts, worship sheet music";
 const BASE_URL = "https://makecustommusic.com";
 
 interface PageMeta {
   title?: string;
   description?: string;
+  keywords?: string;
   /** Path for canonical URL (e.g., "/pricing"). Defaults to current pathname. */
   canonicalPath?: string;
 }
 
 /**
- * Sets the document title, meta description, and canonical URL for the current page.
+ * Sets the document title, meta description, meta keywords, and canonical URL for the current page.
  * Restores defaults on unmount for SPA route changes.
  */
-export function usePageMeta({ title, description, canonicalPath }: PageMeta) {
+export function usePageMeta({ title, description, keywords, canonicalPath }: PageMeta) {
   useEffect(() => {
     const prevTitle = document.title;
 
@@ -28,6 +31,20 @@ export function usePageMeta({ title, description, canonicalPath }: PageMeta) {
     const prevDesc = metaDesc?.getAttribute("content") ?? null;
     if (description && metaDesc) {
       metaDesc.setAttribute("content", description);
+    }
+
+    // Update keywords meta tag
+    let metaKeywords = document.querySelector('meta[name="keywords"]') as HTMLMetaElement | null;
+    const prevKeywords = metaKeywords?.getAttribute("content") ?? null;
+    if (keywords) {
+      if (metaKeywords) {
+        metaKeywords.setAttribute("content", keywords);
+      } else {
+        metaKeywords = document.createElement("meta");
+        metaKeywords.name = "keywords";
+        metaKeywords.content = keywords;
+        document.head.appendChild(metaKeywords);
+      }
     }
 
     // Update canonical URL
@@ -64,6 +81,12 @@ export function usePageMeta({ title, description, canonicalPath }: PageMeta) {
       } else if (metaDesc) {
         metaDesc.setAttribute("content", DEFAULT_DESCRIPTION);
       }
+      // Restore keywords
+      if (metaKeywords && prevKeywords !== null) {
+        metaKeywords.setAttribute("content", prevKeywords);
+      } else if (metaKeywords) {
+        metaKeywords.setAttribute("content", DEFAULT_KEYWORDS);
+      }
       // Restore canonical
       if (canonicalLink && prevCanonical !== null) {
         canonicalLink.setAttribute("href", prevCanonical);
@@ -78,5 +101,5 @@ export function usePageMeta({ title, description, canonicalPath }: PageMeta) {
         twitterUrl.setAttribute("content", prevTwitterUrl);
       }
     };
-  }, [title, description, canonicalPath]);
+  }, [title, description, keywords, canonicalPath]);
 }

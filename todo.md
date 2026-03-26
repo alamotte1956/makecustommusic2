@@ -1701,3 +1701,15 @@
 - [ ] Rework shimmer background to closely match Suno.com's actual implementation
 - [x] Fix unauthorized Suno API error
 - [x] Switch music generation API from sunoapi.org to musicapi.ai
+- [ ] Set up automated email notification when musicapi.ai credits fall below 10
+- [x] UX comparison report: createchristianmusic.com vs Suno.com
+- [ ] UX Improvement 1: Seed Discover page with 20-30 curated example songs across Christian genres
+- [ ] UX Improvement 2: Add playable song previews to homepage hero section
+- [ ] UX Improvement 3: Add Simple/Advanced mode toggle to Generator page
+- [x] Fix homepage SEO: title to 30-60 chars, description to 50-160 chars
+- [x] Research and create comprehensive Christian music SEO keyword set
+- [x] Update all page meta tags (title, description) with Christian-themed keywords
+- [x] Add meta keywords tag support to usePageMeta hook and HTML head
+- [x] Update index.html default meta tags with Christian music keywords
+- [ ] Update all email addresses across the site to support@createchristianmusic.com
+- [x] Implement recommended SEO keywords from report across all pages

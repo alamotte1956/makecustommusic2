@@ -5,7 +5,8 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 export default function Privacy() {
   usePageMeta({
     title: "Privacy Policy",
-    description: "Privacy policy for Create Christian Music. Learn how we collect, use, and protect your personal data.",
+    description: "How Create Christian Music collects, uses, and protects your personal data. Read our privacy practices.",
+    keywords: "create christian music privacy, AI music generator privacy policy, christian creator data protection, worship music platform privacy, church music data security",
     canonicalPath: "/privacy",
   });
   return (
@@ -349,8 +350,8 @@ export default function Privacy() {
             <p className="font-medium text-foreground">A. LaMotte Music</p>
             <p className="text-foreground/70 mt-1">
               Email:{" "}
-              <a href="mailto:support@makecustommusic.com" className="text-violet-600 hover:underline">
-                support@makecustommusic.com
+              <a href="mailto:support@createchristianmusic.com" className="text-violet-600 hover:underline">
+                support@createchristianmusic.com
               </a>
             </p>
             <p className="text-foreground/70 mt-1">

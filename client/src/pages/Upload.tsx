@@ -24,8 +24,9 @@ const SHEET_ACCEPT = ".png,.jpg,.jpeg,.webp,.pdf,.xml,.musicxml";
 export default function UploadPage() {
   // ─── ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP ───
   usePageMeta({
-    title: "Upload",
-    description: "Upload your own audio or sheet music to Create Christian Music. Import MP3, WAV, or FLAC files and add them to your collection.",
+    title: "Upload Music",
+    description: "Upload your own worship songs, hymns, or audio files. Import MP3, WAV, or FLAC and add them to your Christian music library.",
+    keywords: "upload worship music, import church songs, add hymns, christian music upload, gospel audio import, worship song upload, church music import, praise music library upload",
     canonicalPath: "/upload",
   });
   const { user } = useAuth();

@@ -22,8 +22,9 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Favorites() {
   usePageMeta({
-    title: "Favorites",
-    description: "Your favorite AI-generated songs. Listen, download, and manage your saved music collection.",
+    title: "My Favorite Songs",
+    description: "Your saved worship songs, hymns, and gospel favorites. Listen, download, and manage your Christian music collection.",
+    keywords: "favorite worship songs, saved christian music, gospel favorites, hymn bookmarks, praise music collection, my worship playlist, christian song favorites, church music saved",
     canonicalPath: "/favorites",
   });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });

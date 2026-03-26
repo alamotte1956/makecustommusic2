@@ -284,8 +284,9 @@ function GenreSelector({
 /* ─────────────────────────────────────────────────────── */
 export default function Generator() {
   usePageMeta({
-    title: "Create Music",
-    description: "Generate unique AI-composed songs. Describe your music, choose genre, mood, and vocal style, then create in seconds.",
+    title: "Create Worship Music",
+    description: "Generate original Christian songs with AI. Choose from gospel, hymns, praise and worship, CCM, and more. Add vocals, get sheet music and chord charts.",
+    keywords: "make gospel music online, AI worship song creator, christian beat maker, gospel instrumental generator, AI hymn writer, scripture song generator, praise music maker, worship song creator online, create christian music AI, gospel music production tool, christian music generator, church song maker",
     canonicalPath: "/generator",
   });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });

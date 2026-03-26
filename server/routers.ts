@@ -14,7 +14,7 @@ import {
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
   reorderAlbumSongs,
   toggleFavorite, getUserFavorites, getUserFavoriteIds,
-  publishSong, unpublishSong, getPublicSongs, getPublicSongCount,
+  publishSong, unpublishSong, getPublicSongs, getPublicSongCount, getFeaturedSongs,
   createNotification, getUserNotifications, getUnreadNotificationCount,
   markNotificationRead, markAllNotificationsRead, deleteNotification,
   getBlogComments, createBlogComment, deleteBlogComment, getBlogCommentCount,
@@ -1520,6 +1520,15 @@ RULES:
 
   // ─── Community / Discover ───
   community: router({
+    // Get featured songs for homepage previews (no auth required)
+    featured: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(12).default(6) }).optional())
+      .query(async ({ input }) => {
+        const limit = input?.limit ?? 6;
+        const featured = await getFeaturedSongs(limit);
+        return { songs: featured };
+      }),
+
     // Get public songs for the Discover page (no auth required)
     discover: publicProcedure
       .input(z.object({
@@ -1911,6 +1920,20 @@ RULES:
         const { updateNotificationPreference } = await import("./adminPreferencesDb");
         const { notificationType, ...updates } = input;
         return updateNotificationPreference(notificationType, updates);
+      }),
+
+    // API Credit Monitor
+    creditMonitorStatus: adminProcedure
+      .query(async () => {
+        const { getCreditMonitorStatus } = await import("./creditMonitor");
+        return getCreditMonitorStatus();
+      }),
+
+    checkCreditsNow: adminProcedure
+      .mutation(async () => {
+        const { checkAndAlertCredits } = await import("./creditMonitor");
+        const credits = await checkAndAlertCredits();
+        return { credits };
       }),
   }),
 

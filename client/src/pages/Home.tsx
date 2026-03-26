@@ -103,8 +103,9 @@ export default function Home() {
   const { isAuthenticated } = useAuth();
 
   usePageMeta({
-    title: "AI Music Generator for Christian Creators & Churches",
-    description: "Create worship music, hymns, and songs with AI. Worship Set Builder, sheet music, 16 Christian genres, scripture song templates — everything a church music director needs.",
+    title: "AI Worship Song Generator",
+    description: "Create worship songs, hymns, and gospel music with AI. Sheet music, chord charts, and 16 Christian genres.",
+    keywords: "christian music generator, AI worship song generator, create worship music, gospel music maker, christian song maker AI, praise and worship song creator, hymn generator, church music creator, worship music online, AI praise music, gospel songs, praise songs",
     canonicalPath: "/",
   });
 

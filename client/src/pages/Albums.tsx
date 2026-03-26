@@ -40,8 +40,9 @@ const COVER_COLORS = [
 
 export default function Albums() {
   usePageMeta({
-    title: "My Albums",
-    description: "Create and manage your music album collections. Organize AI-generated songs into albums with custom covers.",
+    title: "My Worship Albums",
+    description: "Create and manage worship music collections. Organize AI-generated hymns, praise songs, and gospel tracks into albums.",
+    keywords: "worship albums, christian music collections, gospel playlists, hymn albums, praise music albums, church music collections, worship song albums, christian album creator, gospel music compilation",
     canonicalPath: "/albums",
   });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });

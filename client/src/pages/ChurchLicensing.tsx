@@ -5,8 +5,9 @@ import { Shield, Check, Music, FileText, Users, Church, BookOpen, ArrowRight } f
 
 export default function ChurchLicensing() {
   usePageMeta({
-    title: "Church Licensing — Create Christian Music",
-    description: "Understand your rights when using AI-generated worship music in church services, live streams, recordings, and more.",
+    title: "Church Music Licensing Guide",
+    description: "Understand your rights using AI-generated worship music in church services, live streams, recordings, and broadcasts.",
+    keywords: "church music license, worship music licensing, church music rights, worship song copyright, CCLI alternative, church music subscription, worship music for churches, royalty free worship music, church performance license",
     canonicalPath: "/licensing",
   });
 

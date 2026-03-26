@@ -348,7 +348,7 @@ function SectionCardOverlay({ section }: { section: LyricSection }) {
 
 /* ─── Component ─── */
 export default function WriteLyrics() {
-  usePageMeta({ title: "Write Your Own Lyrics", description: "Write, structure, and generate songs from your own lyrics with AI assistance." });
+  usePageMeta({ title: "Write Worship Lyrics", description: "Write, structure, and generate worship songs from your own lyrics with AI. Templates for hymns, psalms, and praise songs.", keywords: "worship lyrics writer, christian songwriting AI, hymn lyrics generator, praise song lyrics template, gospel songwriting tool, scripture based lyrics, worship song structure, church song lyrics writer, AI lyrics assistant christian, psalm song lyrics generator" });
   const { user } = useAuth();
   const [, navigate] = useLocation();
 

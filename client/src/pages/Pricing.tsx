@@ -22,8 +22,9 @@ function taxBreakdown(totalDollars: number) {
 
 export default function Pricing() {
   usePageMeta({
-    title: "Pricing",
-    description: "Choose a plan for AI music generation. Pro and Premier tiers with credits for song creation, sheet music, and more. No free tier — subscribe to start creating.",
+    title: "Pricing Plans",
+    description: "Choose a plan to create worship music with AI. Pro and Premier tiers with song credits, sheet music, stem separation, and more.",
+    keywords: "AI music generator pricing, worship music creator plans, christian music tool subscription, gospel music maker pricing, AI song generator free, worship song creator cost, christian music production pricing, church music software plans",
     canonicalPath: "/pricing",
   });
   const { user } = useAuth();

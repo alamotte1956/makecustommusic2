@@ -179,7 +179,7 @@ const faqCategories = [
       },
       {
         q: "How do I contact support?",
-        a: "You can reach us at gs@safarilegacy.org for any questions, issues, or feedback. We aim to respond within 24 hours.",
+        a: "You can reach us at support@createchristianmusic.com for any questions, issues, or feedback. We aim to respond within 24 hours.",
       },
       {
         q: "Is my data secure?",
@@ -195,8 +195,9 @@ const faqCategories = [
 
 export default function FAQ() {
   usePageMeta({
-    title: "FAQ",
-    description: "Frequently asked questions about Create Christian Music. Learn about AI music generation, pricing, downloads, and account management.",
+    title: "FAQ — Christian Music Generator",
+    description: "Answers about AI worship music generation, pricing, downloads, sheet music, and church licensing for Create Christian Music.",
+    keywords: "how to make worship music with AI, can AI write christian songs, AI music generator FAQ, is AI music legal for church, christian music generator help, worship song AI questions, how does AI music work, AI gospel music explained",
     canonicalPath: "/faq",
   });
   return (
@@ -215,7 +216,7 @@ export default function FAQ() {
           <p className="mt-4 text-lg text-white/80 max-w-2xl mx-auto">
             Everything you need to know about Create Christian Music. Can't find what you're looking for?{" "}
             <a
-              href="mailto:gs@safarilegacy.org"
+              href="mailto:support@createchristianmusic.com"
               className="text-purple-400 hover:text-purple-300 underline"
             >
               Contact us
@@ -258,7 +259,7 @@ export default function FAQ() {
           </p>
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="mailto:gs@safarilegacy.org"
+              href="mailto:support@createchristianmusic.com"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-500 hover:to-orange-400 text-white px-6 py-2.5 text-sm font-medium transition-all"
             >
               Email Support

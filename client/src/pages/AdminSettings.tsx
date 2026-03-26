@@ -262,7 +262,7 @@ export default function AdminSettings() {
           <div>
             <h3 className="font-semibold">Email Configuration</h3>
             <p className="text-sm text-muted-foreground">
-              Email notifications are sent via Resend to <strong>gs@safarilegacy.org</strong>
+              Email notifications are sent via Resend to <strong>support@createchristianmusic.com</strong>
             </p>
           </div>
         </div>

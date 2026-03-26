@@ -5,7 +5,8 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 export default function Terms() {
   usePageMeta({
     title: "Terms of Service",
-    description: "Terms of service for Create Christian Music. Understand your rights and responsibilities when using our AI music generation platform.",
+    description: "Terms of service for Create Christian Music. Your rights and responsibilities using our AI worship music platform.",
+    keywords: "create christian music terms, AI worship music terms of service, christian music generator legal, church music copyright, worship music platform terms, gospel music creator rights",
     canonicalPath: "/terms",
   });
   return (
@@ -288,8 +289,8 @@ export default function Terms() {
           </ul>
           <p className="leading-relaxed">
             Send DMCA notices to:{" "}
-            <a href="mailto:dmca@makecustommusic.com" className="text-violet-400 hover:underline">
-              dmca@makecustommusic.com
+            <a href="mailto:support@createchristianmusic.com" className="text-violet-400 hover:underline">
+              support@createchristianmusic.com
             </a>
           </p>
           <p className="leading-relaxed mt-3">
@@ -343,8 +344,8 @@ export default function Terms() {
             or other information we think you may find interesting. You may opt out of
             promotional communications at any time by following the unsubscribe instructions
             included in each email or by contacting us at{" "}
-            <a href="mailto:support@makecustommusic.com" className="text-violet-400 hover:underline">
-              support@makecustommusic.com
+            <a href="mailto:support@createchristianmusic.com" className="text-violet-400 hover:underline">
+              support@createchristianmusic.com
             </a>. Opting out of promotional communications will not affect your receipt of
             transactional communications.
           </p>
@@ -470,8 +471,8 @@ export default function Terms() {
           <h3 className="text-base font-medium text-foreground mt-4 mb-2">13.4 Opt-Out</h3>
           <p className="leading-relaxed">
             You may opt out of this Arbitration Agreement by sending written notice to{" "}
-            <a href="mailto:legal@makecustommusic.com" className="text-violet-400 hover:underline">
-              legal@makecustommusic.com
+            <a href="mailto:support@createchristianmusic.com" className="text-violet-400 hover:underline">
+              support@createchristianmusic.com
             </a>{" "}
             within 30 days of first accepting these Terms. Your notice must include your name,
             mailing address, and a clear statement that you wish to opt out of this Arbitration
@@ -582,20 +583,20 @@ export default function Terms() {
             <p className="font-medium text-foreground">A. LaMotte Music</p>
             <p className="text-foreground/70 mt-1">
               General inquiries:{" "}
-              <a href="mailto:support@makecustommusic.com" className="text-violet-400 hover:underline">
-                support@makecustommusic.com
+              <a href="mailto:support@createchristianmusic.com" className="text-violet-400 hover:underline">
+                support@createchristianmusic.com
               </a>
             </p>
             <p className="text-foreground/70 mt-1">
               Legal / Arbitration opt-out:{" "}
-              <a href="mailto:legal@makecustommusic.com" className="text-violet-400 hover:underline">
-                legal@makecustommusic.com
+              <a href="mailto:support@createchristianmusic.com" className="text-violet-400 hover:underline">
+                support@createchristianmusic.com
               </a>
             </p>
             <p className="text-foreground/70 mt-1">
               DMCA notices:{" "}
-              <a href="mailto:dmca@makecustommusic.com" className="text-violet-400 hover:underline">
-                dmca@makecustommusic.com
+              <a href="mailto:support@createchristianmusic.com" className="text-violet-400 hover:underline">
+                support@createchristianmusic.com
               </a>
             </p>
             <p className="text-foreground/70 mt-1">

@@ -9,15 +9,69 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   Globe, Play, Pause, Heart, Music, Clock, ChevronDown,
-  Headphones, Sparkles, User, Loader2, FileAudio
+  Headphones, Sparkles, User, Loader2, FileAudio,
+  Church, Guitar, Piano, Mic, BookOpen, Cross
 } from "lucide-react";
 import { Link } from "wouter";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
+/* ─── Curated Genre Collections ─── */
+const GENRE_COLLECTIONS = [
+  {
+    title: "Praise & Worship",
+    description: "Uplifting anthems and intimate worship songs for Sunday services and prayer gatherings.",
+    icon: Church,
+    gradient: "from-purple-600/20 via-purple-500/10 to-violet-600/20",
+    accentColor: "text-purple-400",
+    tags: ["Praise & Worship", "CCM", "Anthem"],
+  },
+  {
+    title: "Gospel & Choir",
+    description: "Powerful gospel arrangements with rich harmonies, call-and-response patterns, and joyful celebration.",
+    icon: Mic,
+    gradient: "from-amber-600/20 via-orange-500/10 to-yellow-600/20",
+    accentColor: "text-amber-400",
+    tags: ["Gospel", "Southern Gospel", "Choral"],
+  },
+  {
+    title: "Hymns & Traditional",
+    description: "Timeless hymns reimagined with modern production — from organ-led classics to acoustic arrangements.",
+    icon: BookOpen,
+    gradient: "from-emerald-600/20 via-green-500/10 to-teal-600/20",
+    accentColor: "text-emerald-400",
+    tags: ["Hymns", "Liturgical", "Traditional"],
+  },
+  {
+    title: "Contemporary Christian",
+    description: "Modern Christian rock, pop, and acoustic styles — perfect for youth worship and contemporary services.",
+    icon: Guitar,
+    gradient: "from-rose-600/20 via-pink-500/10 to-red-600/20",
+    accentColor: "text-rose-400",
+    tags: ["Christian Rock", "Christian Pop", "Christian Acoustic"],
+  },
+  {
+    title: "Instrumental & Devotional",
+    description: "Peaceful piano, ambient pads, and orchestral pieces for prayer, meditation, and quiet reflection.",
+    icon: Piano,
+    gradient: "from-sky-600/20 via-blue-500/10 to-indigo-600/20",
+    accentColor: "text-sky-400",
+    tags: ["Classical", "Ambient", "Devotional"],
+  },
+  {
+    title: "Christian Hip Hop & R&B",
+    description: "Faith-driven beats, spoken word, and soulful R&B — music that speaks to a new generation of believers.",
+    icon: Cross,
+    gradient: "from-fuchsia-600/20 via-purple-500/10 to-pink-600/20",
+    accentColor: "text-fuchsia-400",
+    tags: ["Christian Hip Hop", "Christian R&B", "Spiritual"],
+  },
+];
+
 export default function Discover() {
   usePageMeta({
-    title: "Discover",
-    description: "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Create Christian Music.",
+    title: "Discover Christian Music",
+    description: "Explore AI-generated worship songs, gospel tracks, and hymns shared by Christian creators. Browse by genre and get inspired.",
+    keywords: "christian music community, worship songs online, AI generated worship music, gospel music discover, new christian songs, praise and worship playlist, christian music sharing, worship music community, AI christian music examples, gospel songs new, praise songs",
     canonicalPath: "/discover",
   });
   const { user } = useAuth();
@@ -125,8 +179,73 @@ export default function Discover() {
         </div>
       </div>
 
-      {/* Song Grid */}
-      <div className="container py-8">
+      {/* ═══════════════════════════════════════════════ */}
+      {/* Curated Genre Collections                       */}
+      {/* ═══════════════════════════════════════════════ */}
+      <div className="container py-10">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Browse by Genre</h2>
+          <p className="text-muted-foreground">
+            Explore the full range of Christian music styles you can create with AI.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {GENRE_COLLECTIONS.map((collection) => (
+            <Link key={collection.title} href={`/generate`}>
+              <div className={`group relative h-full p-5 rounded-2xl bg-gradient-to-br ${collection.gradient} border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 cursor-pointer overflow-hidden`}>
+                {/* Subtle shimmer overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                <div className="relative space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/[0.08] flex items-center justify-center group-hover:bg-white/[0.12] transition-colors">
+                      <collection.icon className={`w-5 h-5 ${collection.accentColor}`} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground">{collection.title}</h3>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {collection.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {collection.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-[10px] bg-white/[0.06] border-white/[0.08] text-muted-foreground">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <Sparkles className={`w-3.5 h-3.5 ${collection.accentColor}`} />
+                    <span className={`text-xs font-medium ${collection.accentColor}`}>
+                      Create in this style
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="container">
+        <div className="border-t border-border" />
+      </div>
+
+      {/* ═══════════════════════════════════════════════ */}
+      {/* Community Songs Grid                            */}
+      {/* ═══════════════════════════════════════════════ */}
+      <div className="container py-10">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Community Songs</h2>
+          <p className="text-muted-foreground">
+            Songs shared by creators using the platform. Publish your own to appear here.
+          </p>
+        </div>
+
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -143,15 +262,15 @@ export default function Discover() {
             ))}
           </div>
         ) : songs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+          <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
               <Music className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground">No songs shared yet</h2>
+            <h3 className="text-xl font-semibold text-foreground">No community songs yet</h3>
             <p className="text-muted-foreground max-w-md">
               Be the first to share your music with the community. Create a song and click the publish button to share it here.
             </p>
-            <Link href="/generator">
+            <Link href="/generate">
               <Button className="gap-2 mt-2">
                 <Sparkles className="w-4 h-4" />
                 Create a Song

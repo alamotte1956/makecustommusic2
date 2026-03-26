@@ -34,8 +34,9 @@ import { Label } from "@/components/ui/label";
 
 export default function History() {
   usePageMeta({
-    title: "My Songs",
-    description: "Browse and manage your AI-generated song collection. Play, download, edit, and organize your music.",
+    title: "My Christian Songs",
+    description: "Browse and manage your AI-generated worship songs. Play, download, edit, and organize your Christian music library.",
+    keywords: "my worship songs, christian music library, AI generated hymns, gospel song collection, church music downloads, worship song history, christian music archive, praise song library",
     canonicalPath: "/history",
   });
   const { isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
