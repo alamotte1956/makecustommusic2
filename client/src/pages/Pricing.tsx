@@ -2,10 +2,23 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Check, Zap, Crown, ArrowRight, Loader2 } from "lucide-react";
+import { Check, Zap, Crown, ArrowRight, Loader2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { usePageMeta } from "@/hooks/usePageMeta";
+
+// Tax-inclusive pricing breakdown (8.53% MN Hennepin County)
+const TAX_RATE = 0.0853;
+function taxBreakdown(totalDollars: number) {
+  const baseCents = Math.round((totalDollars * 100) / (1 + TAX_RATE));
+  const taxCents = totalDollars * 100 - baseCents;
+  return {
+    base: (baseCents / 100).toFixed(2),
+    tax: (taxCents / 100).toFixed(2),
+    total: totalDollars.toFixed(2),
+  };
+}
 
 export default function Pricing() {
   usePageMeta({
@@ -163,6 +176,45 @@ export default function Pricing() {
                     {plan.monthlyPrice > 0 && (
                       <span className="text-muted-foreground text-sm">/mo</span>
                     )}
+                    {/* Tax breakdown tooltip */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="ml-1 inline-flex items-center text-muted-foreground hover:text-violet-400 transition-colors focus:outline-none"
+                          aria-label="View tax breakdown"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="right"
+                        sideOffset={8}
+                        className="bg-popover text-popover-foreground border border-border shadow-lg rounded-lg px-4 py-3 max-w-[220px]"
+                      >
+                        {(() => {
+                          const displayTotal = billingCycle === "monthly" ? plan.monthlyPrice : plan.annualPrice;
+                          const bd = taxBreakdown(displayTotal);
+                          return (
+                            <div className="space-y-1.5 text-xs">
+                              <p className="font-semibold text-sm text-foreground mb-1.5">Price Breakdown</p>
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground">Subtotal</span>
+                                <span className="text-foreground font-medium">${bd.base}</span>
+                              </div>
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground">MN Tax (8.53%)</span>
+                                <span className="text-foreground font-medium">${bd.tax}</span>
+                              </div>
+                              <div className="border-t border-border pt-1.5 flex justify-between gap-4">
+                                <span className="text-foreground font-semibold">Total</span>
+                                <span className="text-foreground font-semibold">${bd.total}{billingCycle === "monthly" ? "/mo" : "/yr"}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                   {billingCycle === "annual" && plan.annualPrice > 0 && (
                     <p className="text-xs text-green-400 mt-1">
@@ -172,7 +224,6 @@ export default function Pricing() {
                   <p className="text-xs text-muted-foreground mt-1">
                     Price includes MN sales tax (8.53%)
                   </p>
-
                 </div>
 
                 {/* CTA Button */}
