@@ -212,6 +212,30 @@ export default function UsageDashboard() {
                  "Canceled"}
               </div>
             </div>
+            {subscription.status === "active" && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Want to cancel?</p>
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
+                      You can cancel anytime. Your access continues until the end of your current billing period. No refunds for unused time.
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={handleManageBilling}
+                    disabled={portalLoading}
+                  >
+                    {portalLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    Cancel Subscription
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

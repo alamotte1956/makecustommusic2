@@ -220,24 +220,24 @@ describe("Admin nav unread badge", () => {
 // ─── Pricing update tests ──────────────────────────────────────────────────
 
 describe("competitive pricing matching Suno tiers", () => {
-  it("Pro (creator) plan should be $8/mo", async () => {
+  it("Pro (creator) plan should be $10/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(800);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1000);
   });
 
-  it("Premier (professional) plan should be $24/mo", async () => {
+  it("Premier (professional) plan should be $26/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2400);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2600);
   });
 
-  it("Pro annual should be $72/yr (saves $24)", async () => {
+  it("Pro annual should be $90/yr (saves $30)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.annual).toBe(7200);
+    expect(STRIPE_PLANS.creator.prices.annual).toBe(9000);
   });
 
-  it("Premier annual should be $216/yr (saves $72)", async () => {
+  it("Premier annual should be $234/yr (saves $78)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.annual).toBe(21600);
+    expect(STRIPE_PLANS.professional.prices.annual).toBe(23400);
   });
 
   it("webhook should award 2 free bonus credits on new subscription", () => {

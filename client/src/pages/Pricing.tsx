@@ -10,7 +10,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 export default function Pricing() {
   usePageMeta({
     title: "Pricing",
-    description: "Choose a plan for AI music generation. Creator and Professional tiers with credits for song creation, MP3 downloads, and more.",
+    description: "Choose a plan for AI music generation. Pro and Premier tiers with credits for song creation, sheet music, and more. No free tier — subscribe to start creating.",
     canonicalPath: "/pricing",
   });
   const { user } = useAuth();
@@ -39,8 +39,8 @@ export default function Pricing() {
   };
 
   const annualSavings: Record<string, number> = {
-    creator: 24,      // $8*12 - $72 = $24
-    professional: 72,  // $24*12 - $216 = $72
+    creator: 30,      // $10*12 - $90 = $30
+    professional: 78,  // $26*12 - $234 = $78
   };
 
   const planColors: Record<string, string> = {
@@ -89,7 +89,7 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Choose the plan that fits your creative needs. Upgrade anytime.
+            Choose the plan that fits your creative needs. No free tier — subscribe to start creating.
           </p>
 
           {/* Billing toggle */}
@@ -233,7 +233,15 @@ export default function Pricing() {
               },
               {
                 q: "Can I use the music commercially?",
-                a: "Both Pro and Premier plans include commercial use rights for all new songs you create. Free tier songs are for personal use only.",
+                a: "Both Pro and Premier plans include commercial use rights for all new songs you create.",
+              },
+              {
+                q: "Do I get free bonus songs?",
+                a: "Yes! All paid subscribers get 2 free bonus songs every day on top of their monthly credits. These reset daily and don't count toward your allocation.",
+              },
+              {
+                q: "Is there a free plan?",
+                a: "No. You can explore and browse the site for free, but generating music requires a paid subscription (Pro or Premier).",
               },
               {
                 q: "What's the difference between Pro and Premier?",
@@ -245,15 +253,15 @@ export default function Pricing() {
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes, you can cancel your subscription at any time. You'll retain access to your current plan until the end of your billing period. Manage your subscription from the Usage Dashboard.",
+                a: "Yes, you can cancel at any time from the Usage Dashboard. Your access continues until the end of your billing period. No refunds are provided for unused time or credits.",
               },
               {
                 q: "What payment methods do you accept?",
                 a: "We accept all major credit cards, debit cards, and digital wallets through Stripe.",
               },
               {
-                q: "How do I manage my subscription?",
-                a: "Visit your Usage Dashboard and click 'Manage Billing' to access the Stripe Customer Portal where you can update payment methods, change plans, or cancel.",
+                q: "How do I manage or cancel my subscription?",
+                a: "Visit the Usage Dashboard where you'll find a 'Cancel Subscription' button and 'Manage Billing' button. Cancellation takes effect at the end of your billing period with no refund for unused time.",
               },
             ].map((faq, i) => (
               <div key={i} className="border-b pb-4">

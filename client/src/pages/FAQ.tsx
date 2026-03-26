@@ -45,27 +45,31 @@ const faqCategories = [
     items: [
       {
         q: "What plans do you offer?",
-        a: "We offer two subscription plans: Creator ($19.99/month or $192/year) with 50 credits per month, unlimited sheet music, 192kbps MP3 quality, and commercial use for social media. Professional ($34.99/month or $336/year) with 100 credits per month, unlimited sheet music, 192kbps MP3 quality, full commercial rights, stem separation, and MIDI export. Both plans include 2 free bonus credits when you first subscribe.",
+        a: "We offer two subscription plans: Pro ($10/month or $90/year) with 2,500 credits (up to 500 songs) per month, access to the latest AI model, commercial use rights, personas and advanced editing, stem separation into 12 parts, and 8 min audio uploads. Premier ($26/month or $234/year) with 10,000 credits (up to 2,000 songs) per month, plus access to Make Custom Music Studio and all Pro features. Both plans include 2 free bonus songs per day. There is no free generation plan.",
       },
       {
         q: "What are credits and how do they work?",
-        a: "Each song generation costs 1 credit. Credits are allocated monthly based on your plan — 50 credits for Creator and 100 credits for Professional. Sheet music generation, chord progressions, and AI lyrics generation are included with your plan at no additional credit cost.",
+        a: "Each song generation costs 1 credit. Credits are allocated monthly based on your plan — 2,500 credits (up to 500 songs) for Pro and 10,000 credits (up to 2,000 songs) for Premier. Sheet music generation, chord progressions, and AI lyrics generation are included with your plan at no additional credit cost. Plus, all paid subscribers get 2 free bonus songs per day that don't count toward your monthly credits.",
       },
       {
-        q: "Do I get any free credits when I subscribe?",
-        a: "Yes! When you first subscribe to either the Creator or Professional plan, you receive 2 free bonus credits on top of your monthly allocation. This lets you start creating right away.",
+        q: "Do I get free bonus songs?",
+        a: "Yes! All paid subscribers (Pro and Premier) get 2 free bonus songs every day on top of their monthly credit allocation. These reset daily and don't count toward your monthly credits — it's our way of encouraging daily creativity.",
       },
       {
         q: "Do unused credits roll over?",
-        a: "Monthly credits reset each billing cycle. If you consistently need more songs, consider upgrading to the Professional plan for a larger monthly allowance.",
+        a: "Monthly credits reset each billing cycle. If you consistently need more songs, consider upgrading to the Premier plan for a larger monthly allowance.",
       },
       {
         q: "Can I save money with annual billing?",
-        a: "Yes, annual billing saves you approximately 20% compared to monthly billing. Creator is $192/year ($16/month effective) and Professional is $336/year ($28/month effective).",
+        a: "Yes, annual billing saves you approximately 25% compared to monthly billing. Pro is $90/year ($7.50/month effective) and Premier is $234/year ($19.50/month effective).",
       },
       {
         q: "Can I cancel my subscription anytime?",
-        a: "Yes, you can cancel at any time from the Usage Dashboard. You'll retain access to your current plan and remaining credits until the end of your billing period. All your generated songs remain accessible after cancellation.",
+        a: "Yes, you can cancel at any time from the Usage Dashboard. Your access continues until the end of your current billing period. No refunds are provided for unused time or credits. All your generated songs remain accessible after cancellation.",
+      },
+      {
+        q: "Is there a free plan?",
+        a: "We don't offer a free generation plan. You can explore the site, browse public songs, and view features without an account, but generating music, sheet music, or any content requires a paid subscription (Pro or Premier). This ensures the highest quality experience for all creators.",
       },
     ],
   },
@@ -162,8 +166,8 @@ const faqCategories = [
     icon: <HelpCircle className="h-5 w-5" />,
     items: [
       {
-        q: "How do I manage my subscription?",
-        a: "Visit the Usage Dashboard and click 'Manage Billing' to access the Stripe billing portal where you can update payment methods, change plans, view invoices, or cancel.",
+        q: "How do I manage or cancel my subscription?",
+        a: "Visit the Usage Dashboard where you'll find a 'Cancel Subscription' button and a 'Manage Billing' button. Clicking either takes you to the Stripe billing portal where you can cancel, update payment methods, change plans, or view invoices. Cancellation is immediate but your access continues until the end of your billing period. No refunds are provided for unused time.",
       },
       {
         q: "What payment methods do you accept?",

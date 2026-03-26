@@ -56,6 +56,8 @@ const CHRISTIAN_GENRES = [
   "Christian", "Gospel", "Christian Modern", "Christian Pop",
   "Christian Rock", "Christian Hip Hop", "Southern Gospel",
   "Hymns", "Praise & Worship", "Christian R&B",
+  "CCM", "Liturgical", "Choral", "Christian Acoustic",
+  "Anthem", "Spiritual",
 ];
 
 // Combined flat list for backward compatibility
@@ -64,7 +66,8 @@ const GENRES = [...MAIN_GENRES, ...CHRISTIAN_GENRES];
 const MOODS = [
   "Happy", "Melancholic", "Energetic", "Calm", "Epic",
   "Romantic", "Dark", "Uplifting", "Mysterious", "Playful",
-  "Devotional", "Triumphant",
+  "Devotional", "Triumphant", "Reverent", "Joyful Praise",
+  "Prayerful", "Grateful", "Reflective", "Celebratory",
 ];
 
 const VOCAL_OPTIONS = [
@@ -98,6 +101,18 @@ const LYRIC_TEMPLATES = [
     template: "[Verse 1]\n\n\n[Pre-Chorus]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Bridge]\n\n\n[Chorus]",
   },
   {
+    label: "Psalm Setting",
+    template: "[Intro - Instrumental]\n\n[Verse 1 - Psalm text]\n\n\n[Response / Refrain]\n\n\n[Verse 2 - Psalm text]\n\n\n[Response / Refrain]\n\n\n[Verse 3 - Psalm text]\n\n\n[Response / Refrain]\n\n\n[Outro - Amen]",
+  },
+  {
+    label: "Scripture Song",
+    template: "[Verse 1 - Scripture passage]\n\n\n[Chorus - Key truth]\n\n\n[Verse 2 - Application]\n\n\n[Chorus]\n\n\n[Bridge - Prayer / Declaration]\n\n\n[Chorus]\n\n\n[Tag - Selah]",
+  },
+  {
+    label: "Call to Worship",
+    template: "[Call - Leader]\n\n\n[Response - Congregation]\n\n\n[Call - Leader]\n\n\n[Response - Congregation]\n\n\n[Together - All Voices]\n\n\n[Instrumental Transition]",
+  },
+  {
     label: "Story Song",
     template: "[Intro]\n\n\n[Verse 1]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Verse 3]\n\n\n[Chorus]\n\n\n[Outro]",
   },
@@ -112,6 +127,14 @@ const LYRIC_TEMPLATES = [
   {
     label: "Worship / Hymn",
     template: "[Verse 1]\n\n\n[Chorus]\n\n\n[Verse 2]\n\n\n[Chorus]\n\n\n[Bridge]\n\n\n[Chorus]\n\n\n[Tag / Outro]",
+  },
+  {
+    label: "Communion Song",
+    template: "[Intro - Soft, Reverent]\n\n[Verse 1 - Remembrance]\n\n\n[Chorus - The Table]\n\n\n[Verse 2 - Sacrifice]\n\n\n[Chorus]\n\n\n[Bridge - Gratitude]\n\n\n[Outro - Amen]",
+  },
+  {
+    label: "Altar Call",
+    template: "[Verse 1 - Invitation]\n\n\n[Chorus - Come as you are]\n\n\n[Verse 2 - Promise]\n\n\n[Chorus]\n\n\n[Bridge - Surrender]\n\n\n[Chorus - Soft repeat]\n\n\n[Outro - Instrumental]",
   },
 ];
 
@@ -306,7 +329,12 @@ export default function Generator() {
   const enginesQuery = trpc.songs.engines.useQuery();
   const generateMutation = trpc.songs.generate.useMutation();
   const shareMutation = trpc.songs.createShareLink.useMutation();
+  const summaryQuery = trpc.credits.summary.useQuery();
   const utils = trpc.useUtils();
+
+  const userPlan = summaryQuery.data?.plan ?? "free";
+  const hasSubscription = userPlan !== "free";
+  const dailyBonusSongsRemaining = summaryQuery.data?.usage?.dailyBonusSongsRemaining ?? 0;
 
   const isElevenLabsAvailable = enginesQuery.data?.elevenlabs ?? false;
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
@@ -453,8 +481,31 @@ export default function Generator() {
     );
   }
 
+  /* ── Subscription gate ── */
+  if (!summaryQuery.isLoading && !hasSubscription) {
+    return (
+      <div className="container py-20 max-w-lg mx-auto text-center space-y-6">
+        <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold">Subscription Required</h2>
+        <p className="text-muted-foreground">
+          A paid plan is required to generate music. Choose Pro or Premier to unlock AI music creation, sheet music, and more.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button asChild size="lg">
+            <Link href="/pricing">View Plans</Link>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          All paid plans include 2 free bonus songs per day on top of your monthly credits.
+        </p>
+      </div>
+    );
+  }
+
   const hasDownloadable = generatedSong?.audioUrl || generatedSong?.mp3Url;
-  const canGenerate = isElevenLabsAvailable && !isGenerating && (
+  const canGenerate = isElevenLabsAvailable && !isGenerating && hasSubscription && (
     creationMode === "describe" ? keywords.trim().length > 0 : customLyrics.trim().length > 0
   );
 
@@ -558,8 +609,12 @@ export default function Generator() {
                       "epic orchestral adventure",
                       "calm acoustic guitar",
                       "energetic electronic dance",
-                      "melancholic classical violin",
-                      "tropical reggae vibes",
+                      "praise & worship anthem",
+                      "gentle hymn for communion",
+                      "joyful gospel choir celebration",
+                      "prayerful piano devotional",
+                      "Psalm 23 worship song",
+                      "uplifting church band praise",
                     ].map((s) => (
                       <button
                         key={s}
@@ -923,8 +978,15 @@ export default function Generator() {
                   ? "ElevenLabs API key required — add it in Settings."
                   : isGenerating
                   ? progressMessage
+                  : dailyBonusSongsRemaining > 0
+                  ? `${dailyBonusSongsRemaining} free bonus song${dailyBonusSongsRemaining > 1 ? "s" : ""} remaining today (no credits used)`
                   : "Everything looks good. Hit the button to create!"
               } />
+              {dailyBonusSongsRemaining > 0 && !isGenerating && (
+                <Badge variant="secondary" className="mt-1 text-xs bg-green-500/10 text-green-400 border-green-500/20">
+                  ✨ Free Bonus Song
+                </Badge>
+              )}
             </div>
 
             <Button

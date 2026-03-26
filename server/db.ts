@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob, worshipSets, InsertWorshipSet, worshipSetItems, InsertWorshipSetItem, scriptureSongs, InsertScriptureSong } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -549,4 +549,113 @@ export async function deleteMp3SheetJob(jobId: number, userId: number) {
   await db
     .delete(mp3SheetJobs)
     .where(and(eq(mp3SheetJobs.id, jobId), eq(mp3SheetJobs.userId, userId)));
+}
+
+
+// ─── Worship Sets ───
+
+export async function createWorshipSet(data: InsertWorshipSet) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(worshipSets).values(data);
+  const id = result[0].insertId;
+  return getWorshipSetById(id, data.userId);
+}
+
+export async function getWorshipSetById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(worshipSets)
+    .where(and(eq(worshipSets.id, id), eq(worshipSets.userId, userId)))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+export async function getUserWorshipSets(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(worshipSets)
+    .where(eq(worshipSets.userId, userId))
+    .orderBy(desc(worshipSets.updatedAt));
+}
+
+export async function updateWorshipSet(id: number, userId: number, data: Partial<Pick<InsertWorshipSet, "title" | "date" | "serviceType" | "notes" | "liturgicalSeason">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(worshipSets).set(data)
+    .where(and(eq(worshipSets.id, id), eq(worshipSets.userId, userId)));
+}
+
+export async function deleteWorshipSet(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Delete items first, then the set
+  await db.delete(worshipSetItems).where(eq(worshipSetItems.worshipSetId, id));
+  await db.delete(worshipSets)
+    .where(and(eq(worshipSets.id, id), eq(worshipSets.userId, userId)));
+}
+
+// ─── Worship Set Items ───
+
+export async function addWorshipSetItem(data: InsertWorshipSetItem) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(worshipSetItems).values(data);
+  return result[0].insertId;
+}
+
+export async function getWorshipSetItems(worshipSetId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(worshipSetItems)
+    .where(eq(worshipSetItems.worshipSetId, worshipSetId))
+    .orderBy(worshipSetItems.sortOrder);
+}
+
+export async function updateWorshipSetItem(id: number, data: Partial<Pick<InsertWorshipSetItem, "title" | "notes" | "songKey" | "sortOrder" | "duration" | "itemType">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(worshipSetItems).set(data).where(eq(worshipSetItems.id, id));
+}
+
+export async function deleteWorshipSetItem(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(worshipSetItems).where(eq(worshipSetItems.id, id));
+}
+
+export async function reorderWorshipSetItems(worshipSetId: number, itemIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (let i = 0; i < itemIds.length; i++) {
+    await db.update(worshipSetItems)
+      .set({ sortOrder: i })
+      .where(and(eq(worshipSetItems.id, itemIds[i]), eq(worshipSetItems.worshipSetId, worshipSetId)));
+  }
+}
+
+// ─── Scripture Songs ───
+
+export async function linkScriptureSong(data: InsertScriptureSong) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(scriptureSongs).values(data);
+  return result[0].insertId;
+}
+
+export async function getScriptureSongBySongId(songId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(scriptureSongs)
+    .where(eq(scriptureSongs.songId, songId))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+export async function getScriptureSongsByBook(book: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(scriptureSongs)
+    .where(eq(scriptureSongs.book, book))
+    .orderBy(scriptureSongs.chapter, scriptureSongs.verseStart);
 }

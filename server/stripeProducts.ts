@@ -33,8 +33,8 @@ export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
     name: "Pro",
     description: "500 songs/month, commercial use rights, personas & advanced editing, stem separation, 8 min audio uploads, priority queue",
     prices: {
-      monthly: 800,    // $8/mo
-      annual: 7200,    // $72/yr ($6/mo — saves $24/yr)
+      monthly: 1000,   // $10/mo
+      annual: 9000,    // $90/yr ($7.50/mo — saves $30/yr)
     },
     metadata: {
       plan_tier: "creator",
@@ -46,8 +46,8 @@ export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
     name: "Premier",
     description: "2,000 songs/month, access to Studio, all Pro features, 10,000 credits, early access to new features",
     prices: {
-      monthly: 2400,   // $24/mo
-      annual: 21600,   // $216/yr ($18/mo — saves $72/yr)
+      monthly: 2600,   // $26/mo
+      annual: 23400,   // $234/yr ($19.50/mo — saves $78/yr)
     },
     metadata: {
       plan_tier: "professional",

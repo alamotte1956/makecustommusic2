@@ -148,6 +148,13 @@
       "when": 1774447368694,
       "tag": "0020_premium_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1774483717216,
+      "tag": "0021_stiff_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,9 @@ import {
   markNotificationRead, markAllNotificationsRead, deleteNotification,
   getBlogComments, createBlogComment, deleteBlogComment, getBlogCommentCount,
   createMp3SheetJob, getMp3SheetJob, updateMp3SheetJob, getUserMp3SheetJobs, deleteMp3SheetJob,
+  createWorshipSet, getWorshipSetById, getUserWorshipSets, updateWorshipSet, deleteWorshipSet,
+  addWorshipSetItem, getWorshipSetItems, updateWorshipSetItem, deleteWorshipSetItem, reorderWorshipSetItems,
+  linkScriptureSong, getScriptureSongBySongId,
   getDb,
 } from "./db";
 import type { ChordProgressionData } from "../drizzle/schema";
@@ -33,9 +36,9 @@ import { buildCoverArtPrompt } from "./coverArtMotifs";
 import {
   getUserPlan, getCreditBalance, deductCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
-  getUserSubscription,
+  getUserSubscription, canUserGenerate, checkDailyBonus, useDailyBonus,
 } from "./credits";
-import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName } from "../drizzle/schema";
+import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName, LITURGICAL_SEASONS, SERVICE_SEGMENTS, BAND_INSTRUMENTS, CHOIR_PARTS } from "../drizzle/schema";
 import { getArticleBySlug } from "../shared/blogArticles";
 import { ensureReferralCode, getReferralStats, getReferralHistory, getUserByReferralCode, processReferral, getLeaderboard } from "./referrals";
 import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
@@ -94,6 +97,18 @@ export const appRouter = router({
           mode, customTitle, customLyrics, customStyle
         } = input;
 
+        // ── Plan gate: free users cannot generate ──
+        const userPlan = await getUserPlan(ctx.user.id);
+        if (!canUserGenerate(userPlan)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "A paid subscription is required to generate music. Please choose a Pro or Premier plan to get started.",
+          });
+        }
+
+        // ── Check daily bonus: if bonus available, use it instead of credits ──
+        const bonusCheck = await checkDailyBonus(ctx.user.id, "bonus_song", userPlan);
+
         if (!isElevenLabsAvailable()) {
           throw new Error("ElevenLabs engine is not available. Please configure the ELEVENLABS_API_KEY.");
         }
@@ -121,6 +136,19 @@ export const appRouter = router({
           },
           ctx.user.id
         );
+
+        // Deduct credits or use daily bonus
+        if (bonusCheck.available) {
+          await useDailyBonus(ctx.user.id, "bonus_song", `Daily bonus song: ${customTitle || keywords.substring(0, 50)}`);
+        } else {
+          const creditResult = await deductCredits(ctx.user.id, 1, "generation", `Generated: ${customTitle || keywords.substring(0, 50)}`);
+          if (!creditResult.success) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: creditResult.error || "Insufficient credits. Please upgrade your plan or purchase more credits.",
+            });
+          }
+        }
 
         // Save to database
         const song = await createSong({
@@ -1472,8 +1500,8 @@ RULES:
             id: "creator",
             name: "Pro",
             tagline: "Access to our best models and editing tools.",
-            monthlyPrice: 8,
-            annualPrice: 72,
+            monthlyPrice: 10,
+            annualPrice: 90,
             popular: true,
             limits: PLAN_LIMITS.creator,
             features: [
@@ -1493,8 +1521,8 @@ RULES:
             id: "professional",
             name: "Premier",
             tagline: "For serious creators and producers.",
-            monthlyPrice: 24,
-            annualPrice: 216,
+            monthlyPrice: 26,
+            annualPrice: 234,
             popular: false,
             limits: PLAN_LIMITS.professional,
             features: [
@@ -2048,6 +2076,241 @@ RULES:
         const { updateNotificationPreference } = await import("./adminPreferencesDb");
         const { notificationType, ...updates } = input;
         return updateNotificationPreference(notificationType, updates);
+      }),
+  }),
+
+  // ─── Worship Sets (Service Planning) ──────────────────────────────────────
+  worship: router({
+    // Get constants for the UI
+    constants: publicProcedure.query(() => {
+      return {
+        liturgicalSeasons: [...LITURGICAL_SEASONS],
+        serviceSegments: [...SERVICE_SEGMENTS],
+        bandInstruments: [...BAND_INSTRUMENTS],
+        choirParts: [...CHOIR_PARTS],
+        serviceTypes: [
+          "Sunday Morning", "Sunday Evening", "Wednesday Night",
+          "Youth Service", "Special Event", "Holiday Service",
+          "Prayer Meeting", "Revival", "Funeral", "Wedding",
+          "Christmas Eve", "Easter Sunday", "Good Friday",
+        ],
+        christianGenres: [
+          "Contemporary Worship", "Gospel", "Hymn/Traditional", "Christian Pop",
+          "Christian Rock", "Christian Hip-Hop", "Praise & Worship", "Scripture Song",
+          "Christian Country", "Christian R&B", "Choir/Choral", "Instrumental Worship",
+          "Christian EDM", "Kids Worship", "Southern Gospel", "Black Gospel",
+          "Gregorian Chant", "Christian Folk", "Worship Ballad", "Anthem",
+        ],
+        worshipMoods: [
+          "Reverent", "Joyful Praise", "Prayerful", "Celebratory",
+          "Reflective", "Triumphant", "Intimate", "Peaceful",
+          "Lamenting", "Grateful", "Hopeful", "Majestic",
+        ],
+      };
+    }),
+
+    // List user's worship sets
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getUserWorshipSets(ctx.user.id);
+    }),
+
+    // Get a single worship set with its items
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const set = await getWorshipSetById(input.id, ctx.user.id);
+        if (!set) throw new TRPCError({ code: "NOT_FOUND", message: "Worship set not found" });
+        const items = await getWorshipSetItems(input.id);
+        return { ...set, items };
+      }),
+
+    // Create a new worship set
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(255),
+        date: z.string().optional(),
+        serviceType: z.string().max(100).optional(),
+        notes: z.string().optional(),
+        liturgicalSeason: z.string().max(100).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return createWorshipSet({ ...input, userId: ctx.user.id });
+      }),
+
+    // Update a worship set
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1).max(255).optional(),
+        date: z.string().optional(),
+        serviceType: z.string().max(100).optional(),
+        notes: z.string().optional(),
+        liturgicalSeason: z.string().max(100).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await updateWorshipSet(id, ctx.user.id, data);
+        return { success: true };
+      }),
+
+    // Delete a worship set
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteWorshipSet(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    // ─── Worship Set Items ───
+    addItem: protectedProcedure
+      .input(z.object({
+        worshipSetId: z.number(),
+        songId: z.number().optional(),
+        itemType: z.enum(["song", "prayer", "scripture", "sermon", "offering", "communion", "announcement", "transition", "other"]).default("song"),
+        title: z.string().min(1).max(255),
+        notes: z.string().optional(),
+        songKey: z.string().max(10).optional(),
+        sortOrder: z.number().default(0),
+        duration: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verify ownership of the worship set
+        const set = await getWorshipSetById(input.worshipSetId, ctx.user.id);
+        if (!set) throw new TRPCError({ code: "NOT_FOUND", message: "Worship set not found" });
+        const id = await addWorshipSetItem(input);
+        return { id };
+      }),
+
+    updateItem: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        worshipSetId: z.number(),
+        title: z.string().min(1).max(255).optional(),
+        notes: z.string().optional(),
+        songKey: z.string().max(10).optional(),
+        sortOrder: z.number().optional(),
+        duration: z.number().optional(),
+        itemType: z.enum(["song", "prayer", "scripture", "sermon", "offering", "communion", "announcement", "transition", "other"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const set = await getWorshipSetById(input.worshipSetId, ctx.user.id);
+        if (!set) throw new TRPCError({ code: "NOT_FOUND", message: "Worship set not found" });
+        const { id, worshipSetId, ...data } = input;
+        await updateWorshipSetItem(id, data);
+        return { success: true };
+      }),
+
+    deleteItem: protectedProcedure
+      .input(z.object({ id: z.number(), worshipSetId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const set = await getWorshipSetById(input.worshipSetId, ctx.user.id);
+        if (!set) throw new TRPCError({ code: "NOT_FOUND", message: "Worship set not found" });
+        await deleteWorshipSetItem(input.id);
+        return { success: true };
+      }),
+
+    reorderItems: protectedProcedure
+      .input(z.object({
+        worshipSetId: z.number(),
+        itemIds: z.array(z.number()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const set = await getWorshipSetById(input.worshipSetId, ctx.user.id);
+        if (!set) throw new TRPCError({ code: "NOT_FOUND", message: "Worship set not found" });
+        await reorderWorshipSetItems(input.worshipSetId, input.itemIds);
+        return { success: true };
+      }),
+
+    // ─── AI-Powered Worship Suggestions ───
+    suggestSet: protectedProcedure
+      .input(z.object({
+        serviceType: z.string(),
+        liturgicalSeason: z.string().optional(),
+        theme: z.string().optional(),
+        scriptureReading: z.string().optional(),
+        mood: z.string().optional(),
+        congregationSize: z.enum(["small", "medium", "large"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const prompt = `You are a church music director assistant. Suggest a worship set for a ${input.serviceType} service.
+${input.liturgicalSeason ? `Liturgical Season: ${input.liturgicalSeason}` : ""}
+${input.theme ? `Theme: ${input.theme}` : ""}
+${input.scriptureReading ? `Scripture Reading: ${input.scriptureReading}` : ""}
+${input.mood ? `Desired Mood: ${input.mood}` : ""}
+${input.congregationSize ? `Congregation Size: ${input.congregationSize}` : ""}
+
+Suggest a complete worship service flow with 8-12 items including songs, prayers, scripture readings, and transitions. For each item, provide:
+- type (song/prayer/scripture/sermon/offering/communion/transition)
+- title
+- suggested key (for songs)
+- estimated duration in minutes
+- notes for the worship team
+
+Focus on creating a natural flow from gathering to sending forth.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are an experienced church music director who plans worship services. Return JSON." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "worship_set_suggestion",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  title: { type: "string", description: "Suggested title for this worship set" },
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        type: { type: "string", description: "Item type: song, prayer, scripture, sermon, offering, communion, transition, other" },
+                        title: { type: "string", description: "Title or description of the item" },
+                        songKey: { type: "string", description: "Musical key for songs, empty for non-songs" },
+                        duration: { type: "number", description: "Estimated duration in minutes" },
+                        notes: { type: "string", description: "Notes for the worship team" },
+                      },
+                      required: ["type", "title", "songKey", "duration", "notes"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["title", "items"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate suggestion" });
+        const text = typeof content === "string" ? content : JSON.stringify(content);
+        return JSON.parse(text);
+      }),
+
+    // ─── Scripture Song Link ───
+    linkScripture: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        book: z.string().min(1).max(100),
+        chapter: z.number().min(1),
+        verseStart: z.number().min(1),
+        verseEnd: z.number().optional(),
+        translation: z.string().max(20).default("NIV"),
+        fullReference: z.string().min(1).max(100),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await linkScriptureSong(input);
+        return { id };
+      }),
+
+    getScriptureInfo: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .query(async ({ input }) => {
+        return getScriptureSongBySongId(input.songId);
       }),
   }),
 });

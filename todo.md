@@ -1477,3 +1477,95 @@
 - [x] Update Premier plan features: Access to Suno Studio, all Pro features plus 10000 credits (2000 songs), same feature list with Studio access highlighted
 - [x] Update stripe products and backend plan definitions to match new pricing ($8/mo Pro, $24/mo Premier)
 - [x] Update Terms of Service pricing table to match new prices
+
+## Christian Creator Features & Price Increase
+
+### Price Increase ($2/month)
+- [x] Raise Pro plan from $8/mo to $10/mo (annual from $72 to $90)
+- [x] Raise Premier plan from $24/mo to $26/mo (annual from $216 to $234)
+- [x] Update stripeProducts.ts, schema PLAN_LIMITS, routers allPlans, Pricing page, Terms pricing table
+- [x] Update all related test files with new prices
+
+### Christian Music Genres & Styles
+- [ ] Add Christian/worship genre options to the music generator (Contemporary Worship, Gospel, Hymn/Traditional, Christian Pop, Christian Rock, Christian Hip-Hop, Praise & Worship, Scripture Songs, Christian Country, Christian R&B, Choir/Choral, Instrumental Worship, Christian EDM, Kids Worship)
+- [ ] Add scripture-inspired prompt templates (Psalms, Proverbs, Beatitudes, etc.)
+- [ ] Add worship mood/atmosphere presets (Reverent, Joyful Praise, Reflective/Meditative, Celebratory, Prayerful, Lament, Thanksgiving, Communion/Intimate)
+
+### Christian Community & Content
+- [ ] Add "Worship & Faith" category to Discover/Community page
+- [ ] Add Christian creator spotlight section on landing page
+- [ ] Add church/ministry use case section on landing page (worship teams, youth groups, VBS, sermon backgrounds)
+
+### Church & Ministry Tools
+- [ ] Add Worship Set Builder feature (create ordered worship sets for services)
+- [ ] Add Sermon Background Music generator (ambient/instrumental for sermons)
+- [ ] Add Scripture Reference field in song creation (link songs to Bible verses)
+- [ ] Add Church License info section explaining usage rights for churches
+- [ ] Add seasonal/liturgical calendar presets (Advent, Christmas, Lent, Easter, Pentecost, etc.)
+
+### Church Music Director Tools
+- [ ] Worship Set Builder: create ordered worship sets with song flow (opener, worship, offering, communion, closing)
+- [ ] Service Planning: assign songs to specific service segments (prelude, processional, offertory, communion, recessional)
+- [ ] Key & Tempo Matching: suggest key transitions between songs in a worship set for smooth flow
+- [ ] Choir Parts Generator: generate SATB (soprano, alto, tenor, bass) vocal arrangements
+- [ ] Rehearsal Tracks: generate individual part rehearsal tracks (soprano only, alto only, etc.)
+- [ ] Chord Charts for Band: auto-generate Nashville Number System charts and standard chord charts
+- [ ] Transpose for Band: one-click transpose for capo guitar, Bb trumpet, Eb alto sax, F horn
+- [ ] Click Track / Metronome: generate click tracks with count-ins for band rehearsal
+- [ ] Sermon Background Music: ambient/instrumental generator for sermon illustrations and prayer time
+- [ ] Call to Worship Generator: create short musical intros for call to worship moments
+
+### Church Band Features
+- [ ] Band Arrangement Generator: create full band arrangements (lead guitar, rhythm guitar, bass, keys, drums, vocals)
+- [ ] Individual Instrument Parts: generate and download separate parts for each band member
+- [ ] Lead Sheet Generator: melody + chords + lyrics on one page for worship leaders
+- [ ] Rhythm Chart Generator: simplified charts showing only chords and rhythm patterns
+- [ ] Bass Tab Generator: generate bass tablature from chord progressions
+- [ ] Drum Pattern Generator: create drum patterns appropriate for worship style
+- [ ] Pad/Ambient Track Generator: create sustained pad tracks for transitions and prayer
+- [ ] In-Ear Mix Builder: create practice mixes with adjustable instrument levels
+
+### Scripture & Liturgical Features
+- [ ] Scripture Song Generator: input a Bible verse, generate a song based on it
+- [ ] Psalm Setting Generator: set any Psalm to music (chant, contemporary, hymn style)
+- [ ] Liturgical Calendar Presets: pre-built song suggestions for Advent, Christmas, Epiphany, Lent, Holy Week, Easter, Pentecost, Ordinary Time
+- [ ] Lectionary Integration: suggest songs based on the Revised Common Lectionary readings
+- [ ] Prayer Music Generator: create background music for corporate prayer, altar calls, communion
+- [ ] Responsive Reading Music: generate musical underscoring for responsive readings
+
+### Youth Ministry & VBS
+- [ ] Kids Worship Generator: age-appropriate worship songs with simple melodies and repetitive lyrics
+- [ ] VBS Theme Song Creator: create custom theme songs for Vacation Bible School programs
+- [ ] Youth Group Worship: contemporary/upbeat worship suitable for teen audiences
+- [ ] Camp Song Generator: fun, singable camp-style worship songs
+- [ ] Motion/Action Song Creator: songs with suggested hand motions for children's ministry
+
+### Christian Content Creator Tools
+- [ ] Podcast Intro/Outro Music: generate branded intro/outro music for Christian podcasts
+- [ ] YouTube Background Music: royalty-free worship-style background for Christian YouTube channels
+- [ ] Social Media Clips: generate 15-30 second worship clips for Instagram/TikTok
+- [ ] Devotional Music: short ambient pieces for daily devotional apps and content
+- [ ] Audio Bible Background: create atmospheric music beds for audio Bible recordings
+
+### Hymn Library & Resources
+- [ ] Public Domain Hymn Library: searchable database of classic hymns with sheet music
+- [ ] Hymn Modernizer: take a classic hymn and create a modern arrangement
+- [ ] Hymn Medley Builder: combine multiple hymns into a seamless medley
+- [ ] Hymn History & Context: display historical context and theological notes for hymns
+
+### Church Licensing & Rights
+- [ ] Church License Page: explain CCLI, OneLicense, and original content rights
+- [ ] CCLI Reporting Helper: track songs used in services for CCLI reporting
+- [ ] Original Content License: clear licensing for church-generated original content
+- [ ] Performance Rights Guide: explain rights for live streaming, recording, and distribution
+- [x] Add Suno-style shimmering/aurora background effect to the site
+- [x] Add 2 free daily songs/sheet music that don't count toward monthly credit allotment
+- [x] Remove free tier entirely — visitors can explore/listen but must pick a paid plan (Pro or Premier) to generate
+- [x] Require plan selection at registration before allowing any music generation
+- [x] Update Pricing page to show only Pro and Premier plans (no free option)
+- [x] Update generator to block generation for users without an active paid plan
+- [x] Add easy subscription cancellation option (cancel anytime, no refund policy)
+- [x] Add cancel subscription button/flow in user account/settings area
+- [x] Update FAQ with cancellation policy (cancel anytime, no refund, access until end of billing period)
+- [x] Update Terms of Service with no-refund cancellation policy
+- [x] Update admin dashboard to show subscription cancellation status and management

@@ -5,7 +5,8 @@ import { Link, useLocation } from "wouter";
 import {
   Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart,
   CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift,
-  FileAudio, Share2, Check, Shield, Search, Home, Radio, ChevronLeft
+  FileAudio, Share2, Check, Shield, Search, Home, Radio, ChevronLeft,
+  BookOpen, Cross
 } from "lucide-react";
 import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
@@ -25,6 +26,7 @@ const sidebarNavItems = [
   { href: "/discover", label: "Explore", icon: Globe },
   { href: "/upload", label: "Upload", icon: Upload },
   { href: "/mp3-to-sheet-music", label: "MP3 to Sheet", icon: FileAudio },
+  { href: "/worship", label: "Worship Sets", icon: BookOpen },
 ];
 
 /* ─── Top nav items for visitors ─── */
@@ -130,6 +132,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (isAuthenticated) {
     return (
       <div className="min-h-screen flex bg-background">
+        {/* ─── Shimmer Aurora Background ─── */}
+        <div className="shimmer-bg">
+          <div className="shimmer-orb-1" />
+          <div className="shimmer-orb-2" />
+          <div className="shimmer-orb-3" />
+        </div>
         {/* ─── Left Sidebar (Desktop) ─── */}
         <aside className={`hidden lg:flex flex-col fixed top-0 left-0 h-full z-40 border-r border-white/[0.06] bg-[#0a0a0a] transition-all duration-200 ${
           sidebarCollapsed ? "w-16" : "w-56"
@@ -359,6 +367,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-white/10">·</span>
                 <Link href="/blog"><span className="text-white/40 hover:text-white/70 transition-colors cursor-pointer">Blog</span></Link>
                 <span className="text-white/10">·</span>
+                <Link href="/licensing"><span className="text-white/40 hover:text-white/70 transition-colors cursor-pointer">Church Licensing</span></Link>
+                <span className="text-white/10">·</span>
                 <Link href="/referrals"><span className="text-white/40 hover:text-white/70 transition-colors cursor-pointer">Invite Friends</span></Link>
               </div>
               <p className="text-white/25">&copy; 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com</p>
@@ -372,6 +382,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   /* ─── Visitor: Minimal top nav (Suno public style) ─── */
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* ─── Shimmer Aurora Background ─── */}
+      <div className="shimmer-bg">
+        <div className="shimmer-orb-1" />
+        <div className="shimmer-orb-2" />
+        <div className="shimmer-orb-3" />
+      </div>
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-background/95 backdrop-blur-xl">
         <div className="container flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2 no-underline shrink-0">
@@ -461,6 +477,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/faq"><span className="text-white/40 hover:text-white/70 transition-colors cursor-pointer">FAQ</span></Link>
             <span className="text-white/10">·</span>
             <Link href="/blog"><span className="text-white/40 hover:text-white/70 transition-colors cursor-pointer">Blog</span></Link>
+            <span className="text-white/10">·</span>
+            <Link href="/licensing"><span className="text-white/40 hover:text-white/70 transition-colors cursor-pointer">Church Licensing</span></Link>
           </div>
           <p className="text-white/25">&copy; 2026 Albert LaMotte. All rights reserved. MakeCustomMusic.com</p>
         </div>

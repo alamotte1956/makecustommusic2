@@ -151,12 +151,12 @@ export default function Terms() {
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Pro</td>
-                  <td className="px-4 py-2.5 text-foreground/70">$8/mo ($72/yr)</td>
+                  <td className="px-4 py-2.5 text-foreground/70">$10/mo ($90/yr)</td>
                   <td className="px-4 py-2.5 text-foreground/70">2,500 credits (500 songs)</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Premier</td>
-                  <td className="px-4 py-2.5 text-foreground/70">$24/mo ($216/yr)</td>
+                  <td className="px-4 py-2.5 text-foreground/70">$26/mo ($234/yr)</td>
                   <td className="px-4 py-2.5 text-foreground/70">10,000 credits (2,000 songs)</td>
                 </tr>
               </tbody>

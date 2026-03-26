@@ -195,24 +195,33 @@ export const PLAN_LIMITS = {
     dailySongLimit: 0,
     dailySheetMusicLimit: 0,
     dailyChordLimit: 0,
+    dailyBonusSongs: 0,
+    dailyBonusSheetMusic: 0,
     commercialUse: false,
     audioQuality: "128kbps",
+    canGenerate: false, // free users cannot generate — must subscribe
   },
   creator: {
     monthlyCredits: 500,
     dailySongLimit: 50,
     dailySheetMusicLimit: -1, // unlimited
     dailyChordLimit: -1,
+    dailyBonusSongs: 2,       // 2 free daily songs not counting toward monthly credits
+    dailyBonusSheetMusic: 2,  // 2 free daily sheet music not counting toward monthly credits
     commercialUse: "personal", // commercial use rights for new songs
     audioQuality: "192kbps",
+    canGenerate: true,
   },
   professional: {
     monthlyCredits: 2000,
     dailySongLimit: 100,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
+    dailyBonusSongs: 2,       // 2 free daily songs not counting toward monthly credits
+    dailyBonusSheetMusic: 2,  // 2 free daily sheet music not counting toward monthly credits
     commercialUse: "full",
     audioQuality: "192kbps",
+    canGenerate: true,
   },
 } as const;
 
@@ -315,3 +324,84 @@ export const adminNotificationPreferences = mysqlTable("admin_notification_prefe
 });
 export type AdminNotificationPreference = typeof adminNotificationPreferences.$inferSelect;
 export type InsertAdminNotificationPreference = typeof adminNotificationPreferences.$inferInsert;
+
+// ─── Worship Sets (Service Planning) ──────────────────────────────────────
+
+export const worshipSets = mysqlTable("worship_sets", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  date: varchar("date", { length: 20 }), // ISO date string for the service date
+  serviceType: varchar("serviceType", { length: 100 }).default("Sunday Morning"), // e.g., Sunday Morning, Wednesday Night, Special Event
+  notes: text("notes"),
+  liturgicalSeason: varchar("liturgicalSeason", { length: 100 }), // Advent, Christmas, Lent, Easter, Pentecost, Ordinary Time
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorshipSet = typeof worshipSets.$inferSelect;
+export type InsertWorshipSet = typeof worshipSets.$inferInsert;
+
+export const worshipSetItems = mysqlTable("worship_set_items", {
+  id: int("id").autoincrement().primaryKey(),
+  worshipSetId: int("worshipSetId").notNull(),
+  songId: int("songId"), // nullable — can be a non-song item like "Prayer" or "Scripture Reading"
+  itemType: mysqlEnum("itemType", ["song", "prayer", "scripture", "sermon", "offering", "communion", "announcement", "transition", "other"]).default("song").notNull(),
+  title: varchar("title", { length: 255 }).notNull(), // song title or custom label
+  notes: text("notes"), // e.g., "Key of G, capo 2" or "Pastor reads John 3:16"
+  songKey: varchar("songKey", { length: 10 }), // musical key for this performance
+  sortOrder: int("sortOrder").notNull().default(0),
+  duration: int("duration"), // estimated minutes
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WorshipSetItem = typeof worshipSetItems.$inferSelect;
+export type InsertWorshipSetItem = typeof worshipSetItems.$inferInsert;
+
+// ─── Scripture Songs ──────────────────────────────────────────────────────
+
+export const scriptureSongs = mysqlTable("scripture_songs", {
+  id: int("id").autoincrement().primaryKey(),
+  songId: int("songId").notNull(),
+  book: varchar("book", { length: 100 }).notNull(), // e.g., "Psalms", "John"
+  chapter: int("chapter").notNull(),
+  verseStart: int("verseStart").notNull(),
+  verseEnd: int("verseEnd"),
+  translation: varchar("translation", { length: 20 }).default("NIV"), // NIV, ESV, KJV, etc.
+  fullReference: varchar("fullReference", { length: 100 }).notNull(), // e.g., "Psalm 23:1-6 (NIV)"
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ScriptureSong = typeof scriptureSongs.$inferSelect;
+export type InsertScriptureSong = typeof scriptureSongs.$inferInsert;
+
+// ─── Liturgical Calendar ──────────────────────────────────────────────────
+
+export const LITURGICAL_SEASONS = [
+  "Advent", "Christmas", "Epiphany", "Lent", "Holy Week",
+  "Easter", "Pentecost", "Ordinary Time",
+] as const;
+
+export type LiturgicalSeason = typeof LITURGICAL_SEASONS[number];
+
+export const SERVICE_SEGMENTS = [
+  "Prelude", "Call to Worship", "Opening Hymn", "Praise & Worship",
+  "Prayer", "Scripture Reading", "Offering", "Special Music",
+  "Sermon", "Invitation/Altar Call", "Communion", "Closing Hymn",
+  "Benediction", "Postlude",
+] as const;
+
+export type ServiceSegment = typeof SERVICE_SEGMENTS[number];
+
+// ─── Church Band Parts ────────────────────────────────────────────────────
+
+export const BAND_INSTRUMENTS = [
+  "Lead Vocal", "Background Vocals", "Acoustic Guitar", "Electric Guitar",
+  "Bass Guitar", "Keys/Piano", "Drums", "Strings", "Brass",
+  "Woodwinds", "Choir", "Organ", "Synthesizer", "Percussion",
+] as const;
+
+export type BandInstrument = typeof BAND_INSTRUMENTS[number];
+
+export const CHOIR_PARTS = ["Soprano", "Alto", "Tenor", "Bass"] as const;
+export type ChoirPart = typeof CHOIR_PARTS[number];

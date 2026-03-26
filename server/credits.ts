@@ -310,6 +310,62 @@ export async function getTransactionHistory(userId: number, limit = 50) {
     .limit(limit);
 }
 
+// ─── Daily bonus tracking ──────────────────────────────────────────────────
+
+export async function getDailyBonusUsage(userId: number, bonusType: "bonus_song" | "bonus_sheet"): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [result] = await db
+    .select({ total: sql<number>`COALESCE(COUNT(*), 0)` })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        eq(creditTransactions.type, bonusType as any),
+        gte(creditTransactions.createdAt, today)
+      )
+    );
+
+  return result?.total ?? 0;
+}
+
+export async function checkDailyBonus(
+  userId: number,
+  bonusType: "bonus_song" | "bonus_sheet",
+  plan: PlanName
+): Promise<{ available: boolean; used: number; limit: number }> {
+  const limits = getPlanLimits(plan);
+  const bonusLimit = bonusType === "bonus_song" ? limits.dailyBonusSongs : limits.dailyBonusSheetMusic;
+
+  if (bonusLimit === 0) return { available: false, used: 0, limit: 0 };
+
+  const used = await getDailyBonusUsage(userId, bonusType);
+  return {
+    available: used < bonusLimit,
+    used,
+    limit: bonusLimit,
+  };
+}
+
+export async function useDailyBonus(
+  userId: number,
+  bonusType: "bonus_song" | "bonus_sheet",
+  description: string,
+  relatedSongId?: number
+) {
+  const balance = await getCreditBalance(userId);
+  await logTransaction(userId, 0, bonusType as any, description, balance.totalCredits, relatedSongId);
+}
+
+// ─── Plan generation gate ──────────────────────────────────────────────────
+
+export function canUserGenerate(plan: PlanName): boolean {
+  return PLAN_LIMITS[plan].canGenerate;
+}
+
 // ─── Daily limit tracking ───────────────────────────────────────────────────
 
 export async function getDailyUsage(userId: number, type: "generation" | "tts" | "takes"): Promise<number> {
@@ -385,14 +441,23 @@ export async function getUsageSummary(userId: number) {
       )
     );
 
+  // Get daily bonus usage
+  const dailyBonusSongUsed = await getDailyBonusUsage(userId, "bonus_song");
+  const dailyBonusSheetUsed = await getDailyBonusUsage(userId, "bonus_sheet");
+
   return {
     plan,
     limits,
     balance,
     subscription: sub,
+    canGenerate: canUserGenerate(plan),
     usage: {
       dailySongsGenerated: dailyGen?.total ?? 0,
       monthlyCreditsUsed: monthlyTotal?.total ?? 0,
+      dailyBonusSongsUsed: dailyBonusSongUsed,
+      dailyBonusSongsRemaining: Math.max(0, (limits.dailyBonusSongs as number) - dailyBonusSongUsed),
+      dailyBonusSheetUsed: dailyBonusSheetUsed,
+      dailyBonusSheetRemaining: Math.max(0, (limits.dailyBonusSheetMusic as number) - dailyBonusSheetUsed),
     },
   };
 }

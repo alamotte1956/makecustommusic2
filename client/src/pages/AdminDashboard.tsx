@@ -595,7 +595,7 @@ export default function AdminDashboard() {
             value={statsLoading ? "..." : (stats?.activeSubscribers ?? 0)}
             subtitle={
               stats
-                ? `${stats.creatorSubscribers} Creator, ${stats.professionalSubscribers} Pro`
+                ? `${stats.creatorSubscribers} Pro, ${stats.professionalSubscribers} Premier`
                 : undefined
             }
             icon={Crown}
