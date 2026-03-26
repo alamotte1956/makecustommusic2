@@ -1761,3 +1761,4 @@
 - [ ] Implement Collaboration/Sharing with worship teams
 - [ ] Update pricing to 20% premium: Pro $29/mo, Premier $59/mo
 - [x] Fix SEO: Reduce homepage keywords from 12 to 6 focused keywords
+- [ ] Switch music generation API from musicapi.ai to kie.ai (10x cheaper, same Suno quality)

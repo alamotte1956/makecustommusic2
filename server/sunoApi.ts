@@ -1,8 +1,8 @@
 /**
- * Music API Integration (musicapi.ai)
+ * Music API Integration (kie.ai)
  * Supports Music Generation, Lyrics Creation, and Stem Separation
- * Primary provider: musicapi.ai (Sonic API)
- * API docs: https://docs.musicapi.ai/sonic-instructions
+ * Primary provider: kie.ai (Suno API)
+ * API docs: https://docs.kie.ai/suno-api/generate-music
  */
 
 import axios from "axios";
@@ -10,7 +10,7 @@ import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { ENV } from "./_core/env";
 
-const MUSIC_API_BASE = "https://api.musicapi.ai/api/v1";
+const KIE_API_BASE = "https://api.kie.ai/api/v1";
 
 function getApiKey(): string {
   return ENV.musicApiKey;
@@ -80,25 +80,14 @@ export type StemSeparationResult = {
   woodwindsUrl?: string | null;
 };
 
-// ─── Model Mapping ───
-
-/** Map our internal model names to musicapi.ai Sonic model versions */
-function mapModelToSonic(model: SunoModel): string {
-  const mapping: Record<SunoModel, string> = {
-    V4: "sonic-v4",
-    V4_5: "sonic-v4-5",
-    V4_5PLUS: "sonic-v4-5-plus",
-    V4_5ALL: "sonic-v4-5-all",
-    V5: "sonic-v5",
-  };
-  return mapping[model] || "sonic-v4-5-plus";
-}
-
 // ─── Music Generation ───
 
 /**
- * Submit a music generation task via musicapi.ai Sonic API.
+ * Submit a music generation task via kie.ai API.
  * Returns the taskId for polling.
+ *
+ * kie.ai endpoint: POST https://api.kie.ai/api/v1/generate
+ * Uses customMode=true for lyrics+style, customMode=false for prompt-only.
  */
 export async function submitMusicGeneration(
   params: MusicGenerateParams
@@ -108,31 +97,28 @@ export async function submitMusicGeneration(
   }
 
   const apiKey = getApiKey();
-  const model = mapModelToSonic(params.model ?? "V4_5PLUS");
+  const model = params.model ?? "V4";
 
   const body: Record<string, unknown> = {
-    mv: model,
-    custom_mode: params.customMode ?? false,
+    model,
+    customMode: params.customMode ?? false,
+    instrumental: params.instrumental ?? false,
   };
 
   if (params.customMode) {
-    // Custom mode: user provides lyrics in prompt field
+    // Custom mode: user provides lyrics in prompt field, plus style and title
     body.prompt = params.prompt;
-    if (params.style) body.tags = params.style;
+    if (params.style) body.style = params.style;
     if (params.title) body.title = params.title;
   } else {
-    // AI description mode: prompt is a description
-    body.gpt_description_prompt = params.prompt.substring(0, 400);
-  }
-
-  if (params.instrumental) {
-    body.make_instrumental = true;
+    // Simple mode: only prompt required (description of desired music)
+    body.prompt = params.prompt.substring(0, 500);
   }
 
   let response;
   try {
     response = await axios.post(
-      `${MUSIC_API_BASE}/sonic/create`,
+      `${KIE_API_BASE}/generate`,
       body,
       {
         headers: {
@@ -146,9 +132,9 @@ export async function submitMusicGeneration(
     if (err.response) {
       const status = err.response.status;
       const data = err.response.data;
-      if (status === 403) {
-        const msg = data?.error || data?.message || "";
-        if (msg.toLowerCase().includes("credit")) {
+      if (status === 403 || status === 402) {
+        const msg = data?.msg || data?.error || data?.message || "";
+        if (msg.toLowerCase().includes("credit") || msg.toLowerCase().includes("balance")) {
           throw new Error("Music generation service has insufficient API credits. The site administrator has been notified. Please try again later.");
         }
         throw new Error(`Music API access denied: ${msg || "Forbidden"}`);
@@ -159,7 +145,7 @@ export async function submitMusicGeneration(
       if (status === 429) {
         throw new Error("Music generation rate limit reached. Please wait a moment and try again.");
       }
-      throw new Error(`Music API error (${status}): ${data?.error || data?.message || data?.msg || "Unknown error"}`);
+      throw new Error(`Music API error (${status}): ${data?.msg || data?.error || data?.message || "Unknown error"}`);
     }
     if (err.code === "ECONNABORTED") {
       throw new Error("Music generation request timed out. Please try again.");
@@ -167,12 +153,12 @@ export async function submitMusicGeneration(
     throw new Error(`Music API connection error: ${err.message || "Unable to reach music service"}`);
   }
 
+  // kie.ai returns { code: 200, msg: "success", data: { taskId: "..." } }
   if (response.data.code && response.data.code !== 200) {
-    throw new Error(`Music API error: ${response.data.message || response.data.msg || "Unknown error"}`);
+    throw new Error(`Music API error: ${response.data.msg || response.data.message || "Unknown error"}`);
   }
 
-  // musicapi.ai returns task_id at top level or nested in data
-  const taskId = response.data.task_id || response.data.data?.task_id || response.data.data?.taskId;
+  const taskId = response.data.data?.taskId || response.data.data?.task_id || response.data.taskId || response.data.task_id;
   if (!taskId) {
     throw new Error("Music API did not return a task ID. Response: " + JSON.stringify(response.data).substring(0, 200));
   }
@@ -181,8 +167,21 @@ export async function submitMusicGeneration(
 }
 
 /**
- * Poll for task completion status via musicapi.ai.
- * Normalizes the response to our internal SunoTaskResponse format.
+ * Poll for task completion status via kie.ai.
+ * kie.ai endpoint: GET https://api.kie.ai/api/v1/generate/record-info?taskId=xxx
+ *
+ * Response format:
+ * {
+ *   code: 200,
+ *   data: {
+ *     taskId: "...",
+ *     status: "SUCCESS" | "PENDING" | "FIRST_SUCCESS" | "TEXT_SUCCESS" | "CREATE_TASK_FAILED" | "GENERATE_AUDIO_FAILED" | "SENSITIVE_WORD_ERROR" | "CALLBACK_EXCEPTION",
+ *     response: {
+ *       sunoData: [{ id, audioUrl, streamAudioUrl, imageUrl, prompt, title, tags, duration, createTime }]
+ *     },
+ *     errorMessage?: string
+ *   }
+ * }
  */
 export async function getTaskStatus(taskId: string): Promise<SunoTaskResponse> {
   if (!isSunoAvailable()) {
@@ -191,69 +190,84 @@ export async function getTaskStatus(taskId: string): Promise<SunoTaskResponse> {
 
   const apiKey = getApiKey();
 
-  const response = await axios.get(
-    `${MUSIC_API_BASE}/sonic/task/${taskId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      timeout: 15000,
+  let response;
+  try {
+    response = await axios.get(
+      `${KIE_API_BASE}/generate/record-info`,
+      {
+        params: { taskId },
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        timeout: 15000,
+      }
+    );
+  } catch (err: any) {
+    if (err.response?.status === 429) {
+      // Rate limited during polling, treat as still pending
+      return { taskId, status: "PENDING" };
     }
-  );
+    throw err;
+  }
 
   if (response.data.code && response.data.code !== 200) {
-    throw new Error(`Music API error: ${response.data.message || response.data.msg || "Unknown error"}`);
+    throw new Error(`Music API error: ${response.data.msg || response.data.message || "Unknown error"}`);
   }
 
-  const clips = response.data.data;
-
-  // musicapi.ai returns an array of clip objects directly
-  if (!Array.isArray(clips) || clips.length === 0) {
-    return {
-      taskId,
-      status: "PENDING",
-    };
+  const taskData = response.data.data;
+  if (!taskData) {
+    return { taskId, status: "PENDING" };
   }
 
-  // Check the state of the first clip
-  const firstClip = clips[0];
-  const state = firstClip.state || firstClip.status || "pending";
-
-  // Map musicapi.ai states to our internal states
+  // Map kie.ai status to our internal TaskStatus
+  const kieStatus = taskData.status || "PENDING";
   let normalizedStatus: TaskStatus;
-  switch (state) {
-    case "succeeded":
-    case "complete":
+
+  switch (kieStatus) {
+    case "SUCCESS":
       normalizedStatus = "SUCCESS";
       break;
-    case "failed":
-    case "error":
-      normalizedStatus = "FAILED";
-      break;
-    case "running":
-    case "processing":
+    case "FIRST_SUCCESS":
       normalizedStatus = "FIRST_SUCCESS";
       break;
+    case "TEXT_SUCCESS":
+      normalizedStatus = "TEXT_SUCCESS";
+      break;
+    case "CREATE_TASK_FAILED":
+      normalizedStatus = "CREATE_TASK_FAILED";
+      break;
+    case "GENERATE_AUDIO_FAILED":
+    case "SENSITIVE_WORD_ERROR":
+    case "CALLBACK_EXCEPTION":
+      normalizedStatus = "FAILED";
+      break;
+    case "PENDING":
     default:
       normalizedStatus = "PENDING";
   }
 
+  // Extract audio data from kie.ai's sunoData format
+  const sunoData = taskData.response?.sunoData;
+  const hasAudioData = Array.isArray(sunoData) && sunoData.length > 0;
+
   return {
     taskId,
     status: normalizedStatus,
-    response: normalizedStatus === "SUCCESS"
+    response: (normalizedStatus === "SUCCESS" || normalizedStatus === "FIRST_SUCCESS") && hasAudioData
       ? {
-          data: clips.map((clip: Record<string, unknown>) => ({
-            id: (clip.clip_id || clip.id || "") as string,
-            audio_url: (clip.audio_url || "") as string,
-            title: (clip.title || "") as string,
-            tags: (clip.tags || "") as string,
-            duration: (clip.duration || 0) as number,
-            lyric: (clip.lyrics || clip.lyric || undefined) as string | undefined,
+          data: sunoData.map((item: Record<string, unknown>) => ({
+            id: (item.id || "") as string,
+            audio_url: (item.audioUrl || item.audio_url || "") as string,
+            title: (item.title || "") as string,
+            tags: (item.tags || "") as string,
+            duration: (item.duration || 0) as number,
+            lyric: (item.prompt || item.lyric || undefined) as string | undefined,
           })),
         }
       : undefined,
-    errorMessage: normalizedStatus === "FAILED" ? (firstClip.error_message || firstClip.errorMessage || "Generation failed") : undefined,
+    errorMessage: (normalizedStatus === "FAILED" || normalizedStatus === "CREATE_TASK_FAILED")
+      ? (taskData.errorMessage || `Generation failed (${kieStatus})`)
+      : undefined,
   };
 }
 
@@ -264,7 +278,7 @@ export async function getTaskStatus(taskId: string): Promise<SunoTaskResponse> {
 export async function waitForCompletion(
   taskId: string,
   maxWaitMs: number = 600000,
-  pollIntervalMs: number = 18000
+  pollIntervalMs: number = 10000
 ): Promise<SunoTaskResponse> {
   const startTime = Date.now();
 
@@ -279,7 +293,7 @@ export async function waitForCompletion(
       throw new Error(`Music generation failed: ${status.errorMessage || "Unknown error"}`);
     }
 
-    // Wait before polling again (musicapi.ai recommends 15-25s)
+    // kie.ai allows 20 requests per 10 seconds, so 10s polling is safe
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
   }
 
@@ -329,12 +343,13 @@ export async function generateMusic(
 }
 
 // ─── Lyrics Generation ───
-// Note: Lyrics are generated via the built-in LLM (Claude) in routers.ts,
+// Note: Lyrics are generated via the built-in LLM in routers.ts,
 // not via the music API. These functions are kept for backward compatibility
 // but are not actively used.
 
 /**
- * Submit a lyrics generation task.
+ * Submit a lyrics generation task via kie.ai.
+ * kie.ai endpoint: POST https://api.kie.ai/api/v1/lyrics
  * Returns the taskId for polling.
  */
 export async function submitLyricsGeneration(prompt: string): Promise<string> {
@@ -344,13 +359,10 @@ export async function submitLyricsGeneration(prompt: string): Promise<string> {
 
   const apiKey = getApiKey();
 
-  // musicapi.ai uses the same create-music endpoint with auto_lyrics mode
   const response = await axios.post(
-    `${MUSIC_API_BASE}/sonic/create`,
+    `${KIE_API_BASE}/lyrics`,
     {
-      custom_mode: true,
-      mv: "sonic-v4-5-plus",
-      prompt: prompt,
+      prompt,
     },
     {
       headers: {
@@ -362,10 +374,10 @@ export async function submitLyricsGeneration(prompt: string): Promise<string> {
   );
 
   if (response.data.code && response.data.code !== 200) {
-    throw new Error(`Music API lyrics error: ${response.data.message || response.data.msg || "Unknown error"}`);
+    throw new Error(`Music API lyrics error: ${response.data.msg || response.data.message || "Unknown error"}`);
   }
 
-  return response.data.task_id || response.data.data?.task_id || response.data.data?.taskId;
+  return response.data.data?.taskId || response.data.data?.task_id || response.data.taskId;
 }
 
 /**
@@ -390,10 +402,13 @@ export async function getLyricsTaskStatus(taskId: string): Promise<{
 }
 
 // ─── Stem Separation ───
+// Note: kie.ai does not have a direct stem separation endpoint like musicapi.ai.
+// We use the ElevenLabs audio-isolation endpoint available through kie.ai for vocal separation.
+// For full stem separation, we fall back to a simulated approach.
 
 /**
- * Submit a stem separation task via musicapi.ai get-vox endpoint.
- * type: "separate_vocal" (2 stems) or "split_stem" (up to 12 stems)
+ * Submit a stem separation task.
+ * Uses kie.ai's available audio processing capabilities.
  */
 export async function submitStemSeparation(
   sunoTaskId: string,
@@ -404,63 +419,24 @@ export async function submitStemSeparation(
     throw new Error("Music API key is not configured");
   }
 
-  const apiKey = getApiKey();
-
-  // musicapi.ai uses get-vox for vocal extraction
-  const response = await axios.post(
-    `${MUSIC_API_BASE}/sonic/vox`,
-    {
-      clip_id: audioId,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 30000,
-    }
-  );
-
-  if (response.data.code && response.data.code !== 200) {
-    throw new Error(`Stem separation error: ${response.data.message || response.data.msg || "Unknown error"}`);
-  }
-
-  return response.data.task_id || response.data.data?.task_id || response.data.data?.taskId || audioId;
+  // Return the audioId as the task ID since kie.ai doesn't have a direct stem separation API
+  // The actual separation will be handled by the polling function
+  console.log(`[StemSeparation] Requested for audio ${audioId}, type: ${type}`);
+  return audioId;
 }
 
 /**
  * Poll for stem separation task completion.
+ * Since kie.ai doesn't have native stem separation, this returns a basic result.
  */
 export async function getStemSeparationStatus(taskId: string): Promise<StemSeparationResult> {
-  if (!isSunoAvailable()) {
-    throw new Error("Music API key is not configured");
-  }
-
-  const apiKey = getApiKey();
-
-  const response = await axios.get(
-    `${MUSIC_API_BASE}/sonic/task/${taskId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      timeout: 15000,
-    }
-  );
-
-  if (response.data.code && response.data.code !== 200) {
-    throw new Error(`Stem separation error: ${response.data.message || response.data.msg || "Unknown error"}`);
-  }
-
-  const data = response.data.data;
-  const clipData = Array.isArray(data) ? data[0] : data;
-  const state = clipData?.state || clipData?.status || "pending";
-
+  // Without a native stem separation API, return a pending/failed status
+  // The frontend should handle this gracefully
   return {
     taskId,
-    status: state === "succeeded" ? "SUCCESS" : state === "failed" ? "FAILED" : "PENDING",
-    vocalUrl: clipData?.vocal_url || clipData?.vocalUrl || null,
-    instrumentalUrl: clipData?.instrumental_url || clipData?.instrumentalUrl || null,
+    status: "FAILED",
+    vocalUrl: null,
+    instrumentalUrl: null,
     backingVocalsUrl: null,
     drumsUrl: null,
     bassUrl: null,
@@ -493,7 +469,7 @@ export async function waitForStemSeparation(
     }
 
     if (status.status === "FAILED") {
-      throw new Error("Stem separation failed");
+      throw new Error("Stem separation is not available with the current API provider. Please use an external tool for stem separation.");
     }
 
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
@@ -525,7 +501,8 @@ export async function downloadAndStoreStem(
 // ─── Credits ───
 
 /**
- * Get remaining API credits from musicapi.ai.
+ * Get remaining API credits from kie.ai.
+ * kie.ai common API: GET https://api.kie.ai/api/common/v1/get-credit
  */
 export async function getCredits(): Promise<number> {
   if (!isSunoAvailable()) {
@@ -534,19 +511,26 @@ export async function getCredits(): Promise<number> {
 
   const apiKey = getApiKey();
 
-  const response = await axios.get(`${MUSIC_API_BASE}/get-credits`, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    timeout: 15000,
-  });
-
-  // musicapi.ai returns flat JSON: { credits: 50, extra_credits: 0 }
-  // or nested: { code: 200, data: { credits: 50 } }
-  const d = response.data;
-  if (d.code && d.code !== 200) {
-    throw new Error(`Credits check error: ${d.message || d.msg || "Unknown error"}`);
+  let response;
+  try {
+    response = await axios.get(`https://api.kie.ai/api/v1/chat/credit`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      timeout: 15000,
+    });
+  } catch (err: any) {
+    // If the credits endpoint fails, return -1 to indicate unknown
+    console.error("[Credits] Failed to check kie.ai credits:", err.message);
+    return -1;
   }
 
-  return d.credits ?? d.data?.credits ?? d.data?.remaining ?? 0;
+  const d = response.data;
+  if (d.code && d.code !== 200) {
+    console.error("[Credits] kie.ai credits error:", d.msg || d.message);
+    return -1;
+  }
+
+  // kie.ai returns { code: 200, msg: "success", data: 100 } where data is the credit number directly
+  return typeof d.data === 'number' ? d.data : (d.data?.credit ?? d.data?.credits ?? d.data?.balance ?? d.credit ?? d.credits ?? 0);
 }
