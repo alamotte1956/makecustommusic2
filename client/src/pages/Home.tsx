@@ -81,23 +81,7 @@ const churchFeatures = [
   },
 ];
 
-const testimonials = [
-  {
-    quote: "This tool has transformed how I plan our Sunday services. The AI suggestions are incredibly thoughtful and the worship set builder saves me hours every week.",
-    name: "Music Director",
-    role: "Community Church",
-  },
-  {
-    quote: "Being able to generate original worship music and get sheet music instantly is a game-changer for our small church that can't afford licensing fees for every song.",
-    name: "Worship Leader",
-    role: "Baptist Church",
-  },
-  {
-    quote: "The Scripture Song templates are exactly what I needed. I can set any Bible passage to music and have it ready for Sunday morning.",
-    name: "Youth Pastor",
-    role: "Non-Denominational Church",
-  },
-];
+
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -359,32 +343,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 md:py-28 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/5 to-transparent" />
-        <div className="container relative">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Trusted by Churches</h2>
-            <p className="text-white/60 text-lg">Hear from worship leaders and music directors</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((t, i) => (
-              <div key={i} className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-sm text-white/70 leading-relaxed mb-4 italic">"{t.quote}"</p>
-                <div>
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-white/40">{t.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* What Makes Us Different */}
       <section className="py-20 md:py-28">

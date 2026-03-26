@@ -107,9 +107,15 @@ describe("backgroundSheetMusic", () => {
     });
 
     it("should handle clean ABC without modification", () => {
-      const clean = 'X:1\nT:Test\nM:4/4\nL:1/8\nK:C\n"C"CDEF G2 c2|';
+      const clean = 'X:1\nT:Test\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\n"C"CDEF G2 c2|';
       const result = sanitiseAbc(clean);
       expect(result).toBe(clean);
+    });
+
+    it("should inject missing Q: header", () => {
+      const noQ = 'X:1\nT:Test\nM:4/4\nL:1/8\nK:C\n"C"CDEF G2 c2|';
+      const result = sanitiseAbc(noQ);
+      expect(result).toContain("Q:1/4=120");
     });
 
     it("should handle empty string", () => {
@@ -145,7 +151,7 @@ describe("backgroundSheetMusic", () => {
 
     it("should reject empty string", () => {
       expect(validateAbc("")).not.toBeNull();
-      expect(validateAbc("")).toContain("too short");
+      expect(validateAbc("")).toContain("Empty ABC notation");
     });
 
     it("should reject very short string", () => {

@@ -1735,3 +1735,13 @@
 - [x] Update annual pricing proportionally
 - [x] Update pricing page UI to reflect new prices and limits
 - [x] Update all tests to match new pricing/limits
+- [x] Deep investigation of sheet music generator pipeline - find and fix all errors
+- [x] Fix backgroundSheetMusic.ts: removed hardcoded model name, added retry logic (2 attempts per generation, 2 background retries)
+- [x] Fix backgroundSheetMusic.ts: added ABC validation and sanitisation with missing header injection (M:, L:, Q:)
+- [x] Fix routers.ts: removed hardcoded model names from generateChordProgression, generateLyrics, refineLyrics
+- [x] Fix mp3SheetProcessor.ts: removed unused variable warning
+- [x] Fix SheetMusicViewer.tsx: fixed initialAbc sync issue (now updates when parent re-sends ABC)
+- [x] Fix pdfExport.ts: chord diagrams were never actually rendered to PDF (SVG→canvas→image pipeline was broken)
+- [x] Fix pdfExport.ts: made exportChordPDF async to support proper SVG-to-image conversion
+- [x] Fix GuitarChordViewer.tsx: made handleDownloadPDF async to await the now-async exportChordPDF
+- [x] Remove testimonials section from the website

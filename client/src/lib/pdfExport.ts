@@ -210,11 +210,11 @@ export interface ChordPDFData {
   notes: string;
 }
 
-export function exportChordPDF(
+export async function exportChordPDF(
   data: ChordPDFData,
   songTitle: string,
   diagramSvgs?: SVGElement[]
-): void {
+): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   // Title
@@ -330,16 +330,9 @@ export function exportChordPDF(
       y = checkPageBreak(doc, y, diagramHeight + 4);
 
       try {
-        const canvas = document.createElement("canvas");
         const svgBBox = svg.getBoundingClientRect();
         const w = svgBBox.width || 100;
         const h = svgBBox.height || 140;
-        canvas.width = w * 3;
-        canvas.height = h * 3;
-        const ctx = canvas.getContext("2d")!;
-        ctx.scale(3, 3);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, w, h);
 
         const svgClone = svg.cloneNode(true) as SVGElement;
         svgClone.setAttribute("width", String(w));
@@ -354,7 +347,37 @@ export function exportChordPDF(
         const svgData = new XMLSerializer().serializeToString(svgClone);
         const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
         const imgUrl = URL.createObjectURL(blob);
-        URL.revokeObjectURL(imgUrl);
+
+        // Load SVG as image, draw to canvas, then add to PDF
+        const imgDataUrl = await new Promise<string | null>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement("canvas");
+              canvas.width = w * 3;
+              canvas.height = h * 3;
+              const ctx = canvas.getContext("2d")!;
+              ctx.scale(3, 3);
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL("image/png"));
+            } catch {
+              resolve(null);
+            } finally {
+              URL.revokeObjectURL(imgUrl);
+            }
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(imgUrl);
+            resolve(null);
+          };
+          img.src = imgUrl;
+        });
+
+        if (imgDataUrl) {
+          doc.addImage(imgDataUrl, "PNG", dx, y, diagramWidth, diagramHeight);
+        }
       } catch {
         // Skip diagram on error
       }

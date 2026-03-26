@@ -190,7 +190,6 @@ export async function processMp3SheetJob(
       }
     } catch (transcriptionErr: any) {
       if (transcriptionErr._phase === "transcription") throw transcriptionErr;
-      const classified = classifyError(transcriptionErr, "transcription");
       console.error(`[Mp3SheetJob ${jobId}] Transcription error:`, transcriptionErr?.message);
       // Continue without lyrics — we can still attempt generation
       console.warn(`[Mp3SheetJob ${jobId}] Continuing without lyrics due to transcription failure.`);

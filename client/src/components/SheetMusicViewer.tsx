@@ -128,8 +128,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
   // Sync local abc state when the parent passes updated initialAbc (e.g. from background generation)
   useEffect(() => {
-    if (initialAbc && !abc) {
+    if (initialAbc) {
       setAbc(initialAbc);
+      setRenderAttempt((n) => n + 1);
     }
   }, [initialAbc]);
 

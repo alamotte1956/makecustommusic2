@@ -336,7 +336,6 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         userPrompt += `\n\nMake it radio-ready. Make it unforgettable. Make it the kind of song that stops someone mid-scroll.`;
 
         const response = await invokeLLM({
-          model: "claude-sonnet-4-20250514",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
@@ -373,7 +372,6 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         if (input.mood) contextHints += `\nMood: ${input.mood}`;
 
         const response = await invokeLLM({
-          model: "claude-sonnet-4-20250514",
           messages: [
             {
               role: "system",
@@ -812,7 +810,6 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         ].filter(Boolean).join("\n");
 
         const response = await invokeLLM({
-          model: "claude-sonnet-4-20250514",
           messages: [
             {
               role: "system",

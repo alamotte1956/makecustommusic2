@@ -314,7 +314,7 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
     }
   }, [songId, generateMutation, utils]);
 
-  const handleDownloadPDF = useCallback(() => {
+  const handleDownloadPDF = useCallback(async () => {
     if (!data) return;
     setExporting(true);
     try {
@@ -332,7 +332,7 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
       };
 
       const keyLabel = selectedKey !== "original" ? ` (Key: ${selectedKey})` : "";
-      exportChordPDF(pdfData, songTitle + keyLabel, diagramSvgs);
+      await exportChordPDF(pdfData, songTitle + keyLabel, diagramSvgs);
       toast.success("Chord chart PDF downloaded!");
     } catch {
       toast.error("Failed to export chord chart PDF");

@@ -173,9 +173,7 @@ describe("Worship & Church Features", () => {
       expect(homeContent).toContain("Christian Content Creators");
     });
 
-    it("should have testimonials section", () => {
-      expect(homeContent).toContain("Trusted by Churches");
-    });
+    // Testimonials section removed per user request
 
     it("should highlight unique differentiators", () => {
       expect(homeContent).toContain("Sheet Music Included");
