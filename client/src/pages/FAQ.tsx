@@ -105,7 +105,7 @@ const faqCategories = [
     items: [
       {
         q: "How does sheet music generation work?",
-        a: "After generating a song, you can request sheet music which creates a musical notation representation of your track. This includes melody lines, chord symbols, and basic arrangement information. You can also print the sheet music directly from the viewer.",
+        a: "After generating a song, you can request sheet music which creates a musical notation representation of your track. This includes melody lines, chord symbols, and basic arrangement information. You can download sheet music as PDF, MIDI, or MusicXML for use in notation software like MuseScore, Finale, and Sibelius.",
       },
       {
         q: "Can I transpose sheet music?",
@@ -114,6 +114,10 @@ const faqCategories = [
       {
         q: "Are chord progressions included?",
         a: "Yes, chord progressions are generated alongside sheet music and displayed with the notation. You can view chords separately or as part of the full score.",
+      },
+      {
+        q: "What is MusicXML export?",
+        a: "MusicXML is a universal format for sharing sheet music between notation software. When you download a MusicXML file from our sheet music viewer, you can open it directly in MuseScore, Finale, Sibelius, or any other notation editor to further edit, arrange, and print your music with professional-grade tools.",
       },
     ],
   },
@@ -187,8 +191,7 @@ const faqCategories = [
       },
       {
         q: "Can I refer friends?",
-        a: "Yes! Every account has a unique referral code. Share it with friends — when they sign up using your code, both of you benefit. Check your profile for your referral code.",
-      },
+     a: "Yes! Every account has a unique referral code. Share it with friends \u2014 when they sign up using your code, you both get 5 bonus song credits each. There's no limit on how many friends you can refer. Check your referral dashboard at /referrals for your unique link and code."      },
     ],
   },
 ];

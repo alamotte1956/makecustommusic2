@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, AlertCircle, WifiOff } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
+import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
@@ -380,6 +381,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [sanitisedDisplayAbc, songTitle, selectedKey, originalKey]);
 
+  const handleDownloadMusicXml = useCallback(() => {
+    if (!sanitisedDisplayAbc) return;
+    try {
+      const keyLabel = selectedKey === "original"
+        ? (originalKey ? `-${originalKey}` : "")
+        : `-${selectedKey}`;
+      downloadMusicXml(sanitisedDisplayAbc, `${songTitle}${keyLabel}`);
+      toast.success("MusicXML file downloaded! Open it in MuseScore, Finale, or Sibelius.");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to export MusicXML file");
+    }
+  }, [sanitisedDisplayAbc, songTitle, selectedKey, originalKey]);
+
   // Shared error banner component
   const renderErrorBanner = () => {
     if (!error) return null;
@@ -599,6 +613,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           >
             <FileAudio className="w-3.5 h-3.5" />
             MIDI
+          </Button>
+
+          {/* Download MusicXML */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadMusicXml}
+            disabled={!isRendered}
+            className="gap-1.5"
+            title="Download MusicXML for Finale, MuseScore, Sibelius"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            MusicXML
           </Button>
 
           {/* Regenerate with key selection */}

@@ -17,6 +17,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
+import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
@@ -196,6 +197,20 @@ export default function Mp3ToSheetMusic() {
       toast.success("MIDI file downloaded!");
     } catch {
       toast.error("Failed to export MIDI file");
+    }
+  }, [sanitisedDisplayAbc, file, selectedKey, originalKey]);
+
+  const handleDownloadMusicXml = useCallback(() => {
+    if (!sanitisedDisplayAbc) return;
+    try {
+      const title = file?.name.replace(/\.[^/.]+$/, "") || "Sheet Music";
+      const keyLabel = selectedKey === "original"
+        ? (originalKey ? `-${originalKey}` : "")
+        : `-${selectedKey}`;
+      downloadMusicXml(sanitisedDisplayAbc, `${title}${keyLabel}`);
+      toast.success("MusicXML file downloaded! Open it in MuseScore, Finale, or Sibelius.");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to export MusicXML file");
     }
   }, [sanitisedDisplayAbc, file, selectedKey, originalKey]);
 
@@ -920,6 +935,18 @@ export default function Mp3ToSheetMusic() {
                   >
                     <FileAudio className="w-3.5 h-3.5" />
                     MIDI
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadMusicXml}
+                    disabled={!isRendered}
+                    className="gap-1.5"
+                    title="Download MusicXML for Finale, MuseScore, Sibelius"
+                  >
+                    <FileAudio className="w-3.5 h-3.5" />
+                    MusicXML
                   </Button>
 
                   <Button

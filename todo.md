@@ -1745,3 +1745,9 @@
 - [x] Fix pdfExport.ts: made exportChordPDF async to support proper SVG-to-image conversion
 - [x] Fix GuitarChordViewer.tsx: made handleDownloadPDF async to await the now-async exportChordPDF
 - [x] Remove testimonials section from the website
+- [x] Implement MusicXML export: ABC-to-MusicXML converter library (using musicxml-io)
+- [x] Implement MusicXML export: Download button in SheetMusicViewer UI and Mp3ToSheetMusic page
+- [x] Implement MusicXML export: Write tests for the converter (14 tests) and referral bonus (9 tests)
+- [x] Affiliate program: Both referrer AND referred user get 5 bonus songs each
+- [x] Affiliate program: Backend routes for creating/validating referral codes and awarding credits
+- [x] Affiliate program: Frontend UI for sharing referral codes and tracking referrals

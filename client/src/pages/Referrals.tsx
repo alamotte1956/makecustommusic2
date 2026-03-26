@@ -185,7 +185,7 @@ export default function Referrals() {
       try {
         await navigator.share({
           title: "Create Christian Music",
-          text: "Create AI-generated songs in seconds! Use my referral link to get started:",
+          text: "Create AI-generated Christian music in seconds! Sign up with my link and we both get 5 free bonus songs:",
           url: referralLink,
         });
         return;
@@ -206,10 +206,9 @@ export default function Referrals() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-violet-100 mb-4">
             <Gift className="h-8 w-8 text-violet-600" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Invite Friends, Earn Credits</h1>
+          <h1 className="text-3xl font-bold text-foreground">Invite Friends, Both Earn Credits</h1>
           <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
-            Share your unique referral link with friends. When they sign up, you earn{" "}
-            <span className="font-semibold text-violet-600">{info?.creditsPerReferral ?? 5} bonus song credits</span> for each friend!
+            Share your unique referral link with friends. When they sign up, <span className="font-semibold text-violet-600">you both earn {info?.creditsPerReferral ?? 5} bonus song credits</span>!
           </p>
         </div>
 
@@ -272,7 +271,7 @@ export default function Referrals() {
               <Sparkles className="h-4 w-4 text-violet-600" />
             </div>
             <p className="text-3xl font-bold text-foreground">{info?.creditsPerReferral ?? 5}</p>
-            <p className="text-xs text-muted-foreground mt-1">Credits per friend who signs up</p>
+            <p className="text-xs text-muted-foreground mt-1">Credits each — you and your friend</p>
           </div>
         </div>
 
@@ -294,14 +293,14 @@ export default function Referrals() {
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 font-bold text-sm shrink-0">2</div>
               <div>
                 <p className="font-medium text-foreground">Friend signs up</p>
-                <p className="text-sm text-muted-foreground mt-0.5">When your friend clicks the link and creates an account, they're automatically linked to your referral.</p>
+                <p className="text-sm text-muted-foreground mt-0.5">When your friend clicks the link and creates an account, they're automatically linked to your referral and receive {info?.creditsPerReferral ?? 5} bonus songs.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 font-bold text-sm shrink-0">3</div>
               <div>
-                <p className="font-medium text-foreground">You earn credits</p>
-                <p className="text-sm text-muted-foreground mt-0.5">You instantly receive {info?.creditsPerReferral ?? 5} bonus song credits added to your account. No limit on referrals!</p>
+                <p className="font-medium text-foreground">You both earn credits</p>
+                <p className="text-sm text-muted-foreground mt-0.5">You both instantly receive {info?.creditsPerReferral ?? 5} bonus song credits added to your accounts. No limit on referrals!</p>
               </div>
             </div>
           </div>

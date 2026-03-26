@@ -107,16 +107,35 @@ export async function processReferral(
     `Referral bonus: a friend signed up using your invite link`
   );
 
+  // Award bonus credits to the referred user (new signup)
+  await addBonusCredits(
+    referredUserId,
+    REFERRAL_BONUS_CREDITS,
+    `Welcome bonus: you signed up with a referral link and earned ${REFERRAL_BONUS_CREDITS} free songs!`
+  );
+
   // Notify the referrer
   try {
     await createNotification({
       userId: referrerId,
       type: "credit_added",
       title: "Referral Bonus!",
-      message: `You earned ${REFERRAL_BONUS_CREDITS} bonus credits because a friend signed up with your invite link!`,
+      message: `You earned ${REFERRAL_BONUS_CREDITS} bonus songs because a friend signed up with your invite link!`,
     });
   } catch (e) {
-    console.warn("[Referral] Failed to create notification:", e);
+    console.warn("[Referral] Failed to create referrer notification:", e);
+  }
+
+  // Notify the referred user
+  try {
+    await createNotification({
+      userId: referredUserId,
+      type: "credit_added",
+      title: "Welcome Bonus!",
+      message: `You earned ${REFERRAL_BONUS_CREDITS} bonus songs for signing up with a referral link! Start creating music now.`,
+    });
+  } catch (e) {
+    console.warn("[Referral] Failed to create referred user notification:", e);
   }
 
   return true;
