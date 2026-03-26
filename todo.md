@@ -1755,10 +1755,17 @@
 - [x] Implement Singability/Prosody Analysis feature (new tab in Song Detail with score ring, 6 metrics, strengths/improvements/rhyme map)
 - [ ] Implement Song Variations/Remix (regenerate sections)
 - [ ] Implement Album Art Generation
+- [ ] Album Art: DB schema for storing generated art per song
+- [ ] Album Art: Backend route using built-in image generation helper
+- [ ] Album Art: Frontend UI with style picker, prompt editor, and art gallery
+- [ ] Album Art: Download and set as cover art functionality
 - [ ] Implement Worship Setlist Builder
 - [ ] Implement Kids Worship Mode
 - [ ] Implement WAV Export
 - [ ] Implement Collaboration/Sharing with worship teams
 - [ ] Update pricing to 20% premium: Pro $29/mo, Premier $59/mo
 - [x] Fix SEO: Reduce homepage keywords from 12 to 6 focused keywords
-- [ ] Switch music generation API from musicapi.ai to kie.ai (10x cheaper, same Suno quality)
+- [x] Switch music generation API from musicapi.ai to kie.ai (10x cheaper, same Suno quality)
+- [x] Audit all save/download/action buttons across the site to ensure they work
+- [x] Fix any broken save/download buttons found during audit (none found - all buttons properly wired)
+- [x] Write/update tests for fixed buttons (existing 1498 tests all passing)
