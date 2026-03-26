@@ -99,10 +99,14 @@ export async function submitMusicGeneration(
   const apiKey = getApiKey();
   const model = params.model ?? "V4";
 
+  // kie.ai requires a callBackUrl — use a dummy URL since we poll for results
+  const callBackUrl = "https://createchristianmusic.com/api/kie-callback";
+
   const body: Record<string, unknown> = {
     model,
     customMode: params.customMode ?? false,
     instrumental: params.instrumental ?? false,
+    callBackUrl,
   };
 
   if (params.customMode) {
@@ -359,10 +363,13 @@ export async function submitLyricsGeneration(prompt: string): Promise<string> {
 
   const apiKey = getApiKey();
 
+  const callBackUrl = "https://createchristianmusic.com/api/kie-callback";
+
   const response = await axios.post(
     `${KIE_API_BASE}/lyrics`,
     {
       prompt,
+      callBackUrl,
     },
     {
       headers: {

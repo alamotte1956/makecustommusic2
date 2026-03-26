@@ -1769,3 +1769,23 @@
 - [x] Audit all save/download/action buttons across the site to ensure they work
 - [x] Fix any broken save/download buttons found during audit (none found - all buttons properly wired)
 - [x] Write/update tests for fixed buttons (existing 1498 tests all passing)
+
+## Credit Tracking Dashboard
+- [ ] DB schema for credit usage events (track each generation's credit cost)
+- [ ] Backend routes for credit usage history and stats
+- [ ] Credit Dashboard page with current balance display
+- [ ] Usage history table with date, action type, and credits used
+- [ ] Usage charts (daily/weekly/monthly breakdown)
+- [ ] Navigation link to Credit Dashboard
+- [ ] Tests for credit tracking backend routes
+
+## Suno-style Shimmer/Glow Effects
+- [ ] Add shimmer gradient animation CSS keyframes (global)
+- [ ] Shimmer loading skeletons for song cards and generation
+- [ ] Glowing buttons on Generate, Create, and primary CTAs
+- [ ] Ambient glow/gradient backgrounds on Generator and Home pages
+- [ ] Shimmer effect on audio player progress bar during playback
+- [ ] Glowing border effect on active/playing song cards
+
+## Bugs
+- [x] Fix "please enter callback URL" error when trying to generate a song (added callBackUrl to kie.ai generate + lyrics endpoints)
