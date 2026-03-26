@@ -5,7 +5,7 @@ const DEFAULT_DESCRIPTION =
   "Generate original worship songs, hymns, and gospel music with AI. Sheet music, chord charts, stem separation, and 16 Christian genres for churches and creators.";
 const DEFAULT_KEYWORDS =
   "christian music generator, AI worship song generator, create worship music, gospel music maker, hymn generator, church music creator, praise and worship AI, christian song maker, worship leader tools, church music director, scripture songs, christian lyrics generator, worship set builder, christian chord charts, worship sheet music";
-const BASE_URL = "https://makecustommusic.com";
+const BASE_URL = "https://createchristianmusic.com";
 
 interface PageMeta {
   title?: string;

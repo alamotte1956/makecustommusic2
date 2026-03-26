@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { getSongByShareToken } from "./db";
 
-const BASE_URL = "https://makecustommusic.com";
+const BASE_URL = "https://createchristianmusic.com";
 const DEFAULT_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp";
 const SITE_NAME = "Create Christian Music";
 

@@ -112,7 +112,34 @@ export const appRouter = router({
         const bonusCheck = await checkMonthlyBonus(ctx.user.id, "bonus_song", userPlan);
 
         if (!isSunoAvailable()) {
-          throw new Error("Music engine is not available. Please configure the MUSIC_API_KEY.");
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Music engine is not available. Please configure the MUSIC_API_KEY.",
+          });
+        }
+
+        // ── Pre-check API credits to give a clear error before attempting generation ──
+        try {
+          const { getCredits } = await import("./sunoApi");
+          const apiCredits = await getCredits();
+          if (apiCredits < 5) {
+            // Notify admin about low credits
+            notifyOwner({
+              title: "⚠️ Music API Credits Low",
+              content: `Only ${apiCredits} API credits remaining on musicapi.ai. Please purchase more credits to keep the service running.`,
+            }).catch(() => {});
+          }
+          if (apiCredits <= 0) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "Music generation is temporarily unavailable due to API credit limits. The administrator has been notified. Please try again later.",
+            });
+          }
+        } catch (creditErr: any) {
+          // If it's our own TRPCError, re-throw it
+          if (creditErr instanceof TRPCError) throw creditErr;
+          // Otherwise log but don't block — the actual generation call will fail with a clear error
+          console.warn("[generate] Could not pre-check API credits:", creditErr.message);
         }
 
         // Build production-quality prompt using the songwriting helpers
@@ -130,16 +157,44 @@ export const appRouter = router({
 
         const durationMs = (duration ?? 30) * 1000;
 
-        const result = await sunoGenerateMusic(
-          {
-            prompt,
-            customMode: mode === "custom",
-            style: customStyle || undefined,
-            title: customTitle || undefined,
-            instrumental: forceInstrumental,
-          },
-          ctx.user.id
-        );
+        let result;
+        try {
+          result = await sunoGenerateMusic(
+            {
+              prompt,
+              customMode: mode === "custom",
+              style: customStyle || undefined,
+              title: customTitle || undefined,
+              instrumental: forceInstrumental,
+            },
+            ctx.user.id
+          );
+        } catch (genErr: any) {
+          const msg = genErr.message || "Unknown error during music generation";
+          // Map known error patterns to user-friendly messages
+          if (msg.includes("insufficient API credits") || msg.includes("credit")) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "Music generation is temporarily unavailable due to API credit limits. The administrator has been notified. Please try again later.",
+            });
+          }
+          if (msg.includes("timed out")) {
+            throw new TRPCError({
+              code: "TIMEOUT",
+              message: "Music generation took too long. Please try again with a shorter duration or simpler prompt.",
+            });
+          }
+          if (msg.includes("rate limit")) {
+            throw new TRPCError({
+              code: "TOO_MANY_REQUESTS",
+              message: "Too many generation requests. Please wait a moment and try again.",
+            });
+          }
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Music generation failed: ${msg}`,
+          });
+        }
 
         // Deduct credits or use monthly bonus
         if (bonusCheck.available) {

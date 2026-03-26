@@ -129,17 +129,43 @@ export async function submitMusicGeneration(
     body.make_instrumental = true;
   }
 
-  const response = await axios.post(
-    `${MUSIC_API_BASE}/sonic/create`,
-    body,
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 30000,
+  let response;
+  try {
+    response = await axios.post(
+      `${MUSIC_API_BASE}/sonic/create`,
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+  } catch (err: any) {
+    if (err.response) {
+      const status = err.response.status;
+      const data = err.response.data;
+      if (status === 403) {
+        const msg = data?.error || data?.message || "";
+        if (msg.toLowerCase().includes("credit")) {
+          throw new Error("Music generation service has insufficient API credits. The site administrator has been notified. Please try again later.");
+        }
+        throw new Error(`Music API access denied: ${msg || "Forbidden"}`);
+      }
+      if (status === 401) {
+        throw new Error("Music API authentication failed. Please check the API key configuration.");
+      }
+      if (status === 429) {
+        throw new Error("Music generation rate limit reached. Please wait a moment and try again.");
+      }
+      throw new Error(`Music API error (${status}): ${data?.error || data?.message || data?.msg || "Unknown error"}`);
     }
-  );
+    if (err.code === "ECONNABORTED") {
+      throw new Error("Music generation request timed out. Please try again.");
+    }
+    throw new Error(`Music API connection error: ${err.message || "Unable to reach music service"}`);
+  }
 
   if (response.data.code && response.data.code !== 200) {
     throw new Error(`Music API error: ${response.data.message || response.data.msg || "Unknown error"}`);

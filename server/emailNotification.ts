@@ -46,8 +46,8 @@ export async function sendAdminEmail(payload: EmailNotificationPayload): Promise
         <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; line-height: 1.6; color: #374151;">${escapeHtml(payload.body)}</pre>
       </div>
       <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px;">
-        <p>This is an automated notification from MakeCustomMusic.</p>
-        <p>View your <a href="https://makecustommusic.com/admin" style="color: #6366f1;">Admin Dashboard</a> for more details.</p>
+        <p>This is an automated notification from Create Christian Music.</p>
+        <p>View your <a href="https://createchristianmusic.com/admin" style="color: #6366f1;">Admin Dashboard</a> for more details.</p>
       </div>
     </div>
   `;
@@ -56,7 +56,7 @@ export async function sendAdminEmail(payload: EmailNotificationPayload): Promise
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [ADMIN_EMAIL],
-      subject: `[MakeCustomMusic] ${payload.subject}`,
+      subject: `[CreateChristianMusic] ${payload.subject}`,
       html,
     });
 

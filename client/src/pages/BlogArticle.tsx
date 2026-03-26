@@ -15,7 +15,7 @@ function renderMarkdown(md: string): string {
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
     // Links — convert internal links to the site
     .replace(
-      /\[([^\]]+)\]\((https:\/\/makecustommusic\.com[^)]*)\)/g,
+      /\[([^\]]+)\]\((https:\/\/createchristianmusic\.com[^)]*)\)/g,
       '<a href="$2" class="text-primary underline hover:opacity-80">$1</a>'
     )
     // External links
@@ -51,8 +51,8 @@ function renderMarkdown(md: string): string {
   return html;
 }
 
-const BASE_URL = "https://makecustommusic.com";
-const PUBLISHER_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp";
+const BASE_URL = "https://createchristianmusic.com";
+const PUBLISHER_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp"; // Logo file name retained from CDN
 
 /** Estimate word count from markdown content */
 function estimateWordCount(content: string): number {

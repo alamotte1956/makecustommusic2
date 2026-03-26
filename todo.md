@@ -1718,3 +1718,13 @@
 - [x] Fix musicapi.ai endpoint: /sonic/create-music -> /sonic/create
 - [x] Fix musicapi.ai endpoint: /sonic/get-vox -> /sonic/vox
 - [x] Fix response parsing for musicapi.ai top-level task_id format
+- [x] Deep investigation and fix of music generation errors (root cause: musicapi.ai 403 insufficient credits)
+- [x] Add clear error message when musicapi.ai credits are insufficient (403 forbidden)
+- [x] Fix SEO: Update VITE_APP_TITLE to "Create Christian Music" for proper page title
+- [x] Fix SEO: Shorten homepage meta description to under 160 chars
+- [x] Add API credit check before attempting generation to give user-friendly error
+- [x] Harden sunoApi.ts error handling for all HTTP error codes from musicapi.ai
+- [x] Fix all makecustommusic.com references to createchristianmusic.com across codebase
+- [x] Fix email notification domain references (emailNotification.ts)
+- [x] Fix OG tags, sitemap, blog, privacy, terms domain references
+- [x] Update all test files to match new domain references

@@ -35,7 +35,7 @@ export default function Privacy() {
         <section>
           <p className="leading-relaxed">
             A. LaMotte Music (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates Create Christian Music at{" "}
-            <strong>makecustommusic.com</strong>. This Privacy Policy explains how we
+            <strong>createchristianmusic.com</strong>. This Privacy Policy explains how we
             collect, use, disclose, and safeguard your information when you visit our
             website and use our AI music generation services. By using the Service, you
             agree to the collection and use of information in accordance with this policy.
@@ -356,8 +356,8 @@ export default function Privacy() {
             </p>
             <p className="text-foreground/70 mt-1">
               Website:{" "}
-              <a href="https://makecustommusic.com" className="text-violet-600 hover:underline">
-                makecustommusic.com
+              <a href="https://createchristianmusic.com" className="text-violet-600 hover:underline">
+                createchristianmusic.com
               </a>
             </p>
           </div>

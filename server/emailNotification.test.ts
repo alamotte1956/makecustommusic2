@@ -21,8 +21,8 @@ describe("Email Notification Helper", () => {
     expect(emailContent).toContain("support@createchristianmusic.com");
   });
 
-  it("sends from the makecustommusic.com domain", () => {
-    expect(emailContent).toContain("makecustommusic.com");
+  it("sends from the createchristianmusic.com domain", () => {
+    expect(emailContent).toContain("createchristianmusic.com");
   });
 
   it("exports sendAdminEmail function", () => {
@@ -57,15 +57,15 @@ describe("Email Notification Helper", () => {
   });
 
   it("includes a link to the admin dashboard in the email", () => {
-    expect(emailContent).toContain("makecustommusic.com/admin");
+    expect(emailContent).toContain("createchristianmusic.com/admin");
   });
 
   it("escapes HTML in the email body to prevent XSS", () => {
     expect(emailContent).toContain("escapeHtml");
   });
 
-  it("prefixes email subject with [MakeCustomMusic]", () => {
-    expect(emailContent).toContain("[MakeCustomMusic]");
+  it("prefixes email subject with [CreateChristianMusic]", () => {
+    expect(emailContent).toContain("[CreateChristianMusic]");
   });
 });
 

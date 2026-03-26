@@ -160,11 +160,11 @@ describe("Blog SEO", () => {
     }
   });
 
-  it("should have content with internal links to makecustommusic.com", () => {
+  it("should have content with internal links to createchristianmusic.com", () => {
     // At least one article should link back to the site
     const hasInternalLink = blogArticles.some(
       (a) =>
-        a.content.includes("makecustommusic.com") ||
+        a.content.includes("createchristianmusic.com") ||
         a.content.includes("/generate")
     );
     expect(hasInternalLink).toBe(true);
@@ -173,7 +173,7 @@ describe("Blog SEO", () => {
 
 // ─── Enhanced Blog JSON-LD Structured Data Tests ───
 
-const BASE_URL = "https://makecustommusic.com";
+const BASE_URL = "https://createchristianmusic.com";
 const PUBLISHER_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/logo-makecustommusic-V4H6NBVctSA5W9x5679fcE.webp";
 
 function estimateWordCount(content: string): number {
@@ -423,7 +423,7 @@ describe("Blog Listing BreadcrumbList JSON-LD", () => {
 
 describe("Blog Sitemap Integration", () => {
   it("should generate sitemap URLs for all blog articles", () => {
-    const BASE_URL = "https://makecustommusic.com";
+    const BASE_URL = "https://createchristianmusic.com";
     const articles = getAllArticles();
 
     const urls = articles.map(

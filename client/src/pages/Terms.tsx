@@ -48,7 +48,7 @@ export default function Terms() {
         <section>
           <p className="leading-relaxed">
             Welcome to Create Christian Music. These Terms of Service (&quot;Terms&quot;) govern your
-            access to and use of the website at <strong>makecustommusic.com</strong> and
+            access to and use of the website at <strong>createchristianmusic.com</strong> and
             all related services, applications, and tools (collectively, the &quot;Service&quot;)
             operated by A. LaMotte Music (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By accessing
             or using the Service, you agree to be bound by these Terms. If you do not agree,
@@ -601,8 +601,8 @@ export default function Terms() {
             </p>
             <p className="text-foreground/70 mt-1">
               Website:{" "}
-              <a href="https://makecustommusic.com" className="text-violet-400 hover:underline">
-                makecustommusic.com
+              <a href="https://createchristianmusic.com" className="text-violet-400 hover:underline">
+                createchristianmusic.com
               </a>
             </p>
           </div>

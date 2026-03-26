@@ -4,7 +4,7 @@ import { songs } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { getAllArticles } from "../shared/blogArticles";
 
-const BASE_URL = "https://makecustommusic.com";
+const BASE_URL = "https://createchristianmusic.com";
 
 // Static routes with their change frequency and priority
 const STATIC_ROUTES: { path: string; changefreq: string; priority: number }[] = [

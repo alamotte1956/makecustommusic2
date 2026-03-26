@@ -4,7 +4,7 @@ import { getAllArticles } from "../../../shared/blogArticles";
 import { Calendar, Clock, ArrowRight, BookOpen, Tag } from "lucide-react";
 import { useEffect } from "react";
 
-const BASE_URL = "https://makecustommusic.com";
+const BASE_URL = "https://createchristianmusic.com";
 const articles = getAllArticles();
 
 /** Build CollectionPage JSON-LD for the blog listing */
