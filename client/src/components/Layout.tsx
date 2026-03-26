@@ -6,7 +6,7 @@ import {
   Music, History, Disc3, Sparkles, LogOut, LogIn, Menu, X, Heart,
   CreditCard, BarChart3, Globe, Upload, HelpCircle, Crown, Gift,
   FileAudio, Share2, Check, Shield, Search, Home, Radio, ChevronLeft,
-  BookOpen, Cross
+  BookOpen, Cross, PenLine
 } from "lucide-react";
 import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
@@ -26,6 +26,7 @@ const sidebarNavItems = [
   { href: "/discover", label: "Explore", icon: Globe },
   { href: "/upload", label: "Upload", icon: Upload },
   { href: "/mp3-to-sheet-music", label: "MP3 to Sheet", icon: FileAudio },
+  { href: "/write-lyrics", label: "Write Lyrics", icon: PenLine },
   { href: "/worship", label: "Worship Sets", icon: BookOpen },
 ];
 

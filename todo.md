@@ -1569,3 +1569,14 @@
 - [x] Update FAQ with cancellation policy (cancel anytime, no refund, access until end of billing period)
 - [x] Update Terms of Service with no-refund cancellation policy
 - [x] Update admin dashboard to show subscription cancellation status and management
+
+## Write Your Own Lyrics Page
+- [x] Create dedicated /write-lyrics page with structured songwriting editor
+- [x] Add section builder (Verse, Chorus, Bridge, Pre-Chorus, Outro, Intro, Hook, Interlude, Ad-lib) with move up/down reordering
+- [x] Add AI lyric assistant (generate full lyrics from theme, refine sections with polish/rhyme/restructure/rewrite)
+- [x] Add style/genre selector and vocal type picker on the page
+- [x] Add "Generate Song from Lyrics" button that sends lyrics to the music generation backend
+- [x] Add lyrics preview/formatting panel showing the full song structure
+- [x] Add save draft functionality for work-in-progress lyrics (localStorage)
+- [x] Add route in App.tsx and navigation link in sidebar
+- [x] Write tests for the lyrics page features (55 tests, all 1,342 total passing)
