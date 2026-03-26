@@ -9,7 +9,7 @@ import { registerStripeWebhookRoute } from "../stripeWebhook";
 import { registerSitemapRoute } from "../sitemap";
 import { registerLyricsExportRoute } from "../lyricsExport";
 import { registerOgTagsMiddleware } from "../ogTags";
-import { appRouter } from "../routers";
+import { appRouter, recoverPendingGenerationTasks } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startCreditMonitor } from "../creditMonitor";
@@ -89,6 +89,8 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
     // Start periodic API credit monitoring
     startCreditMonitor();
+    // Recover any pending generation tasks from before server restart
+    recoverPendingGenerationTasks();
   });
 }
 

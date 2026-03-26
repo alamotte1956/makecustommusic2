@@ -25,7 +25,7 @@ import {
   createSharedLyrics, getSharedLyricsByToken, updateSharedLyrics, deleteSharedLyrics, getUserSharedLyrics,
   createStemSeparation, getStemSeparationById, getStemSeparationBySongId, updateStemSeparationStatus, updateStemSeparationStems, updateSongSunoIds,
   getDb,
-  createGenerationTask, getGenerationTask, updateGenerationTask,
+  createGenerationTask, getGenerationTask, updateGenerationTask, getPendingGenerationTasks,
 } from "./db";
 import type { ChordProgressionData, SharedLyricsSection } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
@@ -37,7 +37,7 @@ import { postProcessAudio, mixVocalInstrumental, prepareStemDownloads, getPreset
 import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssmlBuilder";
 import { buildCoverArtPrompt } from "./coverArtMotifs";
 import {
-  getUserPlan, getCreditBalance, deductCredits, getUsageSummary,
+  getUserPlan, getCreditBalance, deductCredits, refundCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
   getUserSubscription, canUserGenerate, checkMonthlyBonus, useMonthlyBonus,
   getDailyUsageChart,
@@ -64,9 +64,40 @@ function getStripe(): Stripe | null {
 import axios from "axios";
 
 /**
+ * Download audio with retry logic (3 attempts, exponential backoff).
+ */
+async function downloadAudioWithRetry(url: string, maxRetries = 3): Promise<Buffer> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+        timeout: 60000,
+        validateStatus: (s) => s >= 200 && s < 300,
+      });
+      const buffer = Buffer.from(response.data);
+      // Validate: must be at least 10KB and have audio content-type
+      const contentType = response.headers["content-type"] || "";
+      if (buffer.length < 10240) {
+        throw new Error(`Audio file too small (${buffer.length} bytes) — likely corrupt or error page`);
+      }
+      if (contentType && !contentType.includes("audio") && !contentType.includes("octet-stream")) {
+        console.warn(`[AudioDownload] Unexpected content-type: ${contentType}, but file size OK (${buffer.length} bytes)`);
+      }
+      return buffer;
+    } catch (err: any) {
+      console.warn(`[AudioDownload] Attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+      if (attempt === maxRetries) throw err;
+      await new Promise(r => setTimeout(r, 2000 * Math.pow(2, attempt - 1))); // 2s, 4s, 8s
+    }
+  }
+  throw new Error("Audio download failed after all retries");
+}
+
+/**
  * Background task that polls kie.ai for generation completion,
  * downloads the audio, uploads to S3, and saves the song to DB.
  * Runs as a fire-and-forget async function — no request timeout risk.
+ * On failure, refunds the user's credit.
  */
 async function processGenerationTaskInBackground(
   taskDbId: number,
@@ -74,10 +105,12 @@ async function processGenerationTaskInBackground(
   userName: string | null,
   userEmail: string | null
 ) {
+  let usedBonus = false;
   try {
     await updateGenerationTask(taskDbId, { status: "processing" });
     const task = await getGenerationTask(taskDbId, userId);
     if (!task) throw new Error("Task not found");
+    usedBonus = !!task.usedBonus;
 
     // Poll kie.ai for completion (up to 10 minutes)
     const maxWaitMs = 600000;
@@ -88,17 +121,25 @@ async function processGenerationTaskInBackground(
 
     while (Date.now() - startTime < maxWaitMs) {
       pollCount++;
-      const status = await getTaskStatus(task.kieTaskId);
-      const elapsed = Math.round((Date.now() - startTime) / 1000);
-      console.log(`[GenTask#${taskDbId}] Poll #${pollCount} (${elapsed}s): status=${status.status}, hasAudio=${!!status.response?.data?.length}`);
+      try {
+        const status = await getTaskStatus(task.kieTaskId);
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        console.log(`[GenTask#${taskDbId}] Poll #${pollCount} (${elapsed}s): status=${status.status}, hasAudio=${!!status.response?.data?.length}`);
 
-      if (status.status === "SUCCESS" || (status.status === "FIRST_SUCCESS" && status.response?.data?.length)) {
-        completedResult = status;
-        break;
-      }
+        if (status.status === "SUCCESS" || (status.status === "FIRST_SUCCESS" && status.response?.data?.length)) {
+          completedResult = status;
+          break;
+        }
 
-      if (status.status === "FAILED" || status.status === "CREATE_TASK_FAILED") {
-        throw new Error(status.errorMessage || "Generation failed");
+        if (status.status === "FAILED" || status.status === "CREATE_TASK_FAILED") {
+          throw new Error(status.errorMessage || "Generation failed at kie.ai");
+        }
+      } catch (pollErr: any) {
+        // If it's a definitive failure, rethrow; otherwise log and keep polling
+        if (pollErr.message?.includes("Generation failed") || pollErr.message?.includes("CREATE_TASK_FAILED")) {
+          throw pollErr;
+        }
+        console.warn(`[GenTask#${taskDbId}] Poll error (will retry): ${pollErr.message}`);
       }
 
       await new Promise(r => setTimeout(r, pollIntervalMs));
@@ -108,11 +149,19 @@ async function processGenerationTaskInBackground(
       throw new Error("Generation timed out after 10 minutes");
     }
 
-    // Download audio and upload to S3
-    const audio = completedResult.response.data[0];
-    const audioResponse = await axios.get(audio.audio_url, { responseType: "arraybuffer", timeout: 60000 });
+    // Filter out items with empty audio URLs
+    const audioItems = (completedResult.response.data as any[]).filter(
+      (item: any) => item.audio_url || item.audioUrl
+    );
+    if (!audioItems.length) {
+      throw new Error("Generation completed but no audio URL was returned");
+    }
+    const audio = audioItems[0];
+    const audioSourceUrl = audio.audio_url || audio.audioUrl;
+
+    // Download audio with retry and validation
+    const buffer = await downloadAudioWithRetry(audioSourceUrl);
     const fileKey = `songs/${userId}/${nanoid()}.mp3`;
-    const buffer = Buffer.from(audioResponse.data);
     const { url: audioUrl } = await storagePut(fileKey, buffer, "audio/mpeg");
 
     // Save song to DB
@@ -171,6 +220,38 @@ async function processGenerationTaskInBackground(
       errorMessage: err.message || "Unknown error",
       completedAt: new Date(),
     }).catch(() => {});
+
+    // ── CRITICAL: Refund the user's credit on failure ──
+    if (!usedBonus) {
+      try {
+        await refundCredits(userId, 1, `Refund: generation failed (task #${taskDbId}) — ${(err.message || "").substring(0, 100)}`);
+        console.log(`[GenTask#${taskDbId}] Credit refunded to user #${userId}`);
+      } catch (refundErr: any) {
+        console.error(`[GenTask#${taskDbId}] CRITICAL: Failed to refund credit:`, refundErr.message);
+        notifyOwner({
+          title: "\u26A0\uFE0F Credit Refund Failed",
+          content: `User #${userId} needs manual refund of 1 credit.\nTask: #${taskDbId}\nError: ${err.message}\nRefund error: ${refundErr.message}`,
+        }).catch(() => {});
+      }
+    }
+  }
+}
+
+/**
+ * Recover pending/processing generation tasks after server restart.
+ * Called once during server startup.
+ */
+export async function recoverPendingGenerationTasks() {
+  try {
+    const pending = await getPendingGenerationTasks();
+    if (pending.length === 0) return;
+    console.log(`[Recovery] Found ${pending.length} pending generation task(s), resuming...`);
+    for (const task of pending) {
+      // Re-run the background processor for each pending task
+      processGenerationTaskInBackground(task.id, task.userId, null, null);
+    }
+  } catch (err: any) {
+    console.warn(`[Recovery] Failed to recover pending tasks:`, err.message);
   }
 }
 
@@ -240,6 +321,32 @@ export const appRouter = router({
 
         // ── Check monthly bonus: if bonus available, use it instead of credits ──
         const bonusCheck = await checkMonthlyBonus(ctx.user.id, "bonus_song", userPlan);
+
+        // ── Daily limit check ──
+        const dailyCheck = await checkDailyLimit(ctx.user.id, "generation", userPlan);
+        if (!dailyCheck.allowed) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `You've reached your daily limit of ${dailyCheck.limit} songs. Please try again tomorrow.`,
+          });
+        }
+
+        // ── Duplicate prevention: reject if user has a pending/processing task created in last 60s ──
+        try {
+          const recentTasks = await getPendingGenerationTasks();
+          const userRecent = recentTasks.filter(
+            (t: any) => t.userId === ctx.user.id && (Date.now() - new Date(t.createdAt).getTime()) < 60000
+          );
+          if (userRecent.length > 0) {
+            throw new TRPCError({
+              code: "TOO_MANY_REQUESTS",
+              message: "You already have a song being generated. Please wait for it to complete before starting another.",
+            });
+          }
+        } catch (dupErr: any) {
+          if (dupErr instanceof TRPCError) throw dupErr;
+          console.warn("[generate] Duplicate check failed (non-blocking):", dupErr.message);
+        }
 
         if (!isSunoAvailable()) {
           throw new TRPCError({

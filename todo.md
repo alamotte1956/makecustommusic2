@@ -1794,3 +1794,17 @@
 - [x] Fix music generator getting stuck during song generation (accept FIRST_SUCCESS as complete + animated progress bar with stage messages)
 - [x] Fix "unexpected token" JSON parsing error during song generation (converted to async submit+poll pattern to avoid proxy timeouts)
 - [x] Fix sheet music not showing up in the preview area of the sheet music generator (added containerVisible state, retry mechanism, SVG content verification, and robust ResizeObserver handling)
+- [x] Deep audit of music generation flow — identify and fix all possible failure points
+
+## Generation Flow Hardening (from deep audit)
+- [x] Credit refund on generation failure (refundCredits function + automatic refund in background task)
+- [x] Daily limit check before generation (checkDailyLimit called in generate mutation)
+- [x] Duplicate generation prevention (reject if user has pending task within 60s)
+- [x] Audio download retry with exponential backoff (3 attempts: 2s, 4s, 8s delays)
+- [x] Audio content validation (reject files < 10KB, check content-type)
+- [x] Empty audio URL filtering (filter out items with no audio_url/audioUrl)
+- [x] Crash recovery for in-progress tasks (recoverPendingGenerationTasks on server startup)
+- [x] Resilient polling (catch individual poll errors, continue polling unless definitive failure)
+- [x] Generation timeout (10 minute max wait)
+- [x] Admin notification on refund failure (notifyOwner when credit refund fails)
+- [x] 19 new tests for hardening features (1,524 total tests passing across 71 files)

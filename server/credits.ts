@@ -586,3 +586,36 @@ export async function getDailyUsageChart(userId: number, days: number = 30) {
 
   return { daily: chartData, weekly: weeklyData };
 }
+
+
+// ─── Credit refund (on generation failure) ──────────────────────────────────
+
+export async function refundCredits(
+  userId: number,
+  amount: number,
+  description: string,
+  relatedSongId?: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Add back to monthly credits first (most likely source)
+  const [balance] = await db
+    .select()
+    .from(creditBalances)
+    .where(eq(creditBalances.userId, userId))
+    .limit(1);
+
+  if (balance) {
+    await db
+      .update(creditBalances)
+      .set({
+        monthlyCredits: sql`${creditBalances.monthlyCredits} + ${amount}`,
+      })
+      .where(eq(creditBalances.userId, userId));
+  }
+
+  const newBalance = await getCreditBalance(userId);
+  await logTransaction(userId, amount, "refund", description, newBalance.totalCredits, relatedSongId);
+  console.log(`[Credits] Refunded ${amount} credit(s) to user #${userId}: ${description}`);
+}
