@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -36,11 +36,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useUndoHistory } from "@/hooks/useUndoHistory";
 import {
   PenLine, Plus, Trash2, GripVertical, ChevronDown, ChevronUp,
   Wand2, Sparkles, Loader2, Music, Download, Share2, RefreshCw,
   BookOpen, Cross, Mic, MicOff, FileText,
-  Save, FolderOpen, Copy, RotateCcw, Eye, EyeOff, Heart
+  Save, FolderOpen, Copy, RotateCcw, Eye, EyeOff, Heart,
+  Undo2, Redo2
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -346,13 +348,23 @@ export default function WriteLyrics() {
   const [vocalType, setVocalType] = useState<VocalValue>("female");
   const [customStyle, setCustomStyle] = useState("");
 
-  // Sections
-  const [sections, setSections] = useState<LyricSection[]>([
-    { id: newId(), type: "verse", content: "" },
-    { id: newId(), type: "chorus", content: "" },
-    { id: newId(), type: "verse", content: "" },
-    { id: newId(), type: "chorus", content: "" },
-  ]);
+  // Sections with undo/redo history
+  const initialSections: LyricSection[] = useMemo(() => [
+    { id: newId(), type: "verse" as SectionType, content: "" },
+    { id: newId(), type: "chorus" as SectionType, content: "" },
+    { id: newId(), type: "verse" as SectionType, content: "" },
+    { id: newId(), type: "chorus" as SectionType, content: "" },
+  ], []);
+  const {
+    state: sections,
+    pushSnapshot,
+    pushSnapshotDebounced,
+    undo,
+    redo,
+    resetHistory,
+    canUndo,
+    canRedo,
+  } = useUndoHistory<LyricSection[]>(initialSections);
 
   // UI state
   const [showPreview, setShowPreview] = useState(false);
@@ -412,32 +424,27 @@ export default function WriteLyrics() {
 
   const hasContent = sections.some(s => s.content.trim().length > 0);
 
-  /* ─── Section Handlers ─── */
+  /* ─── Section Handlers (all push to undo history) ─── */
   const addSection = useCallback((type: SectionType, afterId?: string) => {
     const newSection: LyricSection = { id: newId(), type, content: "" };
-    setSections(prev => {
-      if (afterId) {
-        const idx = prev.findIndex(s => s.id === afterId);
-        const next = [...prev];
-        next.splice(idx + 1, 0, newSection);
-        return next;
-      }
-      return [...prev, newSection];
-    });
-    setExpandedSections(prev => { const next = new Set(Array.from(prev)); next.add(newSection.id); return next; });
-  }, []);
+    const next = afterId
+      ? (() => { const arr = [...sections]; const idx = arr.findIndex(s => s.id === afterId); arr.splice(idx + 1, 0, newSection); return arr; })()
+      : [...sections, newSection];
+    pushSnapshot(next);
+    setExpandedSections(prev => { const s = new Set(Array.from(prev)); s.add(newSection.id); return s; });
+  }, [sections, pushSnapshot]);
 
   const removeSection = useCallback((id: string) => {
-    setSections(prev => prev.filter(s => s.id !== id));
-  }, []);
+    pushSnapshot(sections.filter(s => s.id !== id));
+  }, [sections, pushSnapshot]);
 
   const updateSection = useCallback((id: string, content: string) => {
-    setSections(prev => prev.map(s => s.id === id ? { ...s, content } : s));
-  }, []);
+    pushSnapshotDebounced(sections.map(s => s.id === id ? { ...s, content } : s));
+  }, [sections, pushSnapshotDebounced]);
 
   const changeSectionType = useCallback((id: string, type: SectionType) => {
-    setSections(prev => prev.map(s => s.id === id ? { ...s, type } : s));
-  }, []);
+    pushSnapshot(sections.map(s => s.id === id ? { ...s, type } : s));
+  }, [sections, pushSnapshot]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -454,13 +461,11 @@ export default function WriteLyrics() {
     setActiveDragId(null);
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      setSections(prev => {
-        const oldIndex = prev.findIndex(s => s.id === String(active.id));
-        const newIndex = prev.findIndex(s => s.id === String(over.id));
-        return arrayMove(prev, oldIndex, newIndex);
-      });
+      const oldIndex = sections.findIndex(s => s.id === String(active.id));
+      const newIndex = sections.findIndex(s => s.id === String(over.id));
+      pushSnapshot(arrayMove(sections, oldIndex, newIndex));
     }
-  }, []);
+  }, [sections, pushSnapshot]);
 
   const handleDragCancel = useCallback(() => {
     setActiveDragId(null);
@@ -470,16 +475,14 @@ export default function WriteLyrics() {
   const activeDragSection = activeDragId ? sections.find(s => s.id === activeDragId) : null;
 
   const duplicateSection = useCallback((id: string) => {
-    setSections(prev => {
-      const idx = prev.findIndex(s => s.id === id);
-      if (idx === -1) return prev;
-      const original = prev[idx];
-      const dup: LyricSection = { id: newId(), type: original.type, content: original.content, label: original.label };
-      const next = [...prev];
-      next.splice(idx + 1, 0, dup);
-      return next;
-    });
-  }, []);
+    const idx = sections.findIndex(s => s.id === id);
+    if (idx === -1) return;
+    const original = sections[idx];
+    const dup: LyricSection = { id: newId(), type: original.type, content: original.content, label: original.label };
+    const next = [...sections];
+    next.splice(idx + 1, 0, dup);
+    pushSnapshot(next);
+  }, [sections, pushSnapshot]);
 
   const toggleSection = useCallback((id: string) => {
     setExpandedSections(prev => {
@@ -492,24 +495,23 @@ export default function WriteLyrics() {
   /* ─── Template / Scripture ─── */
   const applyTemplate = useCallback((template: typeof SONG_TEMPLATES[0]) => {
     const newSections = template.sections.map(s => ({ id: newId(), type: s.type, content: s.content }));
-    setSections(newSections);
+    pushSnapshot(newSections);
     setExpandedSections(new Set(newSections.map(s => s.id)));
     toast.success(`Applied "${template.label}" template`);
-  }, []);
+  }, [pushSnapshot]);
 
   const insertScripture = useCallback((scripture: typeof SCRIPTURE_STARTERS[0]) => {
-    // Find first empty verse or chorus, or add a new verse
     const emptyIdx = sections.findIndex(s => !s.content.trim());
     if (emptyIdx !== -1) {
-      updateSection(sections[emptyIdx].id, scripture.text);
+      pushSnapshot(sections.map((s, i) => i === emptyIdx ? { ...s, content: scripture.text } : s));
       toast.success(`Inserted ${scripture.label} into ${SECTION_TYPES.find(t => t.value === sections[emptyIdx].type)?.label || "section"}`);
     } else {
       const newSection: LyricSection = { id: newId(), type: "verse", content: scripture.text };
-      setSections(prev => [...prev, newSection]);
+      pushSnapshot([...sections, newSection]);
       setExpandedSections(prev => { const next = new Set(Array.from(prev)); next.add(newSection.id); return next; });
       toast.success(`Added new verse with ${scripture.label}`);
     }
-  }, [sections, updateSection]);
+  }, [sections, pushSnapshot]);
 
   /* ─── AI Helpers ─── */
   const handleAIGenerate = useCallback(async () => {
@@ -553,12 +555,12 @@ export default function WriteLyrics() {
       }
 
       if (newSections.length > 0) {
-        setSections(newSections);
+        pushSnapshot(newSections);
         setExpandedSections(new Set(newSections.map(s => s.id)));
         toast.success("AI lyrics generated! Edit them to make them yours.");
       } else {
         // Fallback: put all lyrics in one verse
-        setSections([{ id: newId(), type: "verse", content: result.lyrics }]);
+        pushSnapshot([{ id: newId(), type: "verse", content: result.lyrics }]);
         toast.success("AI lyrics generated!");
       }
     } catch (error: any) {
@@ -566,7 +568,7 @@ export default function WriteLyrics() {
     } finally {
       setIsGeneratingAI(false);
     }
-  }, [aiSubject, selectedGenre, selectedMood, vocalType, generateLyricsMutation]);
+  }, [aiSubject, selectedGenre, selectedMood, vocalType, generateLyricsMutation, pushSnapshot]);
 
   const handleRefineSection = useCallback(async (sectionId: string, mode: "polish" | "rhyme" | "restructure" | "rewrite") => {
     const section = sections.find(s => s.id === sectionId);
@@ -603,15 +605,16 @@ export default function WriteLyrics() {
 
   const loadDraft = useCallback((draft: typeof savedDrafts[0]) => {
     setSongTitle(draft.title);
-    setSections(draft.sections.map(s => ({ ...s, id: newId() })));
+    const newSecs = draft.sections.map(s => ({ ...s, id: newId() }));
+    resetHistory(newSecs);
     setSelectedGenre(draft.genre);
     setSelectedMood(draft.mood);
     setVocalType(draft.vocal as VocalValue);
     setCustomStyle(draft.style);
-    setExpandedSections(new Set(draft.sections.map(() => newId())));
+    setExpandedSections(new Set(newSecs.map(s => s.id)));
     setShowDrafts(false);
     toast.success(`Loaded "${draft.name}"`);
-  }, []);
+  }, [resetHistory]);
 
   const deleteDraft = useCallback((name: string) => {
     const updated = savedDrafts.filter(d => d.name !== name);
@@ -671,9 +674,9 @@ export default function WriteLyrics() {
   }, [generatedSong, shareMutation]);
 
   const clearAll = useCallback(() => {
-    setSections([
-      { id: newId(), type: "verse", content: "" },
-      { id: newId(), type: "chorus", content: "" },
+    resetHistory([
+      { id: newId(), type: "verse" as SectionType, content: "" },
+      { id: newId(), type: "chorus" as SectionType, content: "" },
     ]);
     setSongTitle("");
     setSelectedGenre(null);
@@ -682,7 +685,26 @@ export default function WriteLyrics() {
     setGeneratedSong(null);
     setProgress(0);
     setProgressMessage("");
-  }, []);
+  }, [resetHistory]);
+
+  /* ─── Keyboard Shortcuts: Ctrl+Z / Ctrl+Shift+Z (Cmd on Mac) ─── */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod || e.key.toLowerCase() !== "z") return;
+      // Don't intercept when focus is on an input/textarea (let browser handle native undo)
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      e.preventDefault();
+      if (e.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo]);
 
   /* ─── Render ─── */
   return (
@@ -699,6 +721,39 @@ export default function WriteLyrics() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* Undo / Redo */}
+          <div className="flex items-center gap-0.5 mr-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={undo}
+                  disabled={!canUndo}
+                  aria-label="Undo"
+                >
+                  <Undo2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Undo <span className="text-muted-foreground text-[10px] ml-1">⌘Z</span></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={redo}
+                  disabled={!canRedo}
+                  aria-label="Redo"
+                >
+                  <Redo2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Redo <span className="text-muted-foreground text-[10px] ml-1">⌘⇧Z</span></TooltipContent>
+            </Tooltip>
+          </div>
           <Button variant="outline" size="sm" onClick={() => setShowDrafts(!showDrafts)} className="gap-1.5">
             <FolderOpen className="w-4 h-4" /> Drafts {savedDrafts.length > 0 && <Badge variant="secondary" className="ml-1 text-[10px] px-1.5">{savedDrafts.length}</Badge>}
           </Button>

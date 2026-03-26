@@ -1588,3 +1588,13 @@
 - [x] Add visual drop indicators and smooth animations
 - [x] Maintain section expand/collapse state after reordering
 - [x] Update tests for drag-and-drop reordering (17 new tests, all 1,359 total passing)
+
+## Undo/Redo for Write Lyrics Page
+- [x] Create useUndoHistory hook with snapshot-based history stack
+- [x] Track all section mutations: add, remove, reorder, duplicate, content edit, type change
+- [x] Track template application and scripture insertion
+- [x] Add undo/redo buttons to the page header
+- [x] Add Ctrl+Z / Ctrl+Shift+Z keyboard shortcuts (Cmd on Mac)
+- [x] Show undo/redo availability state (disabled when no history)
+- [x] Cap history stack to prevent memory issues (50 steps max)
+- [x] Write tests for undo/redo logic (30 tests, all 1,389 total passing)
