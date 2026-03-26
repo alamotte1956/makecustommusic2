@@ -1697,3 +1697,7 @@
 - [x] Update stem separation price to even dollar amount with tax
 - [x] Add tax breakdown tooltip next to prices on Pricing page (base price vs. MN 8.53% tax)
 - [x] Add Suno.com-style shimmering/aurora background effect to the site
+- [ ] Optimize shimmer background animation for mobile (smaller orbs, less blur, fewer orbs, GPU hints)
+- [ ] Rework shimmer background to closely match Suno.com's actual implementation
+- [x] Fix unauthorized Suno API error
+- [x] Switch music generation API from sunoapi.org to musicapi.ai

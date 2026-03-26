@@ -112,7 +112,7 @@ export const appRouter = router({
         const bonusCheck = await checkMonthlyBonus(ctx.user.id, "bonus_song", userPlan);
 
         if (!isSunoAvailable()) {
-          throw new Error("Suno engine is not available. Please configure the SUNO_API_KEY.");
+          throw new Error("Music engine is not available. Please configure the MUSIC_API_KEY.");
         }
 
         // Build production-quality prompt using the songwriting helpers

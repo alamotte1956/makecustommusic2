@@ -405,7 +405,7 @@ export default function Generator() {
       return;
     }
     if (!isSunoAvailable) {
-      toast.error("Suno engine is not available. Please configure the SUNO_API_KEY in Settings.");
+      toast.error("Music engine is not available. Please configure the MUSIC_API_KEY in Settings.");
       return;
     }
 

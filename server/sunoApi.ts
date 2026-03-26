@@ -1,7 +1,8 @@
 /**
- * Suno API Integration
+ * Music API Integration (musicapi.ai)
  * Supports Music Generation, Lyrics Creation, and Stem Separation
- * API docs: https://docs.sunoapi.org/
+ * Primary provider: musicapi.ai (Sonic API)
+ * API docs: https://docs.musicapi.ai/sonic-instructions
  */
 
 import axios from "axios";
@@ -9,10 +10,10 @@ import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { ENV } from "./_core/env";
 
-const SUNO_API_BASE = "https://api.sunoapi.org/api/v1";
+const MUSIC_API_BASE = "https://api.musicapi.ai/api/v1";
 
 function getApiKey(): string {
-  return ENV.sunoApiKey;
+  return ENV.musicApiKey;
 }
 
 export function isSunoAvailable(): boolean {
@@ -79,35 +80,58 @@ export type StemSeparationResult = {
   woodwindsUrl?: string | null;
 };
 
+// ─── Model Mapping ───
+
+/** Map our internal model names to musicapi.ai Sonic model versions */
+function mapModelToSonic(model: SunoModel): string {
+  const mapping: Record<SunoModel, string> = {
+    V4: "sonic-v4",
+    V4_5: "sonic-v4-5",
+    V4_5PLUS: "sonic-v4-5-plus",
+    V4_5ALL: "sonic-v4-5-all",
+    V5: "sonic-v5",
+  };
+  return mapping[model] || "sonic-v4-5-plus";
+}
+
 // ─── Music Generation ───
 
 /**
- * Submit a music generation task to Suno.
+ * Submit a music generation task via musicapi.ai Sonic API.
  * Returns the taskId for polling.
  */
 export async function submitMusicGeneration(
   params: MusicGenerateParams
 ): Promise<string> {
   if (!isSunoAvailable()) {
-    throw new Error("Suno API key is not configured. Please add your SUNO_API_KEY in Settings.");
+    throw new Error("Music API key is not configured. Please add your MUSIC_API_KEY in Settings.");
   }
 
   const apiKey = getApiKey();
+  const model = mapModelToSonic(params.model ?? "V4_5PLUS");
 
   const body: Record<string, unknown> = {
-    prompt: params.prompt,
-    model: params.model ?? "V4_5PLUS",
-    instrumental: params.instrumental ?? false,
+    task_type: "create_music",
+    mv: model,
+    custom_mode: params.customMode ?? false,
   };
 
   if (params.customMode) {
-    body.customMode = true;
-    if (params.style) body.style = params.style;
+    // Custom mode: user provides lyrics in prompt field
+    body.prompt = params.prompt;
+    if (params.style) body.tags = params.style;
     if (params.title) body.title = params.title;
+  } else {
+    // AI description mode: prompt is a description
+    body.gpt_description_prompt = params.prompt.substring(0, 400);
+  }
+
+  if (params.instrumental) {
+    body.make_instrumental = true;
   }
 
   const response = await axios.post(
-    `${SUNO_API_BASE}/generate`,
+    `${MUSIC_API_BASE}/sonic/create-music`,
     body,
     {
       headers: {
@@ -119,26 +143,32 @@ export async function submitMusicGeneration(
   );
 
   if (response.data.code !== 200) {
-    throw new Error(`Suno API error: ${response.data.msg || "Unknown error"}`);
+    throw new Error(`Music API error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
-  return response.data.data.taskId;
+  // musicapi.ai returns task_id in the response
+  const taskId = response.data.data?.task_id || response.data.data?.taskId;
+  if (!taskId) {
+    throw new Error("Music API did not return a task ID");
+  }
+
+  return taskId;
 }
 
 /**
- * Poll for task completion status.
+ * Poll for task completion status via musicapi.ai.
+ * Normalizes the response to our internal SunoTaskResponse format.
  */
 export async function getTaskStatus(taskId: string): Promise<SunoTaskResponse> {
   if (!isSunoAvailable()) {
-    throw new Error("Suno API key is not configured");
+    throw new Error("Music API key is not configured");
   }
 
   const apiKey = getApiKey();
 
   const response = await axios.get(
-    `${SUNO_API_BASE}/generate/record-info`,
+    `${MUSIC_API_BASE}/sonic/task/${taskId}`,
     {
-      params: { taskId },
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -147,10 +177,59 @@ export async function getTaskStatus(taskId: string): Promise<SunoTaskResponse> {
   );
 
   if (response.data.code !== 200) {
-    throw new Error(`Suno API error: ${response.data.msg || "Unknown error"}`);
+    throw new Error(`Music API error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
-  return response.data.data;
+  const clips = response.data.data;
+
+  // musicapi.ai returns an array of clip objects directly
+  if (!Array.isArray(clips) || clips.length === 0) {
+    return {
+      taskId,
+      status: "PENDING",
+    };
+  }
+
+  // Check the state of the first clip
+  const firstClip = clips[0];
+  const state = firstClip.state || firstClip.status || "pending";
+
+  // Map musicapi.ai states to our internal states
+  let normalizedStatus: TaskStatus;
+  switch (state) {
+    case "succeeded":
+    case "complete":
+      normalizedStatus = "SUCCESS";
+      break;
+    case "failed":
+    case "error":
+      normalizedStatus = "FAILED";
+      break;
+    case "running":
+    case "processing":
+      normalizedStatus = "FIRST_SUCCESS";
+      break;
+    default:
+      normalizedStatus = "PENDING";
+  }
+
+  return {
+    taskId,
+    status: normalizedStatus,
+    response: normalizedStatus === "SUCCESS"
+      ? {
+          data: clips.map((clip: Record<string, unknown>) => ({
+            id: (clip.clip_id || clip.id || "") as string,
+            audio_url: (clip.audio_url || "") as string,
+            title: (clip.title || "") as string,
+            tags: (clip.tags || "") as string,
+            duration: (clip.duration || 0) as number,
+            lyric: (clip.lyrics || clip.lyric || undefined) as string | undefined,
+          })),
+        }
+      : undefined,
+    errorMessage: normalizedStatus === "FAILED" ? (firstClip.error_message || firstClip.errorMessage || "Generation failed") : undefined,
+  };
 }
 
 /**
@@ -160,7 +239,7 @@ export async function getTaskStatus(taskId: string): Promise<SunoTaskResponse> {
 export async function waitForCompletion(
   taskId: string,
   maxWaitMs: number = 600000,
-  pollIntervalMs: number = 15000
+  pollIntervalMs: number = 18000
 ): Promise<SunoTaskResponse> {
   const startTime = Date.now();
 
@@ -172,14 +251,14 @@ export async function waitForCompletion(
     }
 
     if (status.status === "FAILED" || status.status === "CREATE_TASK_FAILED") {
-      throw new Error(`Suno generation failed: ${status.errorMessage || "Unknown error"}`);
+      throw new Error(`Music generation failed: ${status.errorMessage || "Unknown error"}`);
     }
 
-    // Wait before polling again
+    // Wait before polling again (musicapi.ai recommends 15-25s)
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
   }
 
-  throw new Error("Suno generation timed out after 10 minutes");
+  throw new Error("Music generation timed out after 10 minutes");
 }
 
 /**
@@ -197,13 +276,13 @@ export async function generateMusic(
   const result = await waitForCompletion(taskId);
 
   if (!result.response?.data?.length) {
-    throw new Error("No audio generated from Suno");
+    throw new Error("No audio generated");
   }
 
   // Take the first audio result
   const audio = result.response.data[0];
 
-  // Download the audio from Suno and upload to S3 for permanence
+  // Download the audio and upload to S3 for permanence
   const audioResponse = await axios.get(audio.audio_url, {
     responseType: "arraybuffer",
     timeout: 60000,
@@ -225,6 +304,9 @@ export async function generateMusic(
 }
 
 // ─── Lyrics Generation ───
+// Note: Lyrics are generated via the built-in LLM (Claude) in routers.ts,
+// not via the music API. These functions are kept for backward compatibility
+// but are not actively used.
 
 /**
  * Submit a lyrics generation task.
@@ -232,90 +314,20 @@ export async function generateMusic(
  */
 export async function submitLyricsGeneration(prompt: string): Promise<string> {
   if (!isSunoAvailable()) {
-    throw new Error("Suno API key is not configured");
+    throw new Error("Music API key is not configured");
   }
 
   const apiKey = getApiKey();
 
+  // musicapi.ai uses the same create-music endpoint with auto_lyrics mode
   const response = await axios.post(
-    `${SUNO_API_BASE}/lyrics`,
-    { prompt },
+    `${MUSIC_API_BASE}/sonic/create-music`,
     {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 30000,
-    }
-  );
-
-  if (response.data.code !== 200) {
-    throw new Error(`Suno lyrics error: ${response.data.msg || "Unknown error"}`);
-  }
-
-  return response.data.data.taskId;
-}
-
-/**
- * Poll for lyrics task completion.
- */
-export async function getLyricsTaskStatus(taskId: string): Promise<{
-  status: string;
-  text?: string;
-  title?: string;
-}> {
-  if (!isSunoAvailable()) {
-    throw new Error("Suno API key is not configured");
-  }
-
-  const apiKey = getApiKey();
-
-  const response = await axios.get(
-    `${SUNO_API_BASE}/lyrics/record-info`,
-    {
-      params: { taskId },
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      timeout: 15000,
-    }
-  );
-
-  if (response.data.code !== 200) {
-    throw new Error(`Suno lyrics error: ${response.data.msg || "Unknown error"}`);
-  }
-
-  const data = response.data.data;
-  return {
-    status: data.status || data.successFlag || "PENDING",
-    text: data.response?.data?.[0]?.text,
-    title: data.response?.data?.[0]?.title,
-  };
-}
-
-// ─── Stem Separation ───
-
-/**
- * Submit a stem separation task.
- * type: "separate_vocal" (2 stems) or "split_stem" (up to 12 stems)
- */
-export async function submitStemSeparation(
-  sunoTaskId: string,
-  audioId: string,
-  type: "separate_vocal" | "split_stem" = "split_stem"
-): Promise<string> {
-  if (!isSunoAvailable()) {
-    throw new Error("Suno API key is not configured");
-  }
-
-  const apiKey = getApiKey();
-
-  const response = await axios.post(
-    `${SUNO_API_BASE}/vocal-removal/generate`,
-    {
-      taskId: sunoTaskId,
-      audioId,
-      type,
+      task_type: "create_music",
+      custom_mode: true,
+      auto_lyrics: true,
+      mv: "sonic-v4-5-plus",
+      prompt: prompt,
     },
     {
       headers: {
@@ -327,10 +339,70 @@ export async function submitStemSeparation(
   );
 
   if (response.data.code !== 200) {
-    throw new Error(`Suno stem separation error: ${response.data.msg || "Unknown error"}`);
+    throw new Error(`Music API lyrics error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
-  return response.data.data.taskId;
+  return response.data.data?.task_id || response.data.data?.taskId;
+}
+
+/**
+ * Poll for lyrics task completion.
+ */
+export async function getLyricsTaskStatus(taskId: string): Promise<{
+  status: string;
+  text?: string;
+  title?: string;
+}> {
+  if (!isSunoAvailable()) {
+    throw new Error("Music API key is not configured");
+  }
+
+  const taskResult = await getTaskStatus(taskId);
+
+  return {
+    status: taskResult.status === "SUCCESS" ? "SUCCESS" : taskResult.status === "FAILED" ? "FAILED" : "PENDING",
+    text: taskResult.response?.data?.[0]?.lyric,
+    title: taskResult.response?.data?.[0]?.title,
+  };
+}
+
+// ─── Stem Separation ───
+
+/**
+ * Submit a stem separation task via musicapi.ai get-vox endpoint.
+ * type: "separate_vocal" (2 stems) or "split_stem" (up to 12 stems)
+ */
+export async function submitStemSeparation(
+  sunoTaskId: string,
+  audioId: string,
+  type: "separate_vocal" | "split_stem" = "split_stem"
+): Promise<string> {
+  if (!isSunoAvailable()) {
+    throw new Error("Music API key is not configured");
+  }
+
+  const apiKey = getApiKey();
+
+  // musicapi.ai uses get-vox for vocal extraction
+  const response = await axios.post(
+    `${MUSIC_API_BASE}/sonic/get-vox`,
+    {
+      clip_id: audioId,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 30000,
+    }
+  );
+
+  if (response.data.code !== 200) {
+    throw new Error(`Stem separation error: ${response.data.message || response.data.msg || "Unknown error"}`);
+  }
+
+  return response.data.data?.task_id || response.data.data?.taskId || audioId;
 }
 
 /**
@@ -338,15 +410,14 @@ export async function submitStemSeparation(
  */
 export async function getStemSeparationStatus(taskId: string): Promise<StemSeparationResult> {
   if (!isSunoAvailable()) {
-    throw new Error("Suno API key is not configured");
+    throw new Error("Music API key is not configured");
   }
 
   const apiKey = getApiKey();
 
   const response = await axios.get(
-    `${SUNO_API_BASE}/vocal-removal/record-info`,
+    `${MUSIC_API_BASE}/sonic/task/${taskId}`,
     {
-      params: { taskId },
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -355,28 +426,29 @@ export async function getStemSeparationStatus(taskId: string): Promise<StemSepar
   );
 
   if (response.data.code !== 200) {
-    throw new Error(`Suno stem separation error: ${response.data.msg || "Unknown error"}`);
+    throw new Error(`Stem separation error: ${response.data.message || response.data.msg || "Unknown error"}`);
   }
 
   const data = response.data.data;
-  const resp = data.response || {};
+  const clipData = Array.isArray(data) ? data[0] : data;
+  const state = clipData?.state || clipData?.status || "pending";
 
   return {
-    taskId: data.taskId,
-    status: data.successFlag || "PENDING",
-    vocalUrl: resp.vocalUrl || null,
-    instrumentalUrl: resp.instrumentalUrl || null,
-    backingVocalsUrl: resp.backingVocalsUrl || null,
-    drumsUrl: resp.drumsUrl || null,
-    bassUrl: resp.bassUrl || null,
-    guitarUrl: resp.guitarUrl || null,
-    keyboardUrl: resp.keyboardUrl || null,
-    percussionUrl: resp.percussionUrl || null,
-    stringsUrl: resp.stringsUrl || null,
-    synthUrl: resp.synthUrl || null,
-    fxUrl: resp.fxUrl || null,
-    brassUrl: resp.brassUrl || null,
-    woodwindsUrl: resp.woodwindsUrl || null,
+    taskId,
+    status: state === "succeeded" ? "SUCCESS" : state === "failed" ? "FAILED" : "PENDING",
+    vocalUrl: clipData?.vocal_url || clipData?.vocalUrl || null,
+    instrumentalUrl: clipData?.instrumental_url || clipData?.instrumentalUrl || null,
+    backingVocalsUrl: null,
+    drumsUrl: null,
+    bassUrl: null,
+    guitarUrl: null,
+    keyboardUrl: null,
+    percussionUrl: null,
+    stringsUrl: null,
+    synthUrl: null,
+    fxUrl: null,
+    brassUrl: null,
+    woodwindsUrl: null,
   };
 }
 
@@ -408,7 +480,7 @@ export async function waitForStemSeparation(
 }
 
 /**
- * Download a stem audio file from Suno CDN and upload to S3 for permanent storage.
+ * Download a stem audio file from CDN and upload to S3 for permanent storage.
  */
 export async function downloadAndStoreStem(
   stemUrl: string,
@@ -430,25 +502,28 @@ export async function downloadAndStoreStem(
 // ─── Credits ───
 
 /**
- * Get remaining Suno API credits.
+ * Get remaining API credits from musicapi.ai.
  */
 export async function getCredits(): Promise<number> {
   if (!isSunoAvailable()) {
-    throw new Error("Suno API key is not configured");
+    throw new Error("Music API key is not configured");
   }
 
   const apiKey = getApiKey();
 
-  const response = await axios.get(`${SUNO_API_BASE}/get-credits`, {
+  const response = await axios.get(`${MUSIC_API_BASE}/get-credits`, {
     headers: {
       Authorization: `Bearer ${apiKey}`,
     },
     timeout: 15000,
   });
 
-  if (response.data.code !== 200) {
-    throw new Error(`Suno credits error: ${response.data.msg || "Unknown error"}`);
+  // musicapi.ai returns flat JSON: { credits: 50, extra_credits: 0 }
+  // or nested: { code: 200, data: { credits: 50 } }
+  const d = response.data;
+  if (d.code && d.code !== 200) {
+    throw new Error(`Credits check error: ${d.message || d.msg || "Unknown error"}`);
   }
 
-  return response.data.data.credits ?? 0;
+  return d.credits ?? d.data?.credits ?? d.data?.remaining ?? 0;
 }
