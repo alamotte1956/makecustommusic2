@@ -1751,3 +1751,13 @@
 - [x] Affiliate program: Both referrer AND referred user get 5 bonus songs each
 - [x] Affiliate program: Backend routes for creating/validating referral codes and awarding credits
 - [x] Affiliate program: Frontend UI for sharing referral codes and tracking referrals
+- [x] Change site title first word from "Make" to "Create"
+- [x] Implement Singability/Prosody Analysis feature (new tab in Song Detail with score ring, 6 metrics, strengths/improvements/rhyme map)
+- [ ] Implement Song Variations/Remix (regenerate sections)
+- [ ] Implement Album Art Generation
+- [ ] Implement Worship Setlist Builder
+- [ ] Implement Kids Worship Mode
+- [ ] Implement WAV Export
+- [ ] Implement Collaboration/Sharing with worship teams
+- [ ] Update pricing to 20% premium: Pro $29/mo, Premier $59/mo
+- [x] Fix SEO: Reduce homepage keywords from 12 to 6 focused keywords

@@ -89,7 +89,7 @@ export default function Home() {
   usePageMeta({
     title: "AI Worship Song Generator",
     description: "Create worship songs, hymns, and gospel music with AI. Sheet music, chord charts, and 16 Christian genres.",
-    keywords: "christian music generator, AI worship song generator, create worship music, gospel music maker, christian song maker AI, praise and worship song creator, hymn generator, church music creator, worship music online, AI praise music, gospel songs, praise songs",
+    keywords: "AI worship song generator, christian music generator, gospel music maker, hymn generator, worship leader tools, church music creator",
     canonicalPath: "/",
   });
 
@@ -108,7 +108,7 @@ export default function Home() {
               Built for Christian Creators & Church Music Directors
             </div>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white leading-[1.05]">
-              Make any{" "}
+              Create any{" "}
               <span className="suno-gradient-text">Worship Song</span>
               {" "}you can{" "}
               <span className="text-white/80">Imagine</span>

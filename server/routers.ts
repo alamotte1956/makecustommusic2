@@ -390,6 +390,52 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         return { lyrics: refined, mode: input.mode };
       }),
 
+    // Song Variations / Remix — regenerate specific sections while keeping the rest
+    remixSection: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        section: z.string().min(1).max(100), // e.g., "Verse 1", "Chorus", "Bridge"
+        instruction: z.string().max(500).optional(), // optional user guidance
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+        if (!song.lyrics) throw new TRPCError({ code: "BAD_REQUEST", message: "This song has no lyrics to remix." });
+
+        const sectionPattern = new RegExp(`\\[${input.section.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\]`, 'i');
+        if (!sectionPattern.test(song.lyrics)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Section "${input.section}" not found in lyrics.` });
+        }
+
+        let contextHints = "";
+        if (song.genre) contextHints += `\nGenre: ${song.genre}`;
+        if (song.mood) contextHints += `\nMood: ${song.mood}`;
+        if (song.vocalType) contextHints += `\nVocal type: ${song.vocalType}`;
+
+        const userInstruction = input.instruction
+          ? `\n\nUser's guidance for the new ${input.section}: ${input.instruction}`
+          : "";
+
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are an elite worship songwriter. You will receive complete song lyrics and must REWRITE ONLY the specified section while keeping ALL other sections EXACTLY the same.${contextHints}\n\nRULES:\n- Output the COMPLETE lyrics with ALL sections\n- ONLY change the content of the specified section\n- Keep section markers like [Verse 1], [Chorus], etc.\n- The new section must fit the song's theme, rhyme scheme, and emotional arc\n- Maintain the same syllable count and rhythm as the original section\n- Keep it singable and worship-ready\n- NO explanations, NO commentary — output ONLY the complete lyrics`,
+            },
+            {
+              role: "user",
+              content: `Rewrite ONLY the [${input.section}] section of these lyrics. Keep everything else exactly the same.${userInstruction}\n\nFull lyrics:\n${song.lyrics}`,
+            },
+          ],
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        const newLyrics = typeof rawContent === "string" ? rawContent.trim() : null;
+        if (!newLyrics) throw new Error("Failed to generate variation. Please try again.");
+
+        return { lyrics: newLyrics, section: input.section };
+      }),
+
     // Upload audio file for remastering
     uploadAudio: protectedProcedure
       .input(z.object({
@@ -880,6 +926,19 @@ RULES:
         await updateSongChordProgression(input.songId, chordProgression);
 
         return { chordProgression };
+      }),
+
+    // ─── Singability Analysis ───
+    analyzeSingability: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+        if (!song.lyrics) throw new TRPCError({ code: "BAD_REQUEST", message: "This song has no lyrics to analyze." });
+
+        const { analyzeSingability } = await import("./singabilityAnalyzer");
+        const analysis = await analyzeSingability(song.lyrics, song.genre, song.mood, song.vocalType);
+        return analysis;
       }),
 
     // ─── Studio Production Routes ───

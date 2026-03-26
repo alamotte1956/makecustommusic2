@@ -19,7 +19,7 @@ describe("PWA Configuration", () => {
     const raw = fs.readFileSync(manifestPath, "utf-8");
     const manifest = JSON.parse(raw);
 
-    expect(manifest.name).toBe("Make Custom Music");
+    expect(manifest.name).toBe("Create Christian Music");
     expect(manifest.short_name).toBeTruthy();
     expect(manifest.start_url).toBe("/");
     expect(manifest.display).toBe("standalone");

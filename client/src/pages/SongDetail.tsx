@@ -12,11 +12,12 @@ import AudioPlayer from "@/components/AudioPlayer";
 import FavoriteButton from "@/components/FavoriteButton";
 import SheetMusicViewer from "@/components/SheetMusicViewer";
 import GuitarChordViewer from "@/components/GuitarChordViewer";
+import SingabilityAnalysis from "@/components/SingabilityAnalysis";
 import { exportLyricsPDF } from "@/lib/pdfExport";
 import {
   Music, FileText, Guitar, Download, Share2, ArrowLeft,
   Clock, Gauge, Tag, Mic, Loader2, FileAudio, Pencil, Check, X,
-  Scissors, Play, Pause, Volume2, DollarSign
+  Scissors, Play, Pause, Volume2, DollarSign, BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -313,7 +314,7 @@ export default function SongDetail() {
 
       {/* Tabs: Lyrics / Sheet Music / Guitar Chords / Stems */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="lyrics" className="gap-1.5" data-tour="lyrics-tab">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Lyrics</span>
@@ -325,6 +326,10 @@ export default function SongDetail() {
           <TabsTrigger value="guitar" className="gap-1.5" data-tour="chords-tab">
             <Guitar className="w-4 h-4" />
             <span className="hidden sm:inline">Guitar</span>
+          </TabsTrigger>
+          <TabsTrigger value="singability" className="gap-1.5">
+            <BarChart3 className="w-4 h-4" />
+            <span className="hidden sm:inline">Analysis</span>
           </TabsTrigger>
           <TabsTrigger value="stems" className="gap-1.5">
             <Scissors className="w-4 h-4" />
@@ -403,6 +408,14 @@ export default function SongDetail() {
                 chordProgression={song.chordProgression as any}
                 songTitle={song.title}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="singability">
+          <Card>
+            <CardContent className="pt-6">
+              <SingabilityAnalysis songId={song.id} hasLyrics={!!song.lyrics} />
             </CardContent>
           </Card>
         </TabsContent>
