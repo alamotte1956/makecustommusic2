@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import AudioPlayer from "@/components/AudioPlayer";
 import { downloadFile, sanitizeFilename } from "@/lib/safariDownload";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Download, Music, Loader2,
@@ -555,9 +555,31 @@ export default function Generator() {
     setGeneratedSong(null);
     setShowLyrics(false);
 
+    // Animated progress interval
+    const progressRef = { current: 15 };
+    const progressInterval = setInterval(() => {
+      if (progressRef.current < 90) {
+        // Slow, natural-feeling progress: fast at start, slows down
+        const increment = progressRef.current < 40 ? 2 : progressRef.current < 60 ? 1 : 0.5;
+        progressRef.current = Math.min(progressRef.current + increment, 90);
+        setProgress(Math.round(progressRef.current));
+
+        // Update message based on progress stage
+        if (progressRef.current < 30) {
+          setProgressMessage("Submitting your request to the AI...");
+        } else if (progressRef.current < 50) {
+          setProgressMessage("AI is composing lyrics and melody...");
+        } else if (progressRef.current < 70) {
+          setProgressMessage("Generating audio... this takes a moment");
+        } else {
+          setProgressMessage("Almost there... finalizing your song");
+        }
+      }
+    }, 1500);
+
     try {
       setIsGenerating(true);
-      setProgressMessage("Composing your music... (this may take 30-120 seconds)");
+      setProgressMessage("Submitting your request to the AI...");
       setProgress(15);
 
       const song = await generateMutation.mutateAsync({
@@ -587,6 +609,7 @@ export default function Generator() {
       setProgress(0);
       setProgressMessage("");
     } finally {
+      clearInterval(progressInterval);
       setIsGenerating(false);
     }
   }, [keywords, creationMode, isCustomMode, selectedGenre, selectedMood, vocalType, duration, customTitle, customLyrics, customStyle, generateMutation, utils, isSunoAvailable]);

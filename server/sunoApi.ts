@@ -285,11 +285,17 @@ export async function waitForCompletion(
   pollIntervalMs: number = 10000
 ): Promise<SunoTaskResponse> {
   const startTime = Date.now();
+  let pollCount = 0;
 
   while (Date.now() - startTime < maxWaitMs) {
+    pollCount++;
     const status = await getTaskStatus(taskId);
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    console.log(`[MusicGen] Poll #${pollCount} (${elapsed}s): status=${status.status}, hasAudio=${!!status.response?.data?.length}`);
 
-    if (status.status === "SUCCESS") {
+    // SUCCESS or FIRST_SUCCESS with audio data both count as complete
+    if (status.status === "SUCCESS" || (status.status === "FIRST_SUCCESS" && status.response?.data?.length)) {
+      console.log(`[MusicGen] Generation complete after ${elapsed}s (status: ${status.status})`);
       return status;
     }
 
