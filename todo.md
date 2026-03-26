@@ -1780,12 +1780,12 @@
 - [ ] Tests for credit tracking backend routes
 
 ## Suno-style Shimmer/Glow Effects
-- [ ] Add shimmer gradient animation CSS keyframes (global)
-- [ ] Shimmer loading skeletons for song cards and generation
-- [ ] Glowing buttons on Generate, Create, and primary CTAs
-- [ ] Ambient glow/gradient backgrounds on Generator and Home pages
-- [ ] Shimmer effect on audio player progress bar during playback
-- [ ] Glowing border effect on active/playing song cards
+- [x] Add shimmer gradient animation CSS keyframes (global)
+- [x] Shimmer loading skeletons for song cards and generation
+- [x] Glowing buttons on Generate, Create, and primary CTAs
+- [x] Ambient glow/gradient backgrounds on Generator and Home pages
+- [x] Shimmer effect on audio player progress bar during playback
+- [x] Glowing border effect on active/playing song cards
 
 ## Bugs
 - [x] Fix "please enter callback URL" error when trying to generate a song (added callBackUrl to kie.ai generate + lyrics endpoints)

@@ -146,7 +146,7 @@ export default function Pricing() {
               <div
                 key={plan.id}
                 className={`relative rounded-2xl border bg-card p-6 flex flex-col ${planColors[plan.id]} ${
-                  plan.popular ? "shadow-lg shadow-violet-500/10" : "shadow-sm"
+                  plan.popular ? "shadow-lg shadow-violet-500/10 glow-card glow-card-active" : "shadow-sm"
                 }`}
               >
                 {plan.popular && (
@@ -238,7 +238,7 @@ export default function Pricing() {
                     disabled={loadingPlan === plan.id}
                     className={`w-full mb-6 ${
                       plan.popular
-                        ? "bg-violet-600 hover:bg-violet-700 text-white"
+                        ? "btn-glow text-white"
                         : ""
                     }`}
                   >

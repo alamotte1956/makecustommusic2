@@ -109,7 +109,7 @@ export default function SharedSong() {
         </div>
 
         {/* Song header card */}
-        <Card>
+        <Card className="glow-card glow-card-active">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">

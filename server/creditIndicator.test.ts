@@ -68,7 +68,7 @@ describe("CreditIndicator component", () => {
   });
 
   it("should render a loading skeleton when data is loading", () => {
-    expect(generatorContent).toContain("animate-pulse");
+    expect(generatorContent).toContain("shimmer-skeleton");
   });
 
   it("should return null for free plan users", () => {

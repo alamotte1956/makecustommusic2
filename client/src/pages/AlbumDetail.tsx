@@ -89,8 +89,8 @@ function SortableSongCard({
   return (
     <div ref={setNodeRef} style={style}>
       <Card
-        className={`overflow-hidden transition-all ${
-          isCurrentlyPlaying ? "ring-2 ring-primary/50 bg-primary/5" : ""
+        className={`overflow-hidden transition-all glow-card ${
+          isCurrentlyPlaying ? "ring-2 ring-primary/50 bg-primary/5 glow-card-active" : ""
         } ${isDragging ? "shadow-xl ring-2 ring-primary/30" : ""}`}
       >
         <CardContent className="p-4">

@@ -323,12 +323,12 @@ function CreditIndicator({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border bg-card p-3 animate-pulse">
+      <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-24 bg-muted rounded" />
-          <div className="h-4 w-32 bg-muted rounded" />
+          <div className="h-4 w-24 shimmer-skeleton" />
+          <div className="h-4 w-32 shimmer-skeleton" />
           <div className="flex-1" />
-          <div className="h-4 w-20 bg-muted rounded" />
+          <div className="h-4 w-20 shimmer-skeleton" />
         </div>
       </div>
     );
@@ -1145,7 +1145,7 @@ export default function Generator() {
       {/* ═══════════════════════════════════════════════ */}
       {/* STEP 5 — Generate                              */}
       {/* ═══════════════════════════════════════════════ */}
-      <Card data-tour="generate-button" className={canGenerate ? "border-primary/50 shadow-sm" : ""}>
+      <Card data-tour="generate-button" className={`${canGenerate ? "border-primary/50 shadow-sm shimmer-sweep" : ""} ${isGenerating ? "generating-pulse" : ""}`}>
         <CardContent className="pt-5 pb-5">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-1">
@@ -1169,7 +1169,7 @@ export default function Generator() {
               onClick={handleGenerate}
               disabled={!canGenerate}
               size="lg"
-              className="shrink-0 gap-2 px-8"
+              className={`shrink-0 gap-2 px-8 ${canGenerate && !isGenerating ? "btn-glow" : ""}`}
             >
               {isGenerating ? (
                 <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</>
@@ -1182,7 +1182,7 @@ export default function Generator() {
           {/* Progress bar */}
           {isGenerating && (
             <div className="mt-4 space-y-1">
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-2 progress-glow" />
               <p className="text-[11px] text-muted-foreground text-right tabular-nums">{progress}%</p>
             </div>
           )}
@@ -1193,8 +1193,8 @@ export default function Generator() {
       {/* RESULT                                         */}
       {/* ═══════════════════════════════════════════════ */}
       {generatedSong && !isGenerating && (
-        <div className="space-y-4">
-          <Card>
+        <div className="space-y-4 result-glow">
+          <Card className="glow-card glow-card-active">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">

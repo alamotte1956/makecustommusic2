@@ -147,7 +147,7 @@ export default function Albums() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {albums.map((album) => (
-            <Card key={album.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
+            <Card key={album.id} className="overflow-hidden group hover:shadow-lg transition-shadow glow-card">
               {/* Album Cover */}
               <div
                 className="h-40 flex items-center justify-center relative overflow-hidden"

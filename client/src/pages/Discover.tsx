@@ -288,8 +288,8 @@ export default function Discover() {
                 return (
                   <Card
                     key={song.id}
-                    className={`group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5 ${
-                      isCurrent ? "ring-2 ring-primary shadow-lg" : ""
+                    className={`group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5 glow-card ${
+                      isCurrent ? "ring-2 ring-primary shadow-lg glow-card-active" : ""
                     }`}
                   >
                     <CardContent className="p-0">

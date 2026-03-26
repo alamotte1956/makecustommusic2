@@ -193,6 +193,168 @@
     border-color: rgba(255, 255, 255, 0.1);
   }
 
+  /* ─── Shimmer / Glow Utility Classes ─── */
+
+  /* Glowing CTA button — pink/coral gradient with animated glow */
+  .btn-glow {
+    position: relative;
+    background: linear-gradient(135deg, #e8457e 0%, #f0695c 50%, #f5a623 100%);
+    color: #fff;
+    border: none;
+    overflow: hidden;
+    -webkit-transition: box-shadow 0.3s ease, transform 0.15s ease;
+    transition: box-shadow 0.3s ease, transform 0.15s ease;
+    box-shadow: 0 0 20px rgba(232, 69, 126, 0.3), 0 0 60px rgba(232, 69, 126, 0.1);
+  }
+  .btn-glow:hover:not(:disabled) {
+    box-shadow: 0 0 30px rgba(232, 69, 126, 0.5), 0 0 80px rgba(240, 105, 92, 0.2);
+    -webkit-transform: translateY(-1px);
+    transform: translateY(-1px);
+  }
+  .btn-glow:active:not(:disabled) {
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+  .btn-glow::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #e8457e, #f0695c, #f5a623, #e8457e);
+    background-size: 300% 300%;
+    -webkit-animation: glow-rotate 4s linear infinite;
+    animation: glow-rotate 4s linear infinite;
+    z-index: -1;
+    -webkit-filter: blur(8px);
+    filter: blur(8px);
+    opacity: 0.6;
+  }
+  .btn-glow:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+  .btn-glow:disabled::before {
+    -webkit-animation: none;
+    animation: none;
+    opacity: 0;
+  }
+
+  /* Shimmer sweep — a light streak that moves across an element */
+  .shimmer-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer-sweep::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.06) 45%,
+      rgba(255, 255, 255, 0.12) 50%,
+      rgba(255, 255, 255, 0.06) 55%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    -webkit-animation: shimmer-sweep 3s ease-in-out infinite;
+    animation: shimmer-sweep 3s ease-in-out infinite;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Glowing border card — subtle animated border glow */
+  .glow-card {
+    position: relative;
+    border: 1px solid rgba(232, 69, 126, 0.15);
+    -webkit-transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .glow-card:hover {
+    border-color: rgba(232, 69, 126, 0.3);
+    box-shadow: 0 0 20px rgba(232, 69, 126, 0.08), inset 0 0 20px rgba(232, 69, 126, 0.03);
+  }
+
+  /* Active/playing card — persistent glow border */
+  .glow-card-active {
+    border-color: rgba(232, 69, 126, 0.4) !important;
+    box-shadow: 0 0 25px rgba(232, 69, 126, 0.12), inset 0 0 25px rgba(232, 69, 126, 0.04);
+  }
+
+  /* Shimmer loading skeleton — replaces plain animate-pulse */
+  .shimmer-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 0.5rem;
+  }
+  .shimmer-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 40%,
+      rgba(255, 255, 255, 0.12) 50%,
+      rgba(255, 255, 255, 0.08) 60%,
+      transparent 100%
+    );
+    -webkit-animation: shimmer-slide 1.8s ease-in-out infinite;
+    animation: shimmer-slide 1.8s ease-in-out infinite;
+    -webkit-transform: translateX(-100%);
+    transform: translateX(-100%);
+  }
+
+  /* Progress bar glow — for the generation progress bar */
+  .progress-glow [data-slot="progress-indicator"],
+  .progress-glow .bg-primary {
+    box-shadow: 0 0 12px rgba(232, 69, 126, 0.5), 0 0 30px rgba(232, 69, 126, 0.2);
+    position: relative;
+  }
+  .progress-glow [data-slot="progress-indicator"]::after,
+  .progress-glow .bg-primary::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -4px;
+    bottom: -4px;
+    width: 20px;
+    background: radial-gradient(circle, rgba(232, 69, 126, 0.8) 0%, transparent 70%);
+    -webkit-filter: blur(4px);
+    filter: blur(4px);
+    border-radius: 50%;
+  }
+
+  /* Ambient glow behind result card */
+  .result-glow {
+    position: relative;
+  }
+  .result-glow::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    border-radius: 1.5rem;
+    background: radial-gradient(ellipse at center, rgba(232, 69, 126, 0.08) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+    -webkit-animation: result-pulse 3s ease-in-out infinite;
+    animation: result-pulse 3s ease-in-out infinite;
+  }
+
+  /* Generating state — pulsing glow on the card */
+  .generating-pulse {
+    -webkit-animation: generating-glow 2s ease-in-out infinite;
+    animation: generating-glow 2s ease-in-out infinite;
+  }
+
+  /* Floating music notes animation */
+  .music-note-float {
+    -webkit-animation: float-up 2.5s ease-out infinite;
+    animation: float-up 2.5s ease-out infinite;
+    opacity: 0;
+  }
+
   /* ─── Suno-style shimmer/aurora background ─── */
   .shimmer-bg {
     position: fixed;
@@ -539,15 +701,82 @@ button {
   100% { transform: translate(0, 0) scale(1);            opacity: 1; }
 }
 
+/* ─── Shimmer/Glow effect keyframes ─── */
+@-webkit-keyframes glow-rotate {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes glow-rotate {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@-webkit-keyframes shimmer-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes shimmer-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@-webkit-keyframes shimmer-slide {
+  0%   { -webkit-transform: translateX(-100%); }
+  100% { -webkit-transform: translateX(100%); }
+}
+@keyframes shimmer-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@-webkit-keyframes result-pulse {
+  0%, 100% { opacity: 0.6; -webkit-transform: scale(1); }
+  50%      { opacity: 1;   -webkit-transform: scale(1.02); }
+}
+@keyframes result-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.02); }
+}
+
+@-webkit-keyframes generating-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(232, 69, 126, 0.1), inset 0 0 15px rgba(232, 69, 126, 0.02); }
+  50%      { box-shadow: 0 0 30px rgba(232, 69, 126, 0.2), inset 0 0 30px rgba(232, 69, 126, 0.05); }
+}
+@keyframes generating-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(232, 69, 126, 0.1), inset 0 0 15px rgba(232, 69, 126, 0.02); }
+  50%      { box-shadow: 0 0 30px rgba(232, 69, 126, 0.2), inset 0 0 30px rgba(232, 69, 126, 0.05); }
+}
+
+@-webkit-keyframes float-up {
+  0%   { -webkit-transform: translateY(0) scale(1); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { -webkit-transform: translateY(-40px) scale(0.5); opacity: 0; }
+}
+@keyframes float-up {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { transform: translateY(-40px) scale(0.5); opacity: 0; }
+}
+
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   .shimmer-bg::before,
   .shimmer-bg::after,
   .shimmer-orb-1,
   .shimmer-orb-2,
-  .shimmer-orb-3 {
+  .shimmer-orb-3,
+  .btn-glow::before,
+  .shimmer-sweep::after,
+  .shimmer-skeleton::after,
+  .generating-pulse,
+  .music-note-float {
     -webkit-animation: none !important;
     animation: none !important;
+  }
+  .btn-glow {
+    box-shadow: 0 0 10px rgba(232, 69, 126, 0.2);
   }
 }
 

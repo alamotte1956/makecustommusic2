@@ -336,9 +336,9 @@ export default function History() {
             return (
               <Card
                 key={song.id}
-                className={`overflow-hidden transition-all ${
+                className={`overflow-hidden transition-all glow-card ${
                   isHistoryQueue && currentSong?.id === song.id
-                    ? "ring-2 ring-primary/50 bg-primary/5"
+                    ? "ring-2 ring-primary/50 bg-primary/5 glow-card-active"
                     : ""
                 }`}
               >
