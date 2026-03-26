@@ -204,8 +204,8 @@ export const PLAN_LIMITS = {
     canGenerate: false, // free users cannot generate — must subscribe
   },
   creator: {
-    monthlyCredits: 200,
-    dailySongLimit: 50,
+    monthlyCredits: 20,
+    dailySongLimit: 10,
     dailySheetMusicLimit: -1, // unlimited
     dailyChordLimit: -1,
     monthlyBonusSongs: 2,       // 2 free monthly bonus songs not counting toward monthly credits
@@ -215,8 +215,8 @@ export const PLAN_LIMITS = {
     canGenerate: true,
   },
   professional: {
-    monthlyCredits: 450,
-    dailySongLimit: 100,
+    monthlyCredits: 50,
+    dailySongLimit: 25,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
     monthlyBonusSongs: 2,       // 2 free monthly bonus songs not counting toward monthly credits
@@ -226,8 +226,8 @@ export const PLAN_LIMITS = {
     canGenerate: true,
   },
   studio: {
-    monthlyCredits: 450,
-    dailySongLimit: 100,
+    monthlyCredits: 50,
+    dailySongLimit: 25,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
     monthlyBonusSongs: 2,

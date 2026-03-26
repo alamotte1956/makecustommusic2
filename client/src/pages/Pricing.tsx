@@ -53,8 +53,8 @@ export default function Pricing() {
   };
 
   const annualSavings: Record<string, number> = {
-    creator: 46,       // $19*12 - $182 = $46
-    professional: 94,  // $39*12 - $374 = $94
+    creator: 58,       // $24*12 - $230 = $58
+    professional: 118, // $49*12 - $470 = $118
   };
 
   const planColors: Record<string, string> = {
@@ -277,11 +277,11 @@ export default function Pricing() {
             {[
               {
                 q: "How does the monthly allowance work?",
-                a: "Each song or sheet music PDF generation counts as one use. The Pro plan gives you 200 per month and Premier gives you 450 per month. AI lyrics, chord progressions, and exports are included at no extra cost.",
+                a: "Each song or sheet music PDF generation counts as one use. The Pro plan gives you 20 per month and Premier gives you 50 per month. AI lyrics, chord progressions, and exports are included at no extra cost.",
               },
               {
                 q: "Do unused songs roll over?",
-                a: "Monthly allowances reset each billing cycle and do not roll over. If you need more, consider upgrading to the Premier plan for 450 songs per month.",
+                a: "Monthly allowances reset each billing cycle and do not roll over. If you need more, consider upgrading to the Premier plan for 50 songs per month.",
               },
               {
                 q: "Can I use the music commercially?",
@@ -297,7 +297,7 @@ export default function Pricing() {
               },
               {
                 q: "What's the difference between Pro and Premier?",
-                a: "Premier includes everything in Pro plus 450 songs per month (vs. 200), full commercial use rights, and early access to new features.",
+                a: "Premier includes everything in Pro plus 50 songs per month (vs. 20), full commercial use rights, and early access to new features.",
               },
               {
                 q: "Who owns the music I create?",

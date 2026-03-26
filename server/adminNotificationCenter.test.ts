@@ -220,26 +220,26 @@ describe("Admin nav unread badge", () => {
 // ─── Pricing update tests ──────────────────────────────────────────────────
 
 describe("tax-inclusive even-dollar pricing", () => {
-  it("Pro (creator) plan base should be $17.51/mo, total $19/mo", async () => {
+  it("Pro (creator) plan base should be $22.11/mo, total $24/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1751);
-    expect(STRIPE_PLANS.creator.totals.monthly).toBe(1900);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(2211);
+    expect(STRIPE_PLANS.creator.totals.monthly).toBe(2400);
   });
 
-  it("Premier (professional) plan base should be $35.93/mo, total $39/mo", async () => {
+  it("Premier (professional) plan base should be $45.15/mo, total $49/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(3593);
-    expect(STRIPE_PLANS.professional.totals.monthly).toBe(3900);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(4515);
+    expect(STRIPE_PLANS.professional.totals.monthly).toBe(4900);
   });
 
-  it("Pro annual should be $182/yr total (even dollar)", async () => {
+  it("Pro annual should be $230/yr total (even dollar)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.totals.annual).toBe(18200);
+    expect(STRIPE_PLANS.creator.totals.annual).toBe(23000);
   });
 
-  it("Premier annual should be $374/yr total (even dollar)", async () => {
+  it("Premier annual should be $470/yr total (even dollar)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.totals.annual).toBe(37400);
+    expect(STRIPE_PLANS.professional.totals.annual).toBe(47000);
   });
 
   it("webhook should award 2 free bonus credits on new subscription", () => {
@@ -256,8 +256,8 @@ describe("tax-inclusive even-dollar pricing", () => {
       path.resolve(__dirname, "routers.ts"),
       "utf-8"
     );
-    expect(routerContent).toContain("200 songs or sheet music PDFs per month");
-    expect(routerContent).toContain("450 songs or sheet music PDFs per month");
+    expect(routerContent).toContain("20 songs or sheet music PDFs per month");
+    expect(routerContent).toContain("50 songs or sheet music PDFs per month");
     expect(routerContent).toContain("2 free bonus songs per month");
     expect(routerContent).toContain("Write and export lyrics (PDF, DOCX)");
   });

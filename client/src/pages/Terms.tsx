@@ -146,13 +146,13 @@ export default function Terms() {
               <tbody className="divide-y">
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Pro</td>
-                  <td className="px-4 py-2.5 text-foreground/70">$19/mo ($182/yr)*</td>
-                  <td className="px-4 py-2.5 text-foreground/70">200 songs or sheet music PDFs</td>
+                  <td className="px-4 py-2.5 text-foreground/70">$24/mo ($230/yr)*</td>
+                  <td className="px-4 py-2.5 text-foreground/70">20 songs or sheet music PDFs</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Premier</td>
-                  <td className="px-4 py-2.5 text-foreground/70">$39/mo ($374/yr)*</td>
-                  <td className="px-4 py-2.5 text-foreground/70">450 songs or sheet music PDFs</td>
+                  <td className="px-4 py-2.5 text-foreground/70">$49/mo ($470/yr)*</td>
+                  <td className="px-4 py-2.5 text-foreground/70">50 songs or sheet music PDFs</td>
                 </tr>
               </tbody>
             </table>

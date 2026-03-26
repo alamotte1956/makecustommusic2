@@ -34,22 +34,22 @@ describe("stripeProducts", () => {
     }
   });
 
-  it("creator (Pro) plan base price should be $17.51/mo (tax-inclusive total $19)", async () => {
+  it("creator (Pro) plan base price should be $22.11/mo (tax-inclusive total $24)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1751);
-    expect(STRIPE_PLANS.creator.totals.monthly).toBe(1900);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(2211);
+    expect(STRIPE_PLANS.creator.totals.monthly).toBe(2400);
   });
 
-  it("professional (Premier) plan base price should be $35.93/mo (tax-inclusive total $39)", async () => {
+  it("professional (Premier) plan base price should be $45.15/mo (tax-inclusive total $49)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(3593);
-    expect(STRIPE_PLANS.professional.totals.monthly).toBe(3900);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(4515);
+    expect(STRIPE_PLANS.professional.totals.monthly).toBe(4900);
   });
 
   it("annual prices should be even dollar totals", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.totals.annual).toBe(18200);     // $182
-    expect(STRIPE_PLANS.professional.totals.annual).toBe(37400); // $374
+    expect(STRIPE_PLANS.creator.totals.annual).toBe(23000);     // $230
+    expect(STRIPE_PLANS.professional.totals.annual).toBe(47000); // $470
   });
 
   it("tax rate should be 8.53% (MN Hennepin County)", async () => {
@@ -125,9 +125,9 @@ describe("Stripe-credits integration", () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
     const { PLAN_LIMITS } = await import("../drizzle/schema");
 
-    // Pro: 200 credits
+    // Pro: 20 credits
     expect(parseInt(STRIPE_PLANS.creator.metadata.monthly_credits)).toBe(PLAN_LIMITS.creator.monthlyCredits);
-    // Premier: 450 credits
+    // Premier: 50 credits
     expect(parseInt(STRIPE_PLANS.professional.metadata.monthly_credits)).toBe(PLAN_LIMITS.professional.monthlyCredits);
   });
 });

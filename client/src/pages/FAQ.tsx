@@ -45,11 +45,11 @@ const faqCategories = [
     items: [
       {
         q: "What plans do you offer?",
-        a: "We offer two subscription plans: Pro ($19/month or $182/year) with 200 songs or sheet music PDFs per month, AI-powered music generation, sheet music to MP3 conversion, lyrics writing and export, collaborative sharing, stem separation ($5 per song), and commercial use rights for personal projects. Premier ($39/month or $374/year) with 450 songs or sheet music PDFs per month, full commercial use rights, early access to new features, and all Pro features. Both plans include 2 free bonus songs per month. There is no free generation plan.",
+        a: "We offer two subscription plans: Pro ($24/month or $230/year) with 20 songs or sheet music PDFs per month, AI-powered music generation, sheet music to MP3 conversion, lyrics writing and export, collaborative sharing, stem separation ($5 per song), and commercial use rights for personal projects. Premier ($49/month or $470/year) with 50 songs or sheet music PDFs per month, full commercial use rights, early access to new features, and all Pro features. Both plans include 2 free bonus songs per month. There is no free generation plan.",
       },
       {
         q: "What are credits and how do they work?",
-        a: "Each song or sheet music PDF generation counts toward your monthly allowance — 200 per month for Pro and 450 per month for Premier. AI lyrics generation, chord progressions, and lyrics export are included at no additional cost. Plus, all paid subscribers get 2 free bonus songs per month that don't count toward your monthly allowance.",
+        a: "Each song or sheet music PDF generation counts toward your monthly allowance — 20 per month for Pro and 50 per month for Premier. AI lyrics generation, chord progressions, and lyrics export are included at no additional cost. Plus, all paid subscribers get 2 free bonus songs per month that don't count toward your monthly allowance.",
       },
       {
         q: "Do I get free bonus songs?",
@@ -57,11 +57,11 @@ const faqCategories = [
       },
       {
         q: "Do unused credits roll over?",
-        a: "Monthly allowances reset each billing cycle and do not roll over. If you consistently need more songs, consider upgrading to the Premier plan for 450 songs per month.",
+        a: "Monthly allowances reset each billing cycle and do not roll over. If you consistently need more songs, consider upgrading to the Premier plan for 50 songs per month.",
       },
       {
         q: "Can I save money with annual billing?",
-        a: "Yes, annual billing saves you approximately 20% compared to monthly billing. Pro is $182/year (saves $46, ~$15/month effective) and Premier is $374/year (saves $94, ~$31/month effective). All prices include MN sales tax.",
+        a: "Yes, annual billing saves you approximately 20% compared to monthly billing. Pro is $230/year (saves $58, ~$19/month effective) and Premier is $470/year (saves $118, ~$39/month effective). All prices include MN sales tax.",
       },
       {
         q: "Can I cancel my subscription anytime?",

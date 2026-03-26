@@ -75,35 +75,35 @@ export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
   creator: {
     id: "creator",
     name: "Pro",
-    description: "200 songs or sheet music PDFs/month, commercial use rights, stem separation",
+    description: "20 songs or sheet music PDFs/month, commercial use rights, stem separation",
     prices: {
-      monthly: 1751,   // $17.51 base → $19.00 with 8.53% tax
-      annual: 16770,   // $167.70 base → $182.00 with 8.53% tax
+      monthly: 2211,   // $22.11 base → $24.00 with 8.53% tax
+      annual: 21192,   // $211.92 base → $230.00 with 8.53% tax
     },
     totals: {
-      monthly: 1900,   // $19/mo (tax-inclusive, even dollar)
-      annual: 18200,   // $182/yr (tax-inclusive, even dollar, ~$15/mo effective)
+      monthly: 2400,   // $24/mo (tax-inclusive, even dollar)
+      annual: 23000,   // $230/yr (tax-inclusive, even dollar, ~$19/mo effective)
     },
     metadata: {
       plan_tier: "creator",
-      monthly_credits: "200",
+      monthly_credits: "20",
     },
   },
   professional: {
     id: "professional",
     name: "Premier",
-    description: "450 songs or sheet music PDFs/month, all Pro features, early access to new features",
+    description: "50 songs or sheet music PDFs/month, all Pro features, early access to new features",
     prices: {
-      monthly: 3593,   // $35.93 base → $39.00 with 8.53% tax
-      annual: 34461,   // $344.61 base → $374.00 with 8.53% tax
+      monthly: 4515,   // $45.15 base → $49.00 with 8.53% tax
+      annual: 43306,   // $433.06 base → $470.00 with 8.53% tax
     },
     totals: {
-      monthly: 3900,   // $39/mo (tax-inclusive, even dollar)
-      annual: 37400,   // $374/yr (tax-inclusive, even dollar, ~$31/mo effective)
+      monthly: 4900,   // $49/mo (tax-inclusive, even dollar)
+      annual: 47000,   // $470/yr (tax-inclusive, even dollar, ~$39/mo effective)
     },
     metadata: {
       plan_tier: "professional",
-      monthly_credits: "450",
+      monthly_credits: "50",
     },
   },
 };

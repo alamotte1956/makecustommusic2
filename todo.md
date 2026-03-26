@@ -1729,3 +1729,9 @@
 - [x] Fix OG tags, sitemap, blog, privacy, terms domain references
 - [x] Update all test files to match new domain references
 - [x] Add visual indicator on music generation page showing remaining API credits
+- [x] Update PLAN_LIMITS: Pro from 200 to 20 monthly credits, Premier from 450 to 50
+- [x] Update PLAN_LIMITS: Pro daily song limit from 50 to 10, Premier from 100 to 25
+- [x] Update Stripe product prices: Pro from $19/mo to $24/mo, Premier from $39/mo to $49/mo
+- [x] Update annual pricing proportionally
+- [x] Update pricing page UI to reflect new prices and limits
+- [x] Update all tests to match new pricing/limits
