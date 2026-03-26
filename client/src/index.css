@@ -207,30 +207,37 @@
     content: '';
     position: absolute;
     border-radius: 50%;
-    -webkit-filter: blur(120px);
-    filter: blur(120px);
-    opacity: 0.15;
     will-change: transform, opacity;
   }
 
+  /* Primary pink/magenta orb — top-left */
   .shimmer-bg::before {
-    width: 600px;
-    height: 600px;
-    top: -10%;
-    left: -5%;
-    background: radial-gradient(circle, #e8457e 0%, #9b2c6b 40%, transparent 70%);
-    -webkit-animation: shimmer-drift-1 12s ease-in-out infinite;
-    animation: shimmer-drift-1 12s ease-in-out infinite;
+    width: 70vw;
+    height: 70vw;
+    max-width: 900px;
+    max-height: 900px;
+    top: -20%;
+    left: -15%;
+    background: radial-gradient(circle, rgba(232, 69, 126, 0.45) 0%, rgba(155, 44, 107, 0.25) 35%, transparent 65%);
+    -webkit-filter: blur(80px);
+    filter: blur(80px);
+    -webkit-animation: shimmer-drift-1 16s ease-in-out infinite;
+    animation: shimmer-drift-1 16s ease-in-out infinite;
   }
 
+  /* Warm amber/coral orb — bottom-right */
   .shimmer-bg::after {
-    width: 500px;
-    height: 500px;
-    bottom: -10%;
-    right: -5%;
-    background: radial-gradient(circle, #f5a623 0%, #f0695c 40%, transparent 70%);
-    -webkit-animation: shimmer-drift-2 15s ease-in-out infinite;
-    animation: shimmer-drift-2 15s ease-in-out infinite;
+    width: 60vw;
+    height: 60vw;
+    max-width: 800px;
+    max-height: 800px;
+    bottom: -15%;
+    right: -10%;
+    background: radial-gradient(circle, rgba(245, 166, 35, 0.4) 0%, rgba(240, 105, 92, 0.2) 35%, transparent 65%);
+    -webkit-filter: blur(80px);
+    filter: blur(80px);
+    -webkit-animation: shimmer-drift-2 20s ease-in-out infinite;
+    animation: shimmer-drift-2 20s ease-in-out infinite;
   }
 
   .shimmer-orb-1,
@@ -238,40 +245,52 @@
   .shimmer-orb-3 {
     position: absolute;
     border-radius: 50%;
-    -webkit-filter: blur(100px);
-    filter: blur(100px);
-    opacity: 0.1;
     will-change: transform, opacity;
   }
 
+  /* Deep violet/indigo orb — center */
   .shimmer-orb-1 {
-    width: 400px;
-    height: 400px;
-    top: 30%;
-    left: 50%;
-    background: radial-gradient(circle, #7c3aed 0%, #4f46e5 50%, transparent 70%);
-    -webkit-animation: shimmer-drift-3 18s ease-in-out infinite;
-    animation: shimmer-drift-3 18s ease-in-out infinite;
+    width: 55vw;
+    height: 55vw;
+    max-width: 750px;
+    max-height: 750px;
+    top: 20%;
+    left: 40%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, rgba(79, 70, 229, 0.18) 40%, transparent 65%);
+    -webkit-filter: blur(90px);
+    filter: blur(90px);
+    -webkit-animation: shimmer-drift-3 22s ease-in-out infinite;
+    animation: shimmer-drift-3 22s ease-in-out infinite;
   }
 
+  /* Hot pink orb — lower-left */
   .shimmer-orb-2 {
-    width: 350px;
-    height: 350px;
-    top: 60%;
-    left: 20%;
-    background: radial-gradient(circle, #ec4899 0%, #be185d 50%, transparent 70%);
-    -webkit-animation: shimmer-drift-4 20s ease-in-out infinite;
-    animation: shimmer-drift-4 20s ease-in-out infinite;
+    width: 50vw;
+    height: 50vw;
+    max-width: 650px;
+    max-height: 650px;
+    top: 55%;
+    left: 10%;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, rgba(190, 24, 93, 0.15) 40%, transparent 65%);
+    -webkit-filter: blur(100px);
+    filter: blur(100px);
+    -webkit-animation: shimmer-drift-4 25s ease-in-out infinite;
+    animation: shimmer-drift-4 25s ease-in-out infinite;
   }
 
+  /* Teal/cyan accent orb — upper-right */
   .shimmer-orb-3 {
-    width: 300px;
-    height: 300px;
-    top: 10%;
-    right: 20%;
-    background: radial-gradient(circle, #f59e0b 0%, #d97706 50%, transparent 70%);
-    -webkit-animation: shimmer-drift-5 14s ease-in-out infinite;
-    animation: shimmer-drift-5 14s ease-in-out infinite;
+    width: 45vw;
+    height: 45vw;
+    max-width: 600px;
+    max-height: 600px;
+    top: 5%;
+    right: 10%;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.15) 40%, transparent 65%);
+    -webkit-filter: blur(90px);
+    filter: blur(90px);
+    -webkit-animation: shimmer-drift-5 18s ease-in-out infinite;
+    animation: shimmer-drift-5 18s ease-in-out infinite;
   }
 }
 
@@ -448,62 +467,76 @@ button {
   50% { opacity: .5; }
 }
 
-/* ─── Shimmer aurora keyframes ─── */
+/* ─── Shimmer aurora keyframes (Suno-style large sweeping motion) ─── */
 @-webkit-keyframes shimmer-drift-1 {
-  0%, 100% { -webkit-transform: translate(0, 0) scale(1); opacity: 0.15; }
-  25% { -webkit-transform: translate(15vw, 10vh) scale(1.1); opacity: 0.2; }
-  50% { -webkit-transform: translate(5vw, 20vh) scale(0.95); opacity: 0.12; }
-  75% { -webkit-transform: translate(-10vw, 5vh) scale(1.05); opacity: 0.18; }
+  0%   { -webkit-transform: translate(0, 0) scale(1);         opacity: 1; }
+  20%  { -webkit-transform: translate(12vw, 8vh) scale(1.15);  opacity: 0.85; }
+  40%  { -webkit-transform: translate(25vw, 18vh) scale(1.05); opacity: 0.95; }
+  60%  { -webkit-transform: translate(8vw, 25vh) scale(1.2);   opacity: 0.8; }
+  80%  { -webkit-transform: translate(-8vw, 12vh) scale(1.1);  opacity: 0.9; }
+  100% { -webkit-transform: translate(0, 0) scale(1);          opacity: 1; }
 }
 @keyframes shimmer-drift-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.15; }
-  25% { transform: translate(15vw, 10vh) scale(1.1); opacity: 0.2; }
-  50% { transform: translate(5vw, 20vh) scale(0.95); opacity: 0.12; }
-  75% { transform: translate(-10vw, 5vh) scale(1.05); opacity: 0.18; }
+  0%   { transform: translate(0, 0) scale(1);         opacity: 1; }
+  20%  { transform: translate(12vw, 8vh) scale(1.15);  opacity: 0.85; }
+  40%  { transform: translate(25vw, 18vh) scale(1.05); opacity: 0.95; }
+  60%  { transform: translate(8vw, 25vh) scale(1.2);   opacity: 0.8; }
+  80%  { transform: translate(-8vw, 12vh) scale(1.1);  opacity: 0.9; }
+  100% { transform: translate(0, 0) scale(1);          opacity: 1; }
 }
 
 @-webkit-keyframes shimmer-drift-2 {
-  0%, 100% { -webkit-transform: translate(0, 0) scale(1); opacity: 0.12; }
-  30% { -webkit-transform: translate(-20vw, -15vh) scale(1.15); opacity: 0.18; }
-  60% { -webkit-transform: translate(-10vw, -5vh) scale(0.9); opacity: 0.1; }
+  0%   { -webkit-transform: translate(0, 0) scale(1);           opacity: 1; }
+  25%  { -webkit-transform: translate(-18vw, -12vh) scale(1.2); opacity: 0.9; }
+  50%  { -webkit-transform: translate(-10vw, -22vh) scale(0.95); opacity: 0.8; }
+  75%  { -webkit-transform: translate(-25vw, -5vh) scale(1.1);  opacity: 0.95; }
+  100% { -webkit-transform: translate(0, 0) scale(1);           opacity: 1; }
 }
 @keyframes shimmer-drift-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.12; }
-  30% { transform: translate(-20vw, -15vh) scale(1.15); opacity: 0.18; }
-  60% { transform: translate(-10vw, -5vh) scale(0.9); opacity: 0.1; }
+  0%   { transform: translate(0, 0) scale(1);           opacity: 1; }
+  25%  { transform: translate(-18vw, -12vh) scale(1.2); opacity: 0.9; }
+  50%  { transform: translate(-10vw, -22vh) scale(0.95); opacity: 0.8; }
+  75%  { transform: translate(-25vw, -5vh) scale(1.1);  opacity: 0.95; }
+  100% { transform: translate(0, 0) scale(1);           opacity: 1; }
 }
 
 @-webkit-keyframes shimmer-drift-3 {
-  0%, 100% { -webkit-transform: translate(0, 0) scale(1); opacity: 0.1; }
-  33% { -webkit-transform: translate(-15vw, 10vh) scale(1.2); opacity: 0.15; }
-  66% { -webkit-transform: translate(10vw, -10vh) scale(0.85); opacity: 0.08; }
+  0%   { -webkit-transform: translate(0, 0) scale(1);           opacity: 1; }
+  30%  { -webkit-transform: translate(-20vw, 15vh) scale(1.25); opacity: 0.85; }
+  60%  { -webkit-transform: translate(15vw, -12vh) scale(0.9);  opacity: 0.75; }
+  100% { -webkit-transform: translate(0, 0) scale(1);           opacity: 1; }
 }
 @keyframes shimmer-drift-3 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.1; }
-  33% { transform: translate(-15vw, 10vh) scale(1.2); opacity: 0.15; }
-  66% { transform: translate(10vw, -10vh) scale(0.85); opacity: 0.08; }
+  0%   { transform: translate(0, 0) scale(1);           opacity: 1; }
+  30%  { transform: translate(-20vw, 15vh) scale(1.25); opacity: 0.85; }
+  60%  { transform: translate(15vw, -12vh) scale(0.9);  opacity: 0.75; }
+  100% { transform: translate(0, 0) scale(1);           opacity: 1; }
 }
 
 @-webkit-keyframes shimmer-drift-4 {
-  0%, 100% { -webkit-transform: translate(0, 0) scale(1); opacity: 0.1; }
-  40% { -webkit-transform: translate(20vw, -10vh) scale(1.1); opacity: 0.16; }
-  70% { -webkit-transform: translate(5vw, 15vh) scale(0.95); opacity: 0.08; }
+  0%   { -webkit-transform: translate(0, 0) scale(1);           opacity: 1; }
+  35%  { -webkit-transform: translate(22vw, -15vh) scale(1.15); opacity: 0.9; }
+  65%  { -webkit-transform: translate(8vw, 20vh) scale(1.05);   opacity: 0.8; }
+  100% { -webkit-transform: translate(0, 0) scale(1);           opacity: 1; }
 }
 @keyframes shimmer-drift-4 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.1; }
-  40% { transform: translate(20vw, -10vh) scale(1.1); opacity: 0.16; }
-  70% { transform: translate(5vw, 15vh) scale(0.95); opacity: 0.08; }
+  0%   { transform: translate(0, 0) scale(1);           opacity: 1; }
+  35%  { transform: translate(22vw, -15vh) scale(1.15); opacity: 0.9; }
+  65%  { transform: translate(8vw, 20vh) scale(1.05);   opacity: 0.8; }
+  100% { transform: translate(0, 0) scale(1);           opacity: 1; }
 }
 
 @-webkit-keyframes shimmer-drift-5 {
-  0%, 100% { -webkit-transform: translate(0, 0) scale(1); opacity: 0.1; }
-  35% { -webkit-transform: translate(-10vw, -20vh) scale(1.15); opacity: 0.14; }
-  65% { -webkit-transform: translate(15vw, 5vh) scale(0.9); opacity: 0.07; }
+  0%   { -webkit-transform: translate(0, 0) scale(1);            opacity: 1; }
+  40%  { -webkit-transform: translate(-15vw, -18vh) scale(1.2);  opacity: 0.85; }
+  70%  { -webkit-transform: translate(18vw, 8vh) scale(0.95);    opacity: 0.9; }
+  100% { -webkit-transform: translate(0, 0) scale(1);            opacity: 1; }
 }
 @keyframes shimmer-drift-5 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.1; }
-  35% { transform: translate(-10vw, -20vh) scale(1.15); opacity: 0.14; }
-  65% { transform: translate(15vw, 5vh) scale(0.9); opacity: 0.07; }
+  0%   { transform: translate(0, 0) scale(1);            opacity: 1; }
+  40%  { transform: translate(-15vw, -18vh) scale(1.2);  opacity: 0.85; }
+  70%  { transform: translate(18vw, 8vh) scale(0.95);    opacity: 0.9; }
+  100% { transform: translate(0, 0) scale(1);            opacity: 1; }
 }
 
 /* Reduce motion for accessibility */

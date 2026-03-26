@@ -1696,3 +1696,4 @@
 - [x] Update Pricing page, FAQ, routers allPlans with new even-dollar prices
 - [x] Update stem separation price to even dollar amount with tax
 - [x] Add tax breakdown tooltip next to prices on Pricing page (base price vs. MN 8.53% tax)
+- [x] Add Suno.com-style shimmering/aurora background effect to the site
