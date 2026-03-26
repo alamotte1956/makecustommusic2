@@ -78,6 +78,21 @@ export const appRouter = router({
       };
     }),
 
+    // Get musicapi.ai API credits (for visual indicator)
+    musicApiCredits: protectedProcedure.query(async () => {
+      if (!isSunoAvailable()) {
+        return { available: false, credits: 0, extraCredits: 0 };
+      }
+      try {
+        const { getCredits } = await import("./sunoApi");
+        const credits = await getCredits();
+        return { available: true, credits, extraCredits: 0 };
+      } catch (err: any) {
+        console.warn("[musicApiCredits] Could not fetch API credits:", err.message);
+        return { available: true, credits: -1, extraCredits: 0 }; // -1 = unknown
+      }
+    }),
+
     // Generate music with Suno (simple or custom mode)
     generate: protectedProcedure
       .input(z.object({

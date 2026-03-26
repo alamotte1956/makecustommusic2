@@ -25,6 +25,7 @@ import { Link } from "wouter";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import GenerateCoverButton from "@/components/GenerateCoverButton";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { Zap, AlertTriangle, TrendingDown, CreditCard } from "lucide-react";
 
 type GeneratedSong = {
   id: number;
@@ -280,6 +281,141 @@ function GenreSelector({
 }
 
 /* ─────────────────────────────────────────────────────── */
+/* Credit Indicator Bar                                     */
+/* ─────────────────────────────────────────────────────── */
+function CreditIndicator({
+  summaryData,
+  summaryLoading,
+  apiCredits,
+  apiCreditsLoading,
+}: {
+  summaryData: any;
+  summaryLoading: boolean;
+  apiCredits: { available: boolean; credits: number; extraCredits: number } | undefined;
+  apiCreditsLoading: boolean;
+}) {
+  const plan = summaryData?.plan ?? "free";
+  const balance = summaryData?.balance;
+  const limits = summaryData?.limits;
+  const bonusSongsRemaining = summaryData?.usage?.monthlyBonusSongsRemaining ?? 0;
+
+  const totalCredits = balance?.totalCredits ?? 0;
+  const monthlyMax = limits?.monthlyCredits ?? 0;
+  const creditPct = monthlyMax > 0 ? Math.min(100, Math.round((totalCredits / monthlyMax) * 100)) : 0;
+
+  const isLoading = summaryLoading || apiCreditsLoading;
+  const apiCreditCount = apiCredits?.credits ?? -1;
+  const apiAvailable = apiCredits?.available ?? false;
+
+  // Determine status color for the API credits badge
+  let apiStatusColor = "bg-emerald-500/15 text-emerald-600 border-emerald-500/20";
+  let apiStatusIcon = <Zap className="w-3 h-3" />;
+  if (apiCreditCount === -1) {
+    apiStatusColor = "bg-muted text-muted-foreground border-border";
+    apiStatusIcon = <Zap className="w-3 h-3" />;
+  } else if (apiCreditCount <= 0) {
+    apiStatusColor = "bg-red-500/15 text-red-600 border-red-500/20";
+    apiStatusIcon = <AlertTriangle className="w-3 h-3" />;
+  } else if (apiCreditCount < 10) {
+    apiStatusColor = "bg-amber-500/15 text-amber-600 border-amber-500/20";
+    apiStatusIcon = <TrendingDown className="w-3 h-3" />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-3 animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-4 w-24 bg-muted rounded" />
+          <div className="h-4 w-32 bg-muted rounded" />
+          <div className="flex-1" />
+          <div className="h-4 w-20 bg-muted rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (plan === "free") return null;
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+      {/* Top row: badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Plan badge */}
+        <Badge variant="secondary" className="text-[11px] gap-1 bg-primary/10 text-primary border-primary/20">
+          <CreditCard className="w-3 h-3" />
+          {plan === "creator" ? "Pro" : "Premier"}
+        </Badge>
+
+        {/* Monthly credits badge */}
+        <Badge variant="secondary" className="text-[11px] gap-1">
+          <Zap className="w-3 h-3" />
+          {totalCredits} / {monthlyMax} credits
+        </Badge>
+
+        {/* Bonus songs */}
+        {bonusSongsRemaining > 0 && (
+          <Badge variant="secondary" className="text-[11px] gap-1 bg-green-500/10 text-green-600 border-green-500/20">
+            ✨ {bonusSongsRemaining} free bonus song{bonusSongsRemaining > 1 ? "s" : ""}
+          </Badge>
+        )}
+
+        <div className="flex-1" />
+
+        {/* API status badge */}
+        {apiAvailable && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${apiStatusColor}`}>
+                {apiStatusIcon}
+                {apiCreditCount === -1 ? "API: checking..." : `API: ${apiCreditCount}`}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+              {apiCreditCount === -1
+                ? "Could not check API credits. Generation may still work."
+                : apiCreditCount <= 0
+                ? "No API credits remaining. Music generation is temporarily unavailable."
+                : apiCreditCount < 10
+                ? `Only ${apiCreditCount} API credits left. Contact admin if generation fails.`
+                : `${apiCreditCount} API credits available for music generation.`}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              creditPct > 50 ? "bg-primary" : creditPct > 20 ? "bg-amber-500" : "bg-red-500"
+            }`}
+            style={{ width: `${creditPct}%` }}
+          />
+        </div>
+        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+          {creditPct}%
+        </span>
+      </div>
+
+      {/* Low credit warning */}
+      {totalCredits > 0 && totalCredits <= 5 && (
+        <p className="text-[11px] text-amber-600 flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          Running low on credits. Visit <Link href="/pricing" className="underline font-medium">Pricing</Link> to upgrade.
+        </p>
+      )}
+      {totalCredits <= 0 && (
+        <p className="text-[11px] text-red-600 flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          No credits remaining. <Link href="/pricing" className="underline font-medium">Upgrade your plan</Link> to continue generating.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── */
 /* Main Component                                          */
 /* ─────────────────────────────────────────────────────── */
 export default function Generator() {
@@ -336,6 +472,12 @@ export default function Generator() {
   const userPlan = summaryQuery.data?.plan ?? "free";
   const hasSubscription = userPlan !== "free";
   const monthlyBonusSongsRemaining = summaryQuery.data?.usage?.monthlyBonusSongsRemaining ?? 0;
+
+  // Music API credits query
+  const apiCreditsQuery = trpc.songs.musicApiCredits.useQuery(undefined, {
+    refetchInterval: 120_000, // refresh every 2 minutes
+    staleTime: 60_000,
+  });
 
   const isSunoAvailable = enginesQuery.data?.suno ?? false;
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
@@ -522,6 +664,16 @@ export default function Generator() {
           Follow the steps below to create your song.
         </p>
       </div>
+
+      {/* ═══════════════════════════════════════════════ */}
+      {/* Credits Indicator Bar                           */}
+      {/* ═══════════════════════════════════════════════ */}
+      <CreditIndicator
+        summaryData={summaryQuery.data}
+        summaryLoading={summaryQuery.isLoading}
+        apiCredits={apiCreditsQuery.data}
+        apiCreditsLoading={apiCreditsQuery.isLoading}
+      />
 
       {/* ═══════════════════════════════════════════════ */}
       {/* STEP 1 — Choose how to create                  */}

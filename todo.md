@@ -1728,3 +1728,4 @@
 - [x] Fix email notification domain references (emailNotification.ts)
 - [x] Fix OG tags, sitemap, blog, privacy, terms domain references
 - [x] Update all test files to match new domain references
+- [x] Add visual indicator on music generation page showing remaining API credits
