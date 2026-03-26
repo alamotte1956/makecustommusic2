@@ -39,8 +39,8 @@ export default function Pricing() {
   };
 
   const annualSavings: Record<string, number> = {
-    creator: 30,      // $10*12 - $90 = $30
-    professional: 78,  // $26*12 - $234 = $78
+    creator: 46,       // $19*12 - $182 = $46
+    professional: 94,  // $39*12 - $374 = $94
   };
 
   const planColors: Record<string, string> = {
@@ -170,7 +170,7 @@ export default function Pricing() {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    Taxes calculated at checkout
+                    Price includes MN sales tax (8.53%)
                   </p>
 
                 </div>
@@ -224,12 +224,12 @@ export default function Pricing() {
           <div className="space-y-6">
             {[
               {
-                q: "What counts as a credit?",
-                a: "Each song generation costs approximately 5 credits. The Pro plan gives you 2,500 credits (up to 500 songs) and Premier gives you 10,000 credits (up to 2,000 songs) per month.",
+                q: "How does the monthly allowance work?",
+                a: "Each song or sheet music PDF generation counts as one use. The Pro plan gives you 200 per month and Premier gives you 450 per month. AI lyrics, chord progressions, and exports are included at no extra cost.",
               },
               {
-                q: "Do unused credits roll over?",
-                a: "Monthly credits refresh each billing cycle and do not roll over. Both paid plans allow you to purchase add-on credits if you need more.",
+                q: "Do unused songs roll over?",
+                a: "Monthly allowances reset each billing cycle and do not roll over. If you need more, consider upgrading to the Premier plan for 450 songs per month.",
               },
               {
                 q: "Can I use the music commercially?",
@@ -237,7 +237,7 @@ export default function Pricing() {
               },
               {
                 q: "Do I get free bonus songs?",
-                a: "Yes! All paid subscribers get 2 free bonus songs every day on top of their monthly credits. These reset daily and don't count toward your allocation.",
+                a: "Yes! All paid subscribers get 2 free bonus songs every month on top of their monthly credits. These reset each billing cycle and don't count toward your allocation.",
               },
               {
                 q: "Is there a free plan?",
@@ -245,7 +245,7 @@ export default function Pricing() {
               },
               {
                 q: "What's the difference between Pro and Premier?",
-                a: "Premier includes everything in Pro plus access to Make Custom Music Studio, 10,000 credits (up to 2,000 songs) per month instead of 2,500, and early access to new features.",
+                a: "Premier includes everything in Pro plus 450 songs per month (vs. 200), full commercial use rights, and early access to new features.",
               },
               {
                 q: "Who owns the music I create?",

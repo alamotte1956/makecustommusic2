@@ -407,7 +407,7 @@ export default function SharedLyricsPage() {
 
       {/* Footer */}
       <p className="text-center text-xs text-muted-foreground pt-4">
-        &copy; {new Date().getFullYear()} Albert LaMotte &mdash; Made with Make Custom Music
+        &copy; {new Date().getFullYear()} Albert LaMotte &mdash; Made with Create Christian Music
       </p>
     </div>
   );

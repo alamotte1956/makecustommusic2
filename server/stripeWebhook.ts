@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { ENV } from "./_core/env";
 import { upsertSubscription, getUserSubscription, refillMonthlyCredits, addBonusCredits } from "./credits";
 import { getPlanFromMetadata } from "./stripeProducts";
-import { getDb } from "./db";
+import { getDb, getStemSeparationById, updateStemSeparationStatus, updateStemSeparationStems, getSongById } from "./db";
 import { eq } from "drizzle-orm";
 import { users, userSubscriptions } from "../drizzle/schema";
 import type { PlanName } from "../drizzle/schema";
@@ -11,6 +11,7 @@ import { notifyOwner } from "./_core/notification";
 import { createAdminNotification } from "./adminNotificationDb";
 import { sendAdminEmail } from "./emailNotification";
 import { getPreferenceForType } from "./adminPreferencesDb";
+import { submitStemSeparation, waitForStemSeparation, downloadAndStoreStem } from "./sunoApi";
 
 function getStripe(): Stripe {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -139,6 +140,38 @@ async function processCheckout(userId: number, session: Stripe.Checkout.Session)
   const customerId = typeof session.customer === "string"
     ? session.customer
     : session.customer?.id;
+
+  // Handle stem separation one-time payment
+  if (session.mode === "payment" && session.metadata?.product_type === "stem_separation") {
+    const stemSeparationId = session.metadata?.stem_separation_id
+      ? parseInt(session.metadata.stem_separation_id, 10)
+      : null;
+    const songId = session.metadata?.song_id
+      ? parseInt(session.metadata.song_id, 10)
+      : null;
+
+    if (stemSeparationId && songId) {
+      console.log(`[Stripe Webhook] Stem separation payment completed for user ${userId}, song ${songId}, stem ${stemSeparationId}`);
+
+      // Update payment intent ID
+      const paymentIntentId = typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id;
+
+      await updateStemSeparationStems(stemSeparationId, {
+        stripePaymentIntentId: paymentIntentId || undefined,
+        status: "processing",
+      });
+
+      // Trigger stem separation in background (don't block webhook response)
+      processStemSeparation(stemSeparationId, songId, userId).catch((err: any) => {
+        console.error(`[Stem Separation] Background processing failed:`, err);
+      });
+    } else {
+      console.error(`[Stripe Webhook] Stem separation checkout missing metadata: stemId=${stemSeparationId}, songId=${songId}`);
+    }
+    return;
+  }
 
   if (session.mode === "subscription") {
     // Subscription checkout — the subscription.created/updated webhook will handle the details
@@ -436,5 +469,101 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     }
   } catch (err) {
     console.warn("[Stripe Webhook] Failed to send payment failure notification:", err);
+  }
+}
+
+
+// ─── Stem Separation Background Processing ──────────────────────────────────
+
+async function processStemSeparation(stemSeparationId: number, songId: number, userId: number) {
+  try {
+    console.log(`[Stem Separation] Starting processing for stem ${stemSeparationId}, song ${songId}`);
+
+    // Get the song to find its Suno task/audio IDs
+    const song = await getSongById(songId);
+    if (!song) {
+      throw new Error(`Song ${songId} not found`);
+    }
+
+    // We need the Suno task ID and audio ID to submit stem separation
+    const sunoTaskId = song.sunoTaskId;
+    const sunoAudioId = song.sunoAudioId;
+
+    if (!sunoTaskId || !sunoAudioId) {
+      throw new Error(`Song ${songId} does not have Suno task/audio IDs. Stem separation requires songs generated via Suno.`);
+    }
+
+    // Submit stem separation to Suno API (split_stem gives all stems)
+    const separationTaskId = await submitStemSeparation(sunoTaskId, sunoAudioId, "split_stem");
+    console.log(`[Stem Separation] Submitted to Suno, separation task: ${separationTaskId}`);
+
+    await updateStemSeparationStems(stemSeparationId, {
+      sunoSeparationTaskId: separationTaskId,
+    });
+
+    // Wait for completion (up to 10 minutes)
+    const result = await waitForStemSeparation(separationTaskId);
+    console.log(`[Stem Separation] Suno completed for stem ${stemSeparationId}`);
+
+    // Download each available stem and store in S3
+    const stemUrls: Record<string, string | null> = {};
+    const stemTypes = [
+      { key: "vocalUrl", url: result.vocalUrl, type: "vocals" },
+      { key: "instrumentalUrl", url: result.instrumentalUrl, type: "instrumental" },
+      { key: "backingVocalsUrl", url: result.backingVocalsUrl, type: "backing-vocals" },
+      { key: "drumsUrl", url: result.drumsUrl, type: "drums" },
+      { key: "bassUrl", url: result.bassUrl, type: "bass" },
+      { key: "guitarUrl", url: result.guitarUrl, type: "guitar" },
+      { key: "keyboardUrl", url: result.keyboardUrl, type: "keyboard" },
+      { key: "percussionUrl", url: result.percussionUrl, type: "percussion" },
+      { key: "stringsUrl", url: result.stringsUrl, type: "strings" },
+      { key: "synthUrl", url: result.synthUrl, type: "synth" },
+      { key: "fxUrl", url: result.fxUrl, type: "fx" },
+      { key: "brassUrl", url: result.brassUrl, type: "brass" },
+      { key: "woodwindsUrl", url: result.woodwindsUrl, type: "woodwinds" },
+    ];
+
+    for (const stem of stemTypes) {
+      if (stem.url) {
+        try {
+          const stored = await downloadAndStoreStem(stem.url, userId, stem.type);
+          stemUrls[stem.key] = stored.url;
+          console.log(`[Stem Separation] Stored ${stem.type} stem for song ${songId}`);
+        } catch (err: any) {
+          console.warn(`[Stem Separation] Failed to download ${stem.type} stem:`, err.message);
+          stemUrls[stem.key] = null;
+        }
+      } else {
+        stemUrls[stem.key] = null;
+      }
+    }
+
+    // Update the stem separation record with all URLs
+    await updateStemSeparationStems(stemSeparationId, {
+      ...stemUrls,
+      status: "completed",
+      completedAt: new Date(),
+    });
+
+    console.log(`[Stem Separation] Completed for stem ${stemSeparationId}, song ${songId}`);
+
+    // Notify the owner
+    try {
+      await notifyOwner({
+        title: "Stem Separation Completed",
+        content: `Stem separation for song ID ${songId} has been completed successfully.`,
+      });
+    } catch {
+      // Non-critical
+    }
+  } catch (err: any) {
+    console.error(`[Stem Separation] Failed for stem ${stemSeparationId}:`, err.message);
+
+    // Mark as failed
+    try {
+      await updateStemSeparationStatus(stemSeparationId, "failed");
+    } catch {
+      // Non-critical
+    }
   }
 }

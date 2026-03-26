@@ -135,7 +135,7 @@ function LeaderboardSection({ userId }: { userId: number }) {
 export default function Referrals() {
   usePageMeta({
     title: "Invite Friends",
-    description: "Invite friends to Make Custom Music and earn free credits. Share your referral link and get rewarded when they sign up.",
+    description: "Invite friends to Create Christian Music and earn free credits. Share your referral link and get rewarded when they sign up.",
     canonicalPath: "/referrals",
   });
   const { user, loading } = useAuth();
@@ -183,7 +183,7 @@ export default function Referrals() {
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({
-          title: "Make Custom Music",
+          title: "Create Christian Music",
           text: "Create AI-generated songs in seconds! Use my referral link to get started:",
           url: referralLink,
         });

@@ -74,7 +74,7 @@ describe("Lyrics Export - Plain Text", () => {
   it("includes copyright footer", () => {
     const text = buildPlainText(samplePayload);
     expect(text).toContain("Albert LaMotte");
-    expect(text).toContain("Make Custom Music");
+    expect(text).toContain("Create Christian Music");
   });
 
   it("handles missing title", () => {

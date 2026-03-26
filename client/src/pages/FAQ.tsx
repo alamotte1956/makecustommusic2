@@ -14,8 +14,8 @@ const faqCategories = [
     icon: <Music className="h-5 w-5" />,
     items: [
       {
-        q: "What is Make Custom Music?",
-        a: "Make Custom Music is an AI-powered music generation platform. Describe the music you imagine — choose a genre, mood, and vocal style — and our AI composes a unique, full-production song for you in seconds. You can download it as MP3, view sheet music, organize songs into albums, and share them publicly.",
+        q: "What is Create Christian Music?",
+        a: "Create Christian Music is an AI-powered music generation platform. Describe the music you imagine — choose a genre, mood, and vocal style — and our AI composes a unique, full-production song for you in seconds. You can download it as MP3, view sheet music, organize songs into albums, and share them publicly.",
       },
       {
         q: "How do I create my first song?",
@@ -45,23 +45,23 @@ const faqCategories = [
     items: [
       {
         q: "What plans do you offer?",
-        a: "We offer two subscription plans: Pro ($10/month or $90/year) with 2,500 credits (up to 500 songs) per month, access to the latest AI model, commercial use rights, personas and advanced editing, stem separation into 12 parts, and 8 min audio uploads. Premier ($26/month or $234/year) with 10,000 credits (up to 2,000 songs) per month, plus access to Make Custom Music Studio and all Pro features. Both plans include 2 free bonus songs per day. There is no free generation plan.",
+        a: "We offer two subscription plans: Pro ($19/month or $182/year) with 200 songs or sheet music PDFs per month, AI-powered music generation, sheet music to MP3 conversion, lyrics writing and export, collaborative sharing, stem separation ($5 per song), and commercial use rights for personal projects. Premier ($39/month or $374/year) with 450 songs or sheet music PDFs per month, full commercial use rights, early access to new features, and all Pro features. Both plans include 2 free bonus songs per month. There is no free generation plan.",
       },
       {
         q: "What are credits and how do they work?",
-        a: "Each song generation costs 1 credit. Credits are allocated monthly based on your plan — 2,500 credits (up to 500 songs) for Pro and 10,000 credits (up to 2,000 songs) for Premier. Sheet music generation, chord progressions, and AI lyrics generation are included with your plan at no additional credit cost. Plus, all paid subscribers get 2 free bonus songs per day that don't count toward your monthly credits.",
+        a: "Each song or sheet music PDF generation counts toward your monthly allowance — 200 per month for Pro and 450 per month for Premier. AI lyrics generation, chord progressions, and lyrics export are included at no additional cost. Plus, all paid subscribers get 2 free bonus songs per month that don't count toward your monthly allowance.",
       },
       {
         q: "Do I get free bonus songs?",
-        a: "Yes! All paid subscribers (Pro and Premier) get 2 free bonus songs every day on top of their monthly credit allocation. These reset daily and don't count toward your monthly credits — it's our way of encouraging daily creativity.",
+        a: "Yes! All paid subscribers (Pro and Premier) get 2 free bonus songs every month on top of their monthly credit allocation. These reset each billing cycle and don't count toward your monthly credits — it's our way of saying thank you for subscribing.",
       },
       {
         q: "Do unused credits roll over?",
-        a: "Monthly credits reset each billing cycle. If you consistently need more songs, consider upgrading to the Premier plan for a larger monthly allowance.",
+        a: "Monthly allowances reset each billing cycle and do not roll over. If you consistently need more songs, consider upgrading to the Premier plan for 450 songs per month.",
       },
       {
         q: "Can I save money with annual billing?",
-        a: "Yes, annual billing saves you approximately 25% compared to monthly billing. Pro is $90/year ($7.50/month effective) and Premier is $234/year ($19.50/month effective).",
+        a: "Yes, annual billing saves you approximately 20% compared to monthly billing. Pro is $182/year (saves $46, ~$15/month effective) and Premier is $374/year (saves $94, ~$31/month effective). All prices include MN sales tax.",
       },
       {
         q: "Can I cancel my subscription anytime?",
@@ -91,7 +91,7 @@ const faqCategories = [
       },
       {
         q: "Can I play songs offline on my phone?",
-        a: "Yes! Make Custom Music is a Progressive Web App (PWA). Install it on your phone by tapping 'Add to Home Screen' in your browser. Once installed, recently played songs are cached for offline playback — up to 50 songs are stored locally.",
+        a: "Yes! Create Christian Music is a Progressive Web App (PWA). Install it on your phone by tapping 'Add to Home Screen' in your browser. Once installed, recently played songs are cached for offline playback — up to 50 songs are stored locally.",
       },
       {
         q: "What is the queue player?",
@@ -174,8 +174,8 @@ const faqCategories = [
         a: "We accept all major credit cards, debit cards, and digital wallets through Stripe. Payments are processed securely — we never store your card details.",
       },
       {
-        q: "Can I install Make Custom Music as an app?",
-        a: "Yes! Make Custom Music is a Progressive Web App. On Android, tap the install banner or use your browser menu to 'Add to Home Screen'. On iOS, open the site in Safari, tap the share button, and select 'Add to Home Screen'. You'll get an app icon and a native app-like experience.",
+        q: "Can I install Create Christian Music as an app?",
+        a: "Yes! Create Christian Music is a Progressive Web App. On Android, tap the install banner or use your browser menu to 'Add to Home Screen'. On iOS, open the site in Safari, tap the share button, and select 'Add to Home Screen'. You'll get an app icon and a native app-like experience.",
       },
       {
         q: "How do I contact support?",
@@ -196,7 +196,7 @@ const faqCategories = [
 export default function FAQ() {
   usePageMeta({
     title: "FAQ",
-    description: "Frequently asked questions about Make Custom Music. Learn about AI music generation, pricing, downloads, and account management.",
+    description: "Frequently asked questions about Create Christian Music. Learn about AI music generation, pricing, downloads, and account management.",
     canonicalPath: "/faq",
   });
   return (
@@ -213,7 +213,7 @@ export default function FAQ() {
             Frequently Asked Questions
           </h1>
           <p className="mt-4 text-lg text-white/80 max-w-2xl mx-auto">
-            Everything you need to know about Make Custom Music. Can't find what you're looking for?{" "}
+            Everything you need to know about Create Christian Music. Can't find what you're looking for?{" "}
             <a
               href="mailto:gs@safarilegacy.org"
               className="text-purple-400 hover:text-purple-300 underline"

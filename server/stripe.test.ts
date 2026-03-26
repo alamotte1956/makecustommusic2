@@ -34,14 +34,34 @@ describe("stripeProducts", () => {
     }
   });
 
-  it("creator (Pro) plan should cost $10/mo", async () => {
+  it("creator (Pro) plan base price should be $17.51/mo (tax-inclusive total $19)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1000);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1751);
+    expect(STRIPE_PLANS.creator.totals.monthly).toBe(1900);
   });
 
-  it("professional (Premier) plan should cost $26/mo", async () => {
+  it("professional (Premier) plan base price should be $35.93/mo (tax-inclusive total $39)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2600);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(3593);
+    expect(STRIPE_PLANS.professional.totals.monthly).toBe(3900);
+  });
+
+  it("annual prices should be even dollar totals", async () => {
+    const { STRIPE_PLANS } = await import("./stripeProducts");
+    expect(STRIPE_PLANS.creator.totals.annual).toBe(18200);     // $182
+    expect(STRIPE_PLANS.professional.totals.annual).toBe(37400); // $374
+  });
+
+  it("tax rate should be 8.53% (MN Hennepin County)", async () => {
+    const { TAX_RATE, TAX_JURISDICTION } = await import("./stripeProducts");
+    expect(TAX_RATE).toBe(0.0853);
+    expect(TAX_JURISDICTION).toBe("MN Hennepin County");
+  });
+
+  it("stem separation should cost $5 total (tax-inclusive)", async () => {
+    const { STEM_SEPARATION_PRODUCT } = await import("./stripeProducts");
+    expect(STEM_SEPARATION_PRODUCT.totalPrice).toBe(500);
+    expect(STEM_SEPARATION_PRODUCT.basePrice).toBe(461);
   });
 
   describe("getPlanFromMetadata", () => {
@@ -105,9 +125,9 @@ describe("Stripe-credits integration", () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
     const { PLAN_LIMITS } = await import("../drizzle/schema");
 
-    // Pro: 500 credits
+    // Pro: 200 credits
     expect(parseInt(STRIPE_PLANS.creator.metadata.monthly_credits)).toBe(PLAN_LIMITS.creator.monthlyCredits);
-    // Premier: 2000 credits
+    // Premier: 450 credits
     expect(parseInt(STRIPE_PLANS.professional.metadata.monthly_credits)).toBe(PLAN_LIMITS.professional.monthlyCredits);
   });
 });

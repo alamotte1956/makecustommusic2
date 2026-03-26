@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob, worshipSets, InsertWorshipSet, worshipSetItems, InsertWorshipSetItem, scriptureSongs, InsertScriptureSong, sharedLyrics, InsertSharedLyrics, SharedLyricsSection } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob, worshipSets, InsertWorshipSet, worshipSetItems, InsertWorshipSetItem, scriptureSongs, InsertScriptureSong, sharedLyrics, InsertSharedLyrics, SharedLyricsSection, stemSeparations, InsertStemSeparation } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -736,4 +736,66 @@ export async function getUserSharedLyrics(userId: number) {
   return db.select().from(sharedLyrics)
     .where(eq(sharedLyrics.ownerId, userId))
     .orderBy(desc(sharedLyrics.updatedAt));
+}
+
+
+// ─── Stem Separations ───
+
+export async function createStemSeparation(data: InsertStemSeparation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(stemSeparations).values(data);
+  return result.insertId;
+}
+
+export async function getStemSeparationById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select().from(stemSeparations).where(eq(stemSeparations.id, id));
+  return rows[0] ?? null;
+}
+
+export async function getStemSeparationBySongId(songId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select().from(stemSeparations)
+    .where(and(eq(stemSeparations.songId, songId), eq(stemSeparations.userId, userId)))
+    .orderBy(desc(stemSeparations.createdAt));
+  return rows[0] ?? null;
+}
+
+export async function updateStemSeparationStatus(id: number, status: "pending_payment" | "processing" | "completed" | "failed") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(stemSeparations).set({ status }).where(eq(stemSeparations.id, id));
+}
+
+export async function updateStemSeparationStems(id: number, stems: {
+  sunoSeparationTaskId?: string;
+  vocalUrl?: string | null;
+  instrumentalUrl?: string | null;
+  backingVocalsUrl?: string | null;
+  drumsUrl?: string | null;
+  bassUrl?: string | null;
+  guitarUrl?: string | null;
+  keyboardUrl?: string | null;
+  percussionUrl?: string | null;
+  stringsUrl?: string | null;
+  synthUrl?: string | null;
+  fxUrl?: string | null;
+  brassUrl?: string | null;
+  woodwindsUrl?: string | null;
+  status?: "processing" | "completed" | "failed";
+  completedAt?: Date;
+  stripePaymentIntentId?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(stemSeparations).set(stems).where(eq(stemSeparations.id, id));
+}
+
+export async function updateSongSunoIds(songId: number, sunoTaskId: string, sunoAudioId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ sunoTaskId, sunoAudioId }).where(eq(songs.id, songId));
 }

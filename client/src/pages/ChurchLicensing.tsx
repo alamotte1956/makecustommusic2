@@ -5,7 +5,7 @@ import { Shield, Check, Music, FileText, Users, Church, BookOpen, ArrowRight } f
 
 export default function ChurchLicensing() {
   usePageMeta({
-    title: "Church Licensing — Make Custom Music",
+    title: "Church Licensing — Create Christian Music",
     description: "Understand your rights when using AI-generated worship music in church services, live streams, recordings, and more.",
     canonicalPath: "/licensing",
   });
@@ -22,7 +22,7 @@ export default function ChurchLicensing() {
           Church Music Licensing
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto">
-          Everything you need to know about using Make Custom Music in your church,
+          Everything you need to know about using Create Christian Music in your church,
           ministry, and worship services.
         </p>
       </div>
@@ -39,7 +39,7 @@ export default function ChurchLicensing() {
             </h2>
             <p className="text-white/60 leading-relaxed">
               Unlike traditional music licensing where you pay ongoing fees to use someone else's songs,
-              every piece of music you create on Make Custom Music belongs to you. This includes free accounts.
+              every piece of music you create on Create Christian Music belongs to you. This includes free accounts.
               You hold full intellectual property rights and commercial use rights for all music you generate.
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function ChurchLicensing() {
               <tr className="border-b border-white/10">
                 <th className="text-left py-3 px-4 text-white/40 font-medium">Feature</th>
                 <th className="text-center py-3 px-4 text-white/40 font-medium">CCLI / OneLicense</th>
-                <th className="text-center py-3 px-4 text-purple-400 font-medium">Make Custom Music</th>
+                <th className="text-center py-3 px-4 text-purple-400 font-medium">Create Christian Music</th>
               </tr>
             </thead>
             <tbody className="text-white/60">
@@ -177,18 +177,18 @@ export default function ChurchLicensing() {
           <div className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <h3 className="font-semibold text-white mb-2">This Covers Only Music Created on Our Platform</h3>
             <p className="text-sm text-white/60 leading-relaxed">
-              Your licensing rights apply to music you generate using Make Custom Music. If your church
+              Your licensing rights apply to music you generate using Create Christian Music. If your church
               also performs copyrighted songs by other artists (e.g., Hillsong, Bethel, Elevation Worship),
-              you still need a CCLI or OneLicense for those songs. Make Custom Music is a complement to
+              you still need a CCLI or OneLicense for those songs. Create Christian Music is a complement to
               traditional licensing, not a replacement for covering third-party copyrighted works.
             </p>
           </div>
           <div className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <h3 className="font-semibold text-white mb-2">Copyright Notice</h3>
             <p className="text-sm text-white/60 leading-relaxed">
-              All music generated through Make Custom Music is original AI-composed content. We recommend
+              All music generated through Create Christian Music is original AI-composed content. We recommend
               including a copyright notice on any published works: "© {new Date().getFullYear()} [Your Name/Church Name].
-              Created with Make Custom Music." This helps establish your ownership and protects your rights.
+              Created with Create Christian Music." This helps establish your ownership and protects your rights.
             </p>
           </div>
           <div className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]">

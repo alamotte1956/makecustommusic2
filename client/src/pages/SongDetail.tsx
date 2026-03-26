@@ -12,11 +12,11 @@ import AudioPlayer from "@/components/AudioPlayer";
 import FavoriteButton from "@/components/FavoriteButton";
 import SheetMusicViewer from "@/components/SheetMusicViewer";
 import GuitarChordViewer from "@/components/GuitarChordViewer";
-import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import { exportLyricsPDF } from "@/lib/pdfExport";
 import {
   Music, FileText, Guitar, Download, Share2, ArrowLeft,
-  Clock, Gauge, Tag, Mic, Loader2, FileAudio, Pencil, Check, X
+  Clock, Gauge, Tag, Mic, Loader2, FileAudio, Pencil, Check, X,
+  Scissors, Play, Pause, Volume2, DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -230,7 +230,7 @@ export default function SongDetail() {
                 </Badge>
               ) : (
                 <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">
-                  ElevenLabs
+                  Suno
                 </Badge>
               )}
             </div>
@@ -303,9 +303,6 @@ export default function SongDetail() {
               Download
             </Button>
             <FavoriteButton songId={song.id} variant="outline" showLabel />
-            {song.lyrics && (
-              <ListenToLyricsButton lyrics={song.lyrics} />
-            )}
             <Button variant="outline" onClick={handleShare}>
               <Share2 className="w-4 h-4 mr-2" />
               Share
@@ -314,9 +311,9 @@ export default function SongDetail() {
         </CardContent>
       </Card>
 
-      {/* Tabs: Lyrics / Sheet Music / Guitar Chords */}
+      {/* Tabs: Lyrics / Sheet Music / Guitar Chords / Stems */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="lyrics" className="gap-1.5" data-tour="lyrics-tab">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Lyrics</span>
@@ -328,6 +325,10 @@ export default function SongDetail() {
           <TabsTrigger value="guitar" className="gap-1.5" data-tour="chords-tab">
             <Guitar className="w-4 h-4" />
             <span className="hidden sm:inline">Guitar</span>
+          </TabsTrigger>
+          <TabsTrigger value="stems" className="gap-1.5">
+            <Scissors className="w-4 h-4" />
+            <span className="hidden sm:inline">Stems</span>
           </TabsTrigger>
         </TabsList>
 
@@ -406,7 +407,268 @@ export default function SongDetail() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="stems">
+          <StemSeparationPanel songId={song.id} songTitle={song.title} hasAudio={!!(song.audioUrl || song.mp3Url || song.mixedUrl)} />
+        </TabsContent>
+
       </Tabs>
     </div>
+  );
+}
+
+// ─── Stem Separation Panel ──────────────────────────────────────────────────
+
+function StemSeparationPanel({ songId, songTitle, hasAudio }: { songId: number; songTitle: string; hasAudio: boolean }) {
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const [playingStem, setPlayingStem] = useState<string | null>(null);
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
+
+  const { data: stemStatus, isLoading: stemsLoading } = trpc.songs.getStemStatus.useQuery(
+    { songId },
+    {
+      enabled: !!user,
+      refetchInterval: (query) => {
+        const data = query.state.data;
+        if (data && data.status === "processing") return 5000;
+        return false;
+      },
+    }
+  );
+
+  const createCheckout = trpc.songs.createStemCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info("Redirecting to checkout...");
+        window.open(data.url, "_blank");
+      }
+    },
+    onError: (err) => toast.error(err.message || "Failed to create checkout"),
+  });
+
+  const handlePurchase = () => {
+    const origin = window.location.origin;
+    createCheckout.mutate({
+      songId,
+      successUrl: `${origin}/songs/${songId}?stems=success`,
+      cancelUrl: `${origin}/songs/${songId}?stems=cancel`,
+    });
+  };
+
+  const togglePlay = (stemKey: string, url: string) => {
+    if (playingStem === stemKey) {
+      audioRefs.current[stemKey]?.pause();
+      setPlayingStem(null);
+    } else {
+      // Pause any currently playing stem
+      if (playingStem && audioRefs.current[playingStem]) {
+        audioRefs.current[playingStem].pause();
+      }
+      if (!audioRefs.current[stemKey]) {
+        audioRefs.current[stemKey] = new Audio(url);
+        audioRefs.current[stemKey].addEventListener("ended", () => setPlayingStem(null));
+      }
+      audioRefs.current[stemKey].play();
+      setPlayingStem(stemKey);
+    }
+  };
+
+  const handleDownloadStem = (url: string, stemType: string) => {
+    const filename = sanitizeFilename(`${songTitle} - ${stemType}`) + ".mp3";
+    downloadFile(url, filename);
+    toast.success(`Downloading ${stemType}...`);
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(audioRefs.current).forEach((audio) => {
+        audio.pause();
+        audio.src = "";
+      });
+    };
+  }, []);
+
+  const stemLabels: { key: string; label: string; icon: string }[] = [
+    { key: "vocalUrl", label: "Vocals", icon: "🎤" },
+    { key: "instrumentalUrl", label: "Instrumental", icon: "🎵" },
+    { key: "backingVocalsUrl", label: "Backing Vocals", icon: "🎶" },
+    { key: "drumsUrl", label: "Drums", icon: "🥁" },
+    { key: "bassUrl", label: "Bass", icon: "🎸" },
+    { key: "guitarUrl", label: "Guitar", icon: "🎸" },
+    { key: "keyboardUrl", label: "Keyboard", icon: "🎹" },
+    { key: "percussionUrl", label: "Percussion", icon: "🪘" },
+    { key: "stringsUrl", label: "Strings", icon: "🎻" },
+    { key: "synthUrl", label: "Synth", icon: "🎛️" },
+    { key: "fxUrl", label: "FX", icon: "✨" },
+    { key: "brassUrl", label: "Brass", icon: "🎺" },
+    { key: "woodwindsUrl", label: "Woodwinds", icon: "🪈" },
+  ];
+
+  if (stemsLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Not purchased yet
+  if (!stemStatus || stemStatus.status === "pending_payment") {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-12 space-y-6">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Scissors className="w-8 h-8 text-primary" />
+            </div>
+            <div className="text-center space-y-2 max-w-md">
+              <h3 className="text-lg font-semibold">Stem Separation</h3>
+              <p className="text-sm text-muted-foreground">
+                Isolate individual parts of your song — vocals, drums, bass, guitar, keyboard, strings, and more.
+                Perfect for remixing, karaoke, or studying individual instruments.
+              </p>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-2xl font-bold">$5.00</p>
+              <p className="text-xs text-muted-foreground">Includes MN Hennepin County sales tax (8.53%)</p>
+            </div>
+            {!hasAudio ? (
+              <p className="text-sm text-muted-foreground">This song has no audio to separate.</p>
+            ) : (
+              <Button
+                onClick={handlePurchase}
+                disabled={createCheckout.isPending}
+                className="gap-2"
+                size="lg"
+              >
+                {createCheckout.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <DollarSign className="w-4 h-4" />
+                )}
+                Purchase Stem Separation
+              </Button>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
+              {stemLabels.slice(0, 6).map((s) => (
+                <div key={s.key} className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1.5">
+                  <span>{s.icon}</span>
+                  <span>{s.label}</span>
+                </div>
+              ))}
+              <div className="col-span-2 sm:col-span-3 text-center text-muted-foreground/60">
+                + 7 more instrument stems
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Processing
+  if (stemStatus.status === "processing") {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <div className="text-center space-y-1">
+              <h3 className="text-lg font-semibold">Separating Stems...</h3>
+              <p className="text-sm text-muted-foreground">
+                Our AI is isolating the individual tracks from your song. This usually takes 2-5 minutes.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Failed
+  if (stemStatus.status === "failed") {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <X className="w-10 h-10 text-destructive" />
+            <div className="text-center space-y-1">
+              <h3 className="text-lg font-semibold">Stem Separation Failed</h3>
+              <p className="text-sm text-muted-foreground">
+                Something went wrong during processing. Please contact support for a refund or to retry.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Completed — show stems
+  const availableStems = stemLabels.filter((s) => {
+    const val = (stemStatus as any)[s.key];
+    return val && typeof val === "string" && val.length > 0;
+  });
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Scissors className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">Separated Stems ({availableStems.length} tracks)</span>
+          </div>
+
+          {availableStems.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No stems were extracted from this song.</p>
+          ) : (
+            <div className="grid gap-2">
+              {availableStems.map((stem) => {
+                const url = (stemStatus as any)[stem.key] as string;
+                const isPlaying = playingStem === stem.key;
+                return (
+                  <div
+                    key={stem.key}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors"
+                  >
+                    <span className="text-lg shrink-0">{stem.icon}</span>
+                    <span className="text-sm font-medium flex-1">{stem.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => togglePlay(stem.key, url)}
+                        title={isPlaying ? "Pause" : "Play"}
+                      >
+                        {isPlaying ? (
+                          <Pause className="w-4 h-4" />
+                        ) : (
+                          <Play className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleDownloadStem(url, stem.label)}
+                        title={`Download ${stem.label}`}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

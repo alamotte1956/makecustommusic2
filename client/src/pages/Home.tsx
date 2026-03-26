@@ -124,7 +124,7 @@ export default function Home() {
             </div>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white leading-[1.05]">
               Make any{" "}
-              <span className="suno-gradient-text">Song</span>
+              <span className="suno-gradient-text">Worship Song</span>
               {" "}you can{" "}
               <span className="text-white/80">Imagine</span>
             </h1>

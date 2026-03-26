@@ -85,7 +85,7 @@ export function buildPlainText(payload: ExportPayload): string {
   }
 
   lines.push("---");
-  lines.push(`© ${new Date().getFullYear()} Albert LaMotte — Made with Make Custom Music`);
+  lines.push(`© ${new Date().getFullYear()} Albert LaMotte — Made with Create Christian Music`);
 
   return lines.join("\n");
 }
@@ -99,7 +99,7 @@ export function buildPdf(payload: ExportPayload): Promise<Buffer> {
       info: {
         Title: payload.title || "Untitled Song",
         Author: "Albert LaMotte",
-        Creator: "Make Custom Music",
+        Creator: "Create Christian Music",
       },
     });
 
@@ -187,7 +187,7 @@ export function buildPdf(payload: ExportPayload): Promise<Buffer> {
       .font("Helvetica")
       .fillColor("#999999")
       .text(
-        `© ${new Date().getFullYear()} Albert LaMotte — Made with Make Custom Music`,
+        `© ${new Date().getFullYear()} Albert LaMotte — Made with Create Christian Music`,
         { align: "center" }
       );
 
@@ -308,7 +308,7 @@ export async function buildDocx(payload: ExportPayload): Promise<Buffer> {
       spacing: { before: 100 },
       children: [
         new TextRun({
-          text: `© ${new Date().getFullYear()} Albert LaMotte — Made with Make Custom Music`,
+          text: `© ${new Date().getFullYear()} Albert LaMotte — Made with Create Christian Music`,
           size: 16, // 8pt
           color: "999999",
           font: "Calibri",
@@ -318,7 +318,7 @@ export async function buildDocx(payload: ExportPayload): Promise<Buffer> {
   );
 
   const doc = new Document({
-    creator: "Make Custom Music",
+    creator: "Create Christian Music",
     title: payload.title || "Untitled Song",
     sections: [{ children }],
   });

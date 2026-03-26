@@ -1,12 +1,53 @@
 /**
  * Stripe Products & Prices Configuration
  * 
- * Two subscription tiers: Pro and Premier (matching Suno pricing).
- * Each new subscription includes 2 free bonus credits.
+ * All prices are tax-inclusive: the displayed total includes
+ * MN Hennepin County sales tax (8.53%). Base prices are calculated
+ * so that base + 8.53% tax = a clean, even dollar total.
  * 
  * Price IDs will be created dynamically on first use if they don't exist,
  * or you can hardcode them after creating products in the Stripe Dashboard.
  */
+
+// ─── Tax Configuration ────────────────────────────────────────────────────────
+export const TAX_RATE = 0.0853; // MN Hennepin County sales tax
+export const TAX_JURISDICTION = "MN Hennepin County";
+
+/**
+ * Calculate base price in cents from a tax-inclusive total.
+ * base = total / (1 + taxRate)
+ */
+export function getBasePriceCents(totalCents: number): number {
+  return Math.round(totalCents / (1 + TAX_RATE));
+}
+
+/**
+ * Calculate tax amount in cents from a tax-inclusive total.
+ */
+export function getTaxCents(totalCents: number): number {
+  return totalCents - getBasePriceCents(totalCents);
+}
+
+/**
+ * Format a price breakdown string for display.
+ */
+export function formatPriceBreakdown(totalCents: number): {
+  total: string;
+  base: string;
+  tax: string;
+  taxRate: string;
+} {
+  const baseCents = getBasePriceCents(totalCents);
+  const taxCents = totalCents - baseCents;
+  return {
+    total: `$${(totalCents / 100).toFixed(2)}`,
+    base: `$${(baseCents / 100).toFixed(2)}`,
+    tax: `$${(taxCents / 100).toFixed(2)}`,
+    taxRate: `${(TAX_RATE * 100).toFixed(2)}%`,
+  };
+}
+
+// ─── Subscription Plans ───────────────────────────────────────────────────────
 
 export type StripePlanId = "creator" | "professional";
 export type StripeBillingCycle = "monthly" | "annual";
@@ -16,8 +57,13 @@ export interface StripePlan {
   name: string;
   description: string;
   prices: {
+    monthly: number; // in cents (BASE price, before tax)
+    annual: number;  // in cents (BASE price, total annual, before tax)
+  };
+  /** Tax-inclusive totals that customers see */
+  totals: {
     monthly: number; // in cents
-    annual: number;  // in cents (total annual)
+    annual: number;  // in cents
   };
   metadata: {
     plan_tier: string;
@@ -25,38 +71,67 @@ export interface StripePlan {
   };
 }
 
-// ─── Subscription Plans (recurring) ─────────────────────────────────────────
-
 export const STRIPE_PLANS: Record<StripePlanId, StripePlan> = {
   creator: {
     id: "creator",
     name: "Pro",
-    description: "500 songs/month, commercial use rights, personas & advanced editing, stem separation, 8 min audio uploads, priority queue",
+    description: "200 songs or sheet music PDFs/month, commercial use rights, stem separation",
     prices: {
-      monthly: 1000,   // $10/mo
-      annual: 9000,    // $90/yr ($7.50/mo — saves $30/yr)
+      monthly: 1751,   // $17.51 base → $19.00 with 8.53% tax
+      annual: 16770,   // $167.70 base → $182.00 with 8.53% tax
+    },
+    totals: {
+      monthly: 1900,   // $19/mo (tax-inclusive, even dollar)
+      annual: 18200,   // $182/yr (tax-inclusive, even dollar, ~$15/mo effective)
     },
     metadata: {
       plan_tier: "creator",
-      monthly_credits: "500",
+      monthly_credits: "200",
     },
   },
   professional: {
     id: "professional",
     name: "Premier",
-    description: "2,000 songs/month, access to Studio, all Pro features, 10,000 credits, early access to new features",
+    description: "450 songs or sheet music PDFs/month, all Pro features, early access to new features",
     prices: {
-      monthly: 2600,   // $26/mo
-      annual: 23400,   // $234/yr ($19.50/mo — saves $78/yr)
+      monthly: 3593,   // $35.93 base → $39.00 with 8.53% tax
+      annual: 34461,   // $344.61 base → $374.00 with 8.53% tax
+    },
+    totals: {
+      monthly: 3900,   // $39/mo (tax-inclusive, even dollar)
+      annual: 37400,   // $374/yr (tax-inclusive, even dollar, ~$31/mo effective)
     },
     metadata: {
       plan_tier: "professional",
-      monthly_credits: "2000",
+      monthly_credits: "450",
     },
   },
 };
 
-// Helper to get plan from Stripe metadata
+// ─── One-Time Products ────────────────────────────────────────────────────────
+
+export interface StripeOneTimeProduct {
+  id: string;
+  name: string;
+  description: string;
+  basePrice: number;   // in cents (before tax)
+  totalPrice: number;  // in cents (tax-inclusive, what customer pays)
+  metadata: Record<string, string>;
+}
+
+export const STEM_SEPARATION_PRODUCT: StripeOneTimeProduct = {
+  id: "stem_separation",
+  name: "Stem Separation",
+  description: "Separate your song into individual stems: vocals, drums, bass, guitar, keyboard, strings, brass, woodwinds, percussion, synth, and more",
+  basePrice: 461,    // $4.61 base
+  totalPrice: 500,   // $5.00 total (tax-inclusive, even dollar)
+  metadata: {
+    product_type: "stem_separation",
+  },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 export function getPlanFromMetadata(metadata: Record<string, string>): StripePlanId | null {
   const tier = metadata?.plan_tier;
   if (tier && tier in STRIPE_PLANS) {

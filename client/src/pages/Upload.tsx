@@ -25,7 +25,7 @@ export default function UploadPage() {
   // ─── ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP ───
   usePageMeta({
     title: "Upload",
-    description: "Upload your own audio or sheet music to Make Custom Music. Import MP3, WAV, or FLAC files and add them to your collection.",
+    description: "Upload your own audio or sheet music to Create Christian Music. Import MP3, WAV, or FLAC files and add them to your collection.",
     canonicalPath: "/upload",
   });
   const { user } = useAuth();

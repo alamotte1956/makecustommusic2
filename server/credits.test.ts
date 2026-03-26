@@ -15,7 +15,7 @@ describe("Credits Module", () => {
     it("returns correct limits for creator (Pro) plan", () => {
       const limits = getPlanLimits("creator");
       expect(limits).toEqual(PLAN_LIMITS.creator);
-      expect(limits.monthlyCredits).toBe(500);
+      expect(limits.monthlyCredits).toBe(200);
       expect(limits.dailySongLimit).toBe(50);
       expect(limits.audioQuality).toBe("192kbps");
     });
@@ -23,7 +23,7 @@ describe("Credits Module", () => {
     it("returns correct limits for professional (Premier) plan", () => {
       const limits = getPlanLimits("professional");
       expect(limits).toEqual(PLAN_LIMITS.professional);
-      expect(limits.monthlyCredits).toBe(2000);
+      expect(limits.monthlyCredits).toBe(450);
       expect(limits.dailySongLimit).toBe(100);
     });
   });
@@ -43,18 +43,19 @@ describe("Credits Module", () => {
   });
 
   describe("PLAN_LIMITS structure", () => {
-    it("has exactly three tiers (free, creator, professional)", () => {
-      expect(Object.keys(PLAN_LIMITS)).toEqual(["free", "creator", "professional"]);
+    it("has four tiers (free, creator, professional, studio)", () => {
+      expect(Object.keys(PLAN_LIMITS)).toEqual(["free", "creator", "professional", "studio"]);
     });
 
     it("all plans have required fields", () => {
       const requiredFields = [
         "monthlyCredits", "dailySongLimit",
         "dailySheetMusicLimit", "dailyChordLimit",
-        "commercialUse", "audioQuality",
+        "monthlyBonusSongs", "monthlyBonusSheetMusic",
+        "commercialUse", "audioQuality", "canGenerate",
       ];
 
-      for (const plan of ["free", "creator", "professional"] as const) {
+      for (const plan of ["free", "creator", "professional", "studio"] as const) {
         const limits = PLAN_LIMITS[plan];
         for (const field of requiredFields) {
           expect(limits).toHaveProperty(field);
@@ -83,6 +84,24 @@ describe("Credits Module", () => {
     it("paid plans have higher audio quality", () => {
       expect(PLAN_LIMITS.creator.audioQuality).toBe("192kbps");
       expect(PLAN_LIMITS.professional.audioQuality).toBe("192kbps");
+    });
+
+    it("free tier cannot generate", () => {
+      expect(PLAN_LIMITS.free.canGenerate).toBe(false);
+    });
+
+    it("paid plans can generate", () => {
+      expect(PLAN_LIMITS.creator.canGenerate).toBe(true);
+      expect(PLAN_LIMITS.professional.canGenerate).toBe(true);
+    });
+
+    it("paid plans have 2 monthly bonus songs", () => {
+      expect(PLAN_LIMITS.creator.monthlyBonusSongs).toBe(2);
+      expect(PLAN_LIMITS.professional.monthlyBonusSongs).toBe(2);
+    });
+
+    it("free tier has no monthly bonus songs", () => {
+      expect(PLAN_LIMITS.free.monthlyBonusSongs).toBe(0);
     });
   });
 });

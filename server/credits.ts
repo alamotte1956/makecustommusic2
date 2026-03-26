@@ -20,6 +20,8 @@ export function getLicenseType(plan: PlanName): LicenseType {
     case "free": return "personal";
     case "creator": return "commercial_social";
     case "professional": return "commercial_full";
+    case "studio": return "commercial_full";
+    default: return "personal";
   }
 }
 
@@ -310,13 +312,27 @@ export async function getTransactionHistory(userId: number, limit = 50) {
     .limit(limit);
 }
 
-// ─── Daily bonus tracking ──────────────────────────────────────────────────
+// ─── Monthly bonus tracking ─────────────────────────────────────────────────
 
-export async function getDailyBonusUsage(userId: number, bonusType: "bonus_song" | "bonus_sheet"): Promise<number> {
+/**
+ * Get the start of the current billing period for monthly bonus tracking.
+ * Uses the subscription's currentPeriodStart if available, otherwise
+ * falls back to the first day of the current calendar month.
+ */
+async function getMonthlyBonusPeriodStart(userId: number): Promise<Date> {
+  const sub = await getUserSubscription(userId);
+  if (sub?.currentPeriodStart) {
+    return sub.currentPeriodStart;
+  }
+  // Fallback: first day of current calendar month
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+export async function getMonthlyBonusUsage(userId: number, bonusType: "bonus_song" | "bonus_sheet"): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const periodStart = await getMonthlyBonusPeriodStart(userId);
 
   const [result] = await db
     .select({ total: sql<number>`COALESCE(COUNT(*), 0)` })
@@ -325,24 +341,24 @@ export async function getDailyBonusUsage(userId: number, bonusType: "bonus_song"
       and(
         eq(creditTransactions.userId, userId),
         eq(creditTransactions.type, bonusType as any),
-        gte(creditTransactions.createdAt, today)
+        gte(creditTransactions.createdAt, periodStart)
       )
     );
 
   return result?.total ?? 0;
 }
 
-export async function checkDailyBonus(
+export async function checkMonthlyBonus(
   userId: number,
   bonusType: "bonus_song" | "bonus_sheet",
   plan: PlanName
 ): Promise<{ available: boolean; used: number; limit: number }> {
   const limits = getPlanLimits(plan);
-  const bonusLimit = bonusType === "bonus_song" ? limits.dailyBonusSongs : limits.dailyBonusSheetMusic;
+  const bonusLimit = bonusType === "bonus_song" ? limits.monthlyBonusSongs : limits.monthlyBonusSheetMusic;
 
   if (bonusLimit === 0) return { available: false, used: 0, limit: 0 };
 
-  const used = await getDailyBonusUsage(userId, bonusType);
+  const used = await getMonthlyBonusUsage(userId, bonusType);
   return {
     available: used < bonusLimit,
     used,
@@ -350,7 +366,7 @@ export async function checkDailyBonus(
   };
 }
 
-export async function useDailyBonus(
+export async function useMonthlyBonus(
   userId: number,
   bonusType: "bonus_song" | "bonus_sheet",
   description: string,
@@ -441,9 +457,9 @@ export async function getUsageSummary(userId: number) {
       )
     );
 
-  // Get daily bonus usage
-  const dailyBonusSongUsed = await getDailyBonusUsage(userId, "bonus_song");
-  const dailyBonusSheetUsed = await getDailyBonusUsage(userId, "bonus_sheet");
+  // Get monthly bonus usage
+  const monthlyBonusSongUsed = await getMonthlyBonusUsage(userId, "bonus_song");
+  const monthlyBonusSheetUsed = await getMonthlyBonusUsage(userId, "bonus_sheet");
 
   return {
     plan,
@@ -454,10 +470,10 @@ export async function getUsageSummary(userId: number) {
     usage: {
       dailySongsGenerated: dailyGen?.total ?? 0,
       monthlyCreditsUsed: monthlyTotal?.total ?? 0,
-      dailyBonusSongsUsed: dailyBonusSongUsed,
-      dailyBonusSongsRemaining: Math.max(0, (limits.dailyBonusSongs as number) - dailyBonusSongUsed),
-      dailyBonusSheetUsed: dailyBonusSheetUsed,
-      dailyBonusSheetRemaining: Math.max(0, (limits.dailyBonusSheetMusic as number) - dailyBonusSheetUsed),
+      monthlyBonusSongsUsed: monthlyBonusSongUsed,
+      monthlyBonusSongsRemaining: Math.max(0, (limits.monthlyBonusSongs as number) - monthlyBonusSongUsed),
+      monthlyBonusSheetUsed: monthlyBonusSheetUsed,
+      monthlyBonusSheetRemaining: Math.max(0, (limits.monthlyBonusSheetMusic as number) - monthlyBonusSheetUsed),
     },
   };
 }

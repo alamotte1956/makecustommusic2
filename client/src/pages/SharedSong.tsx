@@ -103,7 +103,7 @@ export default function SharedSong() {
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-1.5">
               <Music className="w-4 h-4" />
-              Make Custom Music
+              Create Christian Music
             </Button>
           </Link>
         </div>
@@ -125,7 +125,7 @@ export default function SharedSong() {
               </div>
               {song.engine && (
                 <Badge variant="default" className="bg-violet-600 hover:bg-violet-700 shrink-0">
-                  {song.engine === "elevenlabs" ? "ElevenLabs" : song.engine}
+                  {song.engine === "suno" ? "Suno" : song.engine === "elevenlabs" ? "Suno" : song.engine}
                 </Badge>
               )}
             </div>
@@ -250,7 +250,7 @@ export default function SharedSong() {
           <CardContent className="py-6 text-center space-y-3">
             <h3 className="text-lg font-semibold text-foreground">Want to create your own music?</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Make Custom Music lets you generate professional songs from text descriptions, your own lyrics, or even sheet music.
+              Create Christian Music lets you generate professional songs from text descriptions, your own lyrics, or even sheet music.
             </p>
             <Link href="/generate">
               <Button className="bg-violet-600 hover:bg-violet-700 text-white">

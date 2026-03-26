@@ -17,7 +17,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 export default function Discover() {
   usePageMeta({
     title: "Discover",
-    description: "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Make Custom Music.",
+    description: "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Create Christian Music.",
     canonicalPath: "/discover",
   });
   const { user } = useAuth();

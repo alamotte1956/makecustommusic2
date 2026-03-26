@@ -648,7 +648,7 @@ export default function WriteLyrics() {
 
       const song = await generateMutation.mutateAsync({
         keywords: songTitle.trim() || "Custom Song",
-        engine: "elevenlabs",
+        engine: "suno",
         genre: selectedGenre || undefined,
         mood: selectedMood || undefined,
         vocalType,
@@ -702,7 +702,7 @@ export default function WriteLyrics() {
   const [isExporting, setIsExporting] = useState(false);
 
   /* ─── Export Lyrics ─── */
-  const handleExport = useCallback(async (format: "pdf" | "txt" | "docx") => {
+  const handleExport = useCallback(async (format: "pdf" | "docx") => {
     if (!hasContent) { toast.error("Write some lyrics first!"); return; }
     try {
       setIsExporting(true);
@@ -742,7 +742,7 @@ export default function WriteLyrics() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      const formatLabel = format === "pdf" ? "PDF" : format === "txt" ? "Plain Text" : "Word Document";
+      const formatLabel = format === "pdf" ? "PDF" : "Word Document";
       toast.success(`Lyrics exported as ${formatLabel}`);
     } catch (error: any) {
       toast.error(error.message || "Failed to export lyrics");
@@ -888,10 +888,6 @@ export default function WriteLyrics() {
               <DropdownMenuItem onClick={() => handleExport("docx")} className="gap-2 cursor-pointer">
                 <FileType className="w-4 h-4 text-blue-500" />
                 Word Document (.docx)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("txt")} className="gap-2 cursor-pointer">
-                <FileText className="w-4 h-4 text-muted-foreground" />
-                Plain Text (.txt)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

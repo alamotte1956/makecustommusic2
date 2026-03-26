@@ -5,7 +5,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 export default function Privacy() {
   usePageMeta({
     title: "Privacy Policy",
-    description: "Privacy policy for Make Custom Music. Learn how we collect, use, and protect your personal data.",
+    description: "Privacy policy for Create Christian Music. Learn how we collect, use, and protect your personal data.",
     canonicalPath: "/privacy",
   });
   return (
@@ -33,7 +33,7 @@ export default function Privacy() {
         {/* Introduction */}
         <section>
           <p className="leading-relaxed">
-            A. LaMotte Music (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates Make Custom Music at{" "}
+            A. LaMotte Music (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates Create Christian Music at{" "}
             <strong>makecustommusic.com</strong>. This Privacy Policy explains how we
             collect, use, disclose, and safeguard your information when you visit our
             website and use our AI music generation services. By using the Service, you
@@ -102,16 +102,6 @@ export default function Privacy() {
             WAV, FLAC, OGG, M4A, AAC, and AIFF.
           </p>
 
-          <h3 className="text-base font-medium text-foreground mt-4 mb-2">Voice Cloning Data</h3>
-          <p className="leading-relaxed">
-            If you use our voice cloning or persona feature, you may upload short audio
-            samples of your voice. These samples are processed to create a custom AI voice
-            model associated with your account. Voice samples are stored securely and are
-            used exclusively for generating music with your custom voice. You may delete
-            your voice personas at any time, which permanently removes the associated
-            audio samples and voice model data.
-          </p>
-
           <h3 className="text-base font-medium text-foreground mt-4 mb-2">Device and Browser Information</h3>
           <p className="leading-relaxed">
             We collect standard technical information including your browser type and
@@ -133,7 +123,7 @@ export default function Privacy() {
             <li>To process your subscription payments and manage your credit balance</li>
             <li>To store and serve your generated content (music, lyrics, sheet music, album art, MIDI files, stems)</li>
             <li>To process your uploaded audio files for conversion, transcription, and analysis</li>
-            <li>To create and maintain custom voice personas you request</li>
+
             <li>To enable collaboration features when you share albums or songs with other users</li>
             <li>To send you notifications about your generated songs and account activity</li>
             <li>To improve and optimize our user experience and service reliability</li>
@@ -171,7 +161,7 @@ export default function Privacy() {
               </thead>
               <tbody className="divide-y">
                 <tr>
-                  <td className="px-4 py-2.5 font-medium">ElevenLabs</td>
+                  <td className="px-4 py-2.5 font-medium">Suno</td>
                   <td className="px-4 py-2.5 text-foreground/70">AI music and audio generation</td>
                   <td className="px-4 py-2.5 text-foreground/70">Text prompts, lyrics, generation parameters</td>
                 </tr>
@@ -270,7 +260,7 @@ export default function Privacy() {
           <ul className="list-disc pl-6 space-y-2 text-foreground/80">
             <li><strong>Access:</strong> Request a copy of the personal data we hold about you</li>
             <li><strong>Correction:</strong> Request correction of inaccurate personal data</li>
-            <li><strong>Deletion:</strong> Request deletion of your personal data, generated content, uploaded files, and voice personas</li>
+            <li><strong>Deletion:</strong> Request deletion of your personal data, generated content, and uploaded files</li>
             <li><strong>Portability:</strong> Request your data in a machine-readable format (we support MP3, WAV, MIDI, PDF, and ABC notation exports)</li>
             <li><strong>Objection:</strong> Object to certain types of data processing</li>
             <li><strong>Restriction:</strong> Request restriction of processing of your personal data</li>

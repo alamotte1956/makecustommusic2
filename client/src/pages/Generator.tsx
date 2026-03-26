@@ -334,9 +334,9 @@ export default function Generator() {
 
   const userPlan = summaryQuery.data?.plan ?? "free";
   const hasSubscription = userPlan !== "free";
-  const dailyBonusSongsRemaining = summaryQuery.data?.usage?.dailyBonusSongsRemaining ?? 0;
+  const monthlyBonusSongsRemaining = summaryQuery.data?.usage?.monthlyBonusSongsRemaining ?? 0;
 
-  const isElevenLabsAvailable = enginesQuery.data?.elevenlabs ?? false;
+  const isSunoAvailable = enginesQuery.data?.suno ?? false;
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
 
   // Auto-trigger onboarding tour for first-time users
@@ -404,8 +404,8 @@ export default function Generator() {
       toast.error("Please enter or generate lyrics first");
       return;
     }
-    if (!isElevenLabsAvailable) {
-      toast.error("ElevenLabs engine is not available. Please configure the ELEVENLABS_API_KEY in Settings.");
+    if (!isSunoAvailable) {
+      toast.error("Suno engine is not available. Please configure the SUNO_API_KEY in Settings.");
       return;
     }
 
@@ -421,7 +421,7 @@ export default function Generator() {
         keywords: isCustomMode
           ? (customTitle || keywords.trim() || "Custom Song")
           : keywords.trim(),
-        engine: "elevenlabs",
+        engine: "suno",
         genre: selectedGenre || undefined,
         mood: selectedMood || undefined,
         vocalType,
@@ -446,7 +446,7 @@ export default function Generator() {
     } finally {
       setIsGenerating(false);
     }
-  }, [keywords, creationMode, isCustomMode, selectedGenre, selectedMood, vocalType, duration, customTitle, customLyrics, customStyle, generateMutation, utils, isElevenLabsAvailable]);
+  }, [keywords, creationMode, isCustomMode, selectedGenre, selectedMood, vocalType, duration, customTitle, customLyrics, customStyle, generateMutation, utils, isSunoAvailable]);
 
   const handleDownload = useCallback(async () => {
     if (!generatedSong) return;
@@ -498,14 +498,14 @@ export default function Generator() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          All paid plans include 2 free bonus songs per day on top of your monthly credits.
+          All paid plans include 2 free bonus songs per month on top of your monthly credits.
         </p>
       </div>
     );
   }
 
   const hasDownloadable = generatedSong?.audioUrl || generatedSong?.mp3Url;
-  const canGenerate = isElevenLabsAvailable && !isGenerating && hasSubscription && (
+  const canGenerate = isSunoAvailable && !isGenerating && hasSubscription && (
     creationMode === "describe" ? keywords.trim().length > 0 : customLyrics.trim().length > 0
   );
 
@@ -974,15 +974,15 @@ export default function Generator() {
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex-1">
               <StepHeader step={5} title="Generate your song" subtitle={
-                !isElevenLabsAvailable
-                  ? "ElevenLabs API key required — add it in Settings."
+                !isSunoAvailable
+                  ? "Suno API key required — add it in Settings."
                   : isGenerating
                   ? progressMessage
-                  : dailyBonusSongsRemaining > 0
-                  ? `${dailyBonusSongsRemaining} free bonus song${dailyBonusSongsRemaining > 1 ? "s" : ""} remaining today (no credits used)`
+                  : monthlyBonusSongsRemaining > 0
+                  ? `${monthlyBonusSongsRemaining} free bonus song${monthlyBonusSongsRemaining > 1 ? "s" : ""} remaining this month (no credits used)`
                   : "Everything looks good. Hit the button to create!"
               } />
-              {dailyBonusSongsRemaining > 0 && !isGenerating && (
+              {monthlyBonusSongsRemaining > 0 && !isGenerating && (
                 <Badge variant="secondary" className="mt-1 text-xs bg-green-500/10 text-green-400 border-green-500/20">
                   ✨ Free Bonus Song
                 </Badge>
@@ -1030,7 +1030,7 @@ export default function Generator() {
                     <p className="text-sm text-muted-foreground">{generatedSong.musicDescription}</p>
                   )}
                 </div>
-                <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">ElevenLabs</Badge>
+                <Badge variant="default" className="bg-violet-600 hover:bg-violet-700">Suno</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -147,8 +147,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between px-4 h-14 shrink-0">
             {!sidebarCollapsed && (
               <Link href="/" className="no-underline">
-                <span className="text-[15px] font-semibold text-white tracking-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                  Make Custom Music
+                <span className="text-[15px] font-semibold text-white tracking-tight leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  Make any Worship Song<br className="sm:hidden" /><span className="hidden sm:inline"> you can Imagine</span>
                 </span>
               </Link>
             )}
@@ -253,7 +253,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile logo */}
             <Link href="/" className="lg:hidden no-underline">
-              <span className="text-[14px] font-semibold text-white tracking-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>Make Custom Music</span>
+              <span className="text-[18px] sm:text-[22px] font-bold text-white tracking-tight leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create Christian Music</span>
             </Link>
 
             <div className="flex-1" />
@@ -288,7 +288,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="absolute inset-0 bg-black/60" onClick={() => setMobileMenuOpen(false)} />
               <div className="relative w-64 bg-[#0a0a0a] border-r border-white/[0.06] flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 h-14 border-b border-white/[0.06]">
-                  <span className="text-[15px] font-semibold text-white tracking-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>Make Custom Music</span>
+                  <span className="text-[20px] font-bold text-white tracking-tight leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>Create Christian Music</span>
                   <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-md hover:bg-white/[0.06] text-white/40">
                     <X className="w-4 h-4" />
                   </button>
@@ -392,8 +392,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-background/95 backdrop-blur-xl">
         <div className="container flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2 no-underline shrink-0">
-            <span className="text-[15px] font-semibold text-white tracking-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              Make Custom Music
+            <span className="text-[20px] md:text-[28px] font-bold text-white tracking-tight leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              Create Christian Music
             </span>
           </Link>
 

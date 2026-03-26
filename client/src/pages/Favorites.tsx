@@ -15,7 +15,6 @@ import {
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import EditSongDialog from "@/components/EditSongDialog";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
-import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/SongFilters";
 import GenerateCoverButton from "@/components/GenerateCoverButton";
 import SongCoverImage from "@/components/SongCoverImage";
@@ -249,7 +248,7 @@ export default function Favorites() {
                             </Badge>
                           ) : (
                             <Badge variant="default" className="text-xs bg-gradient-to-r from-violet-600 to-indigo-600">
-                              ElevenLabs
+                              Suno
                             </Badge>
                           )}
                           {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
@@ -285,9 +284,6 @@ export default function Favorites() {
                               )}
                               Lyrics
                             </Button>
-                          )}
-                          {song.lyrics && (
-                            <ListenToLyricsButton lyrics={song.lyrics} size="sm" />
                           )}
                           <Button
                             variant="outline"

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const DEFAULT_TITLE = "Make Custom Music - AI Music Generator & Composer";
+const DEFAULT_TITLE = "Create Christian Music - AI Music Generator & Composer";
 const DEFAULT_DESCRIPTION =
   "Create AI-generated music from text descriptions. Compose songs, download MP3s, view sheet music, and build albums instantly.";
 const BASE_URL = "https://makecustommusic.com";
@@ -21,7 +21,7 @@ export function usePageMeta({ title, description, canonicalPath }: PageMeta) {
     const prevTitle = document.title;
 
     if (title) {
-      document.title = `${title} | Make Custom Music`;
+      document.title = `${title} | Create Christian Music`;
     }
 
     const metaDesc = document.querySelector('meta[name="description"]');

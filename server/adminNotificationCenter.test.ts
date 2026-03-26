@@ -219,25 +219,27 @@ describe("Admin nav unread badge", () => {
 
 // ─── Pricing update tests ──────────────────────────────────────────────────
 
-describe("competitive pricing matching Suno tiers", () => {
-  it("Pro (creator) plan should be $10/mo", async () => {
+describe("tax-inclusive even-dollar pricing", () => {
+  it("Pro (creator) plan base should be $17.51/mo, total $19/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1000);
+    expect(STRIPE_PLANS.creator.prices.monthly).toBe(1751);
+    expect(STRIPE_PLANS.creator.totals.monthly).toBe(1900);
   });
 
-  it("Premier (professional) plan should be $26/mo", async () => {
+  it("Premier (professional) plan base should be $35.93/mo, total $39/mo", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.monthly).toBe(2600);
+    expect(STRIPE_PLANS.professional.prices.monthly).toBe(3593);
+    expect(STRIPE_PLANS.professional.totals.monthly).toBe(3900);
   });
 
-  it("Pro annual should be $90/yr (saves $30)", async () => {
+  it("Pro annual should be $182/yr total (even dollar)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.creator.prices.annual).toBe(9000);
+    expect(STRIPE_PLANS.creator.totals.annual).toBe(18200);
   });
 
-  it("Premier annual should be $234/yr (saves $78)", async () => {
+  it("Premier annual should be $374/yr total (even dollar)", async () => {
     const { STRIPE_PLANS } = await import("./stripeProducts");
-    expect(STRIPE_PLANS.professional.prices.annual).toBe(23400);
+    expect(STRIPE_PLANS.professional.totals.annual).toBe(37400);
   });
 
   it("webhook should award 2 free bonus credits on new subscription", () => {
@@ -249,14 +251,14 @@ describe("competitive pricing matching Suno tiers", () => {
     expect(webhookContent).toContain("Welcome bonus: 2 free credits");
   });
 
-  it("allPlans should list Suno-matching features", () => {
+  it("allPlans should list current features", () => {
     const routerContent = fs.readFileSync(
       path.resolve(__dirname, "routers.ts"),
       "utf-8"
     );
-    expect(routerContent).toContain("2,500 credits (up to 500 songs)");
-    expect(routerContent).toContain("10,000 credits (up to 2,000 songs)");
-    expect(routerContent).toContain("Commercial use rights for new songs made");
-    expect(routerContent).toContain("Priority queue, up to 10 songs at once");
+    expect(routerContent).toContain("200 songs or sheet music PDFs per month");
+    expect(routerContent).toContain("450 songs or sheet music PDFs per month");
+    expect(routerContent).toContain("2 free bonus songs per month");
+    expect(routerContent).toContain("Write and export lyrics (PDF, DOCX)");
   });
 });

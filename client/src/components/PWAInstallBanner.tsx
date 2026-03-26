@@ -43,7 +43,7 @@ export default function PWAInstallBanner() {
             <Download className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">Install Make Custom Music</p>
+            <p className="font-semibold text-sm">Install Create Christian Music</p>
             <p className="text-xs text-white/80 truncate">
               {isIOS
                 ? "Add to your home screen for the best experience"

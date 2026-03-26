@@ -5,7 +5,6 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerAlbumZipRoute } from "../albumZip";
-import { registerGenerateVoiceRoute } from "../generateVoice";
 import { registerStripeWebhookRoute } from "../stripeWebhook";
 import { registerSitemapRoute } from "../sitemap";
 import { registerLyricsExportRoute } from "../lyricsExport";
@@ -57,8 +56,6 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Album ZIP download
   registerAlbumZipRoute(app);
-  // ElevenLabs TTS voice generation (direct audio streaming)
-  registerGenerateVoiceRoute(app);
   // Lyrics export (PDF, TXT, DOCX)
   registerLyricsExportRoute(app);
   // Dynamic sitemap.xml

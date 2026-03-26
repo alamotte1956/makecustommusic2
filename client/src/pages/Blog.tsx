@@ -18,7 +18,7 @@ function buildBlogListingJsonLd() {
     url: `${BASE_URL}/blog`,
     isPartOf: {
       "@type": "WebSite",
-      name: "Make Custom Music",
+      name: "Create Christian Music",
       url: BASE_URL,
     },
     mainEntity: {

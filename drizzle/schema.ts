@@ -55,6 +55,8 @@ export const songs = mysqlTable("songs", {
   styleTags: varchar("styleTags", { length: 500 }),
   shareToken: varchar("shareToken", { length: 64 }),
   externalSongId: varchar("externalSongId", { length: 100 }),
+  sunoTaskId: varchar("sunoTaskId", { length: 255 }),
+  sunoAudioId: varchar("sunoAudioId", { length: 255 }),
   imageUrl: text("imageUrl"),
   sheetMusicAbc: text("sheetMusicAbc"),
   chordProgression: json("chordProgression").$type<ChordProgressionData>(),
@@ -195,30 +197,41 @@ export const PLAN_LIMITS = {
     dailySongLimit: 0,
     dailySheetMusicLimit: 0,
     dailyChordLimit: 0,
-    dailyBonusSongs: 0,
-    dailyBonusSheetMusic: 0,
+    monthlyBonusSongs: 0,
+    monthlyBonusSheetMusic: 0,
     commercialUse: false,
     audioQuality: "128kbps",
     canGenerate: false, // free users cannot generate — must subscribe
   },
   creator: {
-    monthlyCredits: 500,
+    monthlyCredits: 200,
     dailySongLimit: 50,
     dailySheetMusicLimit: -1, // unlimited
     dailyChordLimit: -1,
-    dailyBonusSongs: 2,       // 2 free daily songs not counting toward monthly credits
-    dailyBonusSheetMusic: 2,  // 2 free daily sheet music not counting toward monthly credits
+    monthlyBonusSongs: 2,       // 2 free monthly bonus songs not counting toward monthly credits
+    monthlyBonusSheetMusic: 2,  // 2 free monthly bonus sheet music not counting toward monthly credits
     commercialUse: "personal", // commercial use rights for new songs
     audioQuality: "192kbps",
     canGenerate: true,
   },
   professional: {
-    monthlyCredits: 2000,
+    monthlyCredits: 450,
     dailySongLimit: 100,
     dailySheetMusicLimit: -1,
     dailyChordLimit: -1,
-    dailyBonusSongs: 2,       // 2 free daily songs not counting toward monthly credits
-    dailyBonusSheetMusic: 2,  // 2 free daily sheet music not counting toward monthly credits
+    monthlyBonusSongs: 2,       // 2 free monthly bonus songs not counting toward monthly credits
+    monthlyBonusSheetMusic: 2,  // 2 free monthly bonus sheet music not counting toward monthly credits
+    commercialUse: "full",
+    audioQuality: "192kbps",
+    canGenerate: true,
+  },
+  studio: {
+    monthlyCredits: 450,
+    dailySongLimit: 100,
+    dailySheetMusicLimit: -1,
+    dailyChordLimit: -1,
+    monthlyBonusSongs: 2,
+    monthlyBonusSheetMusic: 2,
     commercialUse: "full",
     audioQuality: "192kbps",
     canGenerate: true,
@@ -434,3 +447,33 @@ export type BandInstrument = typeof BAND_INSTRUMENTS[number];
 
 export const CHOIR_PARTS = ["Soprano", "Alto", "Tenor", "Bass"] as const;
 export type ChoirPart = typeof CHOIR_PARTS[number];
+
+
+// ─── Stem Separations ─────────────────────────────────────────────────────
+export const stemSeparations = mysqlTable("stem_separations", {
+  id: int("id").autoincrement().primaryKey(),
+  songId: int("songId").notNull(),
+  userId: int("userId").notNull(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  status: mysqlEnum("status", ["pending_payment", "processing", "completed", "failed"]).default("pending_payment").notNull(),
+  sunoSeparationTaskId: varchar("sunoSeparationTaskId", { length: 255 }),
+  // Stem URLs (stored in S3 after download from Suno CDN)
+  vocalUrl: text("vocalUrl"),
+  instrumentalUrl: text("instrumentalUrl"),
+  backingVocalsUrl: text("backingVocalsUrl"),
+  drumsUrl: text("drumsUrl"),
+  bassUrl: text("bassUrl"),
+  guitarUrl: text("guitarUrl"),
+  keyboardUrl: text("keyboardUrl"),
+  percussionUrl: text("percussionUrl"),
+  stringsUrl: text("stringsUrl"),
+  synthUrl: text("synthUrl"),
+  fxUrl: text("fxUrl"),
+  brassUrl: text("brassUrl"),
+  woodwindsUrl: text("woodwindsUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type StemSeparation = typeof stemSeparations.$inferSelect;
+export type InsertStemSeparation = typeof stemSeparations.$inferInsert;

@@ -4,17 +4,17 @@ import { injectOgTags, buildMusicRecordingJsonLd } from "./ogTags";
 const SAMPLE_HTML = `<!doctype html>
 <html lang="en">
 <head>
-<title>Make Custom Music - AI Music Generator &amp; Composer</title>
-<meta name="title" content="Make Custom Music - AI Music Generator &amp; Composer" />
+<title>Create Christian Music - AI Music Generator &amp; Composer</title>
+<meta name="title" content="Create Christian Music - AI Music Generator &amp; Composer" />
 <meta name="description" content="Create AI-generated music from text descriptions." />
 <link rel="canonical" href="https://makecustommusic.com/" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://makecustommusic.com/" />
-<meta property="og:title" content="Make Custom Music - AI Music Generator &amp; Composer" />
+<meta property="og:title" content="Create Christian Music - AI Music Generator &amp; Composer" />
 <meta property="og:description" content="Transform your ideas into songs with AI." />
 <meta property="og:image" content="https://example.com/default.webp" />
 <meta name="twitter:url" content="https://makecustommusic.com/" />
-<meta name="twitter:title" content="Make Custom Music - AI Music Generator &amp; Composer" />
+<meta name="twitter:title" content="Create Christian Music - AI Music Generator &amp; Composer" />
 <meta name="twitter:description" content="Transform your ideas into songs with AI." />
 <meta name="twitter:image" content="https://example.com/default.webp" />
 </head>
@@ -23,8 +23,8 @@ const SAMPLE_HTML = `<!doctype html>
 
 describe("OG Tag Injection", () => {
   const ogTags = {
-    title: "Midnight Dreams — Make Custom Music",
-    description: "Listen to &quot;Midnight Dreams&quot; — jazz, melancholic. Created with Make Custom Music.",
+    title: "Midnight Dreams — Create Christian Music",
+    description: "Listen to &quot;Midnight Dreams&quot; — jazz, melancholic. Created with Create Christian Music.",
     image: "https://cdn.example.com/covers/midnight-dreams.jpg",
     url: "https://makecustommusic.com/share/abc123",
     type: "music.song",
@@ -125,7 +125,7 @@ describe("OG Tag Description Building", () => {
     if (song.vocalType && song.vocalType !== "none") descParts.push(`${song.vocalType} vocals`);
     if (song.tempo) descParts.push(`${song.tempo} BPM`);
 
-    const description = `Listen to "${song.title}" — ${descParts.join(", ")}. Created with Make Custom Music.`;
+    const description = `Listen to "${song.title}" — ${descParts.join(", ")}. Created with Create Christian Music.`;
     expect(description).toContain("Midnight Dreams");
     expect(description).toContain("jazz");
     expect(description).toContain("melancholic");
@@ -149,8 +149,8 @@ describe("OG Tag Description Building", () => {
     if (song.tempo) descParts.push(`${song.tempo} BPM`);
 
     const description = descParts.length > 0
-      ? `Listen to "${song.title}" — ${descParts.join(", ")}. Created with Make Custom Music.`
-      : `Listen to "${song.title}" on Make Custom Music. AI-generated music you can download and share.`;
+      ? `Listen to "${song.title}" — ${descParts.join(", ")}. Created with Create Christian Music.`
+      : `Listen to "${song.title}" on Create Christian Music. AI-generated music you can download and share.`;
 
     expect(description).toContain("Untitled");
     expect(description).toContain("AI-generated music");
@@ -162,10 +162,10 @@ describe("usePageMeta descriptions", () => {
   it("should have descriptions under 160 characters for all pages", () => {
     const descriptions = [
       "Choose a plan for AI music generation. Creator and Professional tiers with credits for song creation, MP3 downloads, and more.",
-      "Frequently asked questions about Make Custom Music. Learn about AI music generation, pricing, downloads, and account management.",
-      "Invite friends to Make Custom Music and earn free credits. Share your referral link and get rewarded when they sign up.",
-      "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Make Custom Music.",
-      "Upload your own audio or sheet music to Make Custom Music. Import MP3, WAV, or FLAC files and add them to your collection.",
+      "Frequently asked questions about Create Christian Music. Learn about AI music generation, pricing, downloads, and account management.",
+      "Invite friends to Create Christian Music and earn free credits. Share your referral link and get rewarded when they sign up.",
+      "Explore AI-generated songs shared by the community. Listen, download, and get inspired by music created with Create Christian Music.",
+      "Upload your own audio or sheet music to Create Christian Music. Import MP3, WAV, or FLAC files and add them to your collection.",
     ];
 
     for (const desc of descriptions) {
@@ -213,7 +213,7 @@ describe("buildMusicRecordingJsonLd", () => {
     expect(result.dateCreated).toBe("2026-01-15T10:30:00.000Z");
     expect(result.creator).toEqual({
       "@type": "Organization",
-      name: "Make Custom Music",
+      name: "Create Christian Music",
       url: "https://makecustommusic.com",
     });
   });
@@ -310,7 +310,7 @@ describe("buildMusicRecordingJsonLd", () => {
 describe("Canonical Tag Injection", () => {
   it("should update canonical URL for shared song pages", () => {
     const ogTags = {
-      title: "Test Song — Make Custom Music",
+      title: "Test Song — Create Christian Music",
       description: "Listen to Test Song.",
       image: "https://example.com/cover.jpg",
       url: "https://makecustommusic.com/share/abc123",
@@ -381,8 +381,8 @@ describe("usePageMeta canonical paths", () => {
       "Your favorite AI-generated songs. Listen, download, and manage your saved music collection.",
       "Create and manage your music album collections. Organize AI-generated songs into albums with custom covers.",
       "Track your AI music generation credits, subscription plan, and usage history.",
-      "Privacy policy for Make Custom Music. Learn how we collect, use, and protect your personal data.",
-      "Terms of service for Make Custom Music. Understand your rights and responsibilities when using our AI music generation platform.",
+      "Privacy policy for Create Christian Music. Learn how we collect, use, and protect your personal data.",
+      "Terms of service for Create Christian Music. Understand your rights and responsibilities when using our AI music generation platform.",
     ];
 
     for (const desc of descriptions) {

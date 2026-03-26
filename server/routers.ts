@@ -23,13 +23,14 @@ import {
   addWorshipSetItem, getWorshipSetItems, updateWorshipSetItem, deleteWorshipSetItem, reorderWorshipSetItems,
   linkScriptureSong, getScriptureSongBySongId,
   createSharedLyrics, getSharedLyricsByToken, updateSharedLyrics, deleteSharedLyrics, getUserSharedLyrics,
+  createStemSeparation, getStemSeparationById, getStemSeparationBySongId, updateStemSeparationStatus, updateStemSeparationStems, updateSongSunoIds,
   getDb,
 } from "./db";
 import type { ChordProgressionData, SharedLyricsSection } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
-import { isElevenLabsAvailable, generateMusic, textToSpeech, getVoices } from "./elevenLabsApi";
+import { isSunoAvailable, generateMusic as sunoGenerateMusic, submitStemSeparation, waitForStemSeparation, downloadAndStoreStem } from "./sunoApi";
 import { getGenreGuidance, getMoodGuidance, buildProductionPrompt } from "./songwritingHelpers";
 import { postProcessAudio, mixVocalInstrumental, prepareStemDownloads, getPresets, type ProcessingPreset } from "./audioProcessor";
 import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssmlBuilder";
@@ -37,12 +38,12 @@ import { buildCoverArtPrompt } from "./coverArtMotifs";
 import {
   getUserPlan, getCreditBalance, deductCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
-  getUserSubscription, canUserGenerate, checkDailyBonus, useDailyBonus,
+  getUserSubscription, canUserGenerate, checkMonthlyBonus, useMonthlyBonus,
 } from "./credits";
 import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName, LITURGICAL_SEASONS, SERVICE_SEGMENTS, BAND_INSTRUMENTS, CHOIR_PARTS } from "../drizzle/schema";
 import { getArticleBySlug } from "../shared/blogArticles";
 import { ensureReferralCode, getReferralStats, getReferralHistory, getUserByReferralCode, processReferral, getLeaderboard } from "./referrals";
-import { STRIPE_PLANS, type StripePlanId } from "./stripeProducts";
+import { STRIPE_PLANS, type StripePlanId, STEM_SEPARATION_PRODUCT, TAX_RATE, TAX_JURISDICTION } from "./stripeProducts";
 import Stripe from "stripe";
 import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
@@ -73,15 +74,15 @@ export const appRouter = router({
     // Check which engines are available
     engines: publicProcedure.query(() => {
       return {
-        elevenlabs: isElevenLabsAvailable(),
+        suno: isSunoAvailable(),
       };
     }),
 
-    // Generate music with ElevenLabs (simple or custom mode)
+    // Generate music with Suno (simple or custom mode)
     generate: protectedProcedure
       .input(z.object({
         keywords: z.string().min(1).max(500),
-        engine: z.enum(["elevenlabs"]).default("elevenlabs"),
+        engine: z.enum(["suno"]).default("suno"),
         genre: z.string().max(100).optional(),
         mood: z.string().max(100).optional(),
         vocalType: z.enum(["none", "male", "female", "mixed", "male_and_female"]).optional(),
@@ -107,11 +108,11 @@ export const appRouter = router({
           });
         }
 
-        // ── Check daily bonus: if bonus available, use it instead of credits ──
-        const bonusCheck = await checkDailyBonus(ctx.user.id, "bonus_song", userPlan);
+        // ── Check monthly bonus: if bonus available, use it instead of credits ──
+        const bonusCheck = await checkMonthlyBonus(ctx.user.id, "bonus_song", userPlan);
 
-        if (!isElevenLabsAvailable()) {
-          throw new Error("ElevenLabs engine is not available. Please configure the ELEVENLABS_API_KEY.");
+        if (!isSunoAvailable()) {
+          throw new Error("Suno engine is not available. Please configure the SUNO_API_KEY.");
         }
 
         // Build production-quality prompt using the songwriting helpers
@@ -129,18 +130,20 @@ export const appRouter = router({
 
         const durationMs = (duration ?? 30) * 1000;
 
-        const result = await generateMusic(
+        const result = await sunoGenerateMusic(
           {
             prompt,
-            durationMs,
-            forceInstrumental,
+            customMode: mode === "custom",
+            style: customStyle || undefined,
+            title: customTitle || undefined,
+            instrumental: forceInstrumental,
           },
           ctx.user.id
         );
 
-        // Deduct credits or use daily bonus
+        // Deduct credits or use monthly bonus
         if (bonusCheck.available) {
-          await useDailyBonus(ctx.user.id, "bonus_song", `Daily bonus song: ${customTitle || keywords.substring(0, 50)}`);
+          await useMonthlyBonus(ctx.user.id, "bonus_song", `Monthly bonus song: ${customTitle || keywords.substring(0, 50)}`);
         } else {
           const creditResult = await deductCredits(ctx.user.id, 1, "generation", `Generated: ${customTitle || keywords.substring(0, 50)}`);
           if (!creditResult.success) {
@@ -154,10 +157,10 @@ export const appRouter = router({
         // Save to database
         const song = await createSong({
           userId: ctx.user.id,
-          title: customTitle || keywords.substring(0, 100) || "ElevenLabs Track",
+          title: customTitle || result.title || keywords.substring(0, 100) || "Suno Track",
           keywords,
           abcNotation: null,
-          musicDescription: `ElevenLabs${mode === "custom" ? " Custom" : " Simple"} | ${prompt.substring(0, 400)}`,
+          musicDescription: `Suno${mode === "custom" ? " Custom" : " Simple"} | ${prompt.substring(0, 400)}`,
           audioUrl: result.audioUrl,
           mp3Url: result.audioUrl,
           mp3Key: result.audioKey,
@@ -168,18 +171,18 @@ export const appRouter = router({
           mood: mood || null,
           instruments: null,
           duration: result.duration,
-          engine: "elevenlabs",
+          engine: "suno",
           vocalType: vocalType || null,
           lyrics: customLyrics || null,
-          styleTags: customStyle || null,
-          externalSongId: null,
+          styleTags: result.tags || customStyle || null,
+          externalSongId: result.sunoAudioId || null,
           imageUrl: null,
         });
 
         // Notify owner about new song generation
         notifyOwner({
           title: `🎵 New Song Generated`,
-          content: `User: ${ctx.user.name || ctx.user.email || "Unknown"}\nTitle: ${song.title}\nGenre: ${genre || "Not specified"}\nMood: ${mood || "Not specified"}\nMode: ${mode || "simple"}\nEngine: ElevenLabs`,
+          content: `User: ${ctx.user.name || ctx.user.email || "Unknown"}\nTitle: ${song.title}\nGenre: ${genre || "Not specified"}\nMood: ${mood || "Not specified"}\nMode: ${mode || "simple"}\nEngine: Suno`,
         }).catch(() => {}); // Fire-and-forget, don't block the response
 
         // Create in-app notification for the user
@@ -423,7 +426,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         const balance = await getCreditBalance(ctx.user.id);
         if (balance.totalCredits < 1) throw new Error("Insufficient credits.");
 
-        if (!isElevenLabsAvailable()) throw new Error("Music generation service unavailable.");
+        if (!isSunoAvailable()) throw new Error("Music generation service unavailable.");
 
         const { analysis, vocalType, duration, lyrics } = input;
 
@@ -439,9 +442,12 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
 
         // Include lyrics in the prompt if provided
         const fullPrompt = lyrics ? `${prompt}. Lyrics:\n${lyrics}` : prompt;
-        const result = await generateMusic({
+        const result = await sunoGenerateMusic({
           prompt: fullPrompt,
-          durationMs: duration * 1000,
+          customMode: true,
+          style: analysis.styleTags,
+          title: analysis.title,
+          instrumental: vocalType === "none",
         }, ctx.user.id);
 
         const song = await createSong({
@@ -451,11 +457,12 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           genre: analysis.genre,
           mood: analysis.mood,
           audioUrl: result.audioUrl,
-          engine: "elevenlabs",
+          engine: "suno",
           vocalType,
-          duration,
-          styleTags: analysis.styleTags,
+          duration: result.duration || duration,
+          styleTags: result.tags || analysis.styleTags,
           lyrics: lyrics || null,
+          externalSongId: result.sunoAudioId || null,
         });
 
         await deductCredits(ctx.user.id, 1, "generation", `Generated from sheet music: ${analysis.title}`);
@@ -481,114 +488,86 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         return { song, audioUrl: result.audioUrl };
       }),
 
-    // Text-to-Speech: preview lyrics as spoken audio
-    ttsPreview: protectedProcedure
-      .input(z.object({
-        text: z.string().min(1).max(5000),
-        voiceId: z.string().min(1),
-        stability: z.number().min(0).max(1).optional(),
-        similarityBoost: z.number().min(0).max(1).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const result = await textToSpeech(
-          {
-            text: input.text,
-            voiceId: input.voiceId,
-            voiceSettings: {
-              stability: input.stability ?? 0.5,
-              similarity_boost: input.similarityBoost ?? 0.8,
-              style: 0.35,
-              use_speaker_boost: true,
-            },
-          },
-          ctx.user.id
-        );
-        return { audioUrl: result.audioUrl };
-      }),
-
-    // Voice narration: generate intro/outro narration for a song
-    narration: protectedProcedure
+    // Stem separation: create a $5 Stripe checkout for stem separation
+    createStemCheckout: protectedProcedure
       .input(z.object({
         songId: z.number(),
-        text: z.string().min(1).max(2000),
-        voiceId: z.string().min(1),
-        type: z.enum(["intro", "outro"]),
-        stability: z.number().min(0).max(1).optional(),
-        similarityBoost: z.number().min(0).max(1).optional(),
+        successUrl: z.string().url(),
+        cancelUrl: z.string().url(),
       }))
       .mutation(async ({ ctx, input }) => {
+        const stripe = getStripe();
+        if (!stripe) throw new Error("Stripe is not configured.");
+
         const song = await getSongById(input.songId);
-        if (!song || song.userId !== ctx.user.id) {
-          throw new Error("Song not found");
+        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
+        if (!song.audioUrl) throw new Error("Song has no audio to separate");
+
+        // Check if stems already exist
+        const existingStems = await getStemSeparationBySongId(input.songId, ctx.user.id);
+        if (existingStems && existingStems.status === "completed") {
+          throw new Error("Stems have already been separated for this song.");
         }
 
-        const result = await textToSpeech(
-          {
-            text: input.text,
-            voiceId: input.voiceId,
-            voiceSettings: {
-              stability: input.stability ?? 0.5,
-              similarity_boost: input.similarityBoost ?? 0.8,
-              style: 0.35,
-              use_speaker_boost: true,
-            },
-          },
-          ctx.user.id
-        );
-
-        return {
-          audioUrl: result.audioUrl,
-          type: input.type,
+        // Create a pending stem separation record
+        const stemRecordId = await createStemSeparation({
           songId: input.songId,
-        };
+          userId: ctx.user.id,
+          status: "pending_payment",
+        });
+
+        const product = STEM_SEPARATION_PRODUCT;
+
+        const session = await stripe.checkout.sessions.create({
+          mode: "payment",
+          client_reference_id: String(ctx.user.id),
+          customer_email: ctx.user.email || undefined,
+          metadata: {
+            user_id: String(ctx.user.id),
+            song_id: String(input.songId),
+            stem_separation_id: String(stemRecordId),
+            product_type: "stem_separation",
+          },
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: product.name,
+                  description: product.description,
+                },
+                unit_amount: product.basePrice,
+              },
+              quantity: 1,
+            },
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: `Sales Tax (${TAX_JURISDICTION} ${(TAX_RATE * 100).toFixed(2)}%)`,
+                  description: `${TAX_JURISDICTION} sales tax`,
+                },
+                unit_amount: product.totalPrice - product.basePrice,
+              },
+              quantity: 1,
+            },
+          ],
+          allow_promotion_codes: true,
+          success_url: input.successUrl,
+          cancel_url: input.cancelUrl,
+        });
+
+        return { url: session.url, sessionId: session.id, stemSeparationId: stemRecordId };
       }),
 
-    // AI Vocal generation: generate vocals from lyrics using TTS
-    generateVocals: protectedProcedure
-      .input(z.object({
-        songId: z.number(),
-        lyrics: z.string().min(1).max(10000),
-        voiceId: z.string().min(1),
-        stability: z.number().min(0).max(1).optional(),
-        similarityBoost: z.number().min(0).max(1).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const song = await getSongById(input.songId);
-        if (!song || song.userId !== ctx.user.id) {
-          throw new Error("Song not found");
-        }
-
-        const result = await textToSpeech(
-          {
-            text: input.lyrics,
-            voiceId: input.voiceId,
-            voiceSettings: {
-              stability: input.stability ?? 0.5,
-              similarity_boost: input.similarityBoost ?? 0.8,
-              style: 0.35,
-              use_speaker_boost: true,
-            },
-          },
-          ctx.user.id
-        );
-
-        return {
-          audioUrl: result.audioUrl,
-          songId: input.songId,
-        };
+    // Get stem separation status for a song
+    getStemStatus: protectedProcedure
+      .input(z.object({ songId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const stems = await getStemSeparationBySongId(input.songId, ctx.user.id);
+        if (!stems) return null;
+        return stems;
       }),
-
-    // Get available ElevenLabs voices
-    voices: protectedProcedure.query(async () => {
-      if (!isElevenLabsAvailable()) {
-        return [];
-      }
-      try {
-        return await getVoices();
-      } catch {
-        return [];
-      }
-    }),
 
     // Save synthesized audio to S3
     saveMp3: protectedProcedure
@@ -861,153 +840,7 @@ RULES:
         return { audioUrl: result.url, preset: input.preset };
       }),
 
-    // Generate vocal track from lyrics and mix with instrumental
-    generateVocalMix: protectedProcedure
-      .input(z.object({
-        songId: z.number(),
-        voiceId: z.string().min(1),
-        voiceSettings: z.object({
-          stability: z.number().min(0).max(1).optional(),
-          similarity_boost: z.number().min(0).max(1).optional(),
-          style: z.number().min(0).max(1).optional(),
-          use_speaker_boost: z.boolean().optional(),
-        }).optional(),
-        vocalLevel: z.number().min(-10).max(10).optional(),
-        instrumentalLevel: z.number().min(-10).max(10).optional(),
-        preset: z.enum(["raw", "warm", "bright", "radio-ready", "cinematic"]).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const song = await getSongById(input.songId);
-        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
-        if (!song.lyrics) throw new Error("Song has no lyrics for vocal generation");
-        if (!song.audioUrl) throw new Error("Song has no instrumental track");
-
-        // Apply tempo-synced pacing to lyrics
-        const songBpm = song.tempo ?? (song.genre ? estimateBpmFromGenre(song.genre) : 110);
-        const tempoSyncedLyrics = addTempoSync(song.lyrics, {
-          bpm: songBpm,
-          timeSignature: song.timeSignature ?? "4/4",
-          genre: song.genre ?? undefined,
-          mood: song.mood ?? undefined,
-        });
-
-        // Get tempo-aware voice setting adjustments
-        const tempoAdjust = getTempoVoiceSettings(songBpm);
-        const baseStability = input.voiceSettings?.stability ?? 0.5;
-        const baseStyle = input.voiceSettings?.style ?? 0.35;
-
-        // Generate the vocal track via TTS with tempo-synced text and adjusted settings
-        const vocalResult = await textToSpeech({
-          text: tempoSyncedLyrics,
-          voiceId: input.voiceId,
-          modelId: "eleven_multilingual_v2",
-          voiceSettings: {
-            stability: Math.max(0, Math.min(1, baseStability + tempoAdjust.stabilityAdjust)),
-            similarity_boost: input.voiceSettings?.similarity_boost ?? 0.8,
-            style: Math.max(0, Math.min(1, baseStyle + tempoAdjust.styleAdjust)),
-            use_speaker_boost: input.voiceSettings?.use_speaker_boost ?? true,
-          },
-        }, ctx.user.id);
-
-        // Mix vocal over instrumental
-        const mixResult = await mixVocalInstrumental(
-          song.audioUrl,
-          vocalResult.audioUrl,
-          ctx.user.id,
-          {
-            vocalLevel: input.vocalLevel ?? 2,
-            instrumentalLevel: input.instrumentalLevel ?? -3,
-            preset: input.preset ?? "radio-ready",
-          }
-        );
-
-        // Save stems and mix to database
-        await updateSongStems(song.id, {
-          instrumentalUrl: song.audioUrl,
-          vocalUrl: vocalResult.audioUrl,
-          mixedUrl: mixResult.mixedUrl,
-        });
-
-        return {
-          vocalUrl: vocalResult.audioUrl,
-          mixedUrl: mixResult.mixedUrl,
-          instrumentalUrl: song.audioUrl,
-        };
-      }),
-
-    // Generate multiple takes with different voice settings
-    generateTakes: protectedProcedure
-      .input(z.object({
-        songId: z.number(),
-        voiceId: z.string().min(1),
-        takeCount: z.number().min(2).max(3).default(3),
-        preset: z.enum(["raw", "warm", "bright", "radio-ready", "cinematic"]).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const song = await getSongById(input.songId);
-        if (!song || song.userId !== ctx.user.id) throw new Error("Song not found");
-        if (!song.lyrics) throw new Error("Song has no lyrics for vocal generation");
-        if (!song.audioUrl) throw new Error("Song has no instrumental track");
-
-        // Define voice setting variations for each take
-        const takeVariations = [
-          { label: "Take 1 — Warm & Intimate", stability: 0.6, similarity_boost: 0.85, style: 0.25, use_speaker_boost: true },
-          { label: "Take 2 — Energetic & Bright", stability: 0.4, similarity_boost: 0.75, style: 0.5, use_speaker_boost: true },
-          { label: "Take 3 — Smooth & Polished", stability: 0.55, similarity_boost: 0.9, style: 0.35, use_speaker_boost: true },
-        ].slice(0, input.takeCount);
-
-        const takes = [];
-
-        for (let i = 0; i < takeVariations.length; i++) {
-          const variation = takeVariations[i];
-
-          // Generate vocal with this variation's settings
-          const vocalResult = await textToSpeech({
-            text: song.lyrics,
-            voiceId: input.voiceId,
-            modelId: "eleven_multilingual_v2",
-            voiceSettings: {
-              stability: variation.stability,
-              similarity_boost: variation.similarity_boost,
-              style: variation.style,
-              use_speaker_boost: variation.use_speaker_boost,
-            },
-          }, ctx.user.id);
-
-          // Mix with instrumental
-          const mixResult = await mixVocalInstrumental(
-            song.audioUrl,
-            vocalResult.audioUrl,
-            ctx.user.id,
-            { preset: input.preset ?? "radio-ready" }
-          );
-
-          takes.push({
-            index: i,
-            label: variation.label,
-            vocalUrl: vocalResult.audioUrl,
-            mixedUrl: mixResult.mixedUrl,
-            voiceSettings: {
-              stability: variation.stability,
-              similarity_boost: variation.similarity_boost,
-              style: variation.style,
-              use_speaker_boost: variation.use_speaker_boost,
-            },
-            createdAt: Date.now(),
-          });
-        }
-
-        // Save all takes and set the first as selected
-        await updateSongTakes(song.id, takes, 0);
-        // Also save the first take's stems
-        await updateSongStems(song.id, {
-          instrumentalUrl: song.audioUrl,
-          vocalUrl: takes[0].vocalUrl,
-          mixedUrl: takes[0].mixedUrl,
-        });
-
-        return { takes };
-      }),
+    // NOTE: Vocal mix and takes generation removed — stem separation is now handled via Suno API with $5 Stripe checkout
 
     // Select a specific take as the active one
     selectTake: protectedProcedure
@@ -1500,44 +1333,45 @@ RULES:
           {
             id: "creator",
             name: "Pro",
-            tagline: "Access to our best models and editing tools.",
-            monthlyPrice: 10,
-            annualPrice: 90,
+            tagline: "Everything you need to create worship music.",
+            monthlyPrice: 19,
+            annualPrice: 182,
             popular: true,
             limits: PLAN_LIMITS.creator,
             features: [
-              "Access to latest and most advanced v5 model",
-              "2,500 credits (up to 500 songs), refreshes monthly",
-              "Commercial use rights for new songs made",
-              "Standard + Pro features (personas and advanced editing)",
-              "Split songs into up to 12 vocal and instrument stems",
-              "Upload up to 8 min of audio",
-              "Add new vocals or instrumentals to existing songs",
-              "Early access to new features",
-              "Ability to purchase add-on credits",
-              "Priority queue, up to 10 songs at once",
+              "200 songs or sheet music PDFs per month",
+              "AI-powered music generation via Suno",
+              "Upload and convert sheet music to MP3",
+              "Write and export lyrics (PDF, DOCX)",
+              "Collaborative lyrics sharing",
+              "Stem separation ($5 per song)",
+              "Commercial use rights for personal projects",
+              "2 free bonus songs per month",
+              "Upload up to 5 minutes of audio",
+              "Organize songs into albums",
             ],
           },
           {
             id: "professional",
             name: "Premier",
-            tagline: "For serious creators and producers.",
-            monthlyPrice: 26,
-            annualPrice: 234,
+            tagline: "For serious creators and worship teams.",
+            monthlyPrice: 39,
+            annualPrice: 374,
             popular: false,
             limits: PLAN_LIMITS.professional,
             features: [
-              "Access to Make Custom Music Studio",
-              "Access to latest and most advanced v5 model",
-              "10,000 credits (up to 2,000 songs), refreshes monthly",
-              "Commercial use rights for new songs made",
-              "Standard + Pro features (personas and advanced editing)",
-              "Split songs into up to 12 vocal and instrument stems",
-              "Upload up to 8 min of audio",
-              "Add new vocals or instrumentals to existing songs",
+              "450 songs or sheet music PDFs per month",
+              "All Pro features included",
+              "AI-powered music generation via Suno",
+              "Upload and convert sheet music to MP3",
+              "Write and export lyrics (PDF, DOCX)",
+              "Collaborative lyrics sharing",
+              "Stem separation ($5 per song)",
+              "Full commercial use rights",
+              "2 free bonus songs per month",
+              "Upload up to 5 minutes of audio",
+              "Organize songs into albums",
               "Early access to new features",
-              "Ability to purchase add-on credits",
-              "Priority queue, up to 10 songs at once",
             ],
           },
         ],

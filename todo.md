@@ -1622,3 +1622,76 @@
 - [x] Add route in App.tsx for the shared lyrics page
 - [x] Track editor name (persisted in localStorage) and edit count
 - [x] Write tests for shared lyrics feature (35 tests, all 1,450 total passing)
+
+## Replace ElevenLabs with Suno (Full Replacement)
+- [x] Verify SUNO_API_KEY is available in environment
+- [x] Audit all ElevenLabs usage across server and client code
+- [ ] Create server/sunoApi.ts with Suno music generation, lyrics, and status polling
+- [ ] Update songs.generate procedure to use Suno API instead of ElevenLabs
+- [ ] Update songs.engines query to return suno instead of elevenlabs
+- [ ] Remove ElevenLabs-specific features (TTS preview, voices, narration)
+- [ ] Update frontend Generator page to remove ElevenLabs references
+- [ ] Remove engine selector (Suno is the only engine)
+- [ ] Handle Suno async generation flow (polling for task completion)
+- [ ] Update audio URL storage to use Suno CDN URLs
+- [ ] Remove server/elevenLabsApi.ts and server/generateVoice.ts
+- [ ] Update all ElevenLabs badges/labels in UI to Suno
+- [ ] Update Privacy page ElevenLabs reference to Suno
+- [ ] Clean up ListenToLyricsButton, VoiceSelector, StudioProducer (ElevenLabs TTS components)
+- [ ] Write tests for Suno API integration
+- [ ] Ensure all existing tests pass after migration
+
+## Stem Separation Feature ($5 per separation via Stripe)
+- [ ] Research and integrate stem separation API (Suno vocal-removal or third-party)
+- [ ] Create server-side stem separation procedure with Suno API
+- [ ] Add stem_separations database table to store separated track URLs
+- [ ] Create Stripe checkout session for $5 stem separation charge
+- [ ] Handle Stripe webhook for stem_separation payment completion
+- [ ] Trigger stem separation after successful payment
+- [ ] Build stem separation UI on SongDetail page (separate vocals, drums, bass, other)
+- [ ] Add individual stem playback and download controls
+- [ ] Handle async separation with loading/progress states
+- [ ] Write tests for stem separation feature
+
+## MN Hennepin County Sales Tax (8.53%)
+- [ ] Calculate tax-inclusive base prices so totals are even dollar amounts
+- [ ] Update stripeProducts.ts with adjusted base prices
+- [ ] Update stem separation price ($5 total including tax)
+- [ ] Show tax-inclusive pricing on frontend (Pricing page, checkout)
+- [ ] Add tax line item or note on receipts/checkout
+
+## Sheet Music to MP3 with Suno
+- [ ] Verify sheet music upload and MP3 generation works with Suno API (replacing ElevenLabs)
+- [ ] Ensure generateFromSheetMusic procedure uses Suno for audio generation
+- [ ] Test the full flow: upload sheet music → parse → generate MP3 via Suno
+
+## Title Update
+- [x] Change app title to "Make any Worship Song you can Imagine" across all UI elements (75 references updated, responsive mobile shortening)
+
+## Site Name Change
+- [ ] Change site name from "Make any Worship Song you can Imagine" to "Create Christian Music" across all UI elements
+
+## Bug Fixes
+- [ ] Fix "Cannot read properties of undefined (reading 'canGenerate')" error on credits.summary query
+
+## Pricing Update & Bug Fix
+- [ ] Fix canGenerate error: add "studio" plan to PLAN_LIMITS
+- [ ] Update Pro plan: $19/month for 200 songs or sheet music PDFs
+- [ ] Update Premier plan: $39/month for 450 songs or sheet music PDFs
+- [ ] Update annual pricing accordingly
+- [ ] Update Stripe products with new base prices (tax-inclusive)
+- [ ] Update pricing page feature claims to match actual implemented features
+- [ ] Update FAQ answers to match new pricing
+- [ ] Remove "priority queue" claim from all pages (FAQ, etc.)
+- [ ] Remove "add new vocals or instrumentals" claim from all pages
+- [ ] Add "Upload up to 5 minutes of songs" to pricing features
+- [ ] Remove "personas and advanced editing" claim from all pages
+- [ ] Remove "8 min audio upload" claim from all pages
+- [ ] Remove "add-on credits" claim from all pages
+- [ ] Update FAQ answers to match new truthful pricing
+- [x] Change bonus songs from 2 per day to 2 per month across all code, UI, and legal pages
+- [x] Remove plain text (TXT) export option, keep only PDF and DOCX
+- [x] Adjust all prices to even dollar amounts with 8.53% MN sales tax built in
+- [x] Update stripeProducts.ts with new tax-inclusive base prices
+- [x] Update Pricing page, FAQ, routers allPlans with new even-dollar prices
+- [x] Update stem separation price to even dollar amount with tax

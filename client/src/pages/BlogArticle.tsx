@@ -85,7 +85,7 @@ function buildArticleJsonLd(article: BlogArticle) {
     },
     publisher: {
       "@type": "Organization",
-      name: "Make Custom Music",
+      name: "Create Christian Music",
       url: BASE_URL,
       logo: {
         "@type": "ImageObject",

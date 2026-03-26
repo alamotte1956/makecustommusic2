@@ -50,16 +50,7 @@ describe("Safari & macOS Compatibility", () => {
       });
     }
 
-    const componentsToCheck = [
-      "client/src/components/StudioProducer.tsx",
-    ];
-
-    for (const comp of componentsToCheck) {
-      it(`${path.basename(comp)} should import Safari-safe download`, () => {
-        const content = fs.readFileSync(path.resolve(comp), "utf-8");
-        expect(content).toContain("from \"@/lib/safariDownload\"");
-      });
-    }
+    // StudioProducer.tsx was removed; no additional component checks needed
   });
 
   describe("Audio preview durationchange handler (Safari)", () => {
@@ -86,8 +77,6 @@ describe("Safari & macOS Compatibility", () => {
     const filesToCheck = [
       "client/src/pages/Upload.tsx",
       "client/src/pages/Mp3ToSheetMusic.tsx",
-      "client/src/components/StudioProducer.tsx",
-      "client/src/components/ListenToLyricsButton.tsx",
     ];
 
     for (const file of filesToCheck) {

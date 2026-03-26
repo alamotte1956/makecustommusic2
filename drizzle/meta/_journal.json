@@ -162,6 +162,13 @@
       "when": 1774494464385,
       "tag": "0022_remarkable_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1774495885941,
+      "tag": "0023_lean_purple_man",
+      "breakpoints": true
     }
   ]
 }

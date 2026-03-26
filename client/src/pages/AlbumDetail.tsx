@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import FavoriteButton from "@/components/FavoriteButton";
 import EditSongDialog from "@/components/EditSongDialog";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
-import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import {
   DndContext,
@@ -139,7 +138,7 @@ function SortableSongCard({
                       </Badge>
                     )}
                     <Badge variant="default" className="text-xs bg-gradient-to-r from-violet-600 to-indigo-600">
-                      ElevenLabs
+                      Suno
                     </Badge>
                     {song.genre && <Badge variant="secondary" className="text-xs">{song.genre}</Badge>}
                     {song.mood && <Badge variant="secondary" className="text-xs">{song.mood}</Badge>}
@@ -168,9 +167,6 @@ function SortableSongCard({
                     )}
                     Lyrics
                   </Button>
-                )}
-                {song.lyrics && (
-                  <ListenToLyricsButton lyrics={song.lyrics} size="sm" />
                 )}
                 <Button variant="outline" size="sm" onClick={() => onEdit(song)}>
                   <Pencil className="w-3.5 h-3.5 mr-1.5" />

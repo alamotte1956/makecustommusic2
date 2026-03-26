@@ -18,7 +18,6 @@ import SongFiltersBar, { filterSongs, type SongFilters } from "@/components/Song
 import { useQueuePlayer, type QueueSong } from "@/contexts/QueuePlayerContext";
 import { getLoginUrl } from "@/const";
 import { DeleteSongDialog } from "@/components/DeleteSongDialog";
-import ListenToLyricsButton from "@/components/ListenToLyricsButton";
 import GenerateCoverButton from "@/components/GenerateCoverButton";
 import SongCoverImage from "@/components/SongCoverImage";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -486,9 +485,6 @@ export default function History() {
                             <Pencil className="w-3.5 h-3.5 mr-1.5" />
                             Edit
                           </Button>
-                          {song.lyrics && (
-                            <ListenToLyricsButton lyrics={song.lyrics} size="sm" />
-                          )}
                           <Link href={`/songs/${song.id}`}>
                             <Button variant="outline" size="sm">
                               <FileText className="w-3.5 h-3.5 mr-1.5" />

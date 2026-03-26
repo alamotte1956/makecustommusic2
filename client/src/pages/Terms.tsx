@@ -5,7 +5,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 export default function Terms() {
   usePageMeta({
     title: "Terms of Service",
-    description: "Terms of service for Make Custom Music. Understand your rights and responsibilities when using our AI music generation platform.",
+    description: "Terms of service for Create Christian Music. Understand your rights and responsibilities when using our AI music generation platform.",
     canonicalPath: "/terms",
   });
   return (
@@ -46,7 +46,7 @@ export default function Terms() {
         {/* Introduction */}
         <section>
           <p className="leading-relaxed">
-            Welcome to Make Custom Music. These Terms of Service (&quot;Terms&quot;) govern your
+            Welcome to Create Christian Music. These Terms of Service (&quot;Terms&quot;) govern your
             access to and use of the website at <strong>makecustommusic.com</strong> and
             all related services, applications, and tools (collectively, the &quot;Service&quot;)
             operated by A. LaMotte Music (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By accessing
@@ -101,13 +101,12 @@ export default function Terms() {
         <section>
           <h2 className="text-xl font-semibold text-foreground mb-3">3. Service Description</h2>
           <p className="leading-relaxed">
-            Make Custom Music is an AI-powered music generation platform that allows users
+            Create Christian Music is an AI-powered music generation platform that allows users
             to create original music by providing text descriptions, keywords, or custom
             lyrics. The Service includes, but is not limited to: audio generation, sheet music
             creation, guitar chord charts, lyrics generation, MP3-to-sheet-music conversion,
             album organization, song remixing, stem separation, song extension, audio format
-            conversion, MIDI export, ringtone creation, voice cloning/personas, and
-            collaborative album features. The quality and characteristics of generated content
+            conversion, MIDI export, and collaborative album features. The quality and characteristics of generated content
             depend on the AI models used and the inputs you provide.
           </p>
           <p className="leading-relaxed mt-3">
@@ -129,9 +128,9 @@ export default function Terms() {
 
           <h3 className="text-base font-medium text-foreground mt-4 mb-2">4.1 Plans and Credits</h3>
           <p className="leading-relaxed mb-4">
-            The Service offers multiple subscription tiers, each providing a monthly
-            allocation of generation credits. Credits are consumed each time you generate
-            a song, convert audio, or use premium features. Unused monthly credits do not
+            The Service offers subscription tiers, each providing a monthly
+            allowance of song and sheet music generations. Each generation counts as one
+            use toward your monthly allowance. Unused monthly allowances do not
             roll over to the next billing period.
           </p>
           <div className="rounded-lg border overflow-hidden">
@@ -140,27 +139,23 @@ export default function Terms() {
                 <tr className="bg-muted/50">
                   <th className="text-left px-4 py-2.5 font-medium text-foreground">Plan</th>
                   <th className="text-left px-4 py-2.5 font-medium text-foreground">Price</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-foreground">Monthly Credits</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-foreground">Monthly Allowance</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 <tr>
-                  <td className="px-4 py-2.5 font-medium">Basic (Free)</td>
-                  <td className="px-4 py-2.5 text-foreground/70">$0/mo</td>
-                  <td className="px-4 py-2.5 text-foreground/70">50 credits/day (10 songs)</td>
-                </tr>
-                <tr>
                   <td className="px-4 py-2.5 font-medium">Pro</td>
-                  <td className="px-4 py-2.5 text-foreground/70">$10/mo ($90/yr)</td>
-                  <td className="px-4 py-2.5 text-foreground/70">2,500 credits (500 songs)</td>
+                  <td className="px-4 py-2.5 text-foreground/70">$19/mo ($182/yr)*</td>
+                  <td className="px-4 py-2.5 text-foreground/70">200 songs or sheet music PDFs</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 font-medium">Premier</td>
-                  <td className="px-4 py-2.5 text-foreground/70">$26/mo ($234/yr)</td>
-                  <td className="px-4 py-2.5 text-foreground/70">10,000 credits (2,000 songs)</td>
+                  <td className="px-4 py-2.5 text-foreground/70">$39/mo ($374/yr)*</td>
+                  <td className="px-4 py-2.5 text-foreground/70">450 songs or sheet music PDFs</td>
                 </tr>
               </tbody>
             </table>
+            <p className="text-xs text-foreground/50 mt-2">*All prices include MN Hennepin County sales tax (8.53%).</p>
           </div>
 
           <h3 className="text-base font-medium text-foreground mt-4 mb-2">4.2 Billing and Cancellation</h3>
