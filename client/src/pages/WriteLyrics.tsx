@@ -32,6 +32,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import AudioPlayer from "@/components/AudioPlayer";
@@ -50,7 +53,7 @@ import {
   Wand2, Sparkles, Loader2, Music, Download, Share2, RefreshCw,
   BookOpen, Cross, Mic, MicOff, FileText,
   Save, FolderOpen, Copy, RotateCcw, Eye, EyeOff, Heart,
-  Undo2, Redo2, FileDown, FileType
+  Undo2, Redo2, FileDown, FileType, Link2, ExternalLink, Users
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -671,7 +674,7 @@ export default function WriteLyrics() {
     }
   }, [hasContent, user, hasSubscription, songTitle, selectedGenre, selectedMood, vocalType, fullLyrics, customStyle, generateMutation, utils, navigate]);
 
-  const handleShare = useCallback(async () => {
+  const handleShareSong = useCallback(async () => {
     if (!generatedSong) return;
     try {
       const result = await shareMutation.mutateAsync({ songId: generatedSong.id });
@@ -747,6 +750,52 @@ export default function WriteLyrics() {
       setIsExporting(false);
     }
   }, [hasContent, songTitle, selectedGenre, selectedMood, vocalType, sections]);
+
+  /* ─── Share Lyrics ─── */
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+
+  const createShareMutation = trpc.sharedLyrics.create.useMutation({
+    onSuccess: (data) => {
+      const url = `${window.location.origin}/shared-lyrics/${data.shareToken}`;
+      setShareUrl(url);
+      copyToClipboard(url);
+      toast.success("Share link copied to clipboard!");
+      setIsSharing(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to create share link");
+      setIsSharing(false);
+    },
+  });
+
+  const handleShareLyrics = useCallback(() => {
+    if (!hasContent) { toast.error("Write some lyrics first!"); return; }
+    if (!user) { toast.error("Please sign in to share lyrics"); return; }
+    setIsSharing(true);
+    setShareUrl(null);
+    setShowShareDialog(true);
+    createShareMutation.mutate({
+      title: songTitle.trim() || "Untitled Song",
+      genre: selectedGenre || undefined,
+      mood: selectedMood || undefined,
+      vocalType: vocalType || undefined,
+      sections: sections.map(s => ({
+        id: s.id,
+        type: s.type,
+        label: s.label,
+        content: s.content,
+      })),
+    });
+  }, [hasContent, user, songTitle, selectedGenre, selectedMood, vocalType, sections, createShareMutation]);
+
+  const handleCopyShareUrl = useCallback(() => {
+    if (shareUrl) {
+      copyToClipboard(shareUrl);
+      toast.success("Link copied to clipboard!");
+    }
+  }, [shareUrl]);
 
   /* ─── Keyboard Shortcuts: Ctrl+Z / Ctrl+Shift+Z (Cmd on Mac) ─── */
   useEffect(() => {
@@ -846,6 +895,67 @@ export default function WriteLyrics() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* Share Button & Dialog */}
+          <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={!hasContent || !user}
+                onClick={handleShareLyrics}
+              >
+                {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+                Share
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Share Lyrics for Co-Editing
+                </DialogTitle>
+                <DialogDescription>
+                  Anyone with this link can view and edit these lyrics. Changes are saved automatically.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                {isSharing ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <span className="ml-2 text-sm text-muted-foreground">Creating share link...</span>
+                  </div>
+                ) : shareUrl ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={shareUrl}
+                        readOnly
+                        className="text-sm font-mono"
+                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                      />
+                      <Button size="sm" variant="outline" onClick={handleCopyShareUrl} className="shrink-0 gap-1.5">
+                        <Copy className="w-4 h-4" /> Copy
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => window.open(shareUrl, "_blank")}
+                      >
+                        <ExternalLink className="w-4 h-4" /> Open in New Tab
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Tip: Collaborators can edit the lyrics directly. Each save increments the edit counter.
+                    </p>
+                  </>
+                ) : null}
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1.5 text-muted-foreground">
             <RotateCcw className="w-4 h-4" /> Clear
           </Button>
@@ -1050,7 +1160,7 @@ export default function WriteLyrics() {
                   <Button size="sm" variant="outline" onClick={handleGenerateSong}>
                     <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
                   </Button>
-                  <Button size="sm" variant="outline" onClick={handleShare}>
+                  <Button size="sm" variant="outline" onClick={handleShareSong}>
                     <Share2 className="w-4 h-4 mr-1.5" /> Share
                   </Button>
                   <GenerateCoverButton

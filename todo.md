@@ -1608,3 +1608,17 @@
 - [x] Add export dropdown menu to the Write Lyrics page header
 - [x] Handle loading states during export generation
 - [x] Write tests for export logic (26 tests, all 1,415 total passing)
+
+## Collaborative Lyrics Sharing
+- [x] Create shared_lyrics database table with schema migration (14 columns)
+- [x] Push database migration
+- [x] Add server tRPC procedures: create, getByToken, update, delete, listMine
+- [x] Add database helpers: createSharedLyrics, getSharedLyricsByToken, updateSharedLyrics, deleteSharedLyrics, getUserSharedLyrics
+- [x] Add "Share" button and dialog to Write Lyrics page header that generates a shareable link
+- [x] Create /shared-lyrics/:token page for viewing/editing shared lyrics
+- [x] Allow anyone with the link to view and edit (no auth required for viewing/editing)
+- [x] Show last-updated timestamp, edit count, owner name, and genre/mood badges
+- [x] Add copy-link-to-clipboard and open-in-new-tab actions
+- [x] Add route in App.tsx for the shared lyrics page
+- [x] Track editor name (persisted in localStorage) and edit count
+- [x] Write tests for shared lyrics feature (35 tests, all 1,450 total passing)

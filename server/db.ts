@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob, worshipSets, InsertWorshipSet, worshipSetItems, InsertWorshipSetItem, scriptureSongs, InsertScriptureSong } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob, worshipSets, InsertWorshipSet, worshipSetItems, InsertWorshipSetItem, scriptureSongs, InsertScriptureSong, sharedLyrics, InsertSharedLyrics, SharedLyricsSection } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -658,4 +658,82 @@ export async function getScriptureSongsByBook(book: string) {
   return db.select().from(scriptureSongs)
     .where(eq(scriptureSongs.book, book))
     .orderBy(scriptureSongs.chapter, scriptureSongs.verseStart);
+}
+
+
+// ─── Shared Lyrics (Collaborative Editing) ─────────────────────────────────
+
+export async function createSharedLyrics(data: {
+  shareToken: string;
+  ownerId: number;
+  ownerName: string | null;
+  title: string;
+  genre?: string | null;
+  mood?: string | null;
+  vocalType?: string | null;
+  sections: SharedLyricsSection[];
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(sharedLyrics).values({
+    shareToken: data.shareToken,
+    ownerId: data.ownerId,
+    ownerName: data.ownerName,
+    title: data.title,
+    genre: data.genre ?? null,
+    mood: data.mood ?? null,
+    vocalType: data.vocalType ?? null,
+    sections: data.sections,
+    editCount: 0,
+  });
+  const [row] = await db.select().from(sharedLyrics).where(eq(sharedLyrics.shareToken, data.shareToken));
+  return row;
+}
+
+export async function getSharedLyricsByToken(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [row] = await db.select().from(sharedLyrics).where(eq(sharedLyrics.shareToken, token));
+  return row ?? null;
+}
+
+export async function updateSharedLyrics(token: string, data: {
+  title?: string;
+  genre?: string | null;
+  mood?: string | null;
+  vocalType?: string | null;
+  sections?: SharedLyricsSection[];
+  lastEditorName?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateSet: Record<string, unknown> = {};
+  if (data.title !== undefined) updateSet.title = data.title;
+  if (data.genre !== undefined) updateSet.genre = data.genre;
+  if (data.mood !== undefined) updateSet.mood = data.mood;
+  if (data.vocalType !== undefined) updateSet.vocalType = data.vocalType;
+  if (data.sections !== undefined) updateSet.sections = JSON.stringify(data.sections);
+  if (data.lastEditorName !== undefined) updateSet.lastEditorName = data.lastEditorName;
+  updateSet.editCount = sql`${sharedLyrics.editCount} + 1`;
+
+  await db.update(sharedLyrics)
+    .set(updateSet)
+    .where(eq(sharedLyrics.shareToken, token));
+
+  return getSharedLyricsByToken(token);
+}
+
+export async function deleteSharedLyrics(token: string, ownerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(sharedLyrics)
+    .where(and(eq(sharedLyrics.shareToken, token), eq(sharedLyrics.ownerId, ownerId)));
+}
+
+export async function getUserSharedLyrics(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(sharedLyrics)
+    .where(eq(sharedLyrics.ownerId, userId))
+    .orderBy(desc(sharedLyrics.updatedAt));
 }

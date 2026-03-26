@@ -375,6 +375,35 @@ export const scriptureSongs = mysqlTable("scripture_songs", {
 export type ScriptureSong = typeof scriptureSongs.$inferSelect;
 export type InsertScriptureSong = typeof scriptureSongs.$inferInsert;
 
+// ─── Shared Lyrics (Collaborative Editing) ─────────────────────────────────
+
+export type SharedLyricsSection = {
+  id: string;
+  type: string;
+  label?: string;
+  content: string;
+};
+
+export const sharedLyrics = mysqlTable("shared_lyrics", {
+  id: int("id").autoincrement().primaryKey(),
+  shareToken: varchar("shareToken", { length: 64 }).notNull().unique(),
+  ownerId: int("ownerId").notNull(),
+  ownerName: varchar("ownerName", { length: 255 }),
+  title: varchar("title", { length: 255 }).notNull().default("Untitled Song"),
+  genre: varchar("genre", { length: 100 }),
+  mood: varchar("mood", { length: 100 }),
+  vocalType: varchar("vocalType", { length: 20 }),
+  sections: json("sections").$type<SharedLyricsSection[]>().notNull(),
+  isPublic: boolean("isPublic").default(true).notNull(),
+  editCount: int("editCount").default(0).notNull(),
+  lastEditorName: varchar("lastEditorName", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SharedLyrics = typeof sharedLyrics.$inferSelect;
+export type InsertSharedLyrics = typeof sharedLyrics.$inferInsert;
+
 // ─── Liturgical Calendar ──────────────────────────────────────────────────
 
 export const LITURGICAL_SEASONS = [

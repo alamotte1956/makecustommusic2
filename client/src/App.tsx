@@ -38,6 +38,7 @@ const BlogArticle = lazy(() => import("./pages/BlogArticle"));
 const WorshipSetBuilder = lazy(() => import("./pages/WorshipSetBuilder"));
 const ChurchLicensing = lazy(() => import("./pages/ChurchLicensing"));
 const WriteLyrics = lazy(() => import("./pages/WriteLyrics"));
+const SharedLyricsPage = lazy(() => import("./pages/SharedLyricsPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -81,6 +82,7 @@ function Router() {
         <Route path={"/debug-sheet"} component={SheetMusicDebug} />
         <Route path={"/worship"} component={WorshipSetBuilder} />
         <Route path={"/write-lyrics"} component={WriteLyrics} />
+        <Route path={"/shared-lyrics/:token"} component={SharedLyricsPage} />
         <Route path={"/licensing"} component={ChurchLicensing} />
         <Route path={"/admin"} component={AdminDashboard} />
         <Route path={"/admin/settings"} component={AdminSettings} />

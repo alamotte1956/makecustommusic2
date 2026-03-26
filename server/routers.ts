@@ -22,9 +22,10 @@ import {
   createWorshipSet, getWorshipSetById, getUserWorshipSets, updateWorshipSet, deleteWorshipSet,
   addWorshipSetItem, getWorshipSetItems, updateWorshipSetItem, deleteWorshipSetItem, reorderWorshipSetItems,
   linkScriptureSong, getScriptureSongBySongId,
+  createSharedLyrics, getSharedLyricsByToken, updateSharedLyrics, deleteSharedLyrics, getUserSharedLyrics,
   getDb,
 } from "./db";
-import type { ChordProgressionData } from "../drizzle/schema";
+import type { ChordProgressionData, SharedLyricsSection } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
@@ -2311,6 +2312,94 @@ Focus on creating a natural flow from gathering to sending forth.`;
       .input(z.object({ songId: z.number() }))
       .query(async ({ input }) => {
         return getScriptureSongBySongId(input.songId);
+      }),
+  }),
+
+  // ─── Shared Lyrics (Collaborative Editing) ─────────────────────────────
+  sharedLyrics: router({
+    // Create a shared lyrics session
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(255),
+        genre: z.string().max(100).optional(),
+        mood: z.string().max(100).optional(),
+        vocalType: z.string().max(20).optional(),
+        sections: z.array(z.object({
+          id: z.string(),
+          type: z.string(),
+          label: z.string().optional(),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const token = nanoid(16);
+        const result = await createSharedLyrics({
+          shareToken: token,
+          ownerId: ctx.user.id,
+          ownerName: ctx.user.name ?? null,
+          title: input.title,
+          genre: input.genre,
+          mood: input.mood,
+          vocalType: input.vocalType,
+          sections: input.sections as SharedLyricsSection[],
+        });
+        return result;
+      }),
+
+    // Get shared lyrics by token (public — anyone with the link can view)
+    getByToken: publicProcedure
+      .input(z.object({ token: z.string().min(1).max(64) }))
+      .query(async ({ input }) => {
+        const result = await getSharedLyricsByToken(input.token);
+        if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "Shared lyrics not found" });
+        if (!result.isPublic) throw new TRPCError({ code: "NOT_FOUND", message: "This shared lyrics session is no longer available" });
+        return result;
+      }),
+
+    // Update shared lyrics (anyone with the link can edit)
+    update: publicProcedure
+      .input(z.object({
+        token: z.string().min(1).max(64),
+        title: z.string().min(1).max(255).optional(),
+        genre: z.string().max(100).nullable().optional(),
+        mood: z.string().max(100).nullable().optional(),
+        vocalType: z.string().max(20).nullable().optional(),
+        sections: z.array(z.object({
+          id: z.string(),
+          type: z.string(),
+          label: z.string().optional(),
+          content: z.string(),
+        })).optional(),
+        editorName: z.string().max(100).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const existing = await getSharedLyricsByToken(input.token);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Shared lyrics not found" });
+        if (!existing.isPublic) throw new TRPCError({ code: "NOT_FOUND", message: "This shared lyrics session is no longer available" });
+
+        const result = await updateSharedLyrics(input.token, {
+          title: input.title,
+          genre: input.genre,
+          mood: input.mood,
+          vocalType: input.vocalType,
+          sections: input.sections as SharedLyricsSection[] | undefined,
+          lastEditorName: input.editorName ?? null,
+        });
+        return result;
+      }),
+
+    // Delete shared lyrics (owner only)
+    delete: protectedProcedure
+      .input(z.object({ token: z.string().min(1).max(64) }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteSharedLyrics(input.token, ctx.user.id);
+        return { success: true };
+      }),
+
+    // List user's shared lyrics
+    listMine: protectedProcedure
+      .query(async ({ ctx }) => {
+        return getUserSharedLyrics(ctx.user.id);
       }),
   }),
 });
