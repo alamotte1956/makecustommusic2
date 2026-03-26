@@ -1598,3 +1598,13 @@
 - [x] Show undo/redo availability state (disabled when no history)
 - [x] Cap history stack to prevent memory issues (50 steps max)
 - [x] Write tests for undo/redo logic (30 tests, all 1,389 total passing)
+
+## Lyrics Export Feature (Write Lyrics Page)
+- [x] Install docx generation library (docx) and pdfkit for PDF export
+- [x] Create server-side Express route for lyrics export (PDF, TXT, DOCX)
+- [x] Generate styled PDF with song title, section headers, metadata, and lyrics content
+- [x] Generate plain text file with section markers and metadata
+- [x] Generate DOCX with formatted headings, paragraphs, and metadata
+- [x] Add export dropdown menu to the Write Lyrics page header
+- [x] Handle loading states during export generation
+- [x] Write tests for export logic (26 tests, all 1,415 total passing)

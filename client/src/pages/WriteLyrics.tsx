@@ -20,6 +20,14 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -42,7 +50,7 @@ import {
   Wand2, Sparkles, Loader2, Music, Download, Share2, RefreshCw,
   BookOpen, Cross, Mic, MicOff, FileText,
   Save, FolderOpen, Copy, RotateCcw, Eye, EyeOff, Heart,
-  Undo2, Redo2
+  Undo2, Redo2, FileDown, FileType
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -687,6 +695,59 @@ export default function WriteLyrics() {
     setProgressMessage("");
   }, [resetHistory]);
 
+  // Export state
+  const [isExporting, setIsExporting] = useState(false);
+
+  /* ─── Export Lyrics ─── */
+  const handleExport = useCallback(async (format: "pdf" | "txt" | "docx") => {
+    if (!hasContent) { toast.error("Write some lyrics first!"); return; }
+    try {
+      setIsExporting(true);
+      const payload = {
+        title: songTitle.trim() || "Untitled Song",
+        genre: selectedGenre || undefined,
+        mood: selectedMood || undefined,
+        vocalType: vocalType || undefined,
+        sections: sections.map(s => ({
+          type: s.type,
+          label: s.label,
+          content: s.content,
+        })),
+        format,
+      };
+
+      const response = await fetch("/api/lyrics/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Export failed" }));
+        throw new Error(err.error || "Export failed");
+      }
+
+      const blob = await response.blob();
+      const filename = (songTitle.trim() || "lyrics").replace(/[^a-zA-Z0-9\s_-]/g, "").replace(/\s+/g, "_").slice(0, 100) || "lyrics";
+      const ext = format;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const formatLabel = format === "pdf" ? "PDF" : format === "txt" ? "Plain Text" : "Word Document";
+      toast.success(`Lyrics exported as ${formatLabel}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to export lyrics");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [hasContent, songTitle, selectedGenre, selectedMood, vocalType, sections]);
+
   /* ─── Keyboard Shortcuts: Ctrl+Z / Ctrl+Shift+Z (Cmd on Mac) ─── */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -760,6 +821,31 @@ export default function WriteLyrics() {
           <Button variant="outline" size="sm" onClick={saveDraft} className="gap-1.5">
             <Save className="w-4 h-4" /> Save
           </Button>
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5" disabled={!hasContent || isExporting}>
+                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Download lyrics as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExport("pdf")} className="gap-2 cursor-pointer">
+                <FileText className="w-4 h-4 text-red-500" />
+                PDF Document
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("docx")} className="gap-2 cursor-pointer">
+                <FileType className="w-4 h-4 text-blue-500" />
+                Word Document (.docx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("txt")} className="gap-2 cursor-pointer">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                Plain Text (.txt)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1.5 text-muted-foreground">
             <RotateCcw className="w-4 h-4" /> Clear
           </Button>

@@ -8,6 +8,7 @@ import { registerAlbumZipRoute } from "../albumZip";
 import { registerGenerateVoiceRoute } from "../generateVoice";
 import { registerStripeWebhookRoute } from "../stripeWebhook";
 import { registerSitemapRoute } from "../sitemap";
+import { registerLyricsExportRoute } from "../lyricsExport";
 import { registerOgTagsMiddleware } from "../ogTags";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -58,6 +59,8 @@ async function startServer() {
   registerAlbumZipRoute(app);
   // ElevenLabs TTS voice generation (direct audio streaming)
   registerGenerateVoiceRoute(app);
+  // Lyrics export (PDF, TXT, DOCX)
+  registerLyricsExportRoute(app);
   // Dynamic sitemap.xml
   registerSitemapRoute(app);
   // OG meta tag injection for shared song pages
