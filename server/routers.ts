@@ -25,12 +25,13 @@ import {
   createSharedLyrics, getSharedLyricsByToken, updateSharedLyrics, deleteSharedLyrics, getUserSharedLyrics,
   createStemSeparation, getStemSeparationById, getStemSeparationBySongId, updateStemSeparationStatus, updateStemSeparationStems, updateSongSunoIds,
   getDb,
+  createGenerationTask, getGenerationTask, updateGenerationTask,
 } from "./db";
 import type { ChordProgressionData, SharedLyricsSection } from "../drizzle/schema";
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
-import { isSunoAvailable, generateMusic as sunoGenerateMusic, submitStemSeparation, waitForStemSeparation, downloadAndStoreStem } from "./sunoApi";
+import { isSunoAvailable, generateMusic as sunoGenerateMusic, submitMusicGeneration, getTaskStatus, submitStemSeparation, waitForStemSeparation, downloadAndStoreStem } from "./sunoApi";
 import { getGenreGuidance, getMoodGuidance, buildProductionPrompt } from "./songwritingHelpers";
 import { postProcessAudio, mixVocalInstrumental, prepareStemDownloads, getPresets, type ProcessingPreset } from "./audioProcessor";
 import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssmlBuilder";
@@ -58,6 +59,119 @@ function getStripe(): Stripe | null {
   const key = ENV.STRIPE_SECRET_KEY;
   if (!key) return null;
   return new Stripe(key, { apiVersion: "2025-02-24.acacia" as any });
+}
+
+import axios from "axios";
+
+/**
+ * Background task that polls kie.ai for generation completion,
+ * downloads the audio, uploads to S3, and saves the song to DB.
+ * Runs as a fire-and-forget async function — no request timeout risk.
+ */
+async function processGenerationTaskInBackground(
+  taskDbId: number,
+  userId: number,
+  userName: string | null,
+  userEmail: string | null
+) {
+  try {
+    await updateGenerationTask(taskDbId, { status: "processing" });
+    const task = await getGenerationTask(taskDbId, userId);
+    if (!task) throw new Error("Task not found");
+
+    // Poll kie.ai for completion (up to 10 minutes)
+    const maxWaitMs = 600000;
+    const pollIntervalMs = 10000;
+    const startTime = Date.now();
+    let pollCount = 0;
+    let completedResult: any = null;
+
+    while (Date.now() - startTime < maxWaitMs) {
+      pollCount++;
+      const status = await getTaskStatus(task.kieTaskId);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      console.log(`[GenTask#${taskDbId}] Poll #${pollCount} (${elapsed}s): status=${status.status}, hasAudio=${!!status.response?.data?.length}`);
+
+      if (status.status === "SUCCESS" || (status.status === "FIRST_SUCCESS" && status.response?.data?.length)) {
+        completedResult = status;
+        break;
+      }
+
+      if (status.status === "FAILED" || status.status === "CREATE_TASK_FAILED") {
+        throw new Error(status.errorMessage || "Generation failed");
+      }
+
+      await new Promise(r => setTimeout(r, pollIntervalMs));
+    }
+
+    if (!completedResult?.response?.data?.length) {
+      throw new Error("Generation timed out after 10 minutes");
+    }
+
+    // Download audio and upload to S3
+    const audio = completedResult.response.data[0];
+    const audioResponse = await axios.get(audio.audio_url, { responseType: "arraybuffer", timeout: 60000 });
+    const fileKey = `songs/${userId}/${nanoid()}.mp3`;
+    const buffer = Buffer.from(audioResponse.data);
+    const { url: audioUrl } = await storagePut(fileKey, buffer, "audio/mpeg");
+
+    // Save song to DB
+    const song = await createSong({
+      userId,
+      title: task.customTitle || audio.title || (task.keywords || "").substring(0, 100) || "Suno Track",
+      keywords: task.keywords || "",
+      abcNotation: null,
+      musicDescription: `Suno${task.mode === "custom" ? " Custom" : " Simple"} | ${(task.prompt || "").substring(0, 400)}`,
+      audioUrl,
+      mp3Url: audioUrl,
+      mp3Key: fileKey,
+      tempo: null,
+      keySignature: null,
+      timeSignature: null,
+      genre: task.genre || null,
+      mood: task.mood || null,
+      instruments: null,
+      duration: Math.round(audio.duration || 0),
+      engine: "suno",
+      vocalType: task.vocalType || null,
+      lyrics: task.customLyrics || null,
+      styleTags: audio.tags || task.customStyle || null,
+      externalSongId: audio.id || null,
+      imageUrl: null,
+    });
+
+    // Mark task as completed
+    await updateGenerationTask(taskDbId, {
+      status: "completed",
+      songId: song.id,
+      completedAt: new Date(),
+    });
+
+    // Fire-and-forget notifications
+    notifyOwner({
+      title: `\uD83C\uDFB5 New Song Generated`,
+      content: `User: ${userName || userEmail || "Unknown"}\nTitle: ${song.title}\nGenre: ${task.genre || "Not specified"}\nMode: ${task.mode || "simple"}`,
+    }).catch(() => {});
+
+    createNotification({
+      userId,
+      type: "song_ready",
+      title: "Your song is ready!",
+      message: `"${song.title}" has been generated. Tap to listen and download.`,
+      songId: song.id,
+    }).catch(() => {});
+
+    generateSheetMusicInBackground(song.id);
+
+    console.log(`[GenTask#${taskDbId}] Completed successfully: song #${song.id}`);
+  } catch (err: any) {
+    console.error(`[GenTask#${taskDbId}] Failed:`, err.message);
+    await updateGenerationTask(taskDbId, {
+      status: "failed",
+      errorMessage: err.message || "Unknown error",
+      completedAt: new Date(),
+    }).catch(() => {});
+  }
 }
 
 export const appRouter = router({
@@ -139,10 +253,9 @@ export const appRouter = router({
           const { getCredits } = await import("./sunoApi");
           const apiCredits = await getCredits();
           if (apiCredits < 5) {
-            // Notify admin about low credits
             notifyOwner({
               title: "⚠️ Music API Credits Low",
-              content: `Only ${apiCredits} API credits remaining on musicapi.ai. Please purchase more credits to keep the service running.`,
+              content: `Only ${apiCredits} API credits remaining. Please purchase more credits to keep the service running.`,
             }).catch(() => {});
           }
           if (apiCredits <= 0) {
@@ -152,9 +265,7 @@ export const appRouter = router({
             });
           }
         } catch (creditErr: any) {
-          // If it's our own TRPCError, re-throw it
           if (creditErr instanceof TRPCError) throw creditErr;
-          // Otherwise log but don't block — the actual generation call will fail with a clear error
           console.warn("[generate] Could not pre-check API credits:", creditErr.message);
         }
 
@@ -171,104 +282,91 @@ export const appRouter = router({
           customStyle,
         });
 
-        const durationMs = (duration ?? 30) * 1000;
-
-        let result;
+        // ── ASYNC PATTERN: Submit to kie.ai and return immediately ──
+        // This avoids proxy timeout errors on long-running generation (60-120s)
+        let kieTaskId: string;
         try {
-          result = await sunoGenerateMusic(
-            {
-              prompt,
-              customMode: mode === "custom",
-              style: customStyle || undefined,
-              title: customTitle || undefined,
-              instrumental: forceInstrumental,
-            },
-            ctx.user.id
-          );
+          kieTaskId = await submitMusicGeneration({
+            prompt,
+            customMode: mode === "custom",
+            style: customStyle || undefined,
+            title: customTitle || undefined,
+            instrumental: forceInstrumental,
+          });
         } catch (genErr: any) {
           const msg = genErr.message || "Unknown error during music generation";
-          // Map known error patterns to user-friendly messages
           if (msg.includes("insufficient API credits") || msg.includes("credit")) {
-            throw new TRPCError({
-              code: "PRECONDITION_FAILED",
-              message: "Music generation is temporarily unavailable due to API credit limits. The administrator has been notified. Please try again later.",
-            });
-          }
-          if (msg.includes("timed out")) {
-            throw new TRPCError({
-              code: "TIMEOUT",
-              message: "Music generation took too long. Please try again with a shorter duration or simpler prompt.",
-            });
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Music generation is temporarily unavailable due to API credit limits. The administrator has been notified." });
           }
           if (msg.includes("rate limit")) {
-            throw new TRPCError({
-              code: "TOO_MANY_REQUESTS",
-              message: "Too many generation requests. Please wait a moment and try again.",
-            });
+            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many generation requests. Please wait a moment and try again." });
           }
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Music generation failed: ${msg}`,
-          });
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Music generation failed: ${msg}` });
         }
 
-        // Deduct credits or use monthly bonus
+        // Deduct credits or use monthly bonus immediately (before polling)
         if (bonusCheck.available) {
           await useMonthlyBonus(ctx.user.id, "bonus_song", `Monthly bonus song: ${customTitle || keywords.substring(0, 50)}`);
         } else {
           const creditResult = await deductCredits(ctx.user.id, 1, "generation", `Generated: ${customTitle || keywords.substring(0, 50)}`);
           if (!creditResult.success) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: creditResult.error || "Insufficient credits. Please upgrade your plan or purchase more credits.",
-            });
+            throw new TRPCError({ code: "FORBIDDEN", message: creditResult.error || "Insufficient credits." });
           }
         }
 
-        // Save to database
-        const song = await createSong({
+        // Save the generation task to DB so the frontend can poll for status
+        const taskDbId = await createGenerationTask({
           userId: ctx.user.id,
-          title: customTitle || result.title || keywords.substring(0, 100) || "Suno Track",
+          kieTaskId,
+          status: "pending",
           keywords,
-          abcNotation: null,
-          musicDescription: `Suno${mode === "custom" ? " Custom" : " Simple"} | ${prompt.substring(0, 400)}`,
-          audioUrl: result.audioUrl,
-          mp3Url: result.audioUrl,
-          mp3Key: result.audioKey,
-          tempo: null,
-          keySignature: null,
-          timeSignature: null,
           genre: genre || null,
           mood: mood || null,
-          instruments: null,
-          duration: result.duration,
-          engine: "suno",
           vocalType: vocalType || null,
-          lyrics: customLyrics || null,
-          styleTags: result.tags || customStyle || null,
-          externalSongId: result.sunoAudioId || null,
-          imageUrl: null,
+          duration: duration ?? null,
+          mode: mode || "simple",
+          customTitle: customTitle || null,
+          customLyrics: customLyrics || null,
+          customStyle: customStyle || null,
+          prompt,
+          engine: "suno",
+          usedBonus: bonusCheck.available,
         });
 
-        // Notify owner about new song generation
-        notifyOwner({
-          title: `🎵 New Song Generated`,
-          content: `User: ${ctx.user.name || ctx.user.email || "Unknown"}\nTitle: ${song.title}\nGenre: ${genre || "Not specified"}\nMood: ${mood || "Not specified"}\nMode: ${mode || "simple"}\nEngine: Suno`,
-        }).catch(() => {}); // Fire-and-forget, don't block the response
+        // Start background polling (fire-and-forget)
+        processGenerationTaskInBackground(taskDbId, ctx.user.id, ctx.user.name, ctx.user.email);
 
-        // Create in-app notification for the user
-        createNotification({
-          userId: ctx.user.id,
-          type: "song_ready",
-          title: "Your song is ready!",
-          message: `"${song.title}" has been generated. Tap to listen and download.`,
-          songId: song.id,
-        }).catch(() => {}); // Fire-and-forget
+        // Return immediately with the task ID — frontend will poll via songs.generationStatus
+        return { taskId: taskDbId, status: "pending" as const };
+      }),
 
-        // Pre-generate sheet music in the background
-        generateSheetMusicInBackground(song.id);
+    // Poll for generation task status (fast, no timeout risk)
+    generationStatus: protectedProcedure
+      .input(z.object({ taskId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const task = await getGenerationTask(input.taskId, ctx.user.id);
+        if (!task) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Generation task not found" });
+        }
 
-        return song;
+        if (task.status === "completed" && task.songId) {
+          const song = await getSongById(task.songId);
+          return { status: "completed" as const, song };
+        }
+
+        if (task.status === "failed") {
+          return { status: "failed" as const, error: task.errorMessage || "Generation failed" };
+        }
+
+        // Still pending or processing
+        // Also do a live check against kie.ai to give real-time progress
+        let kieStatus = "pending";
+        try {
+          const kieResult = await getTaskStatus(task.kieTaskId);
+          kieStatus = kieResult.status.toLowerCase();
+        } catch { /* ignore polling errors */ }
+
+        return { status: "processing" as const, kieStatus };
       }),
 
     // Generate lyrics from a subject/topic using Claude Sonnet — best-in-class songwriter

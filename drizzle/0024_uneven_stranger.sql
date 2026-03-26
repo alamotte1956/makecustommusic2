@@ -1,0 +1,23 @@
+CREATE TABLE `generation_tasks` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`kieTaskId` varchar(255) NOT NULL,
+	`status` enum('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+	`keywords` text,
+	`genre` varchar(100),
+	`mood` varchar(100),
+	`vocalType` varchar(50),
+	`duration` int,
+	`mode` varchar(20),
+	`customTitle` varchar(255),
+	`customLyrics` text,
+	`customStyle` varchar(500),
+	`prompt` text,
+	`engine` varchar(50) DEFAULT 'suno',
+	`songId` int,
+	`errorMessage` text,
+	`usedBonus` boolean DEFAULT false,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`completedAt` timestamp,
+	CONSTRAINT `generation_tasks_id` PRIMARY KEY(`id`)
+);

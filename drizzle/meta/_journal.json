@@ -169,6 +169,13 @@
       "when": 1774495885941,
       "tag": "0023_lean_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1774560214963,
+      "tag": "0024_uneven_stranger",
+      "breakpoints": true
     }
   ]
 }

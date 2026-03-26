@@ -1,6 +1,6 @@
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob, worshipSets, InsertWorshipSet, worshipSetItems, InsertWorshipSetItem, scriptureSongs, InsertScriptureSong, sharedLyrics, InsertSharedLyrics, SharedLyricsSection, stemSeparations, InsertStemSeparation } from "../drizzle/schema";
+import { InsertUser, users, songs, albums, albumSongs, favorites, InsertSong, InsertAlbum, InsertAlbumSong, ChordProgressionData, SongTake, notifications, InsertNotification, blogComments, InsertBlogComment, mp3SheetJobs, InsertMp3SheetJob, worshipSets, InsertWorshipSet, worshipSetItems, InsertWorshipSetItem, scriptureSongs, InsertScriptureSong, sharedLyrics, InsertSharedLyrics, SharedLyricsSection, stemSeparations, InsertStemSeparation, generationTasks, InsertGenerationTask } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -821,4 +821,44 @@ export async function updateSongSunoIds(songId: number, sunoTaskId: string, suno
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(songs).set({ sunoTaskId, sunoAudioId }).where(eq(songs.id, songId));
+}
+
+// ─── Generation Tasks (async pattern) ───
+
+export async function createGenerationTask(data: InsertGenerationTask) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(generationTasks).values(data).$returningId();
+  return result.id;
+}
+
+export async function getGenerationTask(taskId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(generationTasks).where(and(eq(generationTasks.id, taskId), eq(generationTasks.userId, userId))).limit(1);
+  return rows[0] || null;
+}
+
+export async function getGenerationTaskByKieId(kieTaskId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(generationTasks).where(eq(generationTasks.kieTaskId, kieTaskId)).limit(1);
+  return rows[0] || null;
+}
+
+export async function updateGenerationTask(taskId: number, data: Partial<InsertGenerationTask>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(generationTasks).set(data).where(eq(generationTasks.id, taskId));
+}
+
+export async function getPendingGenerationTasks() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(generationTasks).where(
+    and(
+      sql`${generationTasks.status} IN ('pending', 'processing')`,
+      sql`${generationTasks.createdAt} > DATE_SUB(NOW(), INTERVAL 15 MINUTE)`
+    )
+  );
 }

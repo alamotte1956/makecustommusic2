@@ -1792,3 +1792,4 @@
 ## Bugs
 - [x] Fix "please enter callback URL" error when trying to generate a song (added callBackUrl to kie.ai generate + lyrics endpoints)
 - [x] Fix music generator getting stuck during song generation (accept FIRST_SUCCESS as complete + animated progress bar with stage messages)
+- [x] Fix "unexpected token" JSON parsing error during song generation (converted to async submit+poll pattern to avoid proxy timeouts)

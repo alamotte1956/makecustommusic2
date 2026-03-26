@@ -643,10 +643,10 @@ export default function WriteLyrics() {
     setGeneratedSong(null);
     try {
       setIsGenerating(true);
-      setProgressMessage("Composing your song from lyrics... (30-120 seconds)");
+      setProgressMessage("Submitting your song to the AI...");
       setProgress(15);
 
-      const song = await generateMutation.mutateAsync({
+      const result = await generateMutation.mutateAsync({
         keywords: songTitle.trim() || "Custom Song",
         engine: "suno",
         genre: selectedGenre || undefined,
@@ -658,8 +658,46 @@ export default function WriteLyrics() {
         customStyle: customStyle || undefined,
       });
 
-      if (!song) throw new Error("Failed to generate song");
-      setGeneratedSong(song as GeneratedSong);
+      if (!result?.taskId) throw new Error("Failed to submit generation task");
+
+      // Poll for completion
+      const taskId = result.taskId;
+      setProgressMessage("AI is composing your song...");
+
+      const maxAttempts = 120;
+      let song: GeneratedSong | null = null;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        try {
+          const status = await utils.songs.generationStatus.fetch({ taskId });
+          if (status.status === "completed" && status.song) {
+            song = status.song as GeneratedSong;
+            break;
+          }
+          if (status.status === "failed") {
+            throw new Error(status.error || "Generation failed");
+          }
+          // Update progress based on kie status
+          if (status.kieStatus) {
+            const ks = status.kieStatus.toLowerCase();
+            if (ks.includes("text")) {
+              setProgressMessage("AI is composing lyrics and melody...");
+              setProgress(Math.max(40, 15 + i * 2));
+            } else if (ks.includes("first")) {
+              setProgressMessage("Generating audio... almost there!");
+              setProgress(Math.max(75, 15 + i * 2));
+            } else {
+              setProgress(Math.min(85, 15 + i * 2));
+            }
+          }
+        } catch (pollErr: any) {
+          if (pollErr.message?.includes("Generation failed")) throw pollErr;
+          console.warn("[Poll] Transient error:", pollErr.message);
+        }
+      }
+
+      if (!song) throw new Error("Generation timed out. Check your History page.");
+      setGeneratedSong(song);
       setProgress(100);
       setProgressMessage("Done!");
       utils.songs.list.invalidate();

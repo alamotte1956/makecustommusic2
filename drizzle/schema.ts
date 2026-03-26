@@ -477,3 +477,33 @@ export const stemSeparations = mysqlTable("stem_separations", {
 
 export type StemSeparation = typeof stemSeparations.$inferSelect;
 export type InsertStemSeparation = typeof stemSeparations.$inferInsert;
+
+// ─── Generation Tasks (async pattern to avoid proxy timeouts) ───
+export const generationTasks = mysqlTable("generation_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  kieTaskId: varchar("kieTaskId", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+  // Input params (stored so we can save the song after async completion)
+  keywords: text("keywords"),
+  genre: varchar("genre", { length: 100 }),
+  mood: varchar("mood", { length: 100 }),
+  vocalType: varchar("vocalType", { length: 50 }),
+  duration: int("duration"),
+  mode: varchar("mode", { length: 20 }),
+  customTitle: varchar("customTitle", { length: 255 }),
+  customLyrics: text("customLyrics"),
+  customStyle: varchar("customStyle", { length: 500 }),
+  prompt: text("prompt"),
+  engine: varchar("engine", { length: 50 }).default("suno"),
+  // Result (populated on completion)
+  songId: int("songId"),
+  errorMessage: text("errorMessage"),
+  // Whether credits/bonus were used
+  usedBonus: boolean("usedBonus").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type GenerationTask = typeof generationTasks.$inferSelect;
+export type InsertGenerationTask = typeof generationTasks.$inferInsert;
