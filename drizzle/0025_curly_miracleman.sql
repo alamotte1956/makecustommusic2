@@ -1,0 +1,1 @@
+ALTER TABLE `credit_transactions` MODIFY COLUMN `type` enum('subscription_refill','purchase','bonus','generation','tts','takes','refund','admin','bonus_song','bonus_sheet') NOT NULL;

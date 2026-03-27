@@ -176,6 +176,13 @@
       "when": 1774560214963,
       "tag": "0024_uneven_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1774584121077,
+      "tag": "0025_curly_miracleman",
+      "breakpoints": true
     }
   ]
 }

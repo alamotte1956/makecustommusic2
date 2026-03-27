@@ -284,7 +284,7 @@ export async function addBonusCredits(userId: number, amount: number, descriptio
 async function logTransaction(
   userId: number,
   amount: number,
-  type: "subscription_refill" | "purchase" | "bonus" | "generation" | "tts" | "takes" | "refund" | "admin",
+  type: "subscription_refill" | "purchase" | "bonus" | "generation" | "tts" | "takes" | "refund" | "admin" | "bonus_song" | "bonus_sheet",
   description: string,
   balanceAfter: number,
   relatedSongId?: number
@@ -340,7 +340,7 @@ export async function getMonthlyBonusUsage(userId: number, bonusType: "bonus_son
     .where(
       and(
         eq(creditTransactions.userId, userId),
-        eq(creditTransactions.type, bonusType as any),
+        eq(creditTransactions.type, bonusType),
         gte(creditTransactions.createdAt, periodStart)
       )
     );
@@ -373,7 +373,7 @@ export async function useMonthlyBonus(
   relatedSongId?: number
 ) {
   const balance = await getCreditBalance(userId);
-  await logTransaction(userId, 0, bonusType as any, description, balance.totalCredits, relatedSongId);
+  await logTransaction(userId, 0, bonusType, description, balance.totalCredits, relatedSongId);
 }
 
 // ─── Plan generation gate ──────────────────────────────────────────────────

@@ -180,7 +180,7 @@ export const creditTransactions = mysqlTable("credit_transactions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   amount: int("amount").notNull(), // positive = credit, negative = debit
-  type: mysqlEnum("type", ["subscription_refill", "purchase", "bonus", "generation", "tts", "takes", "refund", "admin"]).notNull(),
+  type: mysqlEnum("type", ["subscription_refill", "purchase", "bonus", "generation", "tts", "takes", "refund", "admin", "bonus_song", "bonus_sheet"]).notNull(),
   description: text("description"),
   balanceAfter: int("balanceAfter").notNull(),
   relatedSongId: int("relatedSongId"),

@@ -1811,3 +1811,6 @@
 
 ## Lyrics Character Limit Increase
 - [x] Increase lyrics character limit from 3,000 to 5,000 (upgraded default model from V4 to V4_5, increased prompt truncation from 4100 to 5000, frontend already at 5000)
+
+## Bugs
+- [x] Fix credit_transactions insert failure when logging bonus_song with amount 0 and null relatedSongId (added bonus_song and bonus_sheet to DB enum, updated logTransaction type signature, removed unsafe 'as any' casts)
