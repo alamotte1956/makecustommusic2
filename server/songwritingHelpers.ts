@@ -673,7 +673,7 @@ export function buildProductionPrompt(params: {
     if (sonicSignature) prompt += sonicSignature;
     prompt += `\n\nLyrics:\n${customLyrics}`;
 
-    return { prompt: prompt.substring(0, 4100), forceInstrumental };
+    return { prompt: prompt.substring(0, 5000), forceInstrumental };
   }
 
   // Simple Mode: transform keywords into a rich production prompt
@@ -711,5 +711,5 @@ export function buildProductionPrompt(params: {
   // Inject Christian sonic signature for genre-authentic sound
   if (sonicSignature) prompt += sonicSignature;
 
-  return { prompt: prompt.substring(0, 4100), forceInstrumental };
+  return { prompt: prompt.substring(0, 5000), forceInstrumental };
 }

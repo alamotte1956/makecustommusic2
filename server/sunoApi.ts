@@ -97,7 +97,7 @@ export async function submitMusicGeneration(
   }
 
   const apiKey = getApiKey();
-  const model = params.model ?? "V4";
+  const model = params.model ?? "V4_5";
 
   // kie.ai requires a callBackUrl — use a dummy URL since we poll for results
   const callBackUrl = "https://createchristianmusic.com/api/kie-callback";

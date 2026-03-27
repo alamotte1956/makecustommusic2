@@ -185,7 +185,7 @@ describe("songwritingHelpers", () => {
       expect(result.prompt).toContain("female vocals");
     });
 
-    it("truncates prompt to 4100 characters", () => {
+    it("truncates prompt to 5000 characters", () => {
       const longLyrics = "La la la ".repeat(1000);
       const result = buildProductionPrompt({
         keywords: "test",
@@ -198,7 +198,7 @@ describe("songwritingHelpers", () => {
         customLyrics: longLyrics,
         customStyle: "pop",
       });
-      expect(result.prompt.length).toBeLessThanOrEqual(4100);
+      expect(result.prompt.length).toBeLessThanOrEqual(5000);
     });
 
     it("handles all genre + mood combinations without errors", () => {
@@ -216,7 +216,7 @@ describe("songwritingHelpers", () => {
             mode: "simple",
           });
           expect(result.prompt.length).toBeGreaterThan(0);
-          expect(result.prompt.length).toBeLessThanOrEqual(4100);
+          expect(result.prompt.length).toBeLessThanOrEqual(5000);
         }
       }
     });

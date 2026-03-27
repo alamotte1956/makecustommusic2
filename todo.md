@@ -1808,3 +1808,6 @@
 - [x] Generation timeout (10 minute max wait)
 - [x] Admin notification on refund failure (notifyOwner when credit refund fails)
 - [x] 19 new tests for hardening features (1,524 total tests passing across 71 files)
+
+## Lyrics Character Limit Increase
+- [x] Increase lyrics character limit from 3,000 to 5,000 (upgraded default model from V4 to V4_5, increased prompt truncation from 4100 to 5000, frontend already at 5000)
