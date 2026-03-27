@@ -1,5 +1,7 @@
 import { invokeLLM } from "./_core/llm";
 
+import { extractLLMText } from "./llmHelpers";
+
 export interface SingabilityScore {
   overall: number; // 0-100
   melodicFlow: number; // 0-100 — how naturally the syllables flow
@@ -108,7 +110,8 @@ Be honest but constructive. Christian worship music should be evaluated for both
     },
   });
 
-  const content = response.choices?.[0]?.message?.content as string | undefined;
+  const rawContent = response.choices?.[0]?.message?.content;
+  const content = extractLLMText(rawContent);
   if (!content) {
     throw new Error("Failed to get singability analysis from LLM");
   }

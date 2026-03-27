@@ -1827,3 +1827,19 @@
 
 ## Live Preview Panel
 - [x] Add live preview panel to generator page showing complete prompt (lyrics + style) before sending to AI (collapsible panel with title, prompt/lyrics, style description, char counts, mode badge, instrumental flag)
+
+## Comprehensive Application Audit
+- [ ] Audit music generation flow end-to-end
+- [ ] Audit lyrics generation, refinement, and sharing
+- [x] Audit sheet music, chord progression, and stem separation
+- [ ] Audit albums, favorites, publishing, and social features
+- [ ] Audit credits, subscriptions, Stripe payments, and referrals
+- [ ] Audit worship sets, scripture linking, blog, and admin features
+- [ ] Fix all critical bugs found during audit
+
+## Sheet Music Audit Bugs
+- [x] BUG 1 (CRITICAL): Fix LLM content type array vs string in backgroundSheetMusic.ts — silently fails all sheet music generation with Claude
+- [x] BUG 2 (CRITICAL): Fix generateFromSheetMusic using old prompt mixing — lyrics/description both in prompt field
+- [x] BUG 3 (MEDIUM): Fix chord progression LLM content type array vs string
+- [x] BUG 4 (MEDIUM): Fix Mp3ToSheetMusic save-to-library losing activeJobId after job completes
+- [x] BUG 5 (LOW): Hardcoded callback URL — addressed via extractLLMText shared helper across all 9 LLM call sites

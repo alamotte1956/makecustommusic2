@@ -1,23 +1,50 @@
-AUDIT NOTES: Sheet Music Generation Pipeline
+COMPREHENSIVE SHEET MUSIC AUDIT — ALL BUGS FOUND
+===================================================
 
-## LLM Module (server/_core/llm.ts)
-- Line 301-304: CRITICAL ISSUE - `thinking` parameter with `budget_tokens: 128` is hardcoded
-  - This is a Claude-specific parameter but the default model is "gemini-2.5-flash"
-  - When using claude-sonnet-4-20250514 (as in backgroundSheetMusic.ts), the thinking parameter
-    may cause the response format to include thinking blocks, which could make
-    response.choices[0].message.content an ARRAY instead of a string
-  - The InvokeResult type says content can be `string | Array<TextContent | ImageContent | FileContent>`
-  - In backgroundSheetMusic.ts line 92: `response.choices?.[0]?.message?.content`
-    - If content is an array (due to thinking), this returns the array, not a string
-    - Line 93: `typeof rawContent === "string"` would be FALSE for an array
-    - This means abcNotation would be null, triggering the "LLM returned empty content" error
+## BUG 1: LLM content type — array vs string (CRITICAL)
+File: server/backgroundSheetMusic.ts line 217-219
+The invokeLLM with thinking enabled (Claude models) can return content as an array
+of thinking blocks + text blocks instead of a plain string. The code only handles
+typeof rawContent === "string", so when content is an array, rawAbc is null, and
+the function throws "LLM returned empty content". This silently fails ALL sheet
+music generation when Claude is the model.
+FIX: Extract text from array content if it's not a string.
 
-## backgroundSheetMusic.ts
-- Line 82: Uses model "claude-sonnet-4-20250514" 
-- Line 92-93: Only handles string content, not array content (thinking blocks)
-- Line 99: Regex to strip markdown fences looks correct
+## BUG 2: generateFromSheetMusic uses old sunoGenerateMusic (CRITICAL)
+File: server/routers.ts line 804
+The generateFromSheetMusic endpoint uses the old `sunoGenerateMusic` function which
+is a synchronous wrapper that blocks until completion. But worse, it puts BOTH lyrics
+AND production description into the `prompt` field — the same bug we already fixed
+in the main generator. In custom mode, kie.ai treats `prompt` as lyrics to sing.
+So the production description gets sung as lyrics.
+FIX: Separate prompt (lyrics only) from style (description), same as the main generator fix.
 
-## Potential JSON Error
-- The user mentioned ".json file" error
-- Could be related to the LLM response being JSON with thinking blocks
-- Or could be the fetch response failing to parse as JSON
+## BUG 3: Chord progression LLM content type (MEDIUM)
+File: server/routers.ts line 1155-1156
+Same array-vs-string bug as Bug 1. The chord progression generator checks
+typeof rawContent !== "string" and throws, but if thinking is enabled, the
+content could be an array containing the JSON response.
+FIX: Same extraction logic as Bug 1.
+
+## BUG 4: Mp3ToSheetMusic save-to-library loses activeJobId (MEDIUM)
+File: client/src/pages/Mp3ToSheetMusic.tsx line 557-559
+handleSaveToLibrary checks `if (!activeJobId && !abcNotation)` but then
+on line 558 does `const jobId = activeJobId; if (!jobId)` — however,
+activeJobId is set to null when the job completes (line 483). So after
+a successful job, the user can never save to library because activeJobId
+is null. The save button would always fail with "No active job to save".
+FIX: Store the completed jobId separately so it persists after completion.
+
+## BUG 5: No credit check before sheet music generation (LOW)
+File: server/routers.ts line 1049-1078
+The generateSheetMusic endpoint (manual regeneration) doesn't check credits.
+Users can regenerate sheet music unlimited times for free. The background
+generation also doesn't deduct credits. Only the MP3-to-sheet flow deducts.
+This may be intentional (sheet music is a feature of the song), but worth noting.
+
+## BUG 6: Hardcoded callback URL in lyrics generation (LOW)
+File: server/sunoApi.ts line 372
+The submitLyricsGeneration function has a hardcoded callback URL:
+"https://createchristianmusic.com/api/kie-callback"
+This won't work in dev/staging environments. However, the comment says
+this function is not actively used (lyrics are generated via LLM instead).

@@ -140,6 +140,7 @@ export default function Mp3ToSheetMusic() {
   const trpcUtils = trpc.useUtils();
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
+  const [completedJobId, setCompletedJobId] = useState<number | null>(null);
 
   // Clean up polling on unmount
   useEffect(() => {
@@ -480,6 +481,7 @@ export default function Mp3ToSheetMusic() {
         } else if (result.status === "done") {
           if (pollingRef.current) clearInterval(pollingRef.current);
           pollingRef.current = null;
+          setCompletedJobId(jobId); // Preserve jobId for save-to-library
           setActiveJobId(null);
           setAbcNotation(result.abcNotation || null);
           setLyrics(result.lyrics || null);
@@ -554,10 +556,10 @@ export default function Mp3ToSheetMusic() {
   }, [file, selectedKey, originalKey]);
 
   const handleSaveToLibrary = useCallback(async () => {
-    if (!activeJobId && !abcNotation) return;
-    const jobId = activeJobId;
+    const jobId = completedJobId || activeJobId;
+    if (!jobId && !abcNotation) return;
     if (!jobId) {
-      toast.error("No active job to save");
+      toast.error("No completed job to save");
       return;
     }
     try {
@@ -576,7 +578,7 @@ export default function Mp3ToSheetMusic() {
     } catch (err: any) {
       toast.error(err?.message || "Failed to save to library");
     }
-  }, [activeJobId, abcNotation, saveTitle, saveToLibraryMutation, navigate]);
+  }, [completedJobId, activeJobId, abcNotation, saveTitle, saveToLibraryMutation, navigate]);
 
   const handleReset = useCallback(() => {
     if (pollingRef.current) {
@@ -584,6 +586,7 @@ export default function Mp3ToSheetMusic() {
       pollingRef.current = null;
     }
     setActiveJobId(null);
+    setCompletedJobId(null);
     stopPreview();
     setFile(null);
     setAbcNotation(null);

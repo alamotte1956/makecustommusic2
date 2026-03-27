@@ -1,5 +1,7 @@
 import { invokeLLM } from "./_core/llm";
 
+import { extractLLMText } from "./llmHelpers";
+
 export interface SheetMusicAnalysis {
   title: string;
   key: string;
@@ -124,12 +126,7 @@ export async function analyzeSheetMusicImage(
   });
 
   const raw = response.choices?.[0]?.message?.content;
-  const content =
-    typeof raw === "string"
-      ? raw
-      : Array.isArray(raw)
-        ? (raw.find((c: any) => c.type === "text") as any)?.text
-        : null;
+  const content = extractLLMText(raw);
 
   if (!content) {
     const responseStr = JSON.stringify(response).substring(0, 500);
@@ -185,12 +182,7 @@ export async function analyzeMusicXML(xmlContent: string): Promise<SheetMusicAna
   });
 
   const raw = response.choices?.[0]?.message?.content;
-  const content =
-    typeof raw === "string"
-      ? raw
-      : Array.isArray(raw)
-        ? (raw.find((c: any) => c.type === "text") as any)?.text
-        : null;
+  const content = extractLLMText(raw);
 
   if (!content) {
     console.error("[SheetMusicAnalyzer] No content in MusicXML LLM response");

@@ -36,6 +36,7 @@ import { getGenreGuidance, getMoodGuidance, buildProductionPrompt } from "./song
 import { postProcessAudio, mixVocalInstrumental, prepareStemDownloads, getPresets, type ProcessingPreset } from "./audioProcessor";
 import { addTempoSync, getTempoVoiceSettings, estimateBpmFromGenre } from "./ssmlBuilder";
 import { buildCoverArtPrompt } from "./coverArtMotifs";
+import { extractLLMText } from "./llmHelpers";
 import {
   getUserPlan, getCreditBalance, deductCredits, refundCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
@@ -588,7 +589,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         });
 
         const rawContent = response.choices?.[0]?.message?.content;
-        const lyrics = typeof rawContent === "string" ? rawContent.trim() : null;
+        const lyrics = extractLLMText(rawContent);
         if (!lyrics) {
           throw new Error("Failed to generate lyrics. Please try again.");
         }
@@ -630,7 +631,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         });
 
         const rawContent = response.choices?.[0]?.message?.content;
-        const refined = typeof rawContent === "string" ? rawContent.trim() : null;
+        const refined = extractLLMText(rawContent);
         if (!refined) throw new Error("Failed to refine lyrics. Please try again.");
         return { lyrics: refined, mode: input.mode };
       }),
@@ -675,7 +676,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         });
 
         const rawContent = response.choices?.[0]?.message?.content;
-        const newLyrics = typeof rawContent === "string" ? rawContent.trim() : null;
+        const newLyrics = extractLLMText(rawContent);
         if (!newLyrics) throw new Error("Failed to generate variation. Please try again.");
 
         return { lyrics: newLyrics, section: input.section };
@@ -789,22 +790,22 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
 
         const { analysis, vocalType, duration, lyrics } = input;
 
-        // Build a rich production prompt from the analysis
-        const prompt = [
-          `${analysis.description}`,
+        // Build style description (musical context for kie.ai style field)
+        const styleDescription = [
+          analysis.styleTags,
+          `${analysis.genre}, ${analysis.mood}`,
           `Key: ${analysis.key}, Time: ${analysis.timeSignature}, Tempo: ${analysis.tempo} BPM`,
           `Instruments: ${analysis.instruments.join(", ")}`,
-          `Chord progression: ${analysis.chordProgression.join(" - ")}`,
-          `Style: ${analysis.styleTags}`,
-          vocalType !== "none" ? `Vocals: ${vocalType}` : "Instrumental only",
-        ].join(". ");
+          vocalType !== "none" ? `Vocals: ${vocalType}` : "Instrumental",
+        ].filter(Boolean).join(", ").substring(0, 1000);
 
-        // Include lyrics in the prompt if provided
-        const fullPrompt = lyrics ? `${prompt}. Lyrics:\n${lyrics}` : prompt;
+        // In custom mode: prompt = lyrics to sing, style = musical description
+        // If no lyrics, use the song description as the prompt (kie.ai will auto-generate lyrics from it)
+        const lyricsPrompt = lyrics || analysis.description;
         const result = await sunoGenerateMusic({
-          prompt: fullPrompt,
+          prompt: lyricsPrompt.substring(0, 5000),
           customMode: true,
-          style: analysis.styleTags,
+          style: styleDescription,
           title: analysis.title,
           instrumental: vocalType === "none",
         }, ctx.user.id);
@@ -1153,7 +1154,8 @@ RULES:
         });
 
         const rawContent = response.choices?.[0]?.message?.content;
-        if (!rawContent || typeof rawContent !== "string") {
+        const textContent = extractLLMText(rawContent);
+        if (!textContent) {
           throw new Error("Failed to generate chord progression. Please try again.");
         }
 
@@ -1161,7 +1163,7 @@ RULES:
         let chordProgression: ChordProgressionData;
         try {
           // Clean up potential markdown wrapping
-          const cleanJson = rawContent.replace(/^```[a-z]*\n?/gm, "").replace(/```$/gm, "").trim();
+          const cleanJson = textContent.replace(/^```[a-z]*\n?/gm, "").replace(/```$/gm, "").trim();
           chordProgression = JSON.parse(cleanJson);
         } catch {
           throw new Error("Failed to parse chord progression data. Please try again.");
@@ -2521,9 +2523,9 @@ Focus on creating a natural flow from gathering to sending forth.`;
           },
         });
 
-        const content = response.choices?.[0]?.message?.content;
-        if (!content) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate suggestion" });
-        const text = typeof content === "string" ? content : JSON.stringify(content);
+        const rawContent = response.choices?.[0]?.message?.content;
+        const text = extractLLMText(rawContent);
+        if (!text) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate suggestion" });
         return JSON.parse(text);
       }),
 

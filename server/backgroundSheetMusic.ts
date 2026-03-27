@@ -9,6 +9,7 @@
 
 import { invokeLLM } from "./_core/llm";
 import { getSongById, updateSongSheetMusic } from "./db";
+import { extractLLMText } from "./llmHelpers";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SHEET_MUSIC_SYSTEM_PROMPT = [
@@ -215,8 +216,7 @@ export async function generateAbcNotation(
       });
 
       const rawContent = response.choices?.[0]?.message?.content;
-      const rawAbc =
-        typeof rawContent === "string" ? rawContent.trim() : null;
+      const rawAbc = extractLLMText(rawContent);
       if (!rawAbc) {
         throw new Error("LLM returned empty content for sheet music generation");
       }
