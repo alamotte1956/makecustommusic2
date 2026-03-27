@@ -185,6 +185,42 @@ describe("songwritingHelpers", () => {
       expect(result.prompt).toContain("female vocals");
     });
 
+    it("builds a custom mode prompt with lyrics but no style tags", () => {
+      const result = buildProductionPrompt({
+        keywords: "love",
+        genre: "gospel",
+        mood: "uplifting",
+        vocalType: "male",
+        duration: 180,
+        mode: "custom",
+        customTitle: "Amazing Grace Reimagined",
+        customLyrics: "Amazing grace how sweet the sound\nThat saved a wretch like me",
+        customStyle: "",  // empty style — should still use custom mode
+      });
+      expect(result.prompt).toContain("Amazing Grace Reimagined");
+      expect(result.prompt).toContain("Amazing grace how sweet the sound");
+      expect(result.prompt).toContain("radio-ready");
+      // Should NOT contain "Style:" since customStyle is empty
+      expect(result.prompt).not.toContain("Style:");
+    });
+
+    it("builds a custom mode prompt with lyrics but undefined style", () => {
+      const result = buildProductionPrompt({
+        keywords: "worship",
+        genre: "christian",
+        mood: "calm",
+        vocalType: "female",
+        duration: 120,
+        mode: "custom",
+        customTitle: "Be Still",
+        customLyrics: "Be still and know that I am God\nIn the quiet of the morning",
+        // customStyle omitted entirely
+      });
+      expect(result.prompt).toContain("Be Still");
+      expect(result.prompt).toContain("Be still and know that I am God");
+      expect(result.prompt).toContain("Lyrics:");
+    });
+
     it("truncates prompt to 5000 characters", () => {
       const longLyrics = "La la la ".repeat(1000);
       const result = buildProductionPrompt({

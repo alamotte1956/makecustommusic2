@@ -1817,3 +1817,6 @@
 
 ## Bonus Songs Remaining Indicator
 - [x] Add bonus songs remaining indicator to the generator page (shows used/total with tooltip, always visible for subscribers, exhausted note when all used)
+
+## Bugs
+- [x] Fix custom lyrics not being used during music generation (buildProductionPrompt required customStyle to be truthy — now only requires customLyrics for custom mode)

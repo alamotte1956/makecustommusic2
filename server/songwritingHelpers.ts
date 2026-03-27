@@ -635,13 +635,15 @@ export function buildProductionPrompt(params: {
   const genreLower = genre?.toLowerCase().trim() || "";
   const sonicSignature = CHRISTIAN_SONIC_SIGNATURES[genreLower] || "";
 
-  if (mode === "custom" && customLyrics && customStyle) {
+  if (mode === "custom" && customLyrics) {
     // Custom Mode: build a detailed production prompt from lyrics + style + metadata
     const genreProd = genre ? GENRE_PRODUCTION[genre.toLowerCase()] : null;
     const moodProd = mood ? MOOD_PRODUCTION[mood.toLowerCase()] : null;
 
-    let prompt = `Create a professionally produced, radio-ready song titled "${customTitle || "Untitled"}"`
-    prompt += `\n\nStyle: ${customStyle}.`;
+    let prompt = `Create a professionally produced, radio-ready song titled "${customTitle || "Untitled"}"`;
+    if (customStyle) {
+      prompt += `\n\nStyle: ${customStyle}.`;
+    }
 
     if (genre) {
       prompt += ` Genre: ${genre}.`;
