@@ -289,6 +289,43 @@ export const appRouter = router({
       }
     }),
 
+    // Preview the exact prompt that will be sent to the AI
+    promptPreview: protectedProcedure
+      .input(z.object({
+        keywords: z.string().max(500).default(""),
+        genre: z.string().max(100).optional(),
+        mood: z.string().max(100).optional(),
+        vocalType: z.enum(["none", "male", "female", "mixed", "male_and_female"]).optional(),
+        duration: z.number().min(15).max(240).optional(),
+        mode: z.enum(["simple", "custom"]).optional(),
+        customTitle: z.string().max(255).optional(),
+        customLyrics: z.string().max(10000).optional(),
+        customStyle: z.string().max(500).optional(),
+      }))
+      .query(({ input }) => {
+        const { keywords, genre, mood, vocalType, duration, mode, customTitle, customLyrics, customStyle } = input;
+        const isCustomMode = mode === "custom";
+        const { prompt, style, forceInstrumental } = buildProductionPrompt({
+          keywords: keywords || "Untitled",
+          genre: genre || null,
+          mood: mood || null,
+          vocalType: vocalType || null,
+          duration: duration || 30,
+          mode: mode || "simple",
+          customTitle,
+          customLyrics,
+          customStyle,
+        });
+        return {
+          title: customTitle || keywords || "Untitled",
+          prompt,
+          promptLabel: isCustomMode ? "Lyrics (sung by AI)" : "Prompt (AI generates lyrics from this)",
+          style,
+          instrumental: forceInstrumental,
+          mode: mode || "simple",
+        };
+      }),
+
     // Generate music with Suno (simple or custom mode)
     generate: protectedProcedure
       .input(z.object({

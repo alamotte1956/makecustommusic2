@@ -1824,3 +1824,6 @@
 
 ## Auto-Populate Style Tags
 - [x] Auto-populate style tags from selected genre, mood, and vocal type when the style tags field is empty (with "Auto-filled" indicator, "Reset to auto" button, and user-edit tracking via ref)
+
+## Live Preview Panel
+- [x] Add live preview panel to generator page showing complete prompt (lyrics + style) before sending to AI (collapsible panel with title, prompt/lyrics, style description, char counts, mode badge, instrumental flag)

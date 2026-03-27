@@ -10,13 +10,14 @@ import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import AudioPlayer from "@/components/AudioPlayer";
 import { downloadFile, sanitizeFilename } from "@/lib/safariDownload";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Download, Music, Loader2,
   ChevronDown, ChevronUp, ChevronRight, Clock, Guitar, Gauge,
   Share2, RefreshCw, Mic, MicOff, Users,
-  FileText, Tag, Wand2, PenLine, MessageSquareText, Cross
+  FileText, Tag, Wand2, PenLine, MessageSquareText, Cross,
+  Eye, EyeOff
 } from "lucide-react";
 import FavoriteButton from "@/components/FavoriteButton";
 import { getLoginUrl } from "@/const";
@@ -488,6 +489,7 @@ export default function Generator() {
   const [progressMessage, setProgressMessage] = useState("");
   const [generatedSong, setGeneratedSong] = useState<GeneratedSong | null>(null);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Queries & mutations
   const enginesQuery = trpc.songs.engines.useQuery();
@@ -508,6 +510,27 @@ export default function Generator() {
 
   const isSunoAvailable = enginesQuery.data?.suno ?? false;
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
+
+  // Prompt preview query — only fetches when the preview panel is open
+  const previewInput = useMemo(() => ({
+    keywords: isCustomMode
+      ? (customTitle || keywords.trim() || "Custom Song")
+      : keywords.trim() || "",
+    genre: selectedGenre || undefined,
+    mood: selectedMood || undefined,
+    vocalType: vocalType as "none" | "male" | "female" | "mixed" | "male_and_female",
+    duration,
+    mode: (isCustomMode ? "custom" : "simple") as "simple" | "custom",
+    customTitle: isCustomMode ? customTitle : undefined,
+    customLyrics: isCustomMode ? customLyrics : undefined,
+    customStyle: isCustomMode ? customStyle : undefined,
+  }), [keywords, selectedGenre, selectedMood, vocalType, duration, isCustomMode, customTitle, customLyrics, customStyle]);
+
+  const previewQuery = trpc.songs.promptPreview.useQuery(previewInput, {
+    enabled: showPreview && !isGenerating,
+    staleTime: 5_000,
+    refetchOnWindowFocus: false,
+  });
 
   // Build default style tags from selected genre, mood, and vocal type
   const buildDefaultStyleTags = useCallback(() => {
@@ -1274,6 +1297,104 @@ export default function Generator() {
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══════════════════════════════════════════════ */}
+      {/* AI Prompt Preview Panel                         */}
+      {/* ═══════════════════════════════════════════════ */}
+      <Card className="border-dashed border-muted-foreground/30">
+        <CardContent className="pt-4 pb-4">
+          <button
+            type="button"
+            onClick={() => setShowPreview(!showPreview)}
+            className="flex items-center gap-2 w-full text-left group"
+          >
+            {showPreview ? (
+              <EyeOff className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            ) : (
+              <Eye className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            )}
+            <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+              {showPreview ? "Hide" : "Show"} AI Prompt Preview
+            </span>
+            <span className="text-[10px] text-muted-foreground/60 ml-1">
+              See exactly what the AI receives
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground ml-auto transition-transform ${showPreview ? "rotate-180" : ""}`} />
+          </button>
+
+          {showPreview && (
+            <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              {previewQuery.isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Building preview...
+                </div>
+              ) : previewQuery.data ? (
+                <>
+                  {/* Title */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Music className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-primary">Title</span>
+                    </div>
+                    <p className="text-sm text-foreground pl-5.5 font-medium">{previewQuery.data.title}</p>
+                  </div>
+
+                  {/* Prompt / Lyrics */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-amber-500" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-amber-500">
+                        {previewQuery.data.promptLabel}
+                      </span>
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                        {previewQuery.data.prompt.length} chars
+                      </Badge>
+                    </div>
+                    <div className="pl-5.5 rounded-md bg-muted/50 border border-border/50 p-3 max-h-48 overflow-y-auto">
+                      <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">{previewQuery.data.prompt || <span className="italic text-muted-foreground">No prompt yet — enter a description or lyrics above</span>}</pre>
+                    </div>
+                  </div>
+
+                  {/* Style */}
+                  {previewQuery.data.style && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-3.5 h-3.5 text-violet-500" />
+                        <span className="text-xs font-semibold uppercase tracking-wide text-violet-500">Style Description</span>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                          {previewQuery.data.style.length} / 1000 chars
+                        </Badge>
+                      </div>
+                      <div className="pl-5.5 rounded-md bg-muted/50 border border-border/50 p-3">
+                        <p className="text-xs text-foreground/80 leading-relaxed">{previewQuery.data.style}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Settings row */}
+                  <div className="pl-5.5 flex flex-wrap gap-2 pt-1">
+                    <Badge variant="secondary" className="text-[10px] gap-1">
+                      <Gauge className="w-3 h-3" />
+                      Mode: {previewQuery.data.mode}
+                    </Badge>
+                    {previewQuery.data.instrumental && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-orange-500/10 text-orange-400 border-orange-500/20">
+                        <MicOff className="w-3 h-3" />
+                        Instrumental
+                      </Badge>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground py-2">
+                  Fill in the fields above to see a preview of what the AI will receive.
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
