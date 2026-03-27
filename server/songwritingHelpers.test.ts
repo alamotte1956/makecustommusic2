@@ -84,7 +84,7 @@ describe("songwritingHelpers", () => {
   });
 
   describe("buildProductionPrompt", () => {
-    it("builds a simple mode prompt with keywords only", () => {
+    it("builds a simple mode prompt with keywords and arrangement", () => {
       const result = buildProductionPrompt({
         keywords: "summer vibes beach party",
         genre: null,
@@ -95,11 +95,10 @@ describe("songwritingHelpers", () => {
       });
       expect(result.prompt).toContain("summer vibes beach party");
       expect(result.prompt).toContain("radio-ready");
-      expect(result.prompt).toContain("30 seconds");
       expect(result.forceInstrumental).toBe(false);
     });
 
-    it("builds a simple mode prompt with genre production details", () => {
+    it("builds a simple mode with genre production details in style", () => {
       const result = buildProductionPrompt({
         keywords: "love song",
         genre: "pop",
@@ -109,12 +108,12 @@ describe("songwritingHelpers", () => {
         mode: "simple",
       });
       expect(result.prompt).toContain("love song");
-      expect(result.prompt).toContain("pop");
-      expect(result.prompt).toContain("BPM");
-      expect(result.prompt).toContain("synth");
+      // Genre details go in style field
+      expect(result.style).toContain("pop");
+      expect(result.style).toContain("BPM");
     });
 
-    it("builds a simple mode prompt with mood production details", () => {
+    it("builds a simple mode with mood production details in style", () => {
       const result = buildProductionPrompt({
         keywords: "midnight drive",
         genre: null,
@@ -123,8 +122,9 @@ describe("songwritingHelpers", () => {
         duration: 45,
         mode: "simple",
       });
-      expect(result.prompt).toContain("melancholic");
-      expect(result.prompt).toContain("minor key");
+      // Mood details go in style field
+      expect(result.style).toContain("melancholic");
+      expect(result.style).toContain("minor key");
     });
 
     it("sets forceInstrumental when vocalType is none", () => {
@@ -137,10 +137,10 @@ describe("songwritingHelpers", () => {
         mode: "simple",
       });
       expect(result.forceInstrumental).toBe(true);
-      expect(result.prompt).toContain("Instrumental only");
+      expect(result.style).toContain("instrumental only");
     });
 
-    it("adds vocal description for male vocals", () => {
+    it("adds vocal description for male vocals in style", () => {
       const result = buildProductionPrompt({
         keywords: "rock anthem",
         genre: "rock",
@@ -149,11 +149,11 @@ describe("songwritingHelpers", () => {
         duration: 120,
         mode: "simple",
       });
-      expect(result.prompt).toContain("male vocals");
+      expect(result.style).toContain("male vocals");
       expect(result.forceInstrumental).toBe(false);
     });
 
-    it("adds vocal description for mixed vocals", () => {
+    it("adds vocal description for mixed vocals in style", () => {
       const result = buildProductionPrompt({
         keywords: "duet",
         genre: null,
@@ -162,11 +162,11 @@ describe("songwritingHelpers", () => {
         duration: 90,
         mode: "simple",
       });
-      expect(result.prompt).toContain("duet");
-      expect(result.prompt).toContain("male and female");
+      expect(result.style).toContain("duet");
+      expect(result.style).toContain("male and female");
     });
 
-    it("builds a custom mode prompt with lyrics", () => {
+    it("in custom mode, prompt contains ONLY the lyrics (not production notes)", () => {
       const result = buildProductionPrompt({
         keywords: "love",
         genre: "pop",
@@ -178,14 +178,20 @@ describe("songwritingHelpers", () => {
         customLyrics: "Under the stars tonight\nI found my way to you",
         customStyle: "dreamy pop ballad",
       });
-      expect(result.prompt).toContain("Starlight");
-      expect(result.prompt).toContain("dreamy pop ballad");
-      expect(result.prompt).toContain("Under the stars tonight");
-      expect(result.prompt).toContain("radio-ready");
-      expect(result.prompt).toContain("female vocals");
+      // prompt = only the lyrics (kie.ai sings this directly)
+      expect(result.prompt).toBe("Under the stars tonight\nI found my way to you");
+      // style = rich description with customStyle, genre, mood, vocals
+      expect(result.style).toContain("dreamy pop ballad");
+      expect(result.style).toContain("pop");
+      expect(result.style).toContain("romantic");
+      expect(result.style).toContain("female vocals");
+      // prompt should NOT contain production notes
+      expect(result.prompt).not.toContain("radio-ready");
+      expect(result.prompt).not.toContain("Production");
+      expect(result.prompt).not.toContain("BPM");
     });
 
-    it("builds a custom mode prompt with lyrics but no style tags", () => {
+    it("in custom mode without style tags, prompt is still only lyrics", () => {
       const result = buildProductionPrompt({
         keywords: "love",
         genre: "gospel",
@@ -195,16 +201,19 @@ describe("songwritingHelpers", () => {
         mode: "custom",
         customTitle: "Amazing Grace Reimagined",
         customLyrics: "Amazing grace how sweet the sound\nThat saved a wretch like me",
-        customStyle: "",  // empty style — should still use custom mode
+        customStyle: "",
       });
-      expect(result.prompt).toContain("Amazing Grace Reimagined");
-      expect(result.prompt).toContain("Amazing grace how sweet the sound");
-      expect(result.prompt).toContain("radio-ready");
-      // Should NOT contain "Style:" since customStyle is empty
-      expect(result.prompt).not.toContain("Style:");
+      // prompt = only the lyrics
+      expect(result.prompt).toBe("Amazing grace how sweet the sound\nThat saved a wretch like me");
+      // style should still have genre + mood info even without customStyle
+      expect(result.style).toContain("gospel");
+      expect(result.style).toContain("uplifting");
+      expect(result.style).toContain("male vocals");
+      // style should NOT start with a comma (no empty customStyle prefix)
+      expect(result.style).not.toMatch(/^,/);
     });
 
-    it("builds a custom mode prompt with lyrics but undefined style", () => {
+    it("in custom mode with undefined style, prompt is only lyrics", () => {
       const result = buildProductionPrompt({
         keywords: "worship",
         genre: "christian",
@@ -214,14 +223,16 @@ describe("songwritingHelpers", () => {
         mode: "custom",
         customTitle: "Be Still",
         customLyrics: "Be still and know that I am God\nIn the quiet of the morning",
-        // customStyle omitted entirely
       });
-      expect(result.prompt).toContain("Be Still");
+      // prompt = only the lyrics
       expect(result.prompt).toContain("Be still and know that I am God");
-      expect(result.prompt).toContain("Lyrics:");
+      expect(result.prompt).not.toContain("Production");
+      // style should have genre + mood
+      expect(result.style).toContain("christian");
+      expect(result.style).toContain("calm");
     });
 
-    it("truncates prompt to 5000 characters", () => {
+    it("truncates lyrics prompt to 5000 characters in custom mode", () => {
       const longLyrics = "La la la ".repeat(1000);
       const result = buildProductionPrompt({
         keywords: "test",
@@ -235,6 +246,7 @@ describe("songwritingHelpers", () => {
         customStyle: "pop",
       });
       expect(result.prompt.length).toBeLessThanOrEqual(5000);
+      expect(result.style.length).toBeLessThanOrEqual(1000);
     });
 
     it("handles all genre + mood combinations without errors", () => {
@@ -252,7 +264,7 @@ describe("songwritingHelpers", () => {
             mode: "simple",
           });
           expect(result.prompt.length).toBeGreaterThan(0);
-          expect(result.prompt.length).toBeLessThanOrEqual(5000);
+          expect(result.prompt.length).toBeLessThanOrEqual(500);
         }
       }
     });

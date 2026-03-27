@@ -6,8 +6,8 @@ import { buildProductionPrompt } from "./songwritingHelpers";
 
 describe("Male & Female Vocal Option", () => {
   describe("buildProductionPrompt with male_and_female vocal type", () => {
-    it("should include male and female blended vocal production in Custom mode", () => {
-      const { prompt } = buildProductionPrompt({
+    it("should include male and female blended vocal production in Custom mode style", () => {
+      const { prompt, style } = buildProductionPrompt({
         keywords: "worship song",
         genre: "Christian",
         mood: "Uplifting",
@@ -18,13 +18,16 @@ describe("Male & Female Vocal Option", () => {
         customLyrics: "We lift our voices as one",
         customStyle: "worship, harmony",
       });
-      expect(prompt).toContain("male and female");
-      expect(prompt).toContain("unison");
-      expect(prompt).toContain("harmony");
+      // In custom mode, prompt = only lyrics
+      expect(prompt).toBe("We lift our voices as one");
+      // Vocal production goes into style field
+      expect(style).toContain("male and female");
+      expect(style).toContain("unison");
+      expect(style).toContain("harmony");
     });
 
-    it("should include male and female blended vocal production in Simple mode", () => {
-      const { prompt } = buildProductionPrompt({
+    it("should include male and female blended vocal production in Simple mode style", () => {
+      const { style } = buildProductionPrompt({
         keywords: "praise and worship",
         genre: "Gospel",
         mood: "Triumphant",
@@ -32,8 +35,9 @@ describe("Male & Female Vocal Option", () => {
         duration: 90,
         mode: "simple",
       });
-      expect(prompt).toContain("male and female");
-      expect(prompt).toContain("unison");
+      // Vocal production is in the style field
+      expect(style).toContain("male and female");
+      expect(style).toContain("unison");
     });
 
     it("should NOT be instrumental when male_and_female is selected", () => {
@@ -48,7 +52,7 @@ describe("Male & Female Vocal Option", () => {
       expect(forceInstrumental).toBe(false);
     });
 
-    it("should produce different prompts for mixed vs male_and_female", () => {
+    it("should produce different styles for mixed vs male_and_female", () => {
       const mixedResult = buildProductionPrompt({
         keywords: "love song",
         genre: "Pop",
@@ -65,11 +69,11 @@ describe("Male & Female Vocal Option", () => {
         duration: 120,
         mode: "simple",
       });
-      expect(mixedResult.prompt).not.toBe(mfResult.prompt);
+      expect(mixedResult.style).not.toBe(mfResult.style);
       // mixed = duet with call-and-response
-      expect(mixedResult.prompt).toContain("duet");
+      expect(mixedResult.style).toContain("duet");
       // male_and_female = blended unison and harmony
-      expect(mfResult.prompt).toContain("unison");
+      expect(mfResult.style).toContain("unison");
     });
 
     it("should work with all Christian genres", () => {
@@ -79,7 +83,7 @@ describe("Male & Female Vocal Option", () => {
         "Hymns", "Praise & Worship", "Christian R&B",
       ];
       for (const genre of christianGenres) {
-        const { prompt, forceInstrumental } = buildProductionPrompt({
+        const { style, forceInstrumental } = buildProductionPrompt({
           keywords: "faith song",
           genre,
           mood: "Devotional",
@@ -88,14 +92,14 @@ describe("Male & Female Vocal Option", () => {
           mode: "simple",
         });
         expect(forceInstrumental).toBe(false);
-        expect(prompt).toContain("male and female");
+        expect(style).toContain("male and female");
       }
     });
   });
 
   describe("Vocal type distinctions", () => {
     it("should produce instrumental-only for none", () => {
-      const { forceInstrumental, prompt } = buildProductionPrompt({
+      const { forceInstrumental, style } = buildProductionPrompt({
         keywords: "ambient",
         genre: "Ambient",
         mood: "Calm",
@@ -104,11 +108,11 @@ describe("Male & Female Vocal Option", () => {
         mode: "simple",
       });
       expect(forceInstrumental).toBe(true);
-      expect(prompt).toContain("Instrumental only");
+      expect(style).toContain("instrumental only");
     });
 
     it("should produce male vocals for male", () => {
-      const { prompt } = buildProductionPrompt({
+      const { style } = buildProductionPrompt({
         keywords: "rock anthem",
         genre: "Rock",
         mood: "Energetic",
@@ -116,11 +120,11 @@ describe("Male & Female Vocal Option", () => {
         duration: 120,
         mode: "simple",
       });
-      expect(prompt).toContain("male vocals");
+      expect(style).toContain("male vocals");
     });
 
     it("should produce female vocals for female", () => {
-      const { prompt } = buildProductionPrompt({
+      const { style } = buildProductionPrompt({
         keywords: "pop ballad",
         genre: "Pop",
         mood: "Romantic",
@@ -128,11 +132,11 @@ describe("Male & Female Vocal Option", () => {
         duration: 120,
         mode: "simple",
       });
-      expect(prompt).toContain("female vocals");
+      expect(style).toContain("female vocals");
     });
 
     it("should produce duet for mixed", () => {
-      const { prompt } = buildProductionPrompt({
+      const { style } = buildProductionPrompt({
         keywords: "love duet",
         genre: "R&B",
         mood: "Romantic",
@@ -140,12 +144,12 @@ describe("Male & Female Vocal Option", () => {
         duration: 120,
         mode: "simple",
       });
-      expect(prompt).toContain("duet");
-      expect(prompt).toContain("call-and-response");
+      expect(style).toContain("duet");
+      expect(style).toContain("call-and-response");
     });
 
     it("should produce blended unison for male_and_female", () => {
-      const { prompt } = buildProductionPrompt({
+      const { style } = buildProductionPrompt({
         keywords: "worship",
         genre: "Christian",
         mood: "Uplifting",
@@ -153,8 +157,8 @@ describe("Male & Female Vocal Option", () => {
         duration: 120,
         mode: "simple",
       });
-      expect(prompt).toContain("unison");
-      expect(prompt).toContain("worship-team");
+      expect(style).toContain("unison");
+      expect(style).toContain("worship-team");
     });
   });
 });

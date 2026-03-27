@@ -377,7 +377,7 @@ export const appRouter = router({
         }
 
         // Build production-quality prompt using the songwriting helpers
-        const { prompt, forceInstrumental } = buildProductionPrompt({
+        const { prompt, style: builtStyle, forceInstrumental } = buildProductionPrompt({
           keywords,
           genre: genre || null,
           mood: mood || null,
@@ -395,9 +395,11 @@ export const appRouter = router({
         try {
           kieTaskId = await submitMusicGeneration({
             prompt,
-            customMode: mode === "custom",
-            style: customStyle || undefined,
-            title: customTitle || undefined,
+            // Always use customMode=true so we can leverage the rich style field
+            // and ensure lyrics are used exactly as provided in custom mode.
+            customMode: true,
+            style: builtStyle || undefined,
+            title: customTitle || keywords.substring(0, 80) || undefined,
             instrumental: forceInstrumental,
           });
         } catch (genErr: any) {

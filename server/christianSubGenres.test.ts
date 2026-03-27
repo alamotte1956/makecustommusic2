@@ -258,8 +258,8 @@ describe("Additional Christian Sub-Genres", () => {
 
   // ─── Custom Mode ───
   describe("Custom Mode with Christian Sub-Genres", () => {
-    it("should include sonic signature in custom mode for Christian Rock", () => {
-      const { prompt } = buildProductionPrompt({
+    it("should include sonic signature in custom mode style for Christian Rock", () => {
+      const { prompt, style } = buildProductionPrompt({
         keywords: "",
         genre: "Christian Rock",
         mood: "Energetic",
@@ -270,12 +270,14 @@ describe("Additional Christian Sub-Genres", () => {
         customLyrics: "[Verse 1]\nIn the fire, in the fight\nI will stand, I will rise\n\n[Chorus]\nStand firm, stand strong\nMy God is with me all along",
         customStyle: "hard rock with faith",
       });
-      expect(prompt).toContain("CHRISTIAN ROCK SONIC IDENTITY");
-      expect(prompt).toContain("Stand Firm");
+      // In custom mode, prompt = only lyrics
+      expect(prompt).toContain("In the fire, in the fight");
+      // Sonic signature goes into style field
+      expect(style).toContain("CHRISTIAN ROCK SONIC IDENTITY");
     });
 
-    it("should include sonic signature in custom mode for Hymns", () => {
-      const { prompt } = buildProductionPrompt({
+    it("should include sonic signature in custom mode style for Hymns", () => {
+      const { prompt, style } = buildProductionPrompt({
         keywords: "",
         genre: "Hymns",
         mood: "Devotional",
@@ -286,8 +288,10 @@ describe("Additional Christian Sub-Genres", () => {
         customLyrics: "[Verse 1]\nO sacred head now wounded\nWith grief and shame weighed down\n\n[Verse 2]\nWhat language shall I borrow\nTo thank Thee, dearest Friend",
         customStyle: "traditional hymn with organ",
       });
-      expect(prompt).toContain("HYMNS SONIC IDENTITY");
-      expect(prompt).toContain("O Sacred Head");
+      // In custom mode, prompt = only lyrics
+      expect(prompt).toContain("O sacred head now wounded");
+      // Sonic signature goes into style field
+      expect(style).toContain("HYMNS SONIC IDENTITY");
     });
   });
 
@@ -299,8 +303,8 @@ describe("Additional Christian Sub-Genres", () => {
     ];
 
     for (const genre of genres) {
-      it(`should include BPM and instrumentation for ${genre}`, () => {
-        const { prompt } = buildProductionPrompt({
+      it(`should include BPM in style for ${genre}`, () => {
+        const { style } = buildProductionPrompt({
           keywords: "test",
           genre,
           mood: null,
@@ -308,8 +312,8 @@ describe("Additional Christian Sub-Genres", () => {
           duration: 30,
           mode: "simple",
         });
-        expect(prompt).toContain("BPM");
-        expect(prompt).toContain("instrumentation");
+        // BPM and instrumentation are in the style field
+        expect(style).toContain("BPM");
       });
     }
   });

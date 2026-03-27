@@ -625,10 +625,10 @@ export function buildProductionPrompt(params: {
   customTitle?: string;
   customLyrics?: string;
   customStyle?: string;
-}): { prompt: string; forceInstrumental: boolean } {
+}): { prompt: string; style: string; forceInstrumental: boolean } {
   const { keywords, genre, mood, vocalType, duration, mode, customTitle, customLyrics, customStyle } = params;
 
-   let forceInstrumental = vocalType === "none";
+  let forceInstrumental = vocalType === "none";
   // Use Christian-specific arrangement if applicable, otherwise generic
   const christianArrangement = genre ? getChristianArrangement(genre, duration) : null;
   const arrangement = christianArrangement || getArrangementTemplate(duration);
@@ -636,82 +636,88 @@ export function buildProductionPrompt(params: {
   const sonicSignature = CHRISTIAN_SONIC_SIGNATURES[genreLower] || "";
 
   if (mode === "custom" && customLyrics) {
-    // Custom Mode: build a detailed production prompt from lyrics + style + metadata
+    // Custom Mode: per kie.ai API docs, prompt = LYRICS (sung directly),
+    // style = musical style description, title = song title.
+    // We must NOT put production notes in the prompt field.
     const genreProd = genre ? GENRE_PRODUCTION[genre.toLowerCase()] : null;
     const moodProd = mood ? MOOD_PRODUCTION[mood.toLowerCase()] : null;
 
-    let prompt = `Create a professionally produced, radio-ready song titled "${customTitle || "Untitled"}"`;
+    // prompt = only the user's lyrics (kie.ai sings this directly)
+    const prompt = customLyrics.substring(0, 5000);
+
+    // style = rich musical style description (max 1000 chars for V4_5+)
+    let style = "";
     if (customStyle) {
-      prompt += `\n\nStyle: ${customStyle}.`;
+      style += customStyle;
     }
-
     if (genre) {
-      prompt += ` Genre: ${genre}.`;
+      style += style ? ", " : "";
+      style += genre;
       if (genreProd) {
-        prompt += ` Tempo: ${genreProd.bpm} BPM.`;
-        prompt += ` Instrumentation: ${genreProd.instruments}.`;
-        prompt += ` Production quality: ${genreProd.production}.`;
+        style += `, ${genreProd.bpm} BPM, ${genreProd.instruments}`;
       }
     }
-
     if (mood) {
-      prompt += ` Mood: ${mood}.`;
+      style += style ? ", " : "";
+      style += `${mood} mood`;
       if (moodProd) {
-        prompt += ` Sonic character: ${moodProd}.`;
+        style += `, ${moodProd}`;
       }
     }
-
     if (vocalType && vocalType !== "none") {
       const vocalProd = VOCAL_PRODUCTION[vocalType] || VOCAL_PRODUCTION.male;
-      prompt += `\nVocals: ${vocalProd}.`;
+      style += style ? ", " : "";
+      style += vocalProd;
     } else if (forceInstrumental) {
-      prompt += "\nInstrumental only — no vocals. Fill the vocal frequency range with melodic lead instruments, synth leads, or guitar melodies to maintain fullness.";
+      style += style ? ", " : "";
+      style += "instrumental only, no vocals, melodic lead instruments fill vocal range";
     }
+    if (sonicSignature) {
+      style += style ? ". " : "";
+      style += sonicSignature;
+    }
+    // Truncate style to 1000 chars (kie.ai V4_5+ limit)
+    style = style.substring(0, 1000);
 
-    prompt += `\nDuration: ${duration} seconds.`;
-    prompt += `\n\n${arrangement}`;
-    prompt += `\n\nProduction notes: Professional mixing with clear separation between instruments. Use sidechain compression on bass elements against the kick. Apply parallel compression on drums for punch and sustain. Create width with stereo delays and panned elements. Use automation for dynamic builds — filter sweeps, volume rides, reverb throws on key phrases. ${MASTERING_CHAIN}`;
-    // Inject Christian sonic signature for genre-authentic sound
-    if (sonicSignature) prompt += sonicSignature;
-    prompt += `\n\nLyrics:\n${customLyrics}`;
-
-    return { prompt: prompt.substring(0, 5000), forceInstrumental };
+    return { prompt, style, forceInstrumental };
   }
 
-  // Simple Mode: transform keywords into a rich production prompt
+  // Simple Mode: We also use kie.ai custom mode here so we can leverage the
+  // rich style field (1000 chars). The prompt contains a description that kie.ai
+  // will use as lyrics inspiration, and the style field has the full production details.
   const genreProd = genre ? GENRE_PRODUCTION[genre.toLowerCase()] : null;
   const moodProd = mood ? MOOD_PRODUCTION[mood.toLowerCase()] : null;
 
-  let prompt = `Create a professionally produced, radio-ready track: ${keywords}.`;
+  // prompt = description of what the song should be about (kie.ai uses this as lyrics)
+  let prompt = `Create a professionally produced, radio-ready track about: ${keywords}.`;
+  prompt += ` ${arrangement}`;
+  if (sonicSignature) prompt += ` ${sonicSignature}`;
+  prompt = prompt.substring(0, 3000);
 
+  // style = musical style description (max 1000 chars for V4_5+)
+  let style = "";
   if (genre) {
-    prompt += `\n\nGenre: ${genre}.`;
+    style += genre;
     if (genreProd) {
-      prompt += ` Tempo: ${genreProd.bpm} BPM.`;
-      prompt += ` Core instrumentation: ${genreProd.instruments}.`;
-      prompt += ` Production approach: ${genreProd.production}.`;
+      style += `, ${genreProd.bpm} BPM, ${genreProd.instruments}`;
     }
   }
-
   if (mood) {
-    prompt += `\nMood: ${mood}.`;
+    style += style ? ", " : "";
+    style += `${mood} mood`;
     if (moodProd) {
-      prompt += ` Sonic character: ${moodProd}.`;
+      style += `, ${moodProd}`;
     }
   }
-
   if (forceInstrumental) {
-    prompt += "\nInstrumental only — no vocals. Use melodic lead instruments to fill the vocal frequency range and maintain a full, rich arrangement.";
+    style += style ? ", " : "";
+    style += "instrumental only, no vocals, melodic lead instruments fill vocal range";
   } else if (vocalType) {
     const vocalProd = VOCAL_PRODUCTION[vocalType] || VOCAL_PRODUCTION.male;
-    prompt += `\nVocals: ${vocalProd}.`;
+    style += style ? ", " : "";
+    style += vocalProd;
   }
+  style = style.substring(0, 1000);
 
-  prompt += `\nDuration: ${duration} seconds.`;
-  prompt += `\n\n${arrangement}`;
-  prompt += `\n\nProduction quality: Professional, radio-ready mix. Clear instrument separation with each element occupying its own frequency space. Punchy low-end with tight kick and sub bass. Crisp highs with shimmer and air. Warm, full mids. Use sidechain compression, parallel processing, and automation for dynamic movement. Build tension and release throughout the arrangement. ${MASTERING_CHAIN}`;
-  // Inject Christian sonic signature for genre-authentic sound
-  if (sonicSignature) prompt += sonicSignature;
-
-  return { prompt: prompt.substring(0, 5000), forceInstrumental };
+  return { prompt, style, forceInstrumental };
 }

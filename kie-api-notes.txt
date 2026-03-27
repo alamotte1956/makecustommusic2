@@ -1,0 +1,37 @@
+KIE.AI API - Generate Music - Key Findings
+============================================
+
+In Custom Mode (customMode: true):
+- If instrumental: true → style and title are required
+- If instrumental: false → style, prompt, and title are required
+- The prompt will be STRICTLY USED AS THE LYRICS and sung in the generated track
+- Character limits:
+  - V4: prompt 3000 chars, style 200 chars
+  - V4_5 & V4_5PLUS: prompt 5000 chars, style 1000 chars
+  - V5: prompt 5000 chars, style 1000 chars
+  - title: 80 chars (all models)
+
+In Non-custom Mode (customMode: false):
+- Only prompt is required (max 500 chars)
+- Lyrics will be AUTOMATICALLY GENERATED based on the prompt (not strictly matching input)
+- Other parameters should be left empty
+
+KEY INSIGHT:
+When customMode=true, the "prompt" field IS the lyrics. It's sung directly.
+The "style" field describes the musical style/genre.
+The "title" field is the song title.
+
+CURRENT BUG:
+Our code puts the entire production prompt (with production notes, arrangement, etc.) 
+in the "prompt" field. In custom mode, this means all that production text gets treated 
+as lyrics to be sung! The actual user lyrics are buried at the end after "\n\nLyrics:\n".
+
+The kie.ai API expects:
+- prompt = ONLY the lyrics text (in custom mode)
+- style = the musical style description
+- title = the song title
+
+Our code should:
+1. When customMode=true: put ONLY the user's lyrics in "prompt"
+2. Put the genre/mood/production info in "style"
+3. Put the title in "title"
