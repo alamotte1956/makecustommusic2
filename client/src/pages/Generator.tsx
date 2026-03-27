@@ -298,6 +298,8 @@ function CreditIndicator({
   const balance = summaryData?.balance;
   const limits = summaryData?.limits;
   const bonusSongsRemaining = summaryData?.usage?.monthlyBonusSongsRemaining ?? 0;
+  const bonusSongsUsed = summaryData?.usage?.monthlyBonusSongsUsed ?? 0;
+  const bonusSongsLimit = limits?.monthlyBonusSongs ?? 0;
 
   const totalCredits = balance?.totalCredits ?? 0;
   const monthlyMax = limits?.monthlyCredits ?? 0;
@@ -352,11 +354,27 @@ function CreditIndicator({
           {totalCredits} / {monthlyMax} credits
         </Badge>
 
-        {/* Bonus songs */}
-        {bonusSongsRemaining > 0 && (
-          <Badge variant="secondary" className="text-[11px] gap-1 bg-green-500/10 text-green-600 border-green-500/20">
-            ✨ {bonusSongsRemaining} free bonus song{bonusSongsRemaining > 1 ? "s" : ""}
-          </Badge>
+        {/* Bonus songs remaining indicator */}
+        {bonusSongsLimit > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border ${
+                bonusSongsRemaining > 0
+                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                  : "bg-muted text-muted-foreground border-border"
+              }`}>
+                <Music className="w-3 h-3" />
+                <span className="tabular-nums">{bonusSongsRemaining}</span>
+                <span className="text-[10px] opacity-70">/ {bonusSongsLimit}</span>
+                <span className="hidden sm:inline">bonus {bonusSongsRemaining === 1 ? "song" : "songs"}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs max-w-[220px]">
+              {bonusSongsRemaining > 0
+                ? `You have ${bonusSongsRemaining} free bonus song${bonusSongsRemaining > 1 ? "s" : ""} remaining this month. These don't use your credits!`
+                : `All ${bonusSongsLimit} monthly bonus songs used. Songs will now cost 1 credit each. Bonus songs reset at the start of your next billing cycle.`}
+            </TooltipContent>
+          </Tooltip>
         )}
 
         <div className="flex-1" />
@@ -397,6 +415,14 @@ function CreditIndicator({
           {creditPct}%
         </span>
       </div>
+
+      {/* Bonus songs exhausted note */}
+      {bonusSongsLimit > 0 && bonusSongsRemaining === 0 && totalCredits > 0 && (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <Music className="w-3 h-3" />
+          Monthly bonus songs used. Each song now costs 1 credit.
+        </p>
+      )}
 
       {/* Low credit warning */}
       {totalCredits > 0 && totalCredits <= 5 && (

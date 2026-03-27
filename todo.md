@@ -1814,3 +1814,6 @@
 
 ## Bugs
 - [x] Fix credit_transactions insert failure when logging bonus_song with amount 0 and null relatedSongId (added bonus_song and bonus_sheet to DB enum, updated logTransaction type signature, removed unsafe 'as any' casts)
+
+## Bonus Songs Remaining Indicator
+- [x] Add bonus songs remaining indicator to the generator page (shows used/total with tooltip, always visible for subscribers, exhausted note when all used)
