@@ -1821,3 +1821,6 @@
 ## Bugs
 - [x] Fix custom lyrics not being used during music generation (buildProductionPrompt required customStyle to be truthy — now only requires customLyrics for custom mode)
 - [x] Fix custom lyrics STILL not being used in generated output — root cause: kie.ai custom mode treats prompt as LYRICS and style as musical description, but code was stuffing everything into prompt. Fixed by separating: prompt=lyrics only, style=genre/mood/production. Also switched simple mode to always use customMode=true for richer style field.
+
+## Auto-Populate Style Tags
+- [x] Auto-populate style tags from selected genre, mood, and vocal type when the style tags field is empty (with "Auto-filled" indicator, "Reset to auto" button, and user-edit tracking via ref)

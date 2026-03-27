@@ -461,6 +461,7 @@ export default function Generator() {
   const [customTitle, setCustomTitle] = useState("");
   const [customLyrics, setCustomLyrics] = useState("");
   const [customStyle, setCustomStyle] = useState("");
+  const userEditedStyleRef = useRef(false);
 
   // AI Lyrics sub-state
   const [lyricsSubject, setLyricsSubject] = useState("");
@@ -507,6 +508,27 @@ export default function Generator() {
 
   const isSunoAvailable = enginesQuery.data?.suno ?? false;
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
+
+  // Build default style tags from selected genre, mood, and vocal type
+  const buildDefaultStyleTags = useCallback(() => {
+    const parts: string[] = [];
+    if (selectedGenre) parts.push(selectedGenre.toLowerCase());
+    if (selectedMood) parts.push(selectedMood.toLowerCase());
+    if (vocalType === "male") parts.push("male vocals");
+    else if (vocalType === "female") parts.push("female vocals");
+    else if (vocalType === "mixed") parts.push("male and female duet");
+    else if (vocalType === "male_and_female") parts.push("male and female vocals");
+    else if (vocalType === "none") parts.push("instrumental");
+    return parts.join(", ");
+  }, [selectedGenre, selectedMood, vocalType]);
+
+  // Auto-populate style tags when genre/mood/vocal changes (only if user hasn't manually edited)
+  useEffect(() => {
+    if (!isCustomMode) return;
+    if (userEditedStyleRef.current) return;
+    const defaultTags = buildDefaultStyleTags();
+    setCustomStyle(defaultTags);
+  }, [selectedGenre, selectedMood, vocalType, isCustomMode, buildDefaultStyleTags]);
 
   // Auto-trigger onboarding tour for first-time users
   const { hasCompletedTour, startTour, isActive: tourIsActive } = useOnboarding();
@@ -777,7 +799,16 @@ export default function Generator() {
             ]).map(({ value, label, icon: Icon, hint }) => (
               <button
                 key={value}
-                onClick={() => setCreationMode(value)}
+                onClick={() => {
+                  setCreationMode(value);
+                  // Reset style auto-fill when switching modes
+                  if (value === "describe") {
+                    userEditedStyleRef.current = false;
+                    setCustomStyle("");
+                  } else if (!userEditedStyleRef.current) {
+                    setCustomStyle(buildDefaultStyleTags());
+                  }
+                }}
                 disabled={isGenerating}
                 className={`relative flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all text-center ${
                   creationMode === value
@@ -956,13 +987,33 @@ export default function Generator() {
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-foreground">
-                    Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-foreground">
+                      Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
+                    </label>
+                    {!userEditedStyleRef.current && customStyle && (
+                      <span className="text-[10px] text-muted-foreground italic">Auto-filled from genre & mood</span>
+                    )}
+                    {userEditedStyleRef.current && (selectedGenre || selectedMood) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          userEditedStyleRef.current = false;
+                          setCustomStyle(buildDefaultStyleTags());
+                        }}
+                        className="text-[10px] text-primary hover:underline"
+                      >
+                        Reset to auto
+                      </button>
+                    )}
+                  </div>
                   <Input
                     placeholder="e.g., synthwave, dreamy, worship, hymn, praise & worship, acoustic, reverb"
                     value={customStyle}
-                    onChange={(e) => setCustomStyle(e.target.value)}
+                    onChange={(e) => {
+                      setCustomStyle(e.target.value);
+                      userEditedStyleRef.current = true;
+                    }}
                     maxLength={500}
                     disabled={isGenerating}
                     className="text-sm"
@@ -1093,13 +1144,33 @@ export default function Generator() {
 
                 {/* Style tags */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-foreground">
-                    Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-foreground">
+                      Style Tags <span className="text-muted-foreground font-normal">(optional)</span>
+                    </label>
+                    {!userEditedStyleRef.current && customStyle && (
+                      <span className="text-[10px] text-muted-foreground italic">Auto-filled from genre & mood</span>
+                    )}
+                    {userEditedStyleRef.current && (selectedGenre || selectedMood) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          userEditedStyleRef.current = false;
+                          setCustomStyle(buildDefaultStyleTags());
+                        }}
+                        className="text-[10px] text-primary hover:underline"
+                      >
+                        Reset to auto
+                      </button>
+                    )}
+                  </div>
                   <Input
                     placeholder="e.g., synthwave, dreamy, worship, hymn, praise & worship, acoustic, reverb"
                     value={customStyle}
-                    onChange={(e) => setCustomStyle(e.target.value)}
+                    onChange={(e) => {
+                      setCustomStyle(e.target.value);
+                      userEditedStyleRef.current = true;
+                    }}
                     maxLength={500}
                     disabled={isGenerating}
                     className="text-sm"
