@@ -1,0 +1,132 @@
+{
+  "query": "SELECT id, title, CASE WHEN sheetMusicAbc IS NOT NULL THEN 'HAS_ABC' ELSE 'NO_ABC' END as sheet_status, CASE WHEN lyrics IS NOT NULL THEN 'HAS_LYRICS' ELSE 'NO_LYRICS' END as lyrics_status, CASE WHEN audioUrl IS NOT NULL THEN 'HAS_AUDIO' ELSE 'NO_AUDIO' END as audio_status FROM songs ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, CASE WHEN sheetMusicAbc IS NOT NULL THEN 'HAS_ABC' ELSE 'NO_ABC' END as sheet_status, CASE WHEN lyrics IS NOT NULL THEN 'HAS_LYRICS' ELSE 'NO_LYRICS' END as lyrics_status, CASE WHEN audioUrl IS NOT NULL THEN 'HAS_AUDIO' ELSE 'NO_AUDIO' END as audio_status FROM songs ORDER BY id;",
+  "rows": [
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "sheet_status": "HAS_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "300001",
+      "title": "Colossians 3:14",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "HAS_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "330001",
+      "title": "Custom Song",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "HAS_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "330002",
+      "title": "Custom Song",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "HAS_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "330003",
+      "title": "Custom Song",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "HAS_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "360013",
+      "title": "Psalm 91",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "HAS_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "450001",
+      "title": "높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "sheet_status": "HAS_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "sheet_status": "NO_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "570001",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "sheet_status": "HAS_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "570002",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "sheet_status": "HAS_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "570003",
+      "title": "Forward moving song with a slow moody slow start with a guitar and piano and certain horns but incre",
+      "sheet_status": "HAS_ABC",
+      "lyrics_status": "NO_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    },
+    {
+      "id": "720001",
+      "title": "A Boy Named Ramy",
+      "sheet_status": "HAS_ABC",
+      "lyrics_status": "HAS_LYRICS",
+      "audio_status": "HAS_AUDIO"
+    }
+  ],
+  "messages": [
+    "480001\tTraditional folk",
+    "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tNO_ABC\tNO_LYRICS\tHAS_AUDIO"
+  ],
+  "stdout": "id\ttitle\tsheet_status\tlyrics_status\taudio_status\n210035\tMen of The Father's House\tHAS_ABC\tNO_LYRICS\tHAS_AUDIO\n300001\tColossians 3:14\tNO_ABC\tHAS_LYRICS\tHAS_AUDIO\n330001\tCustom Song\tNO_ABC\tHAS_LYRICS\tHAS_AUDIO\n330002\tCustom Song\tNO_ABC\tHAS_LYRICS\tHAS_AUDIO\n330003\tCustom Song\tNO_ABC\tHAS_LYRICS\tHAS_AUDIO\n360013\tPsalm 91\tNO_ABC\tHAS_LYRICS\tHAS_AUDIO\n450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\tNO_ABC\tNO_LYRICS\tHAS_AUDIO\n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tNO_ABC\tNO_LYRICS\tHAS_AUDIO\n510001\tplayful jazz piano\tHAS_ABC\tNO_LYRICS\tHAS_AUDIO\n510002\tplayful happy piano, light and bouncy\tNO_ABC\tNO_LYRICS\tHAS_AUDIO\n510003\tplayful happy piano, light and bouncy\tNO_ABC\tNO_LYRICS\tHAS_AUDIO\n540001\trelaxed piano\tNO_ABC\tNO_LYRICS\tHAS_AUDIO\n540002\tonly relaxed piano\tNO_ABC\tNO_LYRICS\tHAS_AUDIO\n540003\tonly relaxed piano\tNO_ABC\tNO_LYRICS\tHAS_AUDIO\n570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tHAS_ABC\tNO_LYRICS\tHAS_AUDIO\n570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tHAS_ABC\tNO_LYRICS\tHAS_AUDIO\n570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\tHAS_ABC\tNO_LYRICS\tHAS_AUDIO\n720001\tA Boy Named Ramy\tHAS_ABC\tHAS_LYRICS\tHAS_AUDIO\n",
+  "stderr": "",
+  "execution_time_ms": 370
+}

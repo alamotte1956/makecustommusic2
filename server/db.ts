@@ -159,7 +159,13 @@ export async function updateSongSheetMusic(id: number, sheetMusicAbc: string) {
     .filter((l) => !l.trim().startsWith("V:") && !l.trim().startsWith("%%staves"))
     .join("\n")
     .trim();
-  await db.update(songs).set({ sheetMusicAbc: clean }).where(eq(songs.id, id));
+  await db.update(songs).set({ sheetMusicAbc: clean, sheetMusicStatus: "done", sheetMusicError: null }).where(eq(songs.id, id));
+}
+
+export async function updateSongSheetMusicStatus(id: number, status: "pending" | "generating" | "done" | "failed", error?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(songs).set({ sheetMusicStatus: status, sheetMusicError: error ?? null }).where(eq(songs.id, id));
 }
 
 export async function updateSongChordProgression(id: number, chordProgression: ChordProgressionData) {

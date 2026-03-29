@@ -38,10 +38,15 @@ export default function SongDetail() {
     {
       enabled: !!songId && !!user,
       // Poll every 5s while sheet music is still being generated in the background
+      // Stop polling once status is 'done' or 'failed'
       refetchInterval: (query) => {
         const data = query.state.data;
-        if (data && !data.sheetMusicAbc) return 5000;
-        return false;
+        if (!data) return false;
+        // Stop polling if we have the ABC notation or if generation failed/completed
+        if (data.sheetMusicAbc) return false;
+        if (data.sheetMusicStatus === "failed" || data.sheetMusicStatus === "done") return false;
+        // Keep polling while pending or generating
+        return 5000;
       },
     }
   );
@@ -395,6 +400,8 @@ export default function SongDetail() {
                 abcNotation={song.sheetMusicAbc}
                 songTitle={song.title}
                 songKeySignature={song.keySignature}
+                sheetMusicStatus={song.sheetMusicStatus}
+                sheetMusicError={song.sheetMusicError}
               />
             </CardContent>
           </Card>

@@ -1,0 +1,132 @@
+{
+  "query": "SELECT id, title, sheetMusicStatus, sheetMusicError, CASE WHEN sheetMusicAbc IS NULL THEN 'NULL' ELSE 'HAS_DATA' END as hasAbc FROM songs ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, sheetMusicStatus, sheetMusicError, CASE WHEN sheetMusicAbc IS NULL THEN 'NULL' ELSE 'HAS_DATA' END as hasAbc FROM songs ORDER BY id",
+  "rows": [
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "HAS_DATA"
+    },
+    {
+      "id": "300001",
+      "title": "Colossians 3:14",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "330001",
+      "title": "Custom Song",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "330002",
+      "title": "Custom Song",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "330003",
+      "title": "Custom Song",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "360013",
+      "title": "Psalm 91",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "450001",
+      "title": "높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "HAS_DATA"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "NULL"
+    },
+    {
+      "id": "570001",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "HAS_DATA"
+    },
+    {
+      "id": "570002",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "HAS_DATA"
+    },
+    {
+      "id": "570003",
+      "title": "Forward moving song with a slow moody slow start with a guitar and piano and certain horns but incre",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "HAS_DATA"
+    },
+    {
+      "id": "720001",
+      "title": "A Boy Named Ramy",
+      "sheetMusicStatus": "pending",
+      "sheetMusicError": "NULL",
+      "hasAbc": "HAS_DATA"
+    }
+  ],
+  "messages": [
+    "480001\tTraditional folk",
+    "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tpending\tNULL\tNULL"
+  ],
+  "stdout": "id\ttitle\tsheetMusicStatus\tsheetMusicError\thasAbc\n210035\tMen of The Father's House\tpending\tNULL\tHAS_DATA\n300001\tColossians 3:14\tpending\tNULL\tNULL\n330001\tCustom Song\tpending\tNULL\tNULL\n330002\tCustom Song\tpending\tNULL\tNULL\n330003\tCustom Song\tpending\tNULL\tNULL\n360013\tPsalm 91\tpending\tNULL\tNULL\n450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\tpending\tNULL\tNULL\n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tpending\tNULL\tNULL\n510001\tplayful jazz piano\tpending\tNULL\tHAS_DATA\n510002\tplayful happy piano, light and bouncy\tpending\tNULL\tNULL\n510003\tplayful happy piano, light and bouncy\tpending\tNULL\tNULL\n540001\trelaxed piano\tpending\tNULL\tNULL\n540002\tonly relaxed piano\tpending\tNULL\tNULL\n540003\tonly relaxed piano\tpending\tNULL\tNULL\n570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tpending\tNULL\tHAS_DATA\n570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tpending\tNULL\tHAS_DATA\n570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\tpending\tNULL\tHAS_DATA\n720001\tA Boy Named Ramy\tpending\tNULL\tHAS_DATA\n",
+  "stderr": "",
+  "execution_time_ms": 416
+}

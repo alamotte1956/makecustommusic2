@@ -8,7 +8,7 @@ import { invokeLLM } from "./_core/llm";
 import {
   createSong, getSongById, getUserSongs, deleteSong, updateSong, updateSongMp3,
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
-  updateSongSheetMusic, updateSongChordProgression,
+  updateSongSheetMusic, updateSongSheetMusicStatus, updateSongChordProgression,
   updateSongStems, updateSongTakes, updateSongPostProcessPreset, updateSongImageUrl,
   createAlbum, getAlbumById, getUserAlbums, deleteAlbum, updateAlbum,
   updateAlbumCoverImage, addSongToAlbum, removeSongFromAlbum, getAlbumSongs, getAlbumSongCount,
@@ -53,8 +53,8 @@ import { notifyOwner } from "./_core/notification";
 import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
 import { processMp3SheetJob } from "./mp3SheetProcessor";
 import { getAdminUserList, getAdminUserDetail, getAdminSiteStats, type AdminRevenueStats } from "./adminDb";
-import { eq } from "drizzle-orm";
-import { users as usersTable } from "../drizzle/schema";
+import { eq, isNull } from "drizzle-orm";
+import { users as usersTable, songs } from "../drizzle/schema";
 
 function getStripe(): Stripe | null {
   const key = ENV.STRIPE_SECRET_KEY;
@@ -1060,6 +1060,9 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           return { abcNotation: song.sheetMusicAbc };
         }
 
+        // Mark as generating
+        await updateSongSheetMusicStatus(input.songId, "generating");
+
         // Override key if explicitly requested
         const songForGeneration = input.key
           ? { ...song, keySignature: input.key }
@@ -1068,9 +1071,11 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         try {
           const cleanAbc = await generateAbcNotation(songForGeneration);
           await updateSongSheetMusic(input.songId, cleanAbc);
+          // updateSongSheetMusic already sets status to "done"
           return { abcNotation: cleanAbc };
         } catch (err: any) {
           console.error(`[SheetMusic] Generation failed for song ${input.songId}:`, err?.message || err);
+          await updateSongSheetMusicStatus(input.songId, "failed", err?.message || "Unknown error").catch(() => {});
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: `Sheet music generation failed: ${err?.message || "Unknown error"}. Please try again.`,
@@ -2314,6 +2319,42 @@ RULES:
         const { checkAndAlertCredits } = await import("./creditMonitor");
         const credits = await checkAndAlertCredits();
         return { credits };
+      }),
+
+    // Regenerate sheet music for songs that don't have it
+    regenerateSheetMusic: adminProcedure
+      .input(z.object({
+        songId: z.number().optional(), // Specific song, or all missing
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        let songIds: number[] = [];
+
+        if (input.songId) {
+          songIds = [input.songId];
+        } else {
+          // Find all songs without sheet music ABC
+          const results = await db.select({ id: songs.id })
+            .from(songs)
+            .where(isNull(songs.sheetMusicAbc));
+          songIds = results.map(r => r.id);
+        }
+
+        // Trigger background generation for each (staggered to avoid overload)
+        let queued = 0;
+        for (const id of songIds) {
+          // Reset status to pending first
+          await updateSongSheetMusicStatus(id, "pending");
+          // Stagger by 5 seconds each to avoid LLM rate limits
+          setTimeout(() => {
+            generateSheetMusicInBackground(id);
+          }, queued * 5000);
+          queued++;
+        }
+
+        return { queued, songIds };
       }),
   }),
 

@@ -1,0 +1,40 @@
+{
+  "query": "SELECT sheetMusicAbc FROM songs WHERE id = 720001;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT sheetMusicAbc FROM songs WHERE id = 720001;",
+  "rows": [
+    {
+      "sheetMusicAbc": "X: 1"
+    },
+    {
+      "sheetMusicAbc": "T: A Boy Named Ramy"
+    },
+    {
+      "sheetMusicAbc": "C:"
+    },
+    {
+      "sheetMusicAbc": "M: 4/4"
+    },
+    {
+      "sheetMusicAbc": "L: 1/8"
+    },
+    {
+      "sheetMusicAbc": "Q: 1/4=120"
+    },
+    {
+      "sheetMusicAbc": "K: C"
+    },
+    {
+      "sheetMusicAbc": "% Verse 1"
+    },
+    {
+      "sheetMusicAbc": "\"C\"C2 E2 G2 c2 | \"F\"A2 G2 F2 E2 | \"G\"D2 C2 B,2 A,2 | \"C\"G,2 C2 z4 |"
+    },
+    {
+      "sheetMusicAbc": "w: A beau-ti-ful sto-ry of a boy named Ra-my."
+    }
+  ],
+  "messages": [],
+  "stdout": "sheetMusicAbc\nX: 1\nT: A Boy Named Ramy\nC:\nM: 4/4\nL: 1/8\nQ: 1/4=120\nK: C\n% Verse 1\n\"C\"C2 E2 G2 c2 | \"F\"A2 G2 F2 E2 | \"G\"D2 C2 B,2 A,2 | \"C\"G,2 C2 z4 |\nw: A beau-ti-ful sto-ry of a boy named Ra-my.\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}

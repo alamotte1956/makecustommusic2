@@ -1,0 +1,89 @@
+{
+  "query": "SELECT id, title, genre, mood, keySignature, LEFT(sheetMusicAbc, 50) as abc_preview, LEFT(lyrics, 50) as lyrics_preview, createdAt FROM songs ORDER BY createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, genre, mood, keySignature, LEFT(sheetMusicAbc, 50) as abc_preview, LEFT(lyrics, 50) as lyrics_preview, createdAt FROM songs ORDER BY createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "genre": "Folk",
+      "mood": "Playful",
+      "keySignature": "NULL",
+      "abc_preview": "NULL",
+      "lyrics_preview": "NULL",
+      "createdAt": "2026-03-22 10:10:31"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "genre": "Classical",
+      "mood": "Playful",
+      "keySignature": "NULL",
+      "abc_preview": "NULL",
+      "lyrics_preview": "NULL",
+      "createdAt": "2026-03-22 10:09:46"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "genre": "Classical",
+      "mood": "Playful",
+      "keySignature": "NULL",
+      "abc_preview": "NULL",
+      "lyrics_preview": "NULL",
+      "createdAt": "2026-03-22 10:08:36"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "genre": "Jazz",
+      "mood": "Romantic",
+      "keySignature": "NULL",
+      "abc_preview": "NULL",
+      "lyrics_preview": "NULL",
+      "createdAt": "2026-03-20 21:54:28"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "genre": "Classical",
+      "mood": "NULL",
+      "keySignature": "NULL",
+      "abc_preview": "NULL",
+      "lyrics_preview": "NULL",
+      "createdAt": "2026-03-20 21:52:02"
+    }
+  ],
+  "messages": [
+    "720001\tA Boy Named Ramy\tPop\tHappy\tNULL\tX: 1",
+    "T: A Boy Named Ramy",
+    "C:",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 1/4=1\t[Verse 1]",
+    "A beautiful story of a boy named Ramy\t2026-03-27 20:19:46",
+    "570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\tFolk\tUplifting\tNULL\tX: 1",
+    "T: Forward Moving Song",
+    "C: Folk Melody",
+    "M: 4/4",
+    "\tNULL\t2026-03-24 01:54:53",
+    "570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tFolk\tUplifting\tNULL\tX: 1",
+    "T: Forward Momentum",
+    "C: Folk Spirit",
+    "M: 4/4",
+    "L: \tNULL\t2026-03-24 01:53:14",
+    "570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tFolk\tUplifting\tNULL\tX: 1",
+    "T: Forward Journey",
+    "C: Folk Tradition",
+    "M: 4/4",
+    "L\tNULL\t2026-03-24 01:50:45",
+    "510001\tplayful jazz piano\tClassical\tHappy\tNULL\tX: 1",
+    "T: playful jazz piano",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 120",
+    "K:\tNULL\t2026-03-20 21:47:24"
+  ],
+  "stdout": "id\ttitle\tgenre\tmood\tkeySignature\tabc_preview\tlyrics_preview\tcreatedAt\n720001\tA Boy Named Ramy\tPop\tHappy\tNULL\tX: 1\nT: A Boy Named Ramy\nC:\nM: 4/4\nL: 1/8\nQ: 1/4=1\t[Verse 1]\nA beautiful story of a boy named Ramy\t2026-03-27 20:19:46\n570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\tFolk\tUplifting\tNULL\tX: 1\nT: Forward Moving Song\nC: Folk Melody\nM: 4/4\n\tNULL\t2026-03-24 01:54:53\n570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tFolk\tUplifting\tNULL\tX: 1\nT: Forward Momentum\nC: Folk Spirit\nM: 4/4\nL: \tNULL\t2026-03-24 01:53:14\n570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\tFolk\tUplifting\tNULL\tX: 1\nT: Forward Journey\nC: Folk Tradition\nM: 4/4\nL\tNULL\t2026-03-24 01:50:45\n540003\tonly relaxed piano\tFolk\tPlayful\tNULL\tNULL\tNULL\t2026-03-22 10:10:31\n540002\tonly relaxed piano\tClassical\tPlayful\tNULL\tNULL\tNULL\t2026-03-22 10:09:46\n540001\trelaxed piano\tClassical\tPlayful\tNULL\tNULL\tNULL\t2026-03-22 10:08:36\n510003\tplayful happy piano, light and bouncy\tJazz\tRomantic\tNULL\tNULL\tNULL\t2026-03-20 21:54:28\n510002\tplayful happy piano, light and bouncy\tClassical\tNULL\tNULL\tNULL\tNULL\t2026-03-20 21:52:02\n510001\tplayful jazz piano\tClassical\tHappy\tNULL\tX: 1\nT: playful jazz piano\nM: 4/4\nL: 1/8\nQ: 120\nK:\tNULL\t2026-03-20 21:47:24\n",
+  "stderr": "",
+  "execution_time_ms": 346
+}

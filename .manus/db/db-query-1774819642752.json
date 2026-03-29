@@ -1,0 +1,18 @@
+{
+  "query": "SHOW COLUMNS FROM songs WHERE Field = 'sheetMusicAbc';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SHOW COLUMNS FROM songs WHERE Field = 'sheetMusicAbc';",
+  "rows": [
+    {
+      "Field": "sheetMusicAbc",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nsheetMusicAbc\ttext\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 353
+}

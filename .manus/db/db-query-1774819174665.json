@@ -1,0 +1,15 @@
+{
+  "query": "SELECT COUNT(*) as total_songs, SUM(CASE WHEN sheetMusicAbc IS NOT NULL THEN 1 ELSE 0 END) as with_sheet_music, SUM(CASE WHEN sheetMusicAbc IS NULL THEN 1 ELSE 0 END) as without_sheet_music FROM songs;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT COUNT(*) as total_songs, SUM(CASE WHEN sheetMusicAbc IS NOT NULL THEN 1 ELSE 0 END) as with_sheet_music, SUM(CASE WHEN sheetMusicAbc IS NULL THEN 1 ELSE 0 END) as without_sheet_music FROM songs;",
+  "rows": [
+    {
+      "total_songs": "18",
+      "with_sheet_music": "6",
+      "without_sheet_music": "12"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_songs\twith_sheet_music\twithout_sheet_music\n18\t6\t12\n",
+  "stderr": "",
+  "execution_time_ms": 357
+}

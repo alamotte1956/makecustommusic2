@@ -1843,3 +1843,26 @@
 - [x] BUG 3 (MEDIUM): Fix chord progression LLM content type array vs string
 - [x] BUG 4 (MEDIUM): Fix Mp3ToSheetMusic save-to-library losing activeJobId after job completes
 - [x] BUG 5 (LOW): Hardcoded callback URL — addressed via extractLLMText shared helper across all 9 LLM call sites
+
+## Sheet Music Deep Audit (user reports it doesn't work at all)
+- [x] Deep trace sheet music generation flow: song → LLM → ABC notation → rendering
+- [x] Deep trace MP3-to-sheet-music flow: upload → transcription → ABC → rendering
+- [ ] Test sheet music live on deployed site
+- [x] Fix all bugs preventing sheet music from working
+
+## Sheet Music System Fixes (Comprehensive)
+- [x] Add sheetMusicStatus enum column (pending/generating/done/failed) to songs table via migration
+- [x] Add sheetMusicError column to songs table for storing failure messages
+- [x] Update backgroundSheetMusic.ts to set status on start/success/failure
+- [x] Enhanced ABC notation sanitization: remove inline dynamics, unsupported decorations, prose preamble/postamble
+- [x] Improved prose detection in sanitiseAbc: detect trailing sentences (4+ words, punctuation endings, capitalized English words)
+- [x] Improved LLM system prompt to avoid generating problematic notation (no dynamics, no decorations)
+- [x] Updated SheetMusicViewer component to accept and handle sheetMusicStatus and sheetMusicError props
+- [x] Fixed isPreparing logic: only show "Preparing..." spinner when background generation is actively in progress (pending/generating), not when status is null (never started) or failed
+- [x] Show clear error message with retry button when background generation fails
+- [x] Updated SongDetail.tsx to pass sheetMusicStatus and sheetMusicError props to SheetMusicViewer
+- [x] Updated SongDetail.tsx polling logic to stop when sheetMusicStatus is "failed" or "done" (prevents infinite polling)
+- [x] Fixed existing songs with ABC notation: set sheetMusicStatus to "done" in database
+- [x] Added admin regenerateSheetMusic endpoint for batch regeneration of songs missing sheet music
+- [x] Rewrote generateAbcNotation tests to avoid unreliable vi.doMock with real LLM calls — now tests sanitise/validate pipeline directly
+- [x] All 1,585 tests passing across 74 files

@@ -1,0 +1,15 @@
+{
+  "query": "SELECT COUNT(*) as total, SUM(CASE WHEN sheetMusicAbc IS NULL THEN 1 ELSE 0 END) as nullAbc, SUM(CASE WHEN sheetMusicAbc IS NOT NULL THEN 1 ELSE 0 END) as hasAbc FROM songs",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT COUNT(*) as total, SUM(CASE WHEN sheetMusicAbc IS NULL THEN 1 ELSE 0 END) as nullAbc, SUM(CASE WHEN sheetMusicAbc IS NOT NULL THEN 1 ELSE 0 END) as hasAbc FROM songs",
+  "rows": [
+    {
+      "total": "18",
+      "nullAbc": "12",
+      "hasAbc": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tnullAbc\thasAbc\n18\t12\t6\n",
+  "stderr": "",
+  "execution_time_ms": 366
+}

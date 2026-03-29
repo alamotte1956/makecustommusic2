@@ -8,7 +8,7 @@
  */
 
 import { invokeLLM } from "./_core/llm";
-import { getSongById, updateSongSheetMusic } from "./db";
+import { getSongById, updateSongSheetMusic, updateSongSheetMusicStatus } from "./db";
 import { extractLLMText } from "./llmHelpers";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -47,16 +47,24 @@ const SHEET_MUSIC_SYSTEM_PROMPT = [
   "- Use repeat signs |: and :| for repeated sections",
   "- Use comments to label sections: % Intro, % Verse 1, % Chorus, % Bridge, % Outro",
   "- Do NOT use [P:] section markers — use % comments instead",
-  "- Do NOT include standalone dynamics (!p!, !mp!, !mf!, !f!, !ff!) on their own lines",
-  "- Do NOT include !crescendo! or !diminuendo! decorations",
+  "- Do NOT include ANY dynamics decorations: !p!, !mp!, !mf!, !f!, !ff!, !pp!, !ppp!, !fff! — not inline, not standalone",
+  "- Do NOT include ANY crescendo/diminuendo decorations: !crescendo(!, !crescendo)!, !diminuendo(!, !diminuendo)!, !<(!, !<)!, !>(!, !>)!",
+  "- Do NOT include ANY other decorations like !accent!, !fermata!, !tenuto!, !staccato!, !trill!, !turn!, !mordent!, !segno!, !coda!, !D.S.!, !D.C.!, !fine!",
   "- Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)",
   "- Ensure every measure has the correct number of beats matching the time signature",
   "",
+  "MINIMUM LENGTH:",
+  "- ALWAYS generate at least 16 measures of music, even if the lyrics are very short",
+  "- If the lyrics are short (1-2 lines), repeat them across multiple sections with melodic variation",
+  "- Include an intro (2-4 measures), at least 2 verse sections, a chorus, and an outro",
+  "- For instrumental songs, generate at least 32 measures with clear sections",
+  "",
   "QUALITY:",
   "- The melody must be musically coherent and match the mood/genre",
-  "- Keep the notation clean and professional",
-  "- The output must be parseable by the abcjs JavaScript library",
+  "- Keep the notation clean and professional — NO decorations, NO dynamics marks",
+  "- The output must be parseable by the abcjs JavaScript library without errors",
   "- Ensure the piece has a clear beginning, development, and ending",
+  "- Use only basic ABC notation: notes, rests, bar lines, repeat signs, chord symbols, and lyrics",
 ].join("\n");
 
 /**
@@ -109,8 +117,10 @@ export function sanitiseAbc(raw: string): string {
     if (trimmed.startsWith("V:")) return false;
     // Remove %%staves directives
     if (trimmed.startsWith("%%staves")) return false;
-    // Remove standalone dynamics on their own line
-    if (/^![pmf]{1,3}!$/.test(trimmed)) return false;
+    // Remove standalone dynamics on their own line (e.g. !p!, !mf!, !ff!)
+    if (/^![a-z]+!$/.test(trimmed)) return false;
+    // Remove standalone crescendo/diminuendo markers
+    if (/^!(crescendo|diminuendo|<|>)[(!)]+$/.test(trimmed)) return false;
     return true;
   }).map((line) => {
     const trimmed = line.trim();
@@ -118,18 +128,45 @@ export function sanitiseAbc(raw: string): string {
     if (/^\[P:.*\]$/.test(trimmed)) {
       return "% " + trimmed;
     }
-    return line;
+    // Strip inline dynamics decorations that abcjs doesn't handle well
+    // e.g. !p! !mp! !mf! !f! !ff! !pp! !ppp! !fff!
+    let cleaned = line.replace(/![pmf]{1,4}!/g, "");
+    // Strip crescendo/diminuendo decorations
+    // e.g. !crescendo(! !crescendo)! !diminuendo(! !diminuendo)! !<(! !<)! !>(! !>)!
+    cleaned = cleaned.replace(/!(crescendo|diminuendo|<|>)[(!)]+/g, "");
+    // Strip other common unsupported decorations
+    cleaned = cleaned.replace(/!(accent|fermata|tenuto|staccato|trill|turn|mordent|pralltriller|emphasis|segno|coda|D\.S\.|D\.C\.|fine)!/g, "");
+    return cleaned;
   });
 
-  // 4. Remove trailing non-ABC content
+  // 4. Remove trailing non-ABC content (prose/explanatory text after the music)
+  // Strategy: find the last line that looks like actual ABC music notation.
+  // Natural language sentences contain spaces between words and typically have
+  // many lowercase letters — ABC music lines are denser with note letters,
+  // bar lines, and special characters.
   let lastMusicLine = filtered.length - 1;
   for (let i = filtered.length - 1; i >= 0; i--) {
     const t = filtered[i].trim();
     if (!t || t.startsWith("%")) continue;
     // Check if this line looks like ABC content
     const isHeader = /^[A-Z]:/.test(t);
-    const isMusic = /[A-Ga-gz|:\[\]^_=,']/.test(t);
     const isLyrics = t.startsWith("w:") || t.startsWith("W:");
+    // ABC music lines are dense with notes, bars, and special chars.
+    // Prose sentences have many spaces and lowercase words.
+    // A line is "music" if it has bar lines or a high density of note-like chars
+    // relative to spaces, and doesn't look like a natural language sentence.
+    const hasBarLines = t.includes("|");
+    const wordCount = t.split(/\s+/).length;
+    // Prose detection: 4+ words without bar lines, OR short text that looks like
+    // natural language (starts with uppercase, has lowercase letters, ends with punctuation)
+    const looksLikeProse = (!hasBarLines && !/^[A-Z]:/.test(t)) && (
+      wordCount >= 4 ||
+      // Short phrases like "Enjoy!" or "Good luck." — contain punctuation typical of prose
+      /[.!?;]$/.test(t) ||
+      // Single words that are clearly English, not ABC note sequences
+      (wordCount <= 2 && /^[A-Z][a-z]{2,}/.test(t))
+    );
+    const isMusic = !looksLikeProse && /[A-Ga-gz|:\[\]^_=,']/.test(t);
     if (isHeader || isMusic || isLyrics) {
       lastMusicLine = i;
       break;
@@ -256,6 +293,9 @@ export function generateSheetMusicInBackground(songId: number): void {
   setTimeout(async () => {
     const MAX_BG_ATTEMPTS = 2;
 
+    // Mark as generating
+    await updateSongSheetMusicStatus(songId, "generating").catch(() => {});
+
     for (let attempt = 1; attempt <= MAX_BG_ATTEMPTS; attempt++) {
       try {
         const song = await getSongById(songId);
@@ -263,6 +303,7 @@ export function generateSheetMusicInBackground(songId: number): void {
           console.log(
             `[BackgroundSheetMusic] Song ${songId} not found, skipping`
           );
+          await updateSongSheetMusicStatus(songId, "failed", "Song not found").catch(() => {});
           return;
         }
 
@@ -280,6 +321,7 @@ export function generateSheetMusicInBackground(songId: number): void {
 
         const abc = await generateAbcNotation(song);
         await updateSongSheetMusic(songId, abc);
+        // updateSongSheetMusic already sets status to "done"
 
         console.log(
           `[BackgroundSheetMusic] Successfully generated sheet music for song ${songId}`
@@ -298,8 +340,10 @@ export function generateSheetMusicInBackground(songId: number): void {
       }
     }
 
+    // All attempts exhausted — mark as failed
     console.error(
       `[BackgroundSheetMusic] All attempts exhausted for song ${songId}. Sheet music will not be generated.`
     );
+    await updateSongSheetMusicStatus(songId, "failed", "Generation failed after all retry attempts. Please try generating manually.").catch(() => {});
   }, 3000);
 }

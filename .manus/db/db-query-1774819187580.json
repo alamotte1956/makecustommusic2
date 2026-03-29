@@ -1,0 +1,106 @@
+{
+  "query": "SELECT id, title, LEFT(audioUrl, 50) as audio_url_preview, LEFT(lyrics, 50) as lyrics_preview, sheetMusicAbc IS NOT NULL as has_sheet FROM songs ORDER BY id DESC LIMIT 18;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, LEFT(audioUrl, 50) as audio_url_preview, LEFT(lyrics, 50) as lyrics_preview, sheetMusicAbc IS NOT NULL as has_sheet FROM songs ORDER BY id DESC LIMIT 18;",
+  "rows": [
+    {
+      "id": "570003",
+      "title": "Forward moving song with a slow moody slow start with a guitar and piano and certain horns but incre",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "1"
+    },
+    {
+      "id": "570002",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "1"
+    },
+    {
+      "id": "570001",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "1"
+    },
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "0"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "0"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "0"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "0"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "0"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "1"
+    },
+    {
+      "id": "450001",
+      "title": "높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "0"
+    },
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "audio_url_preview": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211",
+      "lyrics_preview": "NULL",
+      "has_sheet": "1"
+    }
+  ],
+  "messages": [
+    "720001\tA Boy Named Ramy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]",
+    "A beautiful story of a boy named Ramy\t1",
+    "480001\tTraditional folk",
+    "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0",
+    "360013\tPsalm 91\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]",
+    "He who dwells in the shelter of the Most\t0",
+    "330003\tCustom Song\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]",
+    "This chat room totally rocks, it's true",
+    "\t0",
+    "330002\tCustom Song\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]",
+    "This chat room totally rocks, it's true",
+    "\t0",
+    "330001\tCustom Song\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]",
+    "This chat room totally rocks, it's true",
+    "\t0",
+    "300001\tColossians 3:14\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]",
+    "Above all, put on love,",
+    "Which binds all \t0"
+  ],
+  "stdout": "id\ttitle\taudio_url_preview\tlyrics_preview\thas_sheet\n720001\tA Boy Named Ramy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]\nA beautiful story of a boy named Ramy\t1\n570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t1\n570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t1\n570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t1\n540003\tonly relaxed piano\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0\n540002\tonly relaxed piano\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0\n540001\trelaxed piano\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0\n510003\tplayful happy piano, light and bouncy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0\n510002\tplayful happy piano, light and bouncy\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0\n510001\tplayful jazz piano\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t1\n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0\n450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t0\n360013\tPsalm 91\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]\nHe who dwells in the shelter of the Most\t0\n330003\tCustom Song\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]\nThis chat room totally rocks, it's true\n\t0\n330002\tCustom Song\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]\nThis chat room totally rocks, it's true\n\t0\n330001\tCustom Song\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]\nThis chat room totally rocks, it's true\n\t0\n300001\tColossians 3:14\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\t[Verse 1]\nAbove all, put on love,\nWhich binds all \t0\n210035\tMen of The Father's House\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211\tNULL\t1\n",
+  "stderr": "",
+  "execution_time_ms": 353
+}

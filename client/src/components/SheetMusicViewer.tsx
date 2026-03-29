@@ -19,6 +19,8 @@ interface SheetMusicViewerProps {
   abcNotation?: string | null;
   songTitle: string;
   songKeySignature?: string | null;
+  sheetMusicStatus?: string | null;
+  sheetMusicError?: string | null;
 }
 
 type ErrorType = "network" | "generation" | "rendering" | null;
@@ -98,20 +100,31 @@ function sanitiseAbc(raw: string): string {
     .split("\n")
     .filter((l) => {
       const t = l.trim();
+      // Remove V: voice directives and %%staves
       if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
-      if (/^![pmf]{1,3}!$/.test(t)) return false;
+      // Remove standalone dynamics on their own line (e.g. !p!, !mf!, !ff!)
+      if (/^![a-z]+!$/.test(t)) return false;
+      // Remove standalone crescendo/diminuendo markers
+      if (/^!(crescendo|diminuendo|<|>)[(!)]+$/.test(t)) return false;
       return true;
     })
     .map((l) => {
       const t = l.trim();
+      // Convert [P:...] section markers to comments
       if (/^\[P:.*\]$/.test(t)) return `% ${t}`;
-      return l;
+      // Strip inline dynamics decorations (e.g. !p! !mp! !mf! !f! !ff!)
+      let cleaned = l.replace(/![pmf]{1,4}!/g, "");
+      // Strip crescendo/diminuendo decorations
+      cleaned = cleaned.replace(/!(crescendo|diminuendo|<|>)[(!)]+/g, "");
+      // Strip other common unsupported decorations
+      cleaned = cleaned.replace(/!(accent|fermata|tenuto|staccato|trill|turn|mordent|pralltriller|emphasis|segno|coda|D\.S\.|D\.C\.|fine)!/g, "");
+      return cleaned;
     })
     .join("\n")
     .trim();
 }
 
-export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature }: SheetMusicViewerProps) {
+export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature, sheetMusicStatus, sheetMusicError }: SheetMusicViewerProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const prevHighlightRef = useRef<Element | null>(null);
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
@@ -456,7 +469,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   };
 
   // Check if background generation might still be in progress
-  const isPreparing = !abc && !error && !generateMutation.isPending;
+  const isBackgroundFailed = sheetMusicStatus === "failed";
+  const isBackgroundGenerating = sheetMusicStatus === "generating" || sheetMusicStatus === "pending";
+  // Only show "Preparing..." spinner when background generation is actively in progress
+  // If status is null/undefined (never started) or failed, show the generate button instead
+  const isPreparing = !abc && !error && !generateMutation.isPending && !isBackgroundFailed && isBackgroundGenerating;
 
   // No ABC notation yet — show preparing state, key picker + generate button, or error
   if (!abc) {
@@ -466,6 +483,16 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           <div className="w-full max-w-md">
             {renderErrorBanner()}
           </div>
+        ) : isBackgroundFailed ? (
+          <>
+            <AlertCircle className="w-12 h-12 text-amber-500" />
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-foreground">Sheet music generation failed</p>
+              <p className="text-xs text-muted-foreground max-w-sm">
+                {sheetMusicError || "The automatic generation did not complete. You can try generating manually below."}
+              </p>
+            </div>
+          </>
         ) : isPreparing ? (
           <>
             <div className="relative">
@@ -542,7 +569,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           ) : (
             <>
               <Music className="w-4 h-4" />
-              {error ? "Try Again" : isPreparing ? "Generate Now" : "Generate Sheet Music"}
+              {error ? "Try Again" : isBackgroundFailed ? "Retry Generation" : isPreparing ? "Generate Now" : "Generate Sheet Music"}
             </>
           )}
         </Button>

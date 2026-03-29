@@ -1,0 +1,32 @@
+Sheet Music Bug Analysis from Integration Tests
+================================================
+
+FINDING 1: sanitiseAbc does NOT strip postamble text
+- Input: "X:1\nT:Test\nK:C\nCDEF|\n\nI hope you enjoy this music!"
+- Expected: postamble "I hope you enjoy" removed
+- Actual: postamble text is kept in output
+- Impact: MEDIUM - extra text after music notation could confuse abcjs renderer
+
+FINDING 2: sanitiseAbc does NOT strip explanatory text after music
+- Same issue as above - text after the music content is preserved
+- Impact: MEDIUM
+
+FINDING 3: vi.doMock is NOT working - generateAbcNotation ignores mocks
+- All generateAbcNotation tests show the function calling the REAL LLM
+- The output contains "X: 1" (with space) instead of "X:1" from our mock
+- The function succeeds even when mock returns null/error/invalid
+- This means vi.doMock doesn't properly intercept the import
+- Impact: Tests are unreliable, but more importantly it reveals the function DOES work when LLM is available
+
+FINDING 4: The real LLM call DOES produce valid ABC notation
+- The actual LLM output includes proper headers, chord symbols, lyrics
+- The sanitiseAbc function correctly processes it
+- This suggests the generation itself works, but something else fails
+
+KEY QUESTION: If the LLM call works, what's actually broken?
+- Possible: the background job never starts
+- Possible: the background job crashes silently
+- Possible: the ABC is generated but not saved to DB
+- Possible: the SheetMusicViewer component fails to render valid ABC
+- Possible: the frontend never triggers the generation
+- Need to check: how does the user trigger sheet music generation?

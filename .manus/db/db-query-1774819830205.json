@@ -1,0 +1,52 @@
+{
+  "query": "SELECT id, title, HEX(SUBSTRING(sheetMusicAbc, 1, 50)) as hex_preview, LOCATE('\\n', sheetMusicAbc) as first_newline, LOCATE(';', sheetMusicAbc) as first_semicolon FROM songs WHERE sheetMusicAbc IS NOT NULL ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, HEX(SUBSTRING(sheetMusicAbc, 1, 50)) as hex_preview, LOCATE('\\n', sheetMusicAbc) as first_newline, LOCATE(';', sheetMusicAbc) as first_semicolon FROM songs WHERE sheetMusicAbc IS NOT NULL ORDER BY id",
+  "rows": [
+    {
+      "id": "210035",
+      "title": "Men of The Father's House",
+      "hex_preview": "583A310A543A4D656E206F662054686520466174686572277320486F7573650A4D3A342F340A4C3A312F380A513A312F343D",
+      "first_newline": "4",
+      "first_semicolon": "0"
+    },
+    {
+      "id": "510001",
+      "title": "playful jazz piano",
+      "hex_preview": "583A20310A543A20706C617966756C206A617A7A207069616E6F0A4D3A20342F340A4C3A20312F380A513A203132300A4B3A",
+      "first_newline": "5",
+      "first_semicolon": "0"
+    },
+    {
+      "id": "570001",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "hex_preview": "583A20310A543A20466F7277617264204A6F75726E65790A433A20466F6C6B20547261646974696F6E0A4D3A20342F340A4C",
+      "first_newline": "5",
+      "first_semicolon": "0"
+    },
+    {
+      "id": "570002",
+      "title": "Forward moving song with a slow moody start but increases to a high vibrant feel where you have cert",
+      "hex_preview": "583A20310A543A20466F7277617264204D6F6D656E74756D0A433A20466F6C6B205370697269740A4D3A20342F340A4C3A20",
+      "first_newline": "5",
+      "first_semicolon": "0"
+    },
+    {
+      "id": "570003",
+      "title": "Forward moving song with a slow moody slow start with a guitar and piano and certain horns but incre",
+      "hex_preview": "583A20310A543A20466F7277617264204D6F76696E6720536F6E670A433A20466F6C6B204D656C6F64790A4D3A20342F340A",
+      "first_newline": "5",
+      "first_semicolon": "0"
+    },
+    {
+      "id": "720001",
+      "title": "A Boy Named Ramy",
+      "hex_preview": "583A20310A543A204120426F79204E616D65642052616D790A433A0A4D3A20342F340A4C3A20312F380A513A20312F343D31",
+      "first_newline": "5",
+      "first_semicolon": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\thex_preview\tfirst_newline\tfirst_semicolon\n210035\tMen of The Father's House\t583A310A543A4D656E206F662054686520466174686572277320486F7573650A4D3A342F340A4C3A312F380A513A312F343D\t4\t0\n510001\tplayful jazz piano\t583A20310A543A20706C617966756C206A617A7A207069616E6F0A4D3A20342F340A4C3A20312F380A513A203132300A4B3A\t5\t0\n570001\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\t583A20310A543A20466F7277617264204A6F75726E65790A433A20466F6C6B20547261646974696F6E0A4D3A20342F340A4C\t5\t0\n570002\tForward moving song with a slow moody start but increases to a high vibrant feel where you have cert\t583A20310A543A20466F7277617264204D6F6D656E74756D0A433A20466F6C6B205370697269740A4D3A20342F340A4C3A20\t5\t0\n570003\tForward moving song with a slow moody slow start with a guitar and piano and certain horns but incre\t583A20310A543A20466F7277617264204D6F76696E6720536F6E670A433A20466F6C6B204D656C6F64790A4D3A20342F340A\t5\t0\n720001\tA Boy Named Ramy\t583A20310A543A204120426F79204E616D65642052616D790A433A0A4D3A20342F340A4C3A20312F380A513A20312F343D31\t5\t0\n",
+  "stderr": "",
+  "execution_time_ms": 348
+}

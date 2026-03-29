@@ -1,0 +1,24 @@
+{
+  "query": "SELECT LENGTH(sheetMusicAbc) as abc_length, LEFT(sheetMusicAbc, 2000) as abc_content FROM songs WHERE id = 720001;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT LENGTH(sheetMusicAbc) as abc_length, LEFT(sheetMusicAbc, 2000) as abc_content FROM songs WHERE id = 720001;",
+  "rows": [
+    {
+      "abc_length": "181",
+      "abc_content": "X: 1"
+    }
+  ],
+  "messages": [
+    "T: A Boy Named Ramy",
+    "C:",
+    "M: 4/4",
+    "L: 1/8",
+    "Q: 1/4=120",
+    "K: C",
+    "% Verse 1",
+    "\"C\"C2 E2 G2 c2 | \"F\"A2 G2 F2 E2 | \"G\"D2 C2 B,2 A,2 | \"C\"G,2 C2 z4 |",
+    "w: A beau-ti-ful sto-ry of a boy named Ra-my."
+  ],
+  "stdout": "abc_length\tabc_content\n181\tX: 1\nT: A Boy Named Ramy\nC:\nM: 4/4\nL: 1/8\nQ: 1/4=120\nK: C\n% Verse 1\n\"C\"C2 E2 G2 c2 | \"F\"A2 G2 F2 E2 | \"G\"D2 C2 B,2 A,2 | \"C\"G,2 C2 z4 |\nw: A beau-ti-ful sto-ry of a boy named Ra-my.\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

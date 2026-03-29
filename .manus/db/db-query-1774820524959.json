@@ -1,0 +1,79 @@
+{
+  "query": "SELECT id, title, CASE WHEN audioUrl IS NULL THEN 'NO_AUDIO' ELSE 'HAS_AUDIO' END as hasAudio, CASE WHEN lyrics IS NULL THEN 'NO_LYRICS' ELSE 'HAS_LYRICS' END as hasLyrics FROM songs WHERE sheetMusicAbc IS NULL ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, title, CASE WHEN audioUrl IS NULL THEN 'NO_AUDIO' ELSE 'HAS_AUDIO' END as hasAudio, CASE WHEN lyrics IS NULL THEN 'NO_LYRICS' ELSE 'HAS_LYRICS' END as hasLyrics FROM songs WHERE sheetMusicAbc IS NULL ORDER BY id",
+  "rows": [
+    {
+      "id": "300001",
+      "title": "Colossians 3:14",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "HAS_LYRICS"
+    },
+    {
+      "id": "330001",
+      "title": "Custom Song",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "HAS_LYRICS"
+    },
+    {
+      "id": "330002",
+      "title": "Custom Song",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "HAS_LYRICS"
+    },
+    {
+      "id": "330003",
+      "title": "Custom Song",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "HAS_LYRICS"
+    },
+    {
+      "id": "360013",
+      "title": "Psalm 91",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "HAS_LYRICS"
+    },
+    {
+      "id": "450001",
+      "title": "높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "NO_LYRICS"
+    },
+    {
+      "id": "510002",
+      "title": "playful happy piano, light and bouncy",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "NO_LYRICS"
+    },
+    {
+      "id": "510003",
+      "title": "playful happy piano, light and bouncy",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "NO_LYRICS"
+    },
+    {
+      "id": "540001",
+      "title": "relaxed piano",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "NO_LYRICS"
+    },
+    {
+      "id": "540002",
+      "title": "only relaxed piano",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "NO_LYRICS"
+    },
+    {
+      "id": "540003",
+      "title": "only relaxed piano",
+      "hasAudio": "HAS_AUDIO",
+      "hasLyrics": "NO_LYRICS"
+    }
+  ],
+  "messages": [
+    "480001\tTraditional folk",
+    "African percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tHAS_AUDIO\tNO_LYRICS"
+  ],
+  "stdout": "id\ttitle\thasAudio\thasLyrics\n300001\tColossians 3:14\tHAS_AUDIO\tHAS_LYRICS\n330001\tCustom Song\tHAS_AUDIO\tHAS_LYRICS\n330002\tCustom Song\tHAS_AUDIO\tHAS_LYRICS\n330003\tCustom Song\tHAS_AUDIO\tHAS_LYRICS\n360013\tPsalm 91\tHAS_AUDIO\tHAS_LYRICS\n450001\t높은 음의 피아노 반주, 전반적으로 우울한 분위기, 빠르고 중간중간에 낮은음을 살짝만 넣어서 포인트 주기\tHAS_AUDIO\tNO_LYRICS\n480001\tTraditional folk\nAfrican percussion no voice only djembe dundun and bells 12/8 rhythm in different p\tHAS_AUDIO\tNO_LYRICS\n510002\tplayful happy piano, light and bouncy\tHAS_AUDIO\tNO_LYRICS\n510003\tplayful happy piano, light and bouncy\tHAS_AUDIO\tNO_LYRICS\n540001\trelaxed piano\tHAS_AUDIO\tNO_LYRICS\n540002\tonly relaxed piano\tHAS_AUDIO\tNO_LYRICS\n540003\tonly relaxed piano\tHAS_AUDIO\tNO_LYRICS\n",
+  "stderr": "",
+  "execution_time_ms": 410
+}
