@@ -1976,3 +1976,10 @@
 - [x] Add capo chart UI component to the sheet music viewer below the chord diagrams
 - [x] Show original chords vs. capo chord shapes in a clear table format
 - [x] All 1,631 tests passing
+
+## Download All Sheet Music as Combined PDF
+- [x] Create combinedPdfExport.ts utility that generates a multi-section PDF with full notation, lead sheet, and Nashville chart
+- [x] Add "Download All" button to SheetMusicViewer action bar
+- [x] Include page headers/footers and section dividers in the combined PDF
+- [x] Write tests for the combined PDF generation logic
+- [x] All 1,649 tests passing across 76 files

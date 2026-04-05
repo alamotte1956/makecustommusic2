@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { exportSheetMusicPDF } from "@/lib/pdfExport";
+import { exportCombinedPdf } from "@/lib/combinedPdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
@@ -707,6 +708,56 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     };
   }, [displayAbc, songTitle, selectedKey, originalKey]);
 
+  // Download All — combined PDF with all sheet music variations
+  const handleDownloadAll = useCallback(async () => {
+    if (!sheetRef.current || !displayAbc) return;
+    const svgElement = sheetRef.current.querySelector("svg");
+    if (!svgElement) {
+      toast.error("No sheet music to export");
+      return;
+    }
+
+    const { extractLeadSheet: extractLS } = await import("@/lib/leadSheetExtractor");
+    const leadSheet = extractLS(displayAbc);
+
+    if (leadSheet.sections.length === 0 || leadSheet.sections.every(s => s.lines.length === 0)) {
+      toast.error("Could not extract lyrics for the lead sheet and Nashville chart. Only the notation PDF will be generated.");
+      // Fall back to single PDF
+      handleDownloadPDF();
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const keyLabel = selectedKey === "original"
+        ? (originalKey ? `Key: ${originalKey}` : "")
+        : `Key: ${selectedKey}`;
+
+      // Get chord diagram SVGs from the rendered GuitarChordChart component
+      const generateChordDiagramsSvgs = (): SVGElement[] => {
+        const chordSection = sheetRef.current?.parentElement?.querySelector(".guitar-chord-chart-container");
+        if (!chordSection) return [];
+        return Array.from(chordSection.querySelectorAll("svg")) as SVGElement[];
+      };
+
+      await exportCombinedPdf({
+        svgElement,
+        leadSheet,
+        songTitle,
+        keyLabel,
+        chords,
+        convertChordLine: convertChordLineToNashville,
+        generateChordDiagramsSvgs,
+      });
+      toast.success("Complete sheet music package downloaded!");
+    } catch (err: any) {
+      console.error("[CombinedPDF] Export error:", err);
+      toast.error("Failed to generate combined PDF");
+    } finally {
+      setExporting(false);
+    }
+  }, [displayAbc, songTitle, selectedKey, originalKey, chords, handleDownloadPDF]);
+
   // Print Nashville Number System lead sheet
   const handlePrintNashville = useCallback(() => {
     if (!displayAbc) {
@@ -1041,6 +1092,23 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             Nashville
           </Button>
 
+          {/* Download All — combined PDF */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleDownloadAll}
+            disabled={!isRendered || exporting}
+            className="gap-1.5"
+            title="Download all sheet music formats as a single PDF"
+          >
+            {exporting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <PackageOpen className="w-3.5 h-3.5" />
+            )}
+            Download All
+          </Button>
+
           {/* Regenerate with key selection */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Regenerate in:</span>
@@ -1113,7 +1181,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
       {/* Guitar chord diagrams */}
       {chords.length > 0 && (
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="guitar-chord-chart-container bg-card rounded-lg border border-border p-4">
           <GuitarChordChart chords={chords} />
         </div>
       )}
