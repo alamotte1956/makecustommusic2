@@ -288,12 +288,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   useEffect(() => {
     if (!sanitisedDisplayAbc) return;
 
-    // Skip if already rendering (prevents re-entry from ResizeObserver)
-    if (isRenderingRef.current) return;
-
     // Skip if the same ABC was already rendered successfully (no need to re-render)
+    // BUT allow re-render if renderAttempt changed (user clicked Re-render)
     if (lastRenderedAbcRef.current === sanitisedDisplayAbc && hasRenderedOnceRef.current) {
+      // Ensure isRendered is true in case it was reset by a cancelled render
+      setIsRendered(true);
       return;
+    }
+
+    // If a previous render is in progress, schedule a retry after it finishes
+    // instead of silently dropping this render attempt
+    if (isRenderingRef.current) {
+      const retryTimer = setTimeout(() => {
+        setRenderAttempt((n) => n + 1);
+      }, 200);
+      return () => clearTimeout(retryTimer);
     }
 
     let cancelled = false;
@@ -305,6 +314,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       // CRITICAL: Check that the container has a non-zero width.
       const rect = container.getBoundingClientRect();
       if (rect.width < 10) {
+        // Schedule a retry — the container may become visible soon
+        if (!cancelled) {
+          setTimeout(() => {
+            if (!cancelled) setRenderAttempt((n) => n + 1);
+          }, 500);
+        }
         return;
       }
 
@@ -332,7 +347,16 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
         // Double-check width after rAF
         const postRafRect = renderTarget.getBoundingClientRect();
-        if (postRafRect.width < 10) { isRenderingRef.current = false; return; }
+        if (postRafRect.width < 10) {
+          isRenderingRef.current = false;
+          // Schedule a retry
+          if (!cancelled) {
+            setTimeout(() => {
+              if (!cancelled) setRenderAttempt((n) => n + 1);
+            }, 500);
+          }
+          return;
+        }
 
         // Render the ABC notation
         const visualObj = abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
@@ -359,11 +383,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, container width: ${postRafRect.width}`);
 
           if (pathElements.length < 5) {
-            console.warn("[SheetMusic] Very few paths rendered — possible zero-width issue.");
+            console.warn("[SheetMusic] Very few paths rendered — possible rendering issue.");
           }
         }
 
-        // Mark as successfully rendered
+        // Mark as successfully rendered — even if the SVG is minimal,
+        // allow the user to download whatever was produced
         hasRenderedOnceRef.current = true;
         lastRenderedAbcRef.current = sanitisedDisplayAbc;
         setIsRendered(true);
@@ -371,6 +396,13 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         if (!cancelled) {
           console.error("[SheetMusic] Render error:", err);
           setError({ type: "rendering", message: "Failed to render the sheet music notation.", detail: err?.message });
+          // Even on error, if there's an SVG in the container, allow PDF download
+          const svg = sheetRef.current?.querySelector("svg");
+          if (svg) {
+            hasRenderedOnceRef.current = true;
+            lastRenderedAbcRef.current = sanitisedDisplayAbc;
+            setIsRendered(true);
+          }
         }
       } finally {
         isRenderingRef.current = false;
@@ -381,8 +413,30 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
     return () => {
       cancelled = true;
+      // If the render was cancelled but we had a previous successful render
+      // of the same ABC, restore isRendered so buttons stay enabled
+      if (lastRenderedAbcRef.current === sanitisedDisplayAbc && hasRenderedOnceRef.current) {
+        setIsRendered(true);
+      }
     };
   }, [sanitisedDisplayAbc, renderAttempt, containerVisible]);
+
+  // ─── Safety net: if we have ABC and an SVG but isRendered is false, fix it ───
+  // This catches edge cases where rapid state changes leave isRendered stuck at false
+  useEffect(() => {
+    if (sanitisedDisplayAbc && !isRendered && !isRenderingRef.current) {
+      const timer = setTimeout(() => {
+        const svg = sheetRef.current?.querySelector("svg");
+        if (svg && !isRenderingRef.current) {
+          console.log("[SheetMusic] Safety net: SVG found but isRendered was false, fixing.");
+          hasRenderedOnceRef.current = true;
+          lastRenderedAbcRef.current = sanitisedDisplayAbc;
+          setIsRendered(true);
+        }
+      }, 3000); // Wait 3 seconds before applying safety net
+      return () => clearTimeout(timer);
+    }
+  }, [sanitisedDisplayAbc, isRendered]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!sheetRef.current) return;

@@ -1998,3 +1998,10 @@
 - [x] Add robust error handling and fallback logic
 - [x] Write/update tests to cover edge cases
 - [x] All 1,691 tests passing across 78 files (12 new tests for PDF helpers)
+
+## Bug Fix: PDF Button Disabled for Some Songs
+- [x] Investigate why isRendered stays false for certain songs preventing PDF download
+- [x] Fix sheet music rendering failures that block the PDF button
+- [x] Add fallback mechanisms so PDF is available even with edge-case ABC notation
+- [x] Ensure error states still allow PDF download when partial rendering succeeds
+- [x] All 1,691 tests passing across 78 files
