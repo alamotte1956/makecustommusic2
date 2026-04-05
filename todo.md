@@ -1936,3 +1936,9 @@
 - [x] Fix faint/light sheet music rendering: ResizeObserver was triggering infinite render loops, resetting opacity to 0
 - [x] Fix infinite loading state: Added re-entry guard (isRenderingRef), last-rendered tracking (lastRenderedAbcRef), and transition-only ResizeObserver
 - [x] Verify rendering completes properly: all 1,612 tests pass, no TypeScript errors
+
+## Print-Friendly Sheet Music View
+- [x] Add a Print button to the sheet music action bar (with Printer icon)
+- [x] Create print-friendly view: opens new window with clean layout, @page rules, and print button bar
+- [x] Include song title, key, and copyright (Albert LaMotte) in the print header/footer
+- [x] Cross-browser compatible: uses standard @page CSS, @media print, and window.print()

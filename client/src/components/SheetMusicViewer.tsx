@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -425,6 +425,160 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [sanitisedDisplayAbc, songTitle, selectedKey, originalKey]);
 
+  const handlePrint = useCallback(() => {
+    if (!sheetRef.current) return;
+    const svgElement = sheetRef.current.querySelector("svg");
+    if (!svgElement) {
+      toast.error("No sheet music to print");
+      return;
+    }
+
+    const keyLabel = selectedKey === "original"
+      ? (originalKey ? `Key: ${originalKey}` : "")
+      : `Key: ${selectedKey}`;
+
+    // Create a new window with print-friendly layout
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+      return;
+    }
+
+    const svgClone = svgElement.cloneNode(true) as SVGElement;
+    // Remove responsive sizing so SVG fills the print page
+    svgClone.removeAttribute("viewBox");
+    svgClone.setAttribute("width", "100%");
+    svgClone.style.maxWidth = "100%";
+    svgClone.style.height = "auto";
+
+    const currentYear = new Date().getFullYear();
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${songTitle} - Sheet Music</title>
+        <style>
+          @page {
+            size: letter portrait;
+            margin: 0.75in;
+          }
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            color: #000;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .print-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #333;
+          }
+          .print-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+          }
+          .print-meta {
+            font-size: 14px;
+            color: #555;
+            margin-top: 4px;
+          }
+          .print-content {
+            width: 100%;
+          }
+          .print-content svg {
+            width: 100%;
+            height: auto;
+            display: block;
+          }
+          .print-footer {
+            margin-top: 32px;
+            padding-top: 12px;
+            border-top: 1px solid #ccc;
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+          }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none !important; }
+          }
+          .print-btn-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #f0f0f0;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+          }
+          .print-btn-bar button {
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+          }
+          .print-btn {
+            background: #2563eb;
+            color: #fff;
+          }
+          .print-btn:hover { background: #1d4ed8; }
+          .close-btn {
+            background: #e5e7eb;
+            color: #374151;
+          }
+          .close-btn:hover { background: #d1d5db; }
+          .print-body {
+            margin-top: 64px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-btn-bar no-print">
+          <span style="font-size:14px;color:#555;">Print Preview</span>
+          <div style="display:flex;gap:8px;">
+            <button class="close-btn" onclick="window.close()">Close</button>
+            <button class="print-btn" onclick="window.print()">Print</button>
+          </div>
+        </div>
+        <div class="print-body">
+          <div class="print-header">
+            <div class="print-title">${songTitle}</div>
+            ${keyLabel ? `<div class="print-meta">${keyLabel}</div>` : ""}
+          </div>
+          <div class="print-content">
+            ${svgClone.outerHTML}
+          </div>
+          <div class="print-footer">
+            &copy; ${currentYear} Albert LaMotte &middot; Generated by Create Christian Music
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+
+    // Auto-trigger print dialog after content loads
+    printWindow.onload = () => {
+      printWindow.focus();
+    };
+  }, [songTitle, selectedKey, originalKey]);
+
   // Shared error banner component
   const renderErrorBanner = () => {
     if (!error) return null;
@@ -685,6 +839,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           >
             <FileText className="w-3.5 h-3.5" />
             MusicXML
+          </Button>
+
+          {/* Print */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            disabled={!isRendered}
+            className="gap-1.5"
+            title="Open print-friendly view"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Print
           </Button>
 
           {/* Regenerate with key selection */}
