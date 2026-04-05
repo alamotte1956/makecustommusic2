@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
+import { generatePrintAllHtml } from "@/lib/printAllHtml";
 import { extractLeadSheet, generateLeadSheetHtml, generateNashvilleLeadSheetHtml } from "@/lib/leadSheetExtractor";
 import { convertChordLineToNashville } from "@/lib/nashvilleNumbers";
 import { CapoChart } from "@/components/CapoChart";
@@ -758,6 +759,50 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [displayAbc, songTitle, selectedKey, originalKey, chords, handleDownloadPDF]);
 
+  // Print All — open a single print-friendly window with all three formats
+  const handlePrintAll = useCallback(() => {
+    if (!sheetRef.current || !displayAbc) return;
+    const svgElement = sheetRef.current.querySelector("svg");
+    if (!svgElement) {
+      toast.error("No sheet music to print");
+      return;
+    }
+
+    const leadSheet = extractLeadSheet(displayAbc);
+
+    if (leadSheet.sections.length === 0 || leadSheet.sections.every(s => s.lines.length === 0)) {
+      toast.error("Could not extract lyrics. Falling back to notation-only print.");
+      handlePrint();
+      return;
+    }
+
+    const keyLabel = selectedKey === "original"
+      ? (originalKey ? `Key: ${originalKey}` : "")
+      : `Key: ${selectedKey}`;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+      return;
+    }
+
+    const html = generatePrintAllHtml({
+      svgElement,
+      leadSheet,
+      songTitle,
+      keyLabel,
+      chords,
+      convertChordLine: convertChordLineToNashville,
+      generateChordDiagramsHtml,
+    });
+    printWindow.document.write(html);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      printWindow.focus();
+    };
+  }, [displayAbc, songTitle, selectedKey, originalKey, chords, handlePrint]);
+
   // Print Nashville Number System lead sheet
   const handlePrintNashville = useCallback(() => {
     if (!displayAbc) {
@@ -1090,6 +1135,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           >
             <Hash className="w-3.5 h-3.5" />
             Nashville
+          </Button>
+
+          {/* Print All — all formats in one print-friendly window */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handlePrintAll}
+            disabled={!isRendered}
+            className="gap-1.5"
+            title="Print all sheet music formats in one window"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Print All
           </Button>
 
           {/* Download All — combined PDF */}

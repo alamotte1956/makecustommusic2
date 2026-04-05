@@ -1983,3 +1983,11 @@
 - [x] Include page headers/footers and section dividers in the combined PDF
 - [x] Write tests for the combined PDF generation logic
 - [x] All 1,649 tests passing across 76 files
+
+## Print All Sheet Music Formats
+- [x] Create a Print All handler that opens a single print-friendly window with all three formats
+- [x] Include full notation SVG, lead sheet with chords, and Nashville Number System chart
+- [x] Add section dividers and page breaks between each format
+- [x] Add the Print All button to the SheetMusicViewer action bar
+- [x] Write tests for the print all functionality
+- [x] All 1,679 tests passing across 77 files
