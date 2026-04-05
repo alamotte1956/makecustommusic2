@@ -402,6 +402,7 @@ export default function SongDetail() {
                 songKeySignature={song.keySignature}
                 sheetMusicStatus={song.sheetMusicStatus}
                 sheetMusicError={song.sheetMusicError}
+                sheetMusicFeedback={song.sheetMusicFeedback}
               />
             </CardContent>
           </Card>

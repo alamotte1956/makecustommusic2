@@ -61,6 +61,7 @@ export const songs = mysqlTable("songs", {
   sheetMusicAbc: text("sheetMusicAbc"),
   sheetMusicStatus: mysqlEnum("sheetMusicStatus", ["pending", "generating", "done", "failed"]),
   sheetMusicError: text("sheetMusicError"),
+  sheetMusicFeedback: mysqlEnum("sheetMusicFeedback", ["up", "down"]),
   chordProgression: json("chordProgression").$type<ChordProgressionData>(),
   // Studio production fields
   instrumentalUrl: text("instrumentalUrl"),

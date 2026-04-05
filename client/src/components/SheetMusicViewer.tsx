@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ interface SheetMusicViewerProps {
   songKeySignature?: string | null;
   sheetMusicStatus?: string | null;
   sheetMusicError?: string | null;
+  sheetMusicFeedback?: string | null;
 }
 
 type ErrorType = "network" | "generation" | "rendering" | null;
@@ -112,7 +113,7 @@ function sanitiseAbcForRender(raw: string): string {
     .trim();
 }
 
-export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature, sheetMusicStatus, sheetMusicError }: SheetMusicViewerProps) {
+export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature, sheetMusicStatus, sheetMusicError, sheetMusicFeedback: initialFeedback }: SheetMusicViewerProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const prevHighlightRef = useRef<Element | null>(null);
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
@@ -733,6 +734,79 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           <GuitarChordChart chords={chords} />
         </div>
       )}
+
+      {/* Sheet music quality feedback */}
+      {isRendered && <SheetMusicFeedback songId={songId} initialFeedback={initialFeedback} />}
+    </div>
+  );
+}
+
+// ─── Feedback Component ─────────────────────────────────────────────────────
+
+function SheetMusicFeedback({ songId, initialFeedback }: { songId: number; initialFeedback?: string | null }) {
+  const [feedback, setFeedback] = useState<string | null>(initialFeedback ?? null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const feedbackMutation = trpc.songs.sheetMusicFeedback.useMutation({
+    onSuccess: (result) => {
+      setFeedback(result.feedback ?? null);
+      setSubmitted(true);
+      if (result.feedback === "up") {
+        toast.success("Thanks for the positive feedback!");
+      } else if (result.feedback === "down") {
+        toast("Thanks for letting us know. We'll work on improving it.");
+      } else {
+        toast("Feedback cleared.");
+      }
+      // Hide the "thank you" after 3 seconds
+      setTimeout(() => setSubmitted(false), 3000);
+    },
+    onError: (err) => toast.error("Failed to submit feedback: " + err.message),
+  });
+
+  const handleFeedback = (value: "up" | "down") => {
+    // Toggle off if already selected
+    const newValue = feedback === value ? null : value;
+    feedbackMutation.mutate({ songId, feedback: newValue });
+  };
+
+  return (
+    <div className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2.5 border border-border">
+      <span className="text-sm text-muted-foreground">
+        {submitted
+          ? "Thank you for your feedback!"
+          : "How is the quality of this sheet music?"}
+      </span>
+      <div className="flex items-center gap-1.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`gap-1.5 h-8 px-3 transition-colors ${
+            feedback === "up"
+              ? "bg-green-100 text-green-700 hover:bg-green-200"
+              : "text-muted-foreground hover:text-green-600"
+          }`}
+          onClick={() => handleFeedback("up")}
+          disabled={feedbackMutation.isPending}
+        >
+          <ThumbsUp className={`w-4 h-4 ${feedback === "up" ? "fill-current" : ""}`} />
+          <span className="text-xs">Good</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`gap-1.5 h-8 px-3 transition-colors ${
+            feedback === "down"
+              ? "bg-red-100 text-red-700 hover:bg-red-200"
+              : "text-muted-foreground hover:text-red-600"
+          }`}
+          onClick={() => handleFeedback("down")}
+          disabled={feedbackMutation.isPending}
+        >
+          <ThumbsDown className={`w-4 h-4 ${feedback === "down" ? "fill-current" : ""}`} />
+          <span className="text-xs">Needs Work</span>
+        </Button>
+      </div>
     </div>
   );
 }

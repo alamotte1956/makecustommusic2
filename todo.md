@@ -1908,3 +1908,10 @@
 
 ## Admin Sheet Music Progress Bar
 - [x] Add stacked progress bar showing completion percentage (green=done, blue=in progress, red=failed, gray=missing) with legend
+
+## Sheet Music Quality Feedback (Thumbs Up/Down)
+- [x] Add sheetMusicFeedback column to songs schema (enum: up, down, null)
+- [x] Add tRPC endpoint for submitting feedback (protected procedure, toggle support)
+- [x] Add thumbs-up/down UI to SheetMusicViewer when sheet music is rendered
+- [x] Add feedback stats (thumbs up/down counts + negative %) to admin Sheet Music section
+- [x] All 1,612 tests passing

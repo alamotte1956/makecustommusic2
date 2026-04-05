@@ -1083,6 +1083,31 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         }
       }),
 
+    // Submit feedback on sheet music quality
+    sheetMusicFeedback: protectedProcedure
+      .input(z.object({
+        songId: z.number(),
+        feedback: z.enum(["up", "down"]).nullable(), // null to clear feedback
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const song = await getSongById(input.songId);
+        if (!song || song.userId !== ctx.user.id) {
+          throw new Error("Song not found");
+        }
+        if (!song.sheetMusicAbc) {
+          throw new Error("No sheet music to rate");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        await db.update(songs)
+          .set({ sheetMusicFeedback: input.feedback })
+          .where(eq(songs.id, input.songId));
+
+        return { success: true, feedback: input.feedback };
+      }),
+
     // Generate chord progression for acoustic guitar
     generateChordProgression: protectedProcedure
       .input(z.object({ songId: z.number() }))
@@ -2334,6 +2359,8 @@ RULES:
           failed: sql<number>`SUM(CASE WHEN ${songs.sheetMusicStatus} = 'failed' THEN 1 ELSE 0 END)`,
           generating: sql<number>`SUM(CASE WHEN ${songs.sheetMusicStatus} = 'generating' OR ${songs.sheetMusicStatus} = 'pending' THEN 1 ELSE 0 END)`,
           missing: sql<number>`SUM(CASE WHEN ${songs.sheetMusicAbc} IS NULL AND (${songs.sheetMusicStatus} IS NULL OR ${songs.sheetMusicStatus} NOT IN ('generating', 'pending')) THEN 1 ELSE 0 END)`,
+          thumbsUp: sql<number>`SUM(CASE WHEN ${songs.sheetMusicFeedback} = 'up' THEN 1 ELSE 0 END)`,
+          thumbsDown: sql<number>`SUM(CASE WHEN ${songs.sheetMusicFeedback} = 'down' THEN 1 ELSE 0 END)`,
         }).from(songs);
 
         const row = results[0];
@@ -2344,6 +2371,8 @@ RULES:
           generating: Number(row?.generating ?? 0),
           missing: Number(row?.missing ?? 0),
           needsRegeneration: Number(row?.failed ?? 0) + Number(row?.missing ?? 0),
+          thumbsUp: Number(row?.thumbsUp ?? 0),
+          thumbsDown: Number(row?.thumbsDown ?? 0),
         };
       }),
 

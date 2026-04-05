@@ -1,0 +1,1 @@
+ALTER TABLE `songs` ADD `sheetMusicFeedback` enum('up','down');

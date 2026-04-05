@@ -30,6 +30,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -170,6 +172,26 @@ function SheetMusicManagement() {
             </div>
           </div>
         </div>
+
+        {/* User Feedback Stats */}
+        {(stats.thumbsUp > 0 || stats.thumbsDown > 0) && (
+          <div className="flex items-center gap-4 px-1">
+            <span className="text-xs text-muted-foreground font-medium">User Feedback:</span>
+            <div className="flex items-center gap-1.5">
+              <ThumbsUp className="w-3.5 h-3.5 text-green-600" />
+              <span className="text-sm font-semibold text-green-700">{stats.thumbsUp}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <ThumbsDown className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-sm font-semibold text-red-600">{stats.thumbsDown}</span>
+            </div>
+            {stats.thumbsDown > 0 && stats.done > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({Math.round((stats.thumbsDown / (stats.thumbsUp + stats.thumbsDown)) * 100)}% negative)
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Progress Bar */}
         {stats.total > 0 && (() => {
