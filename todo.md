@@ -1954,3 +1954,11 @@
 - [x] Ensure chord diagrams section has page-break-inside:avoid
 - [x] Header avoids page-break-after, footer avoids page-break-before
 - [x] Fallback to full SVG if staff splitting fails
+
+## Lyrics-Only Print Mode (Lead Sheet)
+- [x] Create function to extract lyrics with chord positions from ABC notation (leadSheetExtractor.ts)
+- [x] Add "Lead Sheet" button to SheetMusicViewer action bar with FileType icon
+- [x] Build print-friendly layout with chord symbols above lyrics lines (monospace chords, serif lyrics)
+- [x] Include song title, key, meter, and copyright (Albert LaMotte) in the lead sheet
+- [x] Section labels (Verse, Chorus, Bridge) with page-break-inside:avoid
+- [x] Fallback simple extraction when structured sections aren't detected

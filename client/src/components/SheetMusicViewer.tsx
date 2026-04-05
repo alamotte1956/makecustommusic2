@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
+import { extractLeadSheet, generateLeadSheetHtml } from "@/lib/leadSheetExtractor";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import type { PlaybackState } from "@/lib/abcPlayer";
@@ -669,7 +670,40 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     printWindow.onload = () => {
       printWindow.focus();
     };
-  }, [songTitle, selectedKey, originalKey]);
+  }, [songTitle, selectedKey, originalKey, chords]);
+
+  // Print lead sheet (lyrics with chord symbols)
+  const handlePrintLeadSheet = useCallback(() => {
+    if (!displayAbc) {
+      toast.error("No sheet music available to generate a lead sheet");
+      return;
+    }
+
+    const keyLabel = selectedKey === "original"
+      ? (originalKey ? `Key: ${originalKey}` : "")
+      : `Key: ${selectedKey}`;
+
+    const leadSheet = extractLeadSheet(displayAbc);
+
+    if (leadSheet.sections.length === 0 || leadSheet.sections.every(s => s.lines.length === 0)) {
+      toast.error("Could not extract lyrics from the sheet music. The song may not have lyrics.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+      return;
+    }
+
+    const html = generateLeadSheetHtml(leadSheet, songTitle, keyLabel);
+    printWindow.document.write(html);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      printWindow.focus();
+    };
+  }, [displayAbc, songTitle, selectedKey, originalKey]);
 
   // Shared error banner component
   const renderErrorBanner = () => {
@@ -944,6 +978,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           >
             <Printer className="w-3.5 h-3.5" />
             Print
+          </Button>
+
+          {/* Print Lead Sheet */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrintLeadSheet}
+            disabled={!isRendered}
+            className="gap-1.5"
+            title="Print lyrics with chord symbols (lead sheet)"
+          >
+            <FileType className="w-3.5 h-3.5" />
+            Lead Sheet
           </Button>
 
           {/* Regenerate with key selection */}
