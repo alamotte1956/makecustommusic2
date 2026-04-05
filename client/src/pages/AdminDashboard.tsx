@@ -25,6 +25,11 @@ import {
   Minus,
   AlertTriangle,
   Settings,
+  RefreshCw,
+  FileMusic,
+  CheckCircle2,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -87,6 +92,148 @@ const statusColors: Record<string, string> = {
   trialing: "bg-blue-100 text-blue-700",
   incomplete: "bg-gray-100 text-gray-600",
 };
+
+// ─── Sheet Music Management ────────────────────────────────────────────────
+
+function SheetMusicManagement() {
+  const { data: stats, isLoading, refetch } = trpc.admin.sheetMusicStats.useQuery(
+    undefined,
+    { refetchInterval: 10000 } // Poll every 10s to show progress
+  );
+  const utils = trpc.useUtils();
+
+  const regenerateAll = trpc.admin.regenerateSheetMusic.useMutation({
+    onSuccess: (result) => {
+      if (result.queued === 0) {
+        toast.info("No songs need sheet music regeneration");
+      } else {
+        toast.success(
+          `Queued ${result.queued} song${result.queued === 1 ? "" : "s"} for sheet music generation. They will be processed in the background.`
+        );
+      }
+      // Refetch stats after a short delay to show updated counts
+      setTimeout(() => refetch(), 3000);
+    },
+    onError: (err) => toast.error("Failed to start regeneration: " + err.message),
+  });
+
+  const handleRegenerateAll = () => {
+    regenerateAll.mutate({});
+  };
+
+  const handleRegenerateFailedOnly = () => {
+    regenerateAll.mutate({ includeFailedOnly: true });
+  };
+
+  if (isLoading) return null;
+  if (!stats) return null;
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-foreground mb-3">Sheet Music</h2>
+      <div className="bg-white rounded-xl border border-border p-5 shadow-sm space-y-4">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2">
+            <FileMusic className="w-4 h-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Total Songs</p>
+              <p className="text-lg font-bold text-foreground">{stats.total}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-green-50 rounded-lg px-3 py-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            <div>
+              <p className="text-xs text-green-600">Completed</p>
+              <p className="text-lg font-bold text-green-700">{stats.done}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-red-50 rounded-lg px-3 py-2">
+            <XCircle className="w-4 h-4 text-red-500" />
+            <div>
+              <p className="text-xs text-red-500">Failed</p>
+              <p className="text-lg font-bold text-red-600">{stats.failed}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+            <Clock className="w-4 h-4 text-blue-500" />
+            <div>
+              <p className="text-xs text-blue-500">In Progress</p>
+              <p className="text-lg font-bold text-blue-600">{stats.generating}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-3 py-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <div>
+              <p className="text-xs text-amber-500">Missing</p>
+              <p className="text-lg font-bold text-amber-600">{stats.missing}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        {stats.needsRegeneration > 0 && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2 border-t border-border">
+            <div className="flex-1">
+              <p className="text-sm text-foreground font-medium">
+                {stats.needsRegeneration} song{stats.needsRegeneration === 1 ? " needs" : "s need"} sheet music generation
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Songs are processed one at a time with 5-second intervals to avoid rate limits.
+                {stats.needsRegeneration > 5 && " This may take several minutes."}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {stats.failed > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={handleRegenerateFailedOnly}
+                  disabled={regenerateAll.isPending}
+                >
+                  {regenerateAll.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  Retry Failed ({stats.failed})
+                </Button>
+              )}
+              <Button
+                size="sm"
+                className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                onClick={handleRegenerateAll}
+                disabled={regenerateAll.isPending}
+              >
+                {regenerateAll.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                Regenerate All ({stats.needsRegeneration})
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {stats.needsRegeneration === 0 && stats.generating === 0 && (
+          <div className="flex items-center gap-2 text-sm text-green-600 pt-2 border-t border-border">
+            <CheckCircle2 className="w-4 h-4" />
+            All songs have sheet music generated successfully.
+          </div>
+        )}
+
+        {stats.needsRegeneration === 0 && stats.generating > 0 && (
+          <div className="flex items-center gap-2 text-sm text-blue-600 pt-2 border-t border-border">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {stats.generating} song{stats.generating === 1 ? " is" : "s are"} currently being generated...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Stat Card ──────────────────────────────────────────────────────────────
 
@@ -795,6 +942,9 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Sheet Music Management */}
+      <SheetMusicManagement />
 
       {/* Notification Center */}
       <AdminNotificationCenter />

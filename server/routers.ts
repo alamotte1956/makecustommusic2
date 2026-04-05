@@ -53,7 +53,7 @@ import { notifyOwner } from "./_core/notification";
 import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
 import { processMp3SheetJob } from "./mp3SheetProcessor";
 import { getAdminUserList, getAdminUserDetail, getAdminSiteStats, type AdminRevenueStats } from "./adminDb";
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNull, or, sql } from "drizzle-orm";
 import { users as usersTable, songs } from "../drizzle/schema";
 
 function getStripe(): Stripe | null {
@@ -2322,9 +2322,35 @@ RULES:
       }),
 
     // Regenerate sheet music for songs that don't have it
+    // Get stats on sheet music status across all songs
+    sheetMusicStats: adminProcedure
+      .query(async () => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const results = await db.select({
+          total: sql<number>`COUNT(*)`,
+          done: sql<number>`SUM(CASE WHEN ${songs.sheetMusicStatus} = 'done' THEN 1 ELSE 0 END)`,
+          failed: sql<number>`SUM(CASE WHEN ${songs.sheetMusicStatus} = 'failed' THEN 1 ELSE 0 END)`,
+          generating: sql<number>`SUM(CASE WHEN ${songs.sheetMusicStatus} = 'generating' OR ${songs.sheetMusicStatus} = 'pending' THEN 1 ELSE 0 END)`,
+          missing: sql<number>`SUM(CASE WHEN ${songs.sheetMusicAbc} IS NULL AND (${songs.sheetMusicStatus} IS NULL OR ${songs.sheetMusicStatus} NOT IN ('generating', 'pending')) THEN 1 ELSE 0 END)`,
+        }).from(songs);
+
+        const row = results[0];
+        return {
+          total: Number(row?.total ?? 0),
+          done: Number(row?.done ?? 0),
+          failed: Number(row?.failed ?? 0),
+          generating: Number(row?.generating ?? 0),
+          missing: Number(row?.missing ?? 0),
+          needsRegeneration: Number(row?.failed ?? 0) + Number(row?.missing ?? 0),
+        };
+      }),
+
     regenerateSheetMusic: adminProcedure
       .input(z.object({
-        songId: z.number().optional(), // Specific song, or all missing
+        songId: z.number().optional(), // Specific song, or all failed/missing
+        includeFailedOnly: z.boolean().optional(), // Only regenerate failed ones
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -2335,18 +2361,29 @@ RULES:
         if (input.songId) {
           songIds = [input.songId];
         } else {
-          // Find all songs without sheet music ABC
+          // Find all songs that need sheet music: failed status OR missing ABC
           const results = await db.select({ id: songs.id })
             .from(songs)
-            .where(isNull(songs.sheetMusicAbc));
+            .where(
+              input.includeFailedOnly
+                ? eq(songs.sheetMusicStatus, "failed")
+                : or(
+                    eq(songs.sheetMusicStatus, "failed"),
+                    isNull(songs.sheetMusicAbc)
+                  )
+            );
           songIds = results.map(r => r.id);
+        }
+
+        if (songIds.length === 0) {
+          return { queued: 0, songIds: [] };
         }
 
         // Trigger background generation for each (staggered to avoid overload)
         let queued = 0;
         for (const id of songIds) {
-          // Reset status to pending first
-          await updateSongSheetMusicStatus(id, "pending");
+          // Reset status so the background job picks them up fresh
+          await updateSongSheetMusicStatus(id, null as any);
           // Stagger by 5 seconds each to avoid LLM rate limits
           setTimeout(() => {
             generateSheetMusicInBackground(id);

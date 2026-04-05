@@ -1900,3 +1900,8 @@
 - [x] Add delay between retries to avoid hammering the LLM (2s between LLM retries, 3-12s between background retries)
 - [x] Log retry attempts for debugging (logs attempt number, delay, and failure reason)
 - [x] Update tests to cover retry behavior (8 new tests covering retry architecture)
+
+## Admin Panel: Regenerate All Failed Sheet Music
+- [x] Add backend endpoint: sheetMusicStats query + updated regenerateSheetMusic mutation (supports failed-only and all missing)
+- [x] Add Regenerate All button in admin panel UI with live stats, progress feedback, and auto-polling
+- [x] All 1,612 tests passing
