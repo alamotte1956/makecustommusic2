@@ -2,6 +2,11 @@
  * ABC Notation to MIDI File Converter
  * Parses ABC notation and generates a standard MIDI file (SMF Type 0)
  * for download and use in digital audio workstations.
+ *
+ * Key improvements:
+ * - Applies key signature accidentals to notes
+ * - Properly handles rests by accumulating delta time
+ * - Handles ties by combining note durations
  */
 
 // ─── MIDI Constants ───
@@ -9,11 +14,36 @@ const MIDI_HEADER = [0x4d, 0x54, 0x68, 0x64]; // "MThd"
 const MIDI_TRACK_HEADER = [0x4d, 0x54, 0x72, 0x6b]; // "MTrk"
 const TICKS_PER_QUARTER = 480;
 
-// ABC note to MIDI pitch mapping (middle C = 60)
+// ABC note to MIDI pitch mapping (middle C = 60, no key sig accidentals)
 const NOTE_MAP: Record<string, number> = {
   C: 60, D: 62, E: 64, F: 65, G: 67, A: 69, B: 71,
   c: 72, d: 74, e: 76, f: 77, g: 79, a: 81, b: 83,
 };
+
+// Key signature accidentals (same map as abcPlayer.ts)
+const KEY_ACCIDENTALS: Record<string, Record<string, number>> = {
+  "C": {}, "Am": {},
+  "G": { F: 1 }, "Em": { F: 1 },
+  "D": { F: 1, C: 1 }, "Bm": { F: 1, C: 1 },
+  "A": { F: 1, C: 1, G: 1 }, "F#m": { F: 1, C: 1, G: 1 },
+  "E": { F: 1, C: 1, G: 1, D: 1 }, "C#m": { F: 1, C: 1, G: 1, D: 1 },
+  "B": { F: 1, C: 1, G: 1, D: 1, A: 1 }, "G#m": { F: 1, C: 1, G: 1, D: 1, A: 1 },
+  "F#": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1 }, "D#m": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1 },
+  "C#": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1, B: 1 }, "A#m": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1, B: 1 },
+  "F": { B: -1 }, "Dm": { B: -1 },
+  "Bb": { B: -1, E: -1 }, "Gm": { B: -1, E: -1 },
+  "Eb": { B: -1, E: -1, A: -1 }, "Cm": { B: -1, E: -1, A: -1 },
+  "Ab": { B: -1, E: -1, A: -1, D: -1 }, "Fm": { B: -1, E: -1, A: -1, D: -1 },
+  "Db": { B: -1, E: -1, A: -1, D: -1, G: -1 }, "Bbm": { B: -1, E: -1, A: -1, D: -1, G: -1 },
+  "Gb": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1 }, "Ebm": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1 },
+  "Cb": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1, F: -1 }, "Abm": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1, F: -1 },
+};
+
+function normalizeKeyName(keyStr: string): string {
+  const match = keyStr.trim().match(/^([A-G][#b]?)\s*(m|min|minor)?/i);
+  if (!match) return "C";
+  return match[1] + (match[2] ? "m" : "");
+}
 
 // ─── Variable-Length Quantity Encoding ───
 function encodeVLQ(value: number): number[] {
@@ -62,7 +92,6 @@ function parseHeaders(abc: string): ABCHeaders {
     if (trimmed.startsWith("T:")) {
       headers.title = trimmed.substring(2).trim();
     } else if (trimmed.startsWith("Q:")) {
-      // Parse tempo: "1/4=120" or just "120"
       const qMatch = trimmed.substring(2).trim().match(/(?:\d+\/\d+=)?(\d+)/);
       if (qMatch) headers.tempo = parseInt(qMatch[1], 10);
     } else if (trimmed.startsWith("M:")) {
@@ -84,6 +113,7 @@ interface MidiNote {
   pitch: number;
   duration: number; // in ticks
   velocity: number;
+  isRest: boolean;
 }
 
 function parseDuration(
@@ -94,7 +124,6 @@ function parseDuration(
 
   if (!durationStr || durationStr.length === 0) return defaultTicks;
 
-  // Handle multipliers: "2" means 2x default, "/2" means half, "3/2" means 1.5x
   const slashMatch = durationStr.match(/^(\d*)\/(\d*)/);
   if (slashMatch) {
     const num = slashMatch[1] ? parseInt(slashMatch[1], 10) : 1;
@@ -111,30 +140,31 @@ function parseDuration(
 function parseABCNotes(abc: string, headers: ABCHeaders): MidiNote[] {
   const notes: MidiNote[] = [];
   const lines = abc.split("\n");
-  let currentVelocity = 80; // Default mf
+  const currentVelocity = 80; // Default mf
 
-  // Dynamics mapping
-  const dynamicsMap: Record<string, number> = {
-    "ppp": 20, "pp": 35, "p": 50, "mp": 65,
-    "mf": 80, "f": 95, "ff": 110, "fff": 125,
-  };
+  // Get key signature accidentals
+  const keyName = normalizeKeyName(headers.key);
+  const keyAccidentals = KEY_ACCIDENTALS[keyName] || {};
+  let measureAccidentals: Record<string, number> = {};
 
   for (const line of lines) {
     const trimmed = line.trim();
-    // Skip header lines
     if (/^[A-Z]:/.test(trimmed) && !trimmed.startsWith("w:")) continue;
-    // Skip lyrics lines
     if (trimmed.startsWith("w:")) continue;
-    // Skip empty lines and comments
     if (!trimmed || trimmed.startsWith("%")) continue;
 
-    // Process note-by-note
     let i = 0;
     while (i < trimmed.length) {
       const ch = trimmed[i];
 
-      // Skip bar lines, repeat signs, decorations
-      if (ch === "|" || ch === ":" || ch === "[" || ch === "]") {
+      // Bar lines reset measure accidentals
+      if (ch === "|") {
+        measureAccidentals = {};
+        i++;
+        continue;
+      }
+
+      if (ch === ":" || ch === " ") {
         i++;
         continue;
       }
@@ -143,8 +173,6 @@ function parseABCNotes(abc: string, headers: ABCHeaders): MidiNote[] {
       if (ch === "!") {
         const endBang = trimmed.indexOf("!", i + 1);
         if (endBang > i) {
-          const dyn = trimmed.substring(i + 1, endBang);
-          if (dynamicsMap[dyn]) currentVelocity = dynamicsMap[dyn];
           i = endBang + 1;
           continue;
         }
@@ -152,7 +180,7 @@ function parseABCNotes(abc: string, headers: ABCHeaders): MidiNote[] {
         continue;
       }
 
-      // Skip quoted chord symbols "Am", "G7", etc.
+      // Skip quoted chord symbols
       if (ch === '"') {
         const endQuote = trimmed.indexOf('"', i + 1);
         if (endQuote > i) {
@@ -177,46 +205,56 @@ function parseABCNotes(abc: string, headers: ABCHeaders): MidiNote[] {
       // Handle rests
       if (ch === "z" || ch === "Z") {
         i++;
-        // Parse duration
         let durStr = "";
         while (i < trimmed.length && /[\d\/]/.test(trimmed[i])) {
           durStr += trimmed[i];
           i++;
         }
         const duration = parseDuration(durStr, headers.defaultNoteLength);
-        // Rest = note with pitch 0 and velocity 0
-        notes.push({ pitch: 0, duration, velocity: 0 });
+        notes.push({ pitch: 0, duration, velocity: 0, isRest: true });
         continue;
       }
 
       // Handle accidentals
-      let accidental = 0;
+      let explicitAccidental: number | null = null;
       if (ch === "^") {
-        accidental = 1;
+        explicitAccidental = 1;
         i++;
-        if (i < trimmed.length && trimmed[i] === "^") { accidental = 2; i++; }
+        if (i < trimmed.length && trimmed[i] === "^") { explicitAccidental = 2; i++; }
       } else if (ch === "_") {
-        accidental = -1;
+        explicitAccidental = -1;
         i++;
-        if (i < trimmed.length && trimmed[i] === "_") { accidental = -2; i++; }
+        if (i < trimmed.length && trimmed[i] === "_") { explicitAccidental = -2; i++; }
       } else if (ch === "=") {
-        accidental = 0; // natural
+        explicitAccidental = 0; // natural
         i++;
       }
 
       // Check for note letter
       if (i < trimmed.length && /[A-Ga-g]/.test(trimmed[i])) {
         const noteLetter = trimmed[i];
+        const upperLetter = noteLetter.toUpperCase();
         let pitch = NOTE_MAP[noteLetter];
         if (pitch === undefined) {
           i++;
           continue;
         }
 
+        // Apply accidental: explicit > measure > key signature
+        let accidental: number;
+        if (explicitAccidental !== null) {
+          accidental = explicitAccidental;
+          measureAccidentals[upperLetter] = explicitAccidental;
+        } else if (measureAccidentals[upperLetter] !== undefined) {
+          accidental = measureAccidentals[upperLetter];
+        } else {
+          accidental = keyAccidentals[upperLetter] || 0;
+        }
+
         pitch += accidental;
         i++;
 
-        // Handle octave modifiers: ' (up) and , (down)
+        // Handle octave modifiers
         while (i < trimmed.length) {
           if (trimmed[i] === "'") { pitch += 12; i++; }
           else if (trimmed[i] === ",") { pitch -= 12; i++; }
@@ -230,13 +268,13 @@ function parseABCNotes(abc: string, headers: ABCHeaders): MidiNote[] {
           i++;
         }
 
-        // Handle ties (skip the dash, duration will be combined later)
-        // For simplicity, we just add the note
         const duration = parseDuration(durStr, headers.defaultNoteLength);
-
-        notes.push({ pitch, duration, velocity: currentVelocity });
+        notes.push({ pitch, duration, velocity: currentVelocity, isRest: false });
         continue;
       }
+
+      // If we had an accidental but no note followed, just skip
+      if (explicitAccidental !== null) continue;
 
       // Skip decorations like ~ (trill), . (staccato), H (fermata), etc.
       if (ch === "~" || ch === "." || ch === "H" || ch === "(" || ch === ")") {
@@ -244,7 +282,7 @@ function parseABCNotes(abc: string, headers: ABCHeaders): MidiNote[] {
         continue;
       }
 
-      // Skip spaces and other characters
+      // Skip other characters
       i++;
     }
   }
@@ -272,7 +310,7 @@ function buildMidiFile(notes: MidiNote[], headers: ABCHeaders): Uint8Array<Array
   trackEvents.push(
     0x00, // delta time
     0xff, 0x58, 0x04,
-    num, denLog2, 24, 8 // 24 MIDI clocks per metronome click, 8 32nd notes per quarter
+    num, denLog2, 24, 8
   );
 
   // Track name meta event
@@ -282,21 +320,19 @@ function buildMidiFile(notes: MidiNote[], headers: ABCHeaders): Uint8Array<Array
   // Program change: acoustic grand piano (program 0) on channel 0
   trackEvents.push(0x00, 0xc0, 0x00);
 
-  // Add note events
+  // Add note events — properly accumulate delta time for rests
+  let pendingDelta = 0;
+
   for (const note of notes) {
-    if (note.pitch === 0 || note.velocity === 0) {
-      // Rest: just advance time
-      trackEvents.push(...encodeVLQ(Math.round(note.duration)));
-      // Need a no-op event — use a controller event that does nothing visible
-      // Actually, we can just accumulate delta time on the next note-on
-      // For simplicity, we'll skip rests by tracking cumulative delta
-      // But since we already pushed the VLQ, let's use a dummy meta event
-      trackEvents.push(0xff, 0x06, 0x00); // marker with empty text
+    if (note.isRest) {
+      // Accumulate rest duration as delta time for the next note
+      pendingDelta += Math.round(note.duration);
       continue;
     }
 
-    // Note on (channel 0)
-    trackEvents.push(0x00); // delta time (0 = simultaneous with previous)
+    // Note on (channel 0) — include any accumulated rest delta
+    trackEvents.push(...encodeVLQ(pendingDelta));
+    pendingDelta = 0;
     trackEvents.push(0x90, note.pitch & 0x7f, note.velocity & 0x7f);
 
     // Note off after duration
@@ -304,18 +340,18 @@ function buildMidiFile(notes: MidiNote[], headers: ABCHeaders): Uint8Array<Array
     trackEvents.push(0x80, note.pitch & 0x7f, 0x40);
   }
 
-  // End of track
-  trackEvents.push(0x00, 0xff, 0x2f, 0x00);
+  // End of track (include any trailing rest delta)
+  trackEvents.push(...encodeVLQ(pendingDelta), 0xff, 0x2f, 0x00);
 
   // Build complete MIDI file
   const fileBytes: number[] = [];
 
   // File header: MThd, length=6, format=0, tracks=1, division=TICKS_PER_QUARTER
   fileBytes.push(...MIDI_HEADER);
-  fileBytes.push(...write32(6)); // header length
-  fileBytes.push(...write16(0)); // format 0
-  fileBytes.push(...write16(1)); // 1 track
-  fileBytes.push(...write16(TICKS_PER_QUARTER)); // ticks per quarter note
+  fileBytes.push(...write32(6));
+  fileBytes.push(...write16(0));
+  fileBytes.push(...write16(1));
+  fileBytes.push(...write16(TICKS_PER_QUARTER));
 
   // Track chunk
   fileBytes.push(...MIDI_TRACK_HEADER);

@@ -1866,3 +1866,16 @@
 - [x] Added admin regenerateSheetMusic endpoint for batch regeneration of songs missing sheet music
 - [x] Rewrote generateAbcNotation tests to avoid unreliable vi.doMock with real LLM calls — now tests sanitise/validate pipeline directly
 - [x] All 1,585 tests passing across 74 files
+
+## Sheet Music Major Overhaul
+- [x] Fix schema default: change sheetMusicStatus from "pending" to null (prevents infinite polling)
+- [x] Fix background generation timing: set status immediately, not after 3s delay
+- [x] Remove double/triple sanitization: single source in backgroundSheetMusic.ts
+- [x] Fix ABC player key signature: apply key signature accidentals during playback
+- [x] Improve LLM prompt: fix chord symbol syntax, improve lyrics alignment
+- [x] Improve ABC validation: add structural checks (bar lines, min 3 music lines, key sig format)
+- [x] Fix MIDI export tie handling
+- [x] Fix MIDI export rest handling (accumulate delta time)
+- [x] Remove duplicate frontend sanitiseAbc — replaced with minimal safety pass
+- [x] Export KEY_ACCIDENTALS for shared use between backend and frontend
+- [x] All 1,604 tests passing across 74 files

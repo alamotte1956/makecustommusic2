@@ -59,7 +59,7 @@ export const songs = mysqlTable("songs", {
   sunoAudioId: varchar("sunoAudioId", { length: 255 }),
   imageUrl: text("imageUrl"),
   sheetMusicAbc: text("sheetMusicAbc"),
-  sheetMusicStatus: mysqlEnum("sheetMusicStatus", ["pending", "generating", "done", "failed"]).default("pending"),
+  sheetMusicStatus: mysqlEnum("sheetMusicStatus", ["pending", "generating", "done", "failed"]),
   sheetMusicError: text("sheetMusicError"),
   chordProgression: json("chordProgression").$type<ChordProgressionData>(),
   // Studio production fields

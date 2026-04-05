@@ -1,0 +1,1 @@
+ALTER TABLE `songs` MODIFY COLUMN `sheetMusicStatus` enum('pending','generating','done','failed');

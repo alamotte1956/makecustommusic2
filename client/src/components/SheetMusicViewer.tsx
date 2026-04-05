@@ -94,31 +94,19 @@ function classifyError(error: any): ErrorState {
   return { type: "generation", message: friendlyMessage, detail: message !== friendlyMessage ? message : undefined };
 }
 
-/** Sanitise ABC notation for abcjs rendering */
-function sanitiseAbc(raw: string): string {
+/**
+ * Minimal frontend safety pass for ABC notation.
+ * The primary sanitisation happens on the backend (backgroundSheetMusic.sanitiseAbc).
+ * This only strips V: directives and %%staves as a safety net in case old data
+ * was stored before the backend sanitiser was improved.
+ */
+function sanitiseAbcForRender(raw: string): string {
   return raw
     .split("\n")
     .filter((l) => {
       const t = l.trim();
-      // Remove V: voice directives and %%staves
       if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
-      // Remove standalone dynamics on their own line (e.g. !p!, !mf!, !ff!)
-      if (/^![a-z]+!$/.test(t)) return false;
-      // Remove standalone crescendo/diminuendo markers
-      if (/^!(crescendo|diminuendo|<|>)[(!)]+$/.test(t)) return false;
       return true;
-    })
-    .map((l) => {
-      const t = l.trim();
-      // Convert [P:...] section markers to comments
-      if (/^\[P:.*\]$/.test(t)) return `% ${t}`;
-      // Strip inline dynamics decorations (e.g. !p! !mp! !mf! !f! !ff!)
-      let cleaned = l.replace(/![pmf]{1,4}!/g, "");
-      // Strip crescendo/diminuendo decorations
-      cleaned = cleaned.replace(/!(crescendo|diminuendo|<|>)[(!)]+/g, "");
-      // Strip other common unsupported decorations
-      cleaned = cleaned.replace(/!(accent|fermata|tenuto|staccato|trill|turn|mordent|pralltriller|emphasis|segno|coda|D\.S\.|D\.C\.|fine)!/g, "");
-      return cleaned;
     })
     .join("\n")
     .trim();
@@ -242,7 +230,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   // Frontend-side ABC sanitisation
   const sanitisedDisplayAbc = useMemo(() => {
     if (!displayAbc) return null;
-    return sanitiseAbc(displayAbc);
+    return sanitiseAbcForRender(displayAbc);
   }, [displayAbc]);
 
   const handleGenerate = useCallback(async () => {

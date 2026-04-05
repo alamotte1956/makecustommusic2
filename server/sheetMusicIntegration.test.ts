@@ -3,15 +3,15 @@
  * 
  * Tests the full sheet music generation pipeline:
  * 1. buildSongContext - building the LLM prompt
- * 2. sanitiseAbc - cleaning LLM output
- * 3. validateAbc - validating ABC notation
+ * 2. sanitiseAbc - cleaning LLM output (single source of truth)
+ * 3. validateAbc - validating ABC notation structure
  * 4. generateAbcNotation - full LLM call (mocked)
- * 5. generateSheetMusicInBackground - background job flow
- * 6. mp3SheetProcessor - MP3 to sheet music flow
+ * 5. KEY_ACCIDENTALS - key signature accidental map
+ * 6. Edge cases that could cause "doesn't work at all"
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { buildSongContext, sanitiseAbc, validateAbc, generateAbcNotation } from "./backgroundSheetMusic";
+import { describe, it, expect } from "vitest";
+import { buildSongContext, sanitiseAbc, validateAbc, KEY_ACCIDENTALS } from "./backgroundSheetMusic";
 
 // ─── buildSongContext tests ───
 
@@ -92,6 +92,15 @@ describe("sanitiseAbc", () => {
     expect(result).toContain("CDEF|");
   });
 
+  it("strips inline dynamics decorations", () => {
+    const raw = "X:1\nT:Test\nK:C\n!mf!CDEF !f!GABc|";
+    const result = sanitiseAbc(raw);
+    expect(result).not.toContain("!mf!");
+    expect(result).not.toContain("!f!");
+    expect(result).toContain("CDEF");
+    expect(result).toContain("GABc|");
+  });
+
   it("strips preamble text before X: header", () => {
     const raw = "Here is the ABC notation for your song:\n\nX:1\nT:Test\nK:C\nCDEF|";
     const result = sanitiseAbc(raw);
@@ -103,6 +112,19 @@ describe("sanitiseAbc", () => {
     const raw = "X:1\nT:Test\nK:C\nCDEF|\n\nI hope you enjoy this music!";
     const result = sanitiseAbc(raw);
     expect(result).not.toContain("I hope");
+  });
+
+  it("strips short postamble like 'Enjoy!'", () => {
+    const raw = "X:1\nT:Test\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\n\nEnjoy!";
+    const result = sanitiseAbc(raw);
+    expect(result).not.toContain("Enjoy");
+  });
+
+  it("strips multi-sentence postamble", () => {
+    const raw = "X:1\nT:Test\nK:C\nCDEF|\n\nThis notation represents a simple melody. Feel free to modify it.";
+    const result = sanitiseAbc(raw);
+    expect(result).not.toContain("This notation");
+    expect(result).not.toContain("Feel free");
   });
 
   it("injects missing M: header", () => {
@@ -126,11 +148,9 @@ describe("sanitiseAbc", () => {
   it("does not duplicate existing headers", () => {
     const raw = "X:1\nT:Test\nM:3/4\nL:1/4\nQ:1/4=80\nK:G\nGAB|";
     const result = sanitiseAbc(raw);
-    // Should keep original values, not inject defaults
     expect(result).toContain("M:3/4");
     expect(result).toContain("L:1/4");
     expect(result).toContain("Q:1/4=80");
-    // Should NOT have the defaults
     const mCount = (result.match(/^M:/gm) || []).length;
     expect(mCount).toBe(1);
   });
@@ -146,13 +166,49 @@ describe("sanitiseAbc", () => {
     expect(result).toContain("X:1");
     expect(result).toContain("T:Test");
   });
+
+  it("preserves w: lyrics lines", () => {
+    const raw = "X:1\nT:Test\nK:C\nCDEF GABc|\nw:A-ma-zing grace how sweet";
+    const result = sanitiseAbc(raw);
+    expect(result).toContain("w:A-ma-zing grace how sweet");
+  });
+
+  it("preserves % comment lines", () => {
+    const raw = "X:1\nT:Test\nK:C\n% Verse 1\nCDEF|";
+    const result = sanitiseAbc(raw);
+    expect(result).toContain("% Verse 1");
+  });
+
+  it("handles Windows-style line endings", () => {
+    const raw = "X:1\r\nT:Test\r\nK:C\r\nCDEF|\r\n";
+    const result = sanitiseAbc(raw);
+    expect(result).toContain("X:1");
+    expect(result).toContain("CDEF|");
+  });
+
+  it("handles K: header with mode suffix", () => {
+    const raw = "X:1\nT:Test\nK:Dmaj\nDEFG|";
+    const result = sanitiseAbc(raw);
+    expect(result).toContain("K:Dmaj");
+    expect(result).toContain("M:4/4");
+  });
+
+  it("strips unsupported decorations like !fermata! and !accent!", () => {
+    const raw = "X:1\nT:Test\nK:C\n!accent!C2 !fermata!D2 !trill!E2 F2|";
+    const result = sanitiseAbc(raw);
+    expect(result).not.toContain("!accent!");
+    expect(result).not.toContain("!fermata!");
+    expect(result).not.toContain("!trill!");
+    expect(result).toContain("C2");
+    expect(result).toContain("D2");
+  });
 });
 
 // ─── validateAbc tests ───
 
 describe("validateAbc", () => {
   it("returns null for valid ABC", () => {
-    const abc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|";
+    const abc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
     expect(validateAbc(abc)).toBeNull();
   });
 
@@ -181,35 +237,130 @@ describe("validateAbc", () => {
     expect(validateAbc(abc)).toContain("No music content");
   });
 
+  it("rejects music without bar lines", () => {
+    const abc = "X:1\nT:Test\nK:C\nCDEF GABc";
+    const error = validateAbc(abc);
+    expect(error).toContain("No bar lines");
+  });
+
+  it("rejects very short music (less than 3 music lines)", () => {
+    const abc = "X:1\nT:Test\nK:C\nC|";
+    const error = validateAbc(abc);
+    expect(error).toContain("too short");
+  });
+
   it("accepts ABC with lyrics lines", () => {
-    const abc = "X:1\nT:Test\nK:C\nCDEF GABc|\nw:Ama-zing grace how sweet";
+    const abc = "X:1\nT:Test\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nw:Ama-zing grace how sweet";
     expect(validateAbc(abc)).toBeNull();
   });
 
   it("accepts ABC with comments", () => {
-    const abc = "X:1\nT:Test\nK:C\n% Verse 1\nCDEF GABc|";
+    const abc = "X:1\nT:Test\nK:C\n% Verse 1\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
     expect(validateAbc(abc)).toBeNull();
   });
 
   it("accepts ABC with chord symbols", () => {
-    const abc = 'X:1\nT:Test\nK:C\n"Am"A2 B2 "F"c2 d2|';
+    const abc = 'X:1\nT:Test\nK:C\n"Am"A2 B2 "F"c2 d2|"C"e2 d2 "G"c2 B2|\n"Am"A2 B2 "F"c2 d2|"G"e2 d2 c2 B2|\n"C"E2 F2 G2 A2|';
+    expect(validateAbc(abc)).toBeNull();
+  });
+
+  it("validates key signature format", () => {
+    const abc = "X:1\nT:Test\nK:XYZ\nCDEF|GABc|\ncBAG|";
+    const error = validateAbc(abc);
+    expect(error).toContain("Invalid key signature");
+  });
+
+  it("accepts valid key signatures with modes", () => {
+    const abc = "X:1\nT:Test\nK:Dmix\nDEFG|ABcd|\ndefg|ABcd|\nDEFG|";
     expect(validateAbc(abc)).toBeNull();
   });
 });
 
-// ─── generateAbcNotation tests (with mocked LLM) ───
+// ─── KEY_ACCIDENTALS tests ───
 
-describe("generateAbcNotation", () => {
-  it("sanitises and validates LLM output correctly", () => {
-    // Test the pipeline: sanitise + validate on valid ABC
-    const validAbc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|";
+describe("KEY_ACCIDENTALS", () => {
+  it("C major has no accidentals", () => {
+    expect(KEY_ACCIDENTALS["C"]).toEqual({});
+  });
+
+  it("G major has F#", () => {
+    expect(KEY_ACCIDENTALS["G"]).toEqual({ F: 1 });
+  });
+
+  it("D major has F# and C#", () => {
+    expect(KEY_ACCIDENTALS["D"]).toEqual({ F: 1, C: 1 });
+  });
+
+  it("F major has Bb", () => {
+    expect(KEY_ACCIDENTALS["F"]).toEqual({ B: -1 });
+  });
+
+  it("Bb major has Bb and Eb", () => {
+    expect(KEY_ACCIDENTALS["Bb"]).toEqual({ B: -1, E: -1 });
+  });
+
+  it("Am has no accidentals (relative minor of C)", () => {
+    expect(KEY_ACCIDENTALS["Am"]).toEqual({});
+  });
+
+  it("Em has F# (relative minor of G)", () => {
+    expect(KEY_ACCIDENTALS["Em"]).toEqual({ F: 1 });
+  });
+
+  it("Dm has Bb (relative minor of F)", () => {
+    expect(KEY_ACCIDENTALS["Dm"]).toEqual({ B: -1 });
+  });
+
+  it("all major keys are present", () => {
+    const majorKeys = ["C", "G", "D", "A", "E", "B", "F#", "C#", "F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"];
+    for (const key of majorKeys) {
+      expect(KEY_ACCIDENTALS).toHaveProperty(key);
+    }
+  });
+
+  it("all minor keys are present", () => {
+    const minorKeys = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "A#m", "Dm", "Gm", "Cm", "Fm", "Bbm", "Ebm", "Abm"];
+    for (const key of minorKeys) {
+      expect(KEY_ACCIDENTALS).toHaveProperty(key);
+    }
+  });
+});
+
+// ─── Full pipeline tests ───
+
+describe("Full pipeline: sanitise + validate", () => {
+  it("handles ABC wrapped in code fences with preamble and postamble", () => {
+    const raw = "Here is the notation:\n\n```abc\nX:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|\n```\n\nEnjoy!";
+    const cleaned = sanitiseAbc(raw);
+    expect(cleaned).toMatch(/^X:1/);
+    expect(cleaned).not.toContain("```");
+    expect(cleaned).not.toContain("Here is");
+    expect(cleaned).not.toContain("Enjoy");
+    expect(validateAbc(cleaned)).toBeNull();
+  });
+
+  it("handles valid ABC directly", () => {
+    const validAbc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
     const cleaned = sanitiseAbc(validAbc);
     expect(cleaned).toContain("X:1");
     expect(cleaned).toContain("T:Test Song");
     expect(validateAbc(cleaned)).toBeNull();
   });
 
-  it("extractLLMText handles array content (Claude thinking blocks)", async () => {
+  it("handles ABC with V: directives and dynamics", () => {
+    const raw = "X:1\nT:Test\nM:4/4\nL:1/8\nK:C\nV:1 clef=treble\n!mf!CDEF GABc|!f!cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
+    const cleaned = sanitiseAbc(raw);
+    expect(cleaned).not.toContain("V:1");
+    expect(cleaned).not.toContain("!mf!");
+    expect(cleaned).not.toContain("!f!");
+    expect(validateAbc(cleaned)).toBeNull();
+  });
+});
+
+// ─── extractLLMText tests ───
+
+describe("extractLLMText", () => {
+  it("handles array content (Claude thinking blocks)", async () => {
     const { extractLLMText } = await import("./llmHelpers");
     const validAbc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|";
     const content = [
@@ -221,92 +372,54 @@ describe("generateAbcNotation", () => {
     expect(result).toContain("CDEF GABc");
   });
 
-  it("extractLLMText returns null for empty/null content", async () => {
+  it("returns null for empty/null content", async () => {
     const { extractLLMText } = await import("./llmHelpers");
     expect(extractLLMText(null)).toBeNull();
     expect(extractLLMText("")).toBeNull();
     expect(extractLLMText(undefined)).toBeNull();
   });
 
-  it("validateAbc rejects ABC with no music content", () => {
-    const headerOnly = "X:1\nT:Test\nK:C";
-    const error = validateAbc(headerOnly);
-    expect(error).toContain("No music content");
-  });
-
-  it("validateAbc rejects empty input", () => {
-    expect(validateAbc("")).toBeTruthy();
-    expect(validateAbc("  ")).toBeTruthy();
-  });
-
-  it("full pipeline: sanitise then validate on wrapped ABC", () => {
-    // ABC wrapped in code fences with preamble
-    const raw = "Here is the notation:\n\n```abc\nX:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\n```\n\nEnjoy!";
-    const cleaned = sanitiseAbc(raw);
-    expect(cleaned).toMatch(/^X:1/);
-    expect(cleaned).not.toContain("```");
-    expect(cleaned).not.toContain("Here is");
-    expect(cleaned).not.toContain("Enjoy");
-    expect(validateAbc(cleaned)).toBeNull();
+  it("handles plain string content", async () => {
+    const { extractLLMText } = await import("./llmHelpers");
+    const result = extractLLMText("X:1\nT:Test\nK:C\nCDEF|");
+    expect(result).toContain("X:1");
   });
 });
 
-// ─── Edge cases that could cause "doesn't work at all" ───
+// ─── Edge cases ───
 
 describe("Sheet Music Edge Cases", () => {
-  it("sanitiseAbc handles ABC with Windows-style line endings", () => {
-    const raw = "X:1\r\nT:Test\r\nK:C\r\nCDEF|\r\n";
-    const result = sanitiseAbc(raw);
-    expect(result).toContain("X:1");
-    expect(result).toContain("CDEF|");
-  });
-
-  it("sanitiseAbc handles ABC wrapped in triple backticks with language tag", () => {
-    const raw = "```abc\nX:1\nT:Test\nK:C\nCDEF|\n```\n";
-    const result = sanitiseAbc(raw);
-    expect(result).toContain("X:1");
-    expect(result).not.toContain("```");
-  });
-
-  it("sanitiseAbc handles ABC with explanatory text mixed in", () => {
-    const raw = "Here is the ABC notation:\n\nX:1\nT:Test\nM:4/4\nL:1/8\nK:C\nCDEF GABc|\n\nThis notation represents a simple melody.";
-    const result = sanitiseAbc(raw);
-    expect(result).toMatch(/^X:1/);
-    expect(result).not.toContain("Here is");
-    expect(result).not.toContain("This notation");
-  });
-
-  it("validateAbc accepts minimal valid ABC", () => {
-    const abc = "X:1\nT:A\nK:C\nC|";
-    expect(validateAbc(abc)).toBeNull();
-  });
-
-  it("sanitiseAbc preserves w: lyrics lines", () => {
-    const raw = "X:1\nT:Test\nK:C\nCDEF GABc|\nw:A-ma-zing grace how sweet";
-    const result = sanitiseAbc(raw);
-    expect(result).toContain("w:A-ma-zing grace how sweet");
-  });
-
-  it("sanitiseAbc preserves % comment lines", () => {
-    const raw = "X:1\nT:Test\nK:C\n% Verse 1\nCDEF|";
-    const result = sanitiseAbc(raw);
-    expect(result).toContain("% Verse 1");
-  });
-
-  it("sanitiseAbc handles K: header with mode suffix", () => {
-    const raw = "X:1\nT:Test\nK:Dmaj\nDEFG|";
-    const result = sanitiseAbc(raw);
-    expect(result).toContain("K:Dmaj");
-    // Should inject M: before K:
-    expect(result).toContain("M:4/4");
-  });
-
   it("sanitiseAbc handles K: header not being last", () => {
-    // Some LLMs put K: before other headers
-    const raw = "X:1\nT:Test\nK:C\nM:4/4\nL:1/8\nCDEF|";
+    const raw = "X:1\nT:Test\nK:C\nM:4/4\nL:1/8\nCDEF|GABc|\ncBAG|";
     const result = sanitiseAbc(raw);
-    // Should still be valid
     expect(result).toContain("X:1");
     expect(result).toContain("K:C");
+  });
+
+  it("sanitiseAbc handles multiple X: blocks (takes first)", () => {
+    const raw = "X:1\nT:Song 1\nK:C\nCDEF|GABc|\ncBAG|\n\nX:2\nT:Song 2\nK:G\nGABc|";
+    const result = sanitiseAbc(raw);
+    expect(result).toContain("X:1");
+    expect(result).toContain("T:Song 1");
+  });
+
+  it("sanitiseAbc handles ABC with repeat signs", () => {
+    const raw = "X:1\nT:Test\nK:C\n|:CDEF GABc:|cBAG FEDC|\nGABc cBAG|";
+    const result = sanitiseAbc(raw);
+    expect(result).toContain("|:");
+    expect(result).toContain(":|");
+  });
+
+  it("sanitiseAbc handles ABC with chord symbols in quotes", () => {
+    const raw = 'X:1\nT:Test\nK:C\n"Am"A2 "G"B2 "F"c2 "E"B2|"Am"A2 "G"B2 "F"c2 "E"B2|\n"Am"A2 "G"B2|';
+    const result = sanitiseAbc(raw);
+    expect(result).toContain('"Am"');
+    expect(result).toContain('"G"');
+  });
+
+  it("sanitiseAbc handles ABC with W: (uppercase) lyrics", () => {
+    const raw = "X:1\nT:Test\nK:C\nCDEF|GABc|\nW:Amazing grace how sweet the sound\ncBAG|";
+    const result = sanitiseAbc(raw);
+    expect(result).toContain("W:Amazing grace");
   });
 });

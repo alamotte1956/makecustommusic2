@@ -11,15 +11,53 @@ import { invokeLLM } from "./_core/llm";
 import { getSongById, updateSongSheetMusic, updateSongSheetMusicStatus } from "./db";
 import { extractLLMText } from "./llmHelpers";
 
+// ─── Key Signature Accidentals Map ───────────────────────────────────────────
+// Maps key names to the set of notes that are sharped or flatted by default.
+// Used by validation and could be exported for the player.
+export const KEY_ACCIDENTALS: Record<string, Record<string, number>> = {
+  // Major keys
+  "C": {},
+  "G": { F: 1 },
+  "D": { F: 1, C: 1 },
+  "A": { F: 1, C: 1, G: 1 },
+  "E": { F: 1, C: 1, G: 1, D: 1 },
+  "B": { F: 1, C: 1, G: 1, D: 1, A: 1 },
+  "F#": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1 },
+  "C#": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1, B: 1 },
+  "F": { B: -1 },
+  "Bb": { B: -1, E: -1 },
+  "Eb": { B: -1, E: -1, A: -1 },
+  "Ab": { B: -1, E: -1, A: -1, D: -1 },
+  "Db": { B: -1, E: -1, A: -1, D: -1, G: -1 },
+  "Gb": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1 },
+  "Cb": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1, F: -1 },
+  // Minor keys (same accidentals as their relative major)
+  "Am": {},
+  "Em": { F: 1 },
+  "Bm": { F: 1, C: 1 },
+  "F#m": { F: 1, C: 1, G: 1 },
+  "C#m": { F: 1, C: 1, G: 1, D: 1 },
+  "G#m": { F: 1, C: 1, G: 1, D: 1, A: 1 },
+  "D#m": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1 },
+  "A#m": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1, B: 1 },
+  "Dm": { B: -1 },
+  "Gm": { B: -1, E: -1 },
+  "Cm": { B: -1, E: -1, A: -1 },
+  "Fm": { B: -1, E: -1, A: -1, D: -1 },
+  "Bbm": { B: -1, E: -1, A: -1, D: -1, G: -1 },
+  "Ebm": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1 },
+  "Abm": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1, F: -1 },
+};
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SHEET_MUSIC_SYSTEM_PROMPT = [
   "You are a professional music arranger and sheet music engraver.",
   "Generate valid ABC notation for a lead sheet based on the song information provided.",
   "",
   "REQUIRED HEADERS (must all be present, each on its own line):",
-  "- X: reference number (always 1)",
+  "- X: 1",
   "- T: title of the song",
-  "- C: composer/artist if known",
+  "- C: composer/artist if known, otherwise omit",
   "- M: time signature (e.g., 4/4, 3/4, 6/8)",
   "- L: default note length (e.g., 1/8)",
   "- Q: tempo marking (e.g., 1/4=120)",
@@ -34,37 +72,48 @@ const SHEET_MUSIC_SYSTEM_PROMPT = [
   "- Do NOT use %%staves or multi-staff directives",
   "- The K: header MUST be the last header line before the music body begins",
   "",
+  "CHORD SYMBOL RULES:",
+  '- Place chord symbols in double quotes directly before the note they align with',
+  '- Example: "Am"A2 "G"B2 "F"c2 "E"B2 — the chord name is in quotes, the note follows immediately',
+  '- Do NOT repeat the chord root as the melody note — write the actual melody',
+  '- Example of CORRECT usage: "C"E2 "Am"c2 "F"A2 "G"B2',
+  '- Example of WRONG usage: "C"C2 "Am"A2 "F"F2 "G"G2 (melody just follows chord roots)',
+  "",
+  "LYRICS ALIGNMENT RULES:",
+  "- Use w: lines to align lyrics under the melody notes",
+  "- Each w: line corresponds to the music line directly above it",
+  "- Use hyphens (-) to split syllables across multiple notes: w: A-ma-zing grace",
+  "- Use asterisks (*) to skip notes that have no syllable: w: * * Hold on",
+  "- Use pipes (|) in w: lines to align with bar lines in the music",
+  "- Every music line that has lyrics MUST be followed by a w: line",
+  "",
   "NOTATION RULES:",
   "- Write a singable melody line that matches the lyrics and genre",
-  "- Align lyrics under notes using w: lines",
   "- If a specific key is provided, you MUST use that exact key",
-  "- If no key is specified, choose an appropriate key for the genre",
+  "- If no key is specified, choose an appropriate key for the genre and vocal range",
   "- For songs without lyrics, write an instrumental melody",
-  "",
-  "MUSICAL COMPLETENESS:",
-  '- Include chord symbols above the staff using "quoted chords" e.g. "Am"A "F"F "C"C',
   "- Use proper bar lines | at every measure boundary",
   "- Use repeat signs |: and :| for repeated sections",
-  "- Use comments to label sections: % Intro, % Verse 1, % Chorus, % Bridge, % Outro",
-  "- Do NOT use [P:] section markers — use % comments instead",
-  "- Do NOT include ANY dynamics decorations: !p!, !mp!, !mf!, !f!, !ff!, !pp!, !ppp!, !fff! — not inline, not standalone",
-  "- Do NOT include ANY crescendo/diminuendo decorations: !crescendo(!, !crescendo)!, !diminuendo(!, !diminuendo)!, !<(!, !<)!, !>(!, !>)!",
-  "- Do NOT include ANY other decorations like !accent!, !fermata!, !tenuto!, !staccato!, !trill!, !turn!, !mordent!, !segno!, !coda!, !D.S.!, !D.C.!, !fine!",
-  "- Include rests: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)",
+  "- Use section comments: % Intro, % Verse 1, % Chorus, % Bridge, % Outro",
+  "- Do NOT use [P:] section markers",
+  "- Do NOT include ANY dynamics: no !p!, !mp!, !mf!, !f!, !ff!, !pp!, !ppp!, !fff!",
+  "- Do NOT include ANY decorations: no !accent!, !fermata!, !tenuto!, !staccato!, !trill!, etc.",
+  "- Do NOT include ANY crescendo/diminuendo marks",
+  "- Include rests where musically appropriate: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)",
   "- Ensure every measure has the correct number of beats matching the time signature",
   "",
   "MINIMUM LENGTH:",
-  "- ALWAYS generate at least 16 measures of music, even if the lyrics are very short",
-  "- If the lyrics are short (1-2 lines), repeat them across multiple sections with melodic variation",
-  "- Include an intro (2-4 measures), at least 2 verse sections, a chorus, and an outro",
+  "- Generate at least 16 measures of music",
+  "- If the lyrics are short, repeat them with melodic variation across sections",
+  "- Include an intro (2-4 measures), verse sections, a chorus, and an ending",
   "- For instrumental songs, generate at least 32 measures with clear sections",
   "",
   "QUALITY:",
-  "- The melody must be musically coherent and match the mood/genre",
-  "- Keep the notation clean and professional — NO decorations, NO dynamics marks",
-  "- The output must be parseable by the abcjs JavaScript library without errors",
-  "- Ensure the piece has a clear beginning, development, and ending",
+  "- The melody must be musically coherent, singable, and match the mood/genre",
+  "- Vary the melody between verse and chorus — the chorus should feel like a lift",
+  "- Keep the vocal range within an octave and a half (roughly C4 to A5 for most voices)",
   "- Use only basic ABC notation: notes, rests, bar lines, repeat signs, chord symbols, and lyrics",
+  "- The output must be parseable by the abcjs JavaScript library without errors",
 ].join("\n");
 
 /**
@@ -93,12 +142,17 @@ export function buildSongContext(song: {
 /**
  * Sanitise raw ABC notation returned by the LLM.
  *
- * - Strips markdown code fences
- * - Removes V: (voice) directives that cause multi-staff rendering issues
- * - Removes %%staves directives
- * - Removes standalone dynamics lines
- * - Converts [P:] markers to comments
- * - Removes any non-ABC preamble/postamble text
+ * This is the SINGLE source of truth for ABC sanitisation.
+ * Do NOT add additional sanitisation in db.ts or the frontend.
+ *
+ * Steps:
+ * 1. Strip markdown code fences
+ * 2. Extract ABC block from surrounding prose
+ * 3. Remove unsupported directives (V:, %%staves)
+ * 4. Strip dynamics and decoration marks
+ * 5. Convert [P:] markers to comments
+ * 6. Remove trailing prose/explanatory text
+ * 7. Inject missing essential headers
  */
 export function sanitiseAbc(raw: string): string {
   // 1. Strip markdown code fences
@@ -140,10 +194,6 @@ export function sanitiseAbc(raw: string): string {
   });
 
   // 4. Remove trailing non-ABC content (prose/explanatory text after the music)
-  // Strategy: find the last line that looks like actual ABC music notation.
-  // Natural language sentences contain spaces between words and typically have
-  // many lowercase letters — ABC music lines are denser with note letters,
-  // bar lines, and special characters.
   let lastMusicLine = filtered.length - 1;
   for (let i = filtered.length - 1; i >= 0; i--) {
     const t = filtered[i].trim();
@@ -151,19 +201,13 @@ export function sanitiseAbc(raw: string): string {
     // Check if this line looks like ABC content
     const isHeader = /^[A-Z]:/.test(t);
     const isLyrics = t.startsWith("w:") || t.startsWith("W:");
-    // ABC music lines are dense with notes, bars, and special chars.
-    // Prose sentences have many spaces and lowercase words.
-    // A line is "music" if it has bar lines or a high density of note-like chars
-    // relative to spaces, and doesn't look like a natural language sentence.
     const hasBarLines = t.includes("|");
     const wordCount = t.split(/\s+/).length;
     // Prose detection: 4+ words without bar lines, OR short text that looks like
     // natural language (starts with uppercase, has lowercase letters, ends with punctuation)
     const looksLikeProse = (!hasBarLines && !/^[A-Z]:/.test(t)) && (
       wordCount >= 4 ||
-      // Short phrases like "Enjoy!" or "Good luck." — contain punctuation typical of prose
       /[.!?;]$/.test(t) ||
-      // Single words that are clearly English, not ABC note sequences
       (wordCount <= 2 && /^[A-Z][a-z]{2,}/.test(t))
     );
     const isMusic = !looksLikeProse && /[A-Ga-gz|:\[\]^_=,']/.test(t);
@@ -210,6 +254,15 @@ export function validateAbc(abc: string): string | null {
   if (!hasT) return "Missing T: (title) header";
   if (!hasK) return "Missing K: (key) header";
 
+  // Validate K: header has a recognizable key value
+  const kLine = headerLines.find((l) => l.trim().startsWith("K:"));
+  if (kLine) {
+    const keyValue = kLine.trim().substring(2).trim();
+    if (!/^[A-G][#b]?\s*(m|min|minor|maj|major|mix|dor|phr|lyd|loc)?/i.test(keyValue)) {
+      return `Invalid key signature: "${keyValue}"`;
+    }
+  }
+
   // Must have at least some music content (notes or rests) after the headers
   const musicLines = lines.filter((l) => {
     const t = l.trim();
@@ -222,6 +275,17 @@ export function validateAbc(abc: string): string | null {
 
   if (musicLines.length === 0) {
     return "No music content found after headers";
+  }
+
+  // Check that music lines contain bar lines (structural check)
+  const linesWithBars = musicLines.filter((l) => l.includes("|"));
+  if (linesWithBars.length === 0) {
+    return "No bar lines found in music content — notation may be malformed";
+  }
+
+  // Check minimum length: at least 4 music lines (roughly 8+ measures)
+  if (musicLines.length < 3) {
+    return "Sheet music is too short — need at least a few measures of music";
   }
 
   return null;
@@ -285,16 +349,16 @@ export async function generateAbcNotation(
 
 /**
  * Fire-and-forget background sheet music generation for a newly created song.
- * Includes retry logic at the top level — if the first generation attempt fails,
- * it will retry once after a delay.
+ * Sets status to "generating" IMMEDIATELY (before the delay) so the frontend
+ * knows generation is in progress and can show the correct UI state.
  */
 export function generateSheetMusicInBackground(songId: number): void {
+  // Set status to "generating" immediately so the frontend sees it right away
+  updateSongSheetMusicStatus(songId, "generating").catch(() => {});
+
   // Small delay to ensure the song record is fully committed
   setTimeout(async () => {
     const MAX_BG_ATTEMPTS = 2;
-
-    // Mark as generating
-    await updateSongSheetMusicStatus(songId, "generating").catch(() => {});
 
     for (let attempt = 1; attempt <= MAX_BG_ATTEMPTS; attempt++) {
       try {
@@ -312,6 +376,10 @@ export function generateSheetMusicInBackground(songId: number): void {
           console.log(
             `[BackgroundSheetMusic] Song ${songId} already has sheet music, skipping`
           );
+          // Ensure status is "done" if ABC exists
+          if (song.sheetMusicStatus !== "done") {
+            await updateSongSheetMusicStatus(songId, "done").catch(() => {});
+          }
           return;
         }
 

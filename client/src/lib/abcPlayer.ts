@@ -31,6 +31,38 @@ export interface NoteTiming {
   isRest: boolean;
 }
 
+// ─── Key Signature Accidentals ───────────────────────────────────────────────
+// Maps key names to the set of note letters that are sharped (+1) or flatted (-1).
+const KEY_ACCIDENTALS: Record<string, Record<string, number>> = {
+  "C": {}, "Am": {},
+  "G": { F: 1 }, "Em": { F: 1 },
+  "D": { F: 1, C: 1 }, "Bm": { F: 1, C: 1 },
+  "A": { F: 1, C: 1, G: 1 }, "F#m": { F: 1, C: 1, G: 1 },
+  "E": { F: 1, C: 1, G: 1, D: 1 }, "C#m": { F: 1, C: 1, G: 1, D: 1 },
+  "B": { F: 1, C: 1, G: 1, D: 1, A: 1 }, "G#m": { F: 1, C: 1, G: 1, D: 1, A: 1 },
+  "F#": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1 }, "D#m": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1 },
+  "C#": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1, B: 1 }, "A#m": { F: 1, C: 1, G: 1, D: 1, A: 1, E: 1, B: 1 },
+  "F": { B: -1 }, "Dm": { B: -1 },
+  "Bb": { B: -1, E: -1 }, "Gm": { B: -1, E: -1 },
+  "Eb": { B: -1, E: -1, A: -1 }, "Cm": { B: -1, E: -1, A: -1 },
+  "Ab": { B: -1, E: -1, A: -1, D: -1 }, "Fm": { B: -1, E: -1, A: -1, D: -1 },
+  "Db": { B: -1, E: -1, A: -1, D: -1, G: -1 }, "Bbm": { B: -1, E: -1, A: -1, D: -1, G: -1 },
+  "Gb": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1 }, "Ebm": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1 },
+  "Cb": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1, F: -1 }, "Abm": { B: -1, E: -1, A: -1, D: -1, G: -1, C: -1, F: -1 },
+};
+
+/**
+ * Parse the K: header value into a normalized key name for lookup.
+ * Handles "C", "Am", "Cmaj", "Cmin", "C minor", "Cmix", etc.
+ */
+function normalizeKeyName(keyStr: string): string {
+  const match = keyStr.trim().match(/^([A-G][#b]?)\s*(m|min|minor)?/i);
+  if (!match) return "C";
+  const root = match[1];
+  const isMinor = !!match[2];
+  return root + (isMinor ? "m" : "");
+}
+
 // ─── ABC Note to Frequency Mapping ───
 
 // MIDI note number to frequency (A4 = 440 Hz)
@@ -38,7 +70,7 @@ function midiToFreq(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-// ABC note to MIDI pitch mapping (middle C = 60)
+// ABC note to MIDI pitch mapping (middle C = 60, no accidentals)
 const NOTE_MAP: Record<string, number> = {
   C: 60, D: 62, E: 64, F: 65, G: 67, A: 69, B: 71,
   c: 72, d: 74, e: 76, f: 77, g: 79, a: 81, b: 83,
@@ -116,12 +148,15 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
   const bps = headers.tempo / 60;
   const notes: ScheduledNote[] = [];
   let currentTime = 0;
-  let currentVelocity = 80;
+  const currentVelocity = 80;
 
-  const dynamicsMap: Record<string, number> = {
-    "ppp": 20, "pp": 35, "p": 50, "mp": 65,
-    "mf": 80, "f": 95, "ff": 110, "fff": 125,
-  };
+  // Get key signature accidentals
+  const keyName = normalizeKeyName(headers.key);
+  const keyAccidentals = KEY_ACCIDENTALS[keyName] || {};
+
+  // Track per-measure accidentals (reset at each bar line)
+  // In ABC, an explicit accidental applies to the rest of the measure for that note letter
+  let measureAccidentals: Record<string, number> = {};
 
   const lines = abc.split("\n");
 
@@ -135,13 +170,18 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
     while (i < trimmed.length) {
       const ch = trimmed[i];
 
-      if (ch === "|" || ch === ":") { i++; continue; }
+      // Bar lines reset measure accidentals
+      if (ch === "|") {
+        measureAccidentals = {};
+        i++;
+        continue;
+      }
+
+      if (ch === ":") { i++; continue; }
 
       if (ch === "!") {
         const endBang = trimmed.indexOf("!", i + 1);
         if (endBang > i) {
-          const dyn = trimmed.substring(i + 1, endBang);
-          if (dynamicsMap[dyn]) currentVelocity = dynamicsMap[dyn];
           i = endBang + 1;
           continue;
         }
@@ -160,6 +200,7 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
         i++; continue;
       }
 
+      // Handle rests
       if (ch === "z" || ch === "Z") {
         i++;
         let durStr = "";
@@ -172,15 +213,31 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
         continue;
       }
 
-      let accidental = 0;
-      if (ch === "^") { accidental = 1; i++; if (i < trimmed.length && trimmed[i] === "^") { accidental = 2; i++; } }
-      else if (ch === "_") { accidental = -1; i++; if (i < trimmed.length && trimmed[i] === "_") { accidental = -2; i++; } }
-      else if (ch === "=") { accidental = 0; i++; }
+      // Handle explicit accidentals
+      let explicitAccidental: number | null = null;
+      if (ch === "^") { explicitAccidental = 1; i++; if (i < trimmed.length && trimmed[i] === "^") { explicitAccidental = 2; i++; } }
+      else if (ch === "_") { explicitAccidental = -1; i++; if (i < trimmed.length && trimmed[i] === "_") { explicitAccidental = -2; i++; } }
+      else if (ch === "=") { explicitAccidental = 0; i++; } // natural — overrides key sig
 
       if (i < trimmed.length && /[A-Ga-g]/.test(trimmed[i])) {
         const noteLetter = trimmed[i];
+        const upperLetter = noteLetter.toUpperCase();
         let pitch = NOTE_MAP[noteLetter];
         if (pitch === undefined) { i++; continue; }
+
+        // Apply accidental: explicit > measure > key signature
+        let accidental: number;
+        if (explicitAccidental !== null) {
+          accidental = explicitAccidental;
+          // Record this accidental for the rest of the measure
+          measureAccidentals[upperLetter] = explicitAccidental;
+        } else if (measureAccidentals[upperLetter] !== undefined) {
+          // A previous explicit accidental in this measure applies
+          accidental = measureAccidentals[upperLetter];
+        } else {
+          // Fall back to key signature
+          accidental = keyAccidentals[upperLetter] || 0;
+        }
 
         pitch += accidental;
         i++;
@@ -196,11 +253,16 @@ function parseABCToSchedule(abc: string): { notes: ScheduledNote[]; duration: nu
           durStr += trimmed[i]; i++;
         }
 
+        // Handle ties: if next non-space char is a dash, combine durations
         const duration = parseDuration(durStr, headers.defaultNoteLength, bps);
+
         notes.push({ pitch, startTime: currentTime, duration, velocity: currentVelocity });
         currentTime += duration;
         continue;
       }
+
+      // If we had an accidental but no note followed, just skip
+      if (explicitAccidental !== null) continue;
 
       i++;
     }

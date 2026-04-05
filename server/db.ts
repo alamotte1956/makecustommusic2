@@ -151,15 +151,8 @@ export async function getSongByShareToken(shareToken: string) {
 export async function updateSongSheetMusic(id: number, sheetMusicAbc: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Sanitise before storing: remove V: directives, code fences, etc.
-  const clean = sheetMusicAbc
-    .replace(/^```[a-z]*\n?/gm, "")
-    .replace(/```\s*$/gm, "")
-    .split("\n")
-    .filter((l) => !l.trim().startsWith("V:") && !l.trim().startsWith("%%staves"))
-    .join("\n")
-    .trim();
-  await db.update(songs).set({ sheetMusicAbc: clean, sheetMusicStatus: "done", sheetMusicError: null }).where(eq(songs.id, id));
+  // ABC is already sanitised by backgroundSheetMusic.sanitiseAbc() — store as-is
+  await db.update(songs).set({ sheetMusicAbc: sheetMusicAbc.trim(), sheetMusicStatus: "done", sheetMusicError: null }).where(eq(songs.id, id));
 }
 
 export async function updateSongSheetMusicStatus(id: number, status: "pending" | "generating" | "done" | "failed", error?: string) {
