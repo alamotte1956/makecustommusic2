@@ -1879,3 +1879,13 @@
 - [x] Remove duplicate frontend sanitiseAbc — replaced with minimal safety pass
 - [x] Export KEY_ACCIDENTALS for shared use between backend and frontend
 - [x] All 1,604 tests passing across 74 files
+
+## Sheet Music Generator Still Not Working
+- [x] Investigate server/network/browser logs for sheet music generation errors
+- [x] Trace the exact failure point in the generation pipeline
+- [x] Fix the root cause: 12 songs stuck with sheetMusicStatus="pending" but no ABC (old default)
+- [x] Fixed all stuck songs: set status to null, then regenerated ABC for all 9 remaining
+- [x] Verified LLM generation works (tested with Amazing Grace, all 9 songs generated successfully)
+- [x] All 18 songs now have status="done" with valid ABC notation
+- [x] All 1,604 tests passing
+- [x] Verify fix end-to-end
