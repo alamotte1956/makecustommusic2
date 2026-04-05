@@ -1889,3 +1889,8 @@
 - [x] All 18 songs now have status="done" with valid ABC notation
 - [x] All 1,604 tests passing
 - [x] Verify fix end-to-end
+
+## User-Facing Regenerate Button for Failed Sheet Music
+- [x] Add prominent Regenerate button when sheetMusicStatus is "failed"
+- [x] Ensure button triggers the generateSheetMusic mutation and shows loading state
+- [x] Show the error message from the failed attempt so users know what happened

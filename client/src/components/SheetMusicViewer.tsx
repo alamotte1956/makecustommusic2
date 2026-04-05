@@ -473,12 +473,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           </div>
         ) : isBackgroundFailed ? (
           <>
-            <AlertCircle className="w-12 h-12 text-amber-500" />
-            <div className="text-center space-y-1">
-              <p className="text-sm font-medium text-foreground">Sheet music generation failed</p>
-              <p className="text-xs text-muted-foreground max-w-sm">
-                {sheetMusicError || "The automatic generation did not complete. You can try generating manually below."}
-              </p>
+            <div className="w-full max-w-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-5">
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-8 h-8 text-amber-500 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400">Sheet Music Generation Failed</h4>
+                    <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                      {sheetMusicError || "The automatic generation did not complete successfully."}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-amber-500/80 dark:text-amber-400/60 text-center">
+                  You can try regenerating the sheet music below. Choose a key or let the AI decide.
+                </p>
+              </div>
             </div>
           </>
         ) : isPreparing ? (
@@ -546,8 +555,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <Button
           onClick={handleGenerate}
           disabled={generateMutation.isPending}
-          className="gap-2"
+          className={`gap-2 ${isBackgroundFailed ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}`}
           variant={isPreparing ? "outline" : "default"}
+          size={isBackgroundFailed ? "lg" : "default"}
         >
           {generateMutation.isPending ? (
             <>
@@ -556,8 +566,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             </>
           ) : (
             <>
-              <Music className="w-4 h-4" />
-              {error ? "Try Again" : isBackgroundFailed ? "Retry Generation" : isPreparing ? "Generate Now" : "Generate Sheet Music"}
+              {isBackgroundFailed ? (
+                <RefreshCw className="w-4 h-4" />
+              ) : (
+                <Music className="w-4 h-4" />
+              )}
+              {error ? "Try Again" : isBackgroundFailed ? "Regenerate Sheet Music" : isPreparing ? "Generate Now" : "Generate Sheet Music"}
             </>
           )}
         </Button>
