@@ -1969,3 +1969,10 @@
 - [x] Build print-friendly layout with purple-themed numbers above lyrics and NNS legend
 - [x] Handle minor chords, 7ths, sus, dim, aug qualifiers, slash chords, accidentals in NNS notation
 - [x] All 1,612 tests passing
+
+## Capo Chart for Guitarists
+- [x] Create capo chart logic: calculate equivalent open chord shapes for each capo position (1-9)
+- [x] Identify "easy" open keys (C, G, D, A, E, Am, Em, Dm) and highlight recommended capo positions
+- [x] Add capo chart UI component to the sheet music viewer below the chord diagrams
+- [x] Show original chords vs. capo chord shapes in a clear table format
+- [x] All 1,631 tests passing

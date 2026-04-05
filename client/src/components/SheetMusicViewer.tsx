@@ -13,6 +13,7 @@ import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
 import { extractLeadSheet, generateLeadSheetHtml, generateNashvilleLeadSheetHtml } from "@/lib/leadSheetExtractor";
 import { convertChordLineToNashville } from "@/lib/nashvilleNumbers";
+import { CapoChart } from "@/components/CapoChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import type { PlaybackState } from "@/lib/abcPlayer";
@@ -1115,6 +1116,14 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <div className="bg-card rounded-lg border border-border p-4">
           <GuitarChordChart chords={chords} />
         </div>
+      )}
+
+      {/* Capo chart for guitarists */}
+      {chords.length > 0 && isRendered && (
+        <CapoChart
+          songKey={selectedKey === "original" ? (originalKey || songKeySignature || "C") : selectedKey}
+          chords={chords}
+        />
       )}
 
       {/* Sheet music quality feedback */}
