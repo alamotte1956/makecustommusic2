@@ -1947,3 +1947,10 @@
 - [x] Include guitar chord diagrams below the sheet music in the print-friendly view
 - [x] Render chord diagrams as SVG for clean printing (created chordSvgPrint.ts helper)
 - [x] Exported CHORD_DB, normalizeChord, ChordFingering from GuitarChordChart for reuse
+
+## Page Break Support for Multi-Page Sheet Music Prints
+- [x] Add CSS page-break rules to prevent awkward breaks mid-staff
+- [x] Split SVG into individual staff systems with page-break-inside:avoid on each
+- [x] Ensure chord diagrams section has page-break-inside:avoid
+- [x] Header avoids page-break-after, footer avoids page-break-before
+- [x] Fallback to full SVG if staff splitting fails
