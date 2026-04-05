@@ -5,13 +5,13 @@ import { useMemo } from "react";
  * Each chord has: frets (6 strings, low E to high E), barreInfo, and startFret.
  * -1 = muted string, 0 = open string, 1+ = fret number.
  */
-interface ChordFingering {
+export interface ChordFingering {
   frets: number[];
   startFret: number;
   barreString?: number; // barre across strings from this index
 }
 
-const CHORD_DB: Record<string, ChordFingering> = {
+export const CHORD_DB: Record<string, ChordFingering> = {
   // Major chords
   "C":    { frets: [-1, 3, 2, 0, 1, 0], startFret: 1 },
   "D":    { frets: [-1, -1, 0, 2, 3, 2], startFret: 1 },
@@ -87,7 +87,7 @@ const CHORD_DB: Record<string, ChordFingering> = {
 };
 
 // Normalize chord name for lookup (handle enharmonic equivalents)
-function normalizeChord(chord: string): string {
+export function normalizeChord(chord: string): string {
   // Direct match first
   if (CHORD_DB[chord]) return chord;
 

@@ -1942,3 +1942,8 @@
 - [x] Create print-friendly view: opens new window with clean layout, @page rules, and print button bar
 - [x] Include song title, key, and copyright (Albert LaMotte) in the print header/footer
 - [x] Cross-browser compatible: uses standard @page CSS, @media print, and window.print()
+
+## Guitar Chord Diagrams in Print Layout
+- [x] Include guitar chord diagrams below the sheet music in the print-friendly view
+- [x] Render chord diagrams as SVG for clean printing (created chordSvgPrint.ts helper)
+- [x] Exported CHORD_DB, normalizeChord, ChordFingering from GuitarChordChart for reuse
