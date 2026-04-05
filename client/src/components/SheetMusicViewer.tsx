@@ -126,6 +126,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [renderAttempt, setRenderAttempt] = useState(0);
   // Track whether the container has a non-zero width (visible)
   const [containerVisible, setContainerVisible] = useState(false);
+  // Ref to prevent ResizeObserver from triggering re-renders after initial render
+  const hasRenderedOnceRef = useRef(false);
+  // Ref to prevent re-entry into the render function
+  const isRenderingRef = useRef(false);
+  // Track the last rendered ABC to avoid unnecessary re-renders
+  const lastRenderedAbcRef = useRef<string | null>(null);
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
 
@@ -133,6 +139,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   useEffect(() => {
     if (initialAbc) {
       setAbc(initialAbc);
+      // Reset render tracking so the new ABC will be rendered
+      hasRenderedOnceRef.current = false;
+      lastRenderedAbcRef.current = null;
       setRenderAttempt((n) => n + 1);
     }
   }, [initialAbc]);
@@ -182,18 +191,27 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   // This is critical for tabs: when the sheet music tab is hidden, the container has
   // width 0. abcjs with responsive:'resize' computes staff width from container width,
   // producing a minimal SVG with only the title when width is 0.
+  // IMPORTANT: Only trigger a re-render when transitioning from invisible (width=0)
+  // to visible (width>0), NOT on every resize event, to avoid infinite loops.
   useEffect(() => {
     const container = sheetRef.current;
     if (!container) return;
 
+    let wasVisible = false;
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
-        if (width > 0) {
+        const isNowVisible = width > 10;
+        if (isNowVisible && !wasVisible) {
+          // Transition from invisible to visible — trigger one render
+          wasVisible = true;
           setContainerVisible(true);
-          // Force a re-render when the container becomes visible
-          setRenderAttempt((n) => n + 1);
-        } else {
+          if (!hasRenderedOnceRef.current) {
+            setRenderAttempt((n) => n + 1);
+          }
+        } else if (!isNowVisible && wasVisible) {
+          wasVisible = false;
           setContainerVisible(false);
         }
       }
@@ -203,7 +221,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
     // Check initial width
     const rect = container.getBoundingClientRect();
-    if (rect.width > 0) {
+    if (rect.width > 10) {
+      wasVisible = true;
       setContainerVisible(true);
     }
 
@@ -241,6 +260,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const result = await generateMutation.mutateAsync({ songId, key: keyParam });
       setAbc(result.abcNotation);
       setSelectedKey("original");
+      // Reset render tracking so the new ABC will be rendered fresh
+      hasRenderedOnceRef.current = false;
+      lastRenderedAbcRef.current = null;
       setRenderAttempt((n) => n + 1);
       utils.songs.getById.invalidate({ id: songId });
       toast.success("Sheet music generated!");
@@ -256,8 +278,17 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   // 2. The container is in the DOM
   // 3. The container has a non-zero width (visible — not in a hidden tab)
   // Uses renderAttempt as a dependency to allow forced re-renders.
+  // IMPORTANT: Guards against re-entry and infinite loops from ResizeObserver.
   useEffect(() => {
     if (!sanitisedDisplayAbc) return;
+
+    // Skip if already rendering (prevents re-entry from ResizeObserver)
+    if (isRenderingRef.current) return;
+
+    // Skip if the same ABC was already rendered successfully (no need to re-render)
+    if (lastRenderedAbcRef.current === sanitisedDisplayAbc && hasRenderedOnceRef.current) {
+      return;
+    }
 
     let cancelled = false;
 
@@ -266,23 +297,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       if (!container) return;
 
       // CRITICAL: Check that the container has a non-zero width.
-      // When inside a hidden tab (e.g., Radix TabsContent), the container exists
-      // in the DOM but has width 0. abcjs with responsive:'resize' computes staff
-      // width from the container width — with width 0, it produces a minimal SVG
-      // containing only the title text and no musical notation.
       const rect = container.getBoundingClientRect();
       if (rect.width < 10) {
-        // Container is not visible yet — the ResizeObserver will trigger
-        // a re-render when it becomes visible
         return;
       }
 
+      // Set rendering guard
+      isRenderingRef.current = true;
       setIsRendered(false);
       setError((prev) => (prev?.type === "rendering" ? null : prev));
 
       try {
         const mod = await import("abcjs");
-        if (cancelled) return;
+        if (cancelled) { isRenderingRef.current = false; return; }
 
         const abcjs = mod.default || mod;
         const renderTarget = container;
@@ -295,11 +322,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
         // Wait for next animation frame to ensure layout is fully computed
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        if (cancelled) return;
+        if (cancelled) { isRenderingRef.current = false; return; }
 
         // Double-check width after rAF
         const postRafRect = renderTarget.getBoundingClientRect();
-        if (postRafRect.width < 10) return;
+        if (postRafRect.width < 10) { isRenderingRef.current = false; return; }
 
         // Render the ABC notation
         const visualObj = abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
@@ -312,7 +339,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           add_classes: true,
         });
 
-        if (cancelled) return;
+        if (cancelled) { isRenderingRef.current = false; return; }
 
         // Log warnings for debugging
         if (visualObj?.[0]?.warnings?.length) {
@@ -322,23 +349,25 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         // Verify that actual music content was rendered (not just title)
         const svg = renderTarget.querySelector("svg");
         if (svg) {
-          const noteElements = renderTarget.querySelectorAll("[data-name]");
           const pathElements = svg.querySelectorAll("path");
-          const noteClasses = renderTarget.querySelectorAll("[class*='abcjs-n']");
-          console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, ${noteElements.length} data-name elements, ${noteClasses.length} note classes, container width: ${postRafRect.width}`);
+          console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, container width: ${postRafRect.width}`);
 
-          // If we got an SVG but no paths (just title), the render failed silently
           if (pathElements.length < 5) {
-            console.warn("[SheetMusic] Very few paths rendered — possible zero-width issue. Will retry on next resize.");
+            console.warn("[SheetMusic] Very few paths rendered — possible zero-width issue.");
           }
         }
 
+        // Mark as successfully rendered
+        hasRenderedOnceRef.current = true;
+        lastRenderedAbcRef.current = sanitisedDisplayAbc;
         setIsRendered(true);
       } catch (err: any) {
         if (!cancelled) {
           console.error("[SheetMusic] Render error:", err);
           setError({ type: "rendering", message: "Failed to render the sheet music notation.", detail: err?.message });
         }
+      } finally {
+        isRenderingRef.current = false;
       }
     }
 
