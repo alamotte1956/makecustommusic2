@@ -1,4 +1,5 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean } from "drizzle-orm/mysql-core";
+import type { SheetMusicFeedbackAnalysis } from "../shared/sheetMusicFeedback";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -62,6 +63,8 @@ export const songs = mysqlTable("songs", {
   sheetMusicStatus: mysqlEnum("sheetMusicStatus", ["pending", "generating", "done", "failed"]),
   sheetMusicError: text("sheetMusicError"),
   sheetMusicFeedback: mysqlEnum("sheetMusicFeedback", ["up", "down"]),
+  sheetMusicFeedbackComment: text("sheetMusicFeedbackComment"),
+  sheetMusicFeedbackCategories: json("sheetMusicFeedbackCategories").$type<SheetMusicFeedbackAnalysis>(),
   chordProgression: json("chordProgression").$type<ChordProgressionData>(),
   // Studio production fields
   instrumentalUrl: text("instrumentalUrl"),

@@ -1915,3 +1915,13 @@
 - [x] Add thumbs-up/down UI to SheetMusicViewer when sheet music is rendered
 - [x] Add feedback stats (thumbs up/down counts + negative %) to admin Sheet Music section
 - [x] All 1,612 tests passing
+
+## AI-Powered Sheet Music Feedback Analysis
+- [x] Add sheetMusicFeedbackComment (text) and sheetMusicFeedbackCategories (JSON) columns to schema
+- [x] Create AI analysis function (sheetMusicFeedbackAnalyzer.ts) that categorizes issues from user comment + ABC notation
+- [x] Update sheetMusicFeedback endpoint to accept optional comment and trigger AI analysis in background
+- [x] Add optional comment textarea on thumbs-down in SheetMusicViewer with animated slide-in
+- [x] Display categorized issues in admin: FeedbackIssuesPanel with category breakdown badges, recent feedback list with AI summaries and suggested fixes
+- [x] Added feedbackIssues admin query with category aggregation
+- [x] Keyword-based fallback categorization when AI analysis fails
+- [x] All 1,612 tests passing

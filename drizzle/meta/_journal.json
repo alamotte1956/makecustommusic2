@@ -204,6 +204,13 @@
       "when": 1775359047385,
       "tag": "0028_thick_surge",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1775359675220,
+      "tag": "0029_dry_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

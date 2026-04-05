@@ -746,67 +746,132 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 function SheetMusicFeedback({ songId, initialFeedback }: { songId: number; initialFeedback?: string | null }) {
   const [feedback, setFeedback] = useState<string | null>(initialFeedback ?? null);
   const [submitted, setSubmitted] = useState(false);
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [comment, setComment] = useState("");
 
   const feedbackMutation = trpc.songs.sheetMusicFeedback.useMutation({
     onSuccess: (result) => {
       setFeedback(result.feedback ?? null);
       setSubmitted(true);
+      setShowCommentBox(false);
+      setComment("");
       if (result.feedback === "up") {
         toast.success("Thanks for the positive feedback!");
       } else if (result.feedback === "down") {
-        toast("Thanks for letting us know. We'll work on improving it.");
+        toast("Thanks for your feedback! Our AI is analyzing the issue to help us improve.");
       } else {
         toast("Feedback cleared.");
       }
-      // Hide the "thank you" after 3 seconds
       setTimeout(() => setSubmitted(false), 3000);
     },
     onError: (err) => toast.error("Failed to submit feedback: " + err.message),
   });
 
   const handleFeedback = (value: "up" | "down") => {
-    // Toggle off if already selected
-    const newValue = feedback === value ? null : value;
-    feedbackMutation.mutate({ songId, feedback: newValue });
+    if (feedback === value) {
+      // Toggle off
+      feedbackMutation.mutate({ songId, feedback: null });
+      setShowCommentBox(false);
+      setComment("");
+      return;
+    }
+    if (value === "down") {
+      // Show comment box first before submitting
+      setShowCommentBox(true);
+      return;
+    }
+    // Thumbs up — submit immediately
+    feedbackMutation.mutate({ songId, feedback: value });
+  };
+
+  const submitNegativeFeedback = () => {
+    feedbackMutation.mutate({
+      songId,
+      feedback: "down",
+      comment: comment.trim() || undefined,
+    });
+  };
+
+  const cancelComment = () => {
+    setShowCommentBox(false);
+    setComment("");
   };
 
   return (
-    <div className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2.5 border border-border">
-      <span className="text-sm text-muted-foreground">
-        {submitted
-          ? "Thank you for your feedback!"
-          : "How is the quality of this sheet music?"}
-      </span>
-      <div className="flex items-center gap-1.5">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`gap-1.5 h-8 px-3 transition-colors ${
-            feedback === "up"
-              ? "bg-green-100 text-green-700 hover:bg-green-200"
-              : "text-muted-foreground hover:text-green-600"
-          }`}
-          onClick={() => handleFeedback("up")}
-          disabled={feedbackMutation.isPending}
-        >
-          <ThumbsUp className={`w-4 h-4 ${feedback === "up" ? "fill-current" : ""}`} />
-          <span className="text-xs">Good</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`gap-1.5 h-8 px-3 transition-colors ${
-            feedback === "down"
-              ? "bg-red-100 text-red-700 hover:bg-red-200"
-              : "text-muted-foreground hover:text-red-600"
-          }`}
-          onClick={() => handleFeedback("down")}
-          disabled={feedbackMutation.isPending}
-        >
-          <ThumbsDown className={`w-4 h-4 ${feedback === "down" ? "fill-current" : ""}`} />
-          <span className="text-xs">Needs Work</span>
-        </Button>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2.5 border border-border">
+        <span className="text-sm text-muted-foreground">
+          {submitted
+            ? "Thank you for your feedback!"
+            : "How is the quality of this sheet music?"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`gap-1.5 h-8 px-3 transition-colors ${
+              feedback === "up"
+                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                : "text-muted-foreground hover:text-green-600"
+            }`}
+            onClick={() => handleFeedback("up")}
+            disabled={feedbackMutation.isPending}
+          >
+            <ThumbsUp className={`w-4 h-4 ${feedback === "up" ? "fill-current" : ""}`} />
+            <span className="text-xs">Good</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`gap-1.5 h-8 px-3 transition-colors ${
+              feedback === "down" || showCommentBox
+                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                : "text-muted-foreground hover:text-red-600"
+            }`}
+            onClick={() => handleFeedback("down")}
+            disabled={feedbackMutation.isPending}
+          >
+            <ThumbsDown className={`w-4 h-4 ${feedback === "down" || showCommentBox ? "fill-current" : ""}`} />
+            <span className="text-xs">Needs Work</span>
+          </Button>
+        </div>
       </div>
+
+      {/* Comment box appears when user clicks thumbs-down */}
+      {showCommentBox && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <p className="text-sm text-red-700 font-medium">What's wrong with the sheet music?</p>
+          <textarea
+            className="w-full rounded-md border border-red-200 bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+            placeholder="e.g., The notes don't match the melody, wrong key, lyrics are misaligned... (optional)"
+            rows={2}
+            maxLength={1000}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {comment.length}/1000 — Our AI will analyze your feedback
+            </span>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={cancelComment} className="h-7 text-xs">
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={submitNegativeFeedback}
+                disabled={feedbackMutation.isPending}
+                className="h-7 text-xs bg-red-600 hover:bg-red-700 text-white"
+              >
+                {feedbackMutation.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : null}
+                Submit Feedback
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

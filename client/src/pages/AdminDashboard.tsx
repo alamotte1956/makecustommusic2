@@ -321,6 +321,115 @@ function SheetMusicManagement() {
   );
 }
 
+// ─── Feedback Issues Panel ──────────────────────────────────────────────────
+
+const CATEGORY_LABELS: Record<string, string> = {
+  wrong_notes: "Wrong Notes",
+  wrong_rhythm: "Wrong Rhythm",
+  wrong_key: "Wrong Key",
+  missing_lyrics: "Missing Lyrics",
+  bad_formatting: "Bad Formatting",
+  incomplete: "Incomplete",
+  wrong_chords: "Wrong Chords",
+  tempo_issues: "Tempo Issues",
+  playback_issues: "Playback Issues",
+  other: "Other",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  wrong_notes: "bg-red-100 text-red-700",
+  wrong_rhythm: "bg-orange-100 text-orange-700",
+  wrong_key: "bg-amber-100 text-amber-700",
+  missing_lyrics: "bg-yellow-100 text-yellow-700",
+  bad_formatting: "bg-blue-100 text-blue-700",
+  incomplete: "bg-purple-100 text-purple-700",
+  wrong_chords: "bg-pink-100 text-pink-700",
+  tempo_issues: "bg-teal-100 text-teal-700",
+  playback_issues: "bg-indigo-100 text-indigo-700",
+  other: "bg-gray-100 text-gray-700",
+};
+
+function FeedbackIssuesPanel() {
+  const { data, isLoading } = trpc.admin.feedbackIssues.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
+
+  if (isLoading || !data || data.totalWithFeedback === 0) return null;
+
+  const sortedCategories = Object.entries(data.categoryBreakdown)
+    .sort(([, a], [, b]) => b - a);
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-foreground mb-3">Feedback Issues</h2>
+      <div className="bg-white rounded-xl border border-border p-5 shadow-sm space-y-4">
+        {/* Category Breakdown */}
+        {sortedCategories.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground font-medium mb-2">AI-Categorized Issues</p>
+            <div className="flex flex-wrap gap-2">
+              {sortedCategories.map(([cat, count]) => (
+                <span
+                  key={cat}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${CATEGORY_COLORS[cat] || "bg-gray-100 text-gray-700"}`}
+                >
+                  {CATEGORY_LABELS[cat] || cat}
+                  <span className="bg-white/60 rounded-full px-1.5 py-0.5 text-[10px] font-bold">{count}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Feedback List */}
+        <div>
+          <p className="text-xs text-muted-foreground font-medium mb-2">
+            Recent Negative Feedback ({data.totalWithFeedback} total, {data.totalAnalyzed} analyzed)
+          </p>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {data.songs.slice(0, 10).map((song) => {
+              const analysis = song.sheetMusicFeedbackCategories as any;
+              return (
+                <div
+                  key={song.id}
+                  className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border text-sm"
+                >
+                  <ThumbsDown className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground truncate">{song.title}</span>
+                      {analysis?.primaryCategory && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${CATEGORY_COLORS[analysis.primaryCategory] || "bg-gray-100 text-gray-700"}`}>
+                          {CATEGORY_LABELS[analysis.primaryCategory] || analysis.primaryCategory}
+                        </span>
+                      )}
+                    </div>
+                    {song.sheetMusicFeedbackComment && (
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        "{song.sheetMusicFeedbackComment}"
+                      </p>
+                    )}
+                    {analysis?.summary && (
+                      <p className="text-xs text-blue-600 mt-0.5">
+                        AI: {analysis.summary}
+                      </p>
+                    )}
+                    {analysis?.suggestedAction && (
+                      <p className="text-xs text-green-600 mt-0.5">
+                        Fix: {analysis.suggestedAction}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Stat Card ──────────────────────────────────────────────────────────────
 
 function StatCard({
@@ -1031,6 +1140,9 @@ export default function AdminDashboard() {
 
       {/* Sheet Music Management */}
       <SheetMusicManagement />
+
+      {/* Feedback Issues */}
+      <FeedbackIssuesPanel />
 
       {/* Notification Center */}
       <AdminNotificationCenter />

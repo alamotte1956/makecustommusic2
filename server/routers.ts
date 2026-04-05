@@ -1088,6 +1088,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
       .input(z.object({
         songId: z.number(),
         feedback: z.enum(["up", "down"]).nullable(), // null to clear feedback
+        comment: z.string().max(1000).optional(), // optional user comment
       }))
       .mutation(async ({ ctx, input }) => {
         const song = await getSongById(input.songId);
@@ -1101,9 +1102,59 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
+        // Save feedback and comment immediately
         await db.update(songs)
-          .set({ sheetMusicFeedback: input.feedback })
+          .set({
+            sheetMusicFeedback: input.feedback,
+            sheetMusicFeedbackComment: input.comment || null,
+            // Clear categories if feedback is cleared or changed to positive
+            sheetMusicFeedbackCategories: input.feedback === "down" ? undefined : null,
+          })
           .where(eq(songs.id, input.songId));
+
+        // If thumbs-down with a comment, trigger AI analysis in background
+        if (input.feedback === "down" && input.comment) {
+          const { analyzeSheetMusicFeedback } = await import("./sheetMusicFeedbackAnalyzer");
+          analyzeSheetMusicFeedback({
+            comment: input.comment,
+            abcNotation: song.sheetMusicAbc,
+            songTitle: song.title,
+            songLyrics: song.lyrics,
+            songKey: song.keySignature,
+            songGenre: song.genre,
+          }).then(async (analysis) => {
+            const db2 = await getDb();
+            if (db2) {
+              await db2.update(songs)
+                .set({ sheetMusicFeedbackCategories: analysis })
+                .where(eq(songs.id, input.songId));
+              console.log(`[Feedback] AI analysis saved for song ${input.songId}: ${analysis.primaryCategory}`);
+            }
+          }).catch((err) => {
+            console.error(`[Feedback] AI analysis failed for song ${input.songId}:`, err?.message || err);
+          });
+        } else if (input.feedback === "down" && !input.comment) {
+          // Even without a comment, do a basic analysis from the ABC notation
+          const { analyzeSheetMusicFeedback } = await import("./sheetMusicFeedbackAnalyzer");
+          analyzeSheetMusicFeedback({
+            comment: "User indicated the sheet music quality is poor (no specific comment provided).",
+            abcNotation: song.sheetMusicAbc,
+            songTitle: song.title,
+            songLyrics: song.lyrics,
+            songKey: song.keySignature,
+            songGenre: song.genre,
+          }).then(async (analysis) => {
+            const db2 = await getDb();
+            if (db2) {
+              await db2.update(songs)
+                .set({ sheetMusicFeedbackCategories: analysis })
+                .where(eq(songs.id, input.songId));
+              console.log(`[Feedback] AI analysis (no comment) saved for song ${input.songId}: ${analysis.primaryCategory}`);
+            }
+          }).catch((err) => {
+            console.error(`[Feedback] AI analysis failed for song ${input.songId}:`, err?.message || err);
+          });
+        }
 
         return { success: true, feedback: input.feedback };
       }),
@@ -2373,6 +2424,44 @@ RULES:
           needsRegeneration: Number(row?.failed ?? 0) + Number(row?.missing ?? 0),
           thumbsUp: Number(row?.thumbsUp ?? 0),
           thumbsDown: Number(row?.thumbsDown ?? 0),
+        };
+      }),
+
+    feedbackIssues: adminProcedure
+      .query(async () => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Get songs with negative feedback and their AI analysis
+        const feedbackSongs = await db.select({
+          id: songs.id,
+          title: songs.title,
+          genre: songs.genre,
+          sheetMusicFeedback: songs.sheetMusicFeedback,
+          sheetMusicFeedbackComment: songs.sheetMusicFeedbackComment,
+          sheetMusicFeedbackCategories: songs.sheetMusicFeedbackCategories,
+        })
+          .from(songs)
+          .where(eq(songs.sheetMusicFeedback, "down"))
+          .orderBy(sql`${songs.updatedAt} DESC`)
+          .limit(50);
+
+        // Build category breakdown from analyzed feedback
+        const categoryBreakdown: Record<string, number> = {};
+        for (const s of feedbackSongs) {
+          const analysis = s.sheetMusicFeedbackCategories as any;
+          if (analysis?.categories) {
+            for (const cat of analysis.categories) {
+              categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+            }
+          }
+        }
+
+        return {
+          songs: feedbackSongs,
+          categoryBreakdown,
+          totalWithFeedback: feedbackSongs.length,
+          totalAnalyzed: feedbackSongs.filter((s) => s.sheetMusicFeedbackCategories).length,
         };
       }),
 
