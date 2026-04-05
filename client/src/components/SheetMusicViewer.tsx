@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -11,7 +11,8 @@ import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
-import { extractLeadSheet, generateLeadSheetHtml } from "@/lib/leadSheetExtractor";
+import { extractLeadSheet, generateLeadSheetHtml, generateNashvilleLeadSheetHtml } from "@/lib/leadSheetExtractor";
+import { convertChordLineToNashville } from "@/lib/nashvilleNumbers";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import type { PlaybackState } from "@/lib/abcPlayer";
@@ -705,6 +706,39 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     };
   }, [displayAbc, songTitle, selectedKey, originalKey]);
 
+  // Print Nashville Number System lead sheet
+  const handlePrintNashville = useCallback(() => {
+    if (!displayAbc) {
+      toast.error("No sheet music available to generate a Nashville chart");
+      return;
+    }
+
+    const keyLabel = selectedKey === "original"
+      ? (originalKey ? `Key: ${originalKey}` : "")
+      : `Key: ${selectedKey}`;
+
+    const leadSheet = extractLeadSheet(displayAbc);
+
+    if (leadSheet.sections.length === 0 || leadSheet.sections.every(s => s.lines.length === 0)) {
+      toast.error("Could not extract lyrics from the sheet music. The song may not have lyrics.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+      return;
+    }
+
+    const html = generateNashvilleLeadSheetHtml(leadSheet, songTitle, keyLabel, convertChordLineToNashville);
+    printWindow.document.write(html);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      printWindow.focus();
+    };
+  }, [displayAbc, songTitle, selectedKey, originalKey]);
+
   // Shared error banner component
   const renderErrorBanner = () => {
     if (!error) return null;
@@ -991,6 +1025,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           >
             <FileType className="w-3.5 h-3.5" />
             Lead Sheet
+          </Button>
+
+          {/* Nashville Number Chart */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrintNashville}
+            disabled={!isRendered}
+            className="gap-1.5"
+            title="Print Nashville Number System chart"
+          >
+            <Hash className="w-3.5 h-3.5" />
+            Nashville
           </Button>
 
           {/* Regenerate with key selection */}

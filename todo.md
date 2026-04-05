@@ -1962,3 +1962,10 @@
 - [x] Include song title, key, meter, and copyright (Albert LaMotte) in the lead sheet
 - [x] Section labels (Verse, Chorus, Bridge) with page-break-inside:avoid
 - [x] Fallback simple extraction when structured sections aren't detected
+
+## Nashville Number System Lead Sheet
+- [x] Create Nashville Number System converter (nashvilleNumbers.ts: chord letter to number based on key)
+- [x] Add "Nashville" print button to SheetMusicViewer action bar with Hash icon
+- [x] Build print-friendly layout with purple-themed numbers above lyrics and NNS legend
+- [x] Handle minor chords, 7ths, sus, dim, aug qualifiers, slash chords, accidentals in NNS notation
+- [x] All 1,612 tests passing
