@@ -171,6 +171,70 @@ function SheetMusicManagement() {
           </div>
         </div>
 
+        {/* Progress Bar */}
+        {stats.total > 0 && (() => {
+          const completionPct = Math.round((stats.done / stats.total) * 100);
+          const inProgressPct = Math.round((stats.generating / stats.total) * 100);
+          const failedPct = Math.round((stats.failed / stats.total) * 100);
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">
+                  Completion: {completionPct}%
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {stats.done} of {stats.total} songs
+                </span>
+              </div>
+              <div className="relative h-3 w-full rounded-full bg-gray-100 overflow-hidden">
+                {/* Green = completed */}
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-green-500 transition-all duration-700 ease-out"
+                  style={{ width: `${completionPct}%` }}
+                />
+                {/* Blue = in progress (stacked after green) */}
+                {inProgressPct > 0 && (
+                  <div
+                    className="absolute inset-y-0 rounded-full bg-blue-400 transition-all duration-700 ease-out"
+                    style={{ left: `${completionPct}%`, width: `${inProgressPct}%` }}
+                  />
+                )}
+                {/* Red = failed (stacked after green + blue) */}
+                {failedPct > 0 && (
+                  <div
+                    className="absolute inset-y-0 rounded-full bg-red-400 transition-all duration-700 ease-out"
+                    style={{ left: `${completionPct + inProgressPct}%`, width: `${failedPct}%` }}
+                  />
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                  Completed
+                </span>
+                {stats.generating > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 rounded-full bg-blue-400" />
+                    In Progress
+                  </span>
+                )}
+                {stats.failed > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 rounded-full bg-red-400" />
+                    Failed
+                  </span>
+                )}
+                {stats.missing > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 rounded-full bg-gray-200" />
+                    Missing
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Action Buttons */}
         {stats.needsRegeneration > 0 && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2 border-t border-border">

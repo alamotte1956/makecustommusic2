@@ -1905,3 +1905,6 @@
 - [x] Add backend endpoint: sheetMusicStats query + updated regenerateSheetMusic mutation (supports failed-only and all missing)
 - [x] Add Regenerate All button in admin panel UI with live stats, progress feedback, and auto-polling
 - [x] All 1,612 tests passing
+
+## Admin Sheet Music Progress Bar
+- [x] Add stacked progress bar showing completion percentage (green=done, blue=in progress, red=failed, gray=missing) with legend
