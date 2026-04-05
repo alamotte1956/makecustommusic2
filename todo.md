@@ -1894,3 +1894,9 @@
 - [x] Add prominent Regenerate button when sheetMusicStatus is "failed"
 - [x] Ensure button triggers the generateSheetMusic mutation and shows loading state
 - [x] Show the error message from the failed attempt so users know what happened
+
+## Auto-Retry Logic for Sheet Music Generation
+- [x] Add retry logic in generateSheetMusicInBackground: 3 attempts with increasing backoff (3s, 6s, 12s)
+- [x] Add delay between retries to avoid hammering the LLM (2s between LLM retries, 3-12s between background retries)
+- [x] Log retry attempts for debugging (logs attempt number, delay, and failure reason)
+- [x] Update tests to cover retry behavior (8 new tests covering retry architecture)

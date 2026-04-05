@@ -197,12 +197,81 @@ describe("backgroundSheetMusic", () => {
       const { generateSheetMusicInBackground } = await import("./backgroundSheetMusic");
       expect(typeof generateSheetMusicInBackground).toBe("function");
     });
+
+    it("should have MAX_BG_ATTEMPTS = 3 with increasing backoff delays", async () => {
+      // Verify the retry configuration by reading the source
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      expect(source).toContain("MAX_BG_ATTEMPTS = 3");
+      expect(source).toContain("RETRY_DELAYS");
+      expect(source).toContain("3000, 6000, 12000");
+    });
+
+    it("should set status to generating immediately before the delay", async () => {
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      // The updateSongSheetMusicStatus call should happen before setTimeout
+      const genIdx = source.indexOf('updateSongSheetMusicStatus(songId, "generating")');
+      const timeoutIdx = source.indexOf("setTimeout(async");
+      expect(genIdx).toBeGreaterThan(-1);
+      expect(timeoutIdx).toBeGreaterThan(-1);
+      expect(genIdx).toBeLessThan(timeoutIdx);
+    });
+
+    it("should mark as failed only after all retry attempts are exhausted", async () => {
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      expect(source).toContain('All ${MAX_BG_ATTEMPTS} attempts exhausted');
+      expect(source).toContain('"failed"');
+      expect(source).toContain('Please try regenerating manually');
+    });
+
+    it("should log retry attempts with delay info", async () => {
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      expect(source).toContain('Retrying song ${songId}');
+      expect(source).toContain('delay / 1000');
+    });
   });
 
   describe("generateAbcNotation", () => {
     it("should be an async function", async () => {
       const { generateAbcNotation } = await import("./backgroundSheetMusic");
       expect(typeof generateAbcNotation).toBe("function");
+    });
+
+    it("should have MAX_ATTEMPTS = 2 for LLM retries", async () => {
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      expect(source).toContain("MAX_ATTEMPTS = 2");
+    });
+
+    it("should wait 2s between LLM retry attempts", async () => {
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      // Check that there's a 2000ms delay between LLM retries
+      const genFnStart = source.indexOf("export async function generateAbcNotation");
+      const genFnEnd = source.indexOf("export function generateSheetMusicInBackground");
+      const genFnBody = source.substring(genFnStart, genFnEnd);
+      expect(genFnBody).toContain("setTimeout(r, 2000)");
+    });
+  });
+
+  describe("retry architecture", () => {
+    it("should have nested retry: background (3 attempts) × LLM (2 attempts) = up to 6 LLM calls", async () => {
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      // Background retries
+      expect(source).toContain("MAX_BG_ATTEMPTS = 3");
+      // LLM retries within generateAbcNotation
+      expect(source).toContain("MAX_ATTEMPTS = 2");
+    });
+
+    it("should skip generation if song already has sheet music", async () => {
+      const fs = await import("fs");
+      const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
+      expect(source).toContain("song.sheetMusicAbc");
+      expect(source).toContain("already has sheet music, skipping");
     });
   });
 

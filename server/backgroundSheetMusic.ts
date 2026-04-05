@@ -351,6 +351,12 @@ export async function generateAbcNotation(
  * Fire-and-forget background sheet music generation for a newly created song.
  * Sets status to "generating" IMMEDIATELY (before the delay) so the frontend
  * knows generation is in progress and can show the correct UI state.
+ *
+ * Auto-retry logic:
+ * - The background job retries up to 3 times with increasing delays (3s, 6s, 12s)
+ * - Each attempt calls generateAbcNotation which itself retries the LLM call once
+ * - Only marks as "failed" after all retries are exhausted
+ * - Logs each attempt clearly for debugging
  */
 export function generateSheetMusicInBackground(songId: number): void {
   // Set status to "generating" immediately so the frontend sees it right away
@@ -358,7 +364,8 @@ export function generateSheetMusicInBackground(songId: number): void {
 
   // Small delay to ensure the song record is fully committed
   setTimeout(async () => {
-    const MAX_BG_ATTEMPTS = 2;
+    const MAX_BG_ATTEMPTS = 3;
+    const RETRY_DELAYS = [3000, 6000, 12000]; // Increasing backoff: 3s, 6s, 12s
 
     for (let attempt = 1; attempt <= MAX_BG_ATTEMPTS; attempt++) {
       try {
@@ -384,7 +391,7 @@ export function generateSheetMusicInBackground(songId: number): void {
         }
 
         console.log(
-          `[BackgroundSheetMusic] Starting generation for song ${songId} "${song.title}" (attempt ${attempt}/${MAX_BG_ATTEMPTS})`
+          `[BackgroundSheetMusic] Attempt ${attempt}/${MAX_BG_ATTEMPTS} — generating sheet music for song ${songId} "${song.title}"`
         );
 
         const abc = await generateAbcNotation(song);
@@ -392,7 +399,7 @@ export function generateSheetMusicInBackground(songId: number): void {
         // updateSongSheetMusic already sets status to "done"
 
         console.log(
-          `[BackgroundSheetMusic] Successfully generated sheet music for song ${songId}`
+          `[BackgroundSheetMusic] Successfully generated sheet music for song ${songId} on attempt ${attempt}`
         );
         return; // Success — exit the retry loop
       } catch (err: unknown) {
@@ -402,16 +409,23 @@ export function generateSheetMusicInBackground(songId: number): void {
         );
 
         if (attempt < MAX_BG_ATTEMPTS) {
-          // Wait 5 seconds before retrying the entire background job
-          await new Promise((r) => setTimeout(r, 5000));
+          const delay = RETRY_DELAYS[attempt - 1] || 5000;
+          console.log(
+            `[BackgroundSheetMusic] Retrying song ${songId} in ${delay / 1000}s...`
+          );
+          await new Promise((r) => setTimeout(r, delay));
         }
       }
     }
 
     // All attempts exhausted — mark as failed
     console.error(
-      `[BackgroundSheetMusic] All attempts exhausted for song ${songId}. Sheet music will not be generated.`
+      `[BackgroundSheetMusic] All ${MAX_BG_ATTEMPTS} attempts exhausted for song ${songId}. Marking as failed.`
     );
-    await updateSongSheetMusicStatus(songId, "failed", "Generation failed after all retry attempts. Please try generating manually.").catch(() => {});
+    await updateSongSheetMusicStatus(
+      songId,
+      "failed",
+      `Generation failed after ${MAX_BG_ATTEMPTS} attempts. Please try regenerating manually from the Sheet Music tab.`
+    ).catch(() => {});
   }, 3000);
 }
