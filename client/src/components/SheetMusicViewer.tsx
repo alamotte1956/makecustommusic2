@@ -396,10 +396,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const keyLabel = selectedKey === "original"
         ? (originalKey ? ` (Key: ${originalKey})` : "")
         : ` (Key: ${selectedKey})`;
-      await exportSheetMusicPDF(svgElement, songTitle + keyLabel);
+      // Wrap in a timeout to prevent infinite hangs
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("PDF generation timed out after 30 seconds")), 30000)
+      );
+      await Promise.race([
+        exportSheetMusicPDF(svgElement, songTitle + keyLabel),
+        timeoutPromise,
+      ]);
       toast.success("Sheet music PDF downloaded!");
-    } catch {
-      toast.error("Failed to export sheet music PDF");
+    } catch (err: any) {
+      console.error("[PDF] Export error:", err);
+      const message = err?.message?.includes("timed out")
+        ? "PDF generation timed out. Try refreshing the page and trying again."
+        : "Failed to export sheet music PDF. Try using Print instead.";
+      toast.error(message);
     } finally {
       setExporting(false);
     }
@@ -741,19 +752,29 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         return Array.from(chordSection.querySelectorAll("svg")) as SVGElement[];
       };
 
-      await exportCombinedPdf({
-        svgElement,
-        leadSheet,
-        songTitle,
-        keyLabel,
-        chords,
-        convertChordLine: convertChordLineToNashville,
-        generateChordDiagramsSvgs,
-      });
+      // Wrap in a timeout to prevent infinite hangs
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("PDF generation timed out after 45 seconds")), 45000)
+      );
+      await Promise.race([
+        exportCombinedPdf({
+          svgElement,
+          leadSheet,
+          songTitle,
+          keyLabel,
+          chords,
+          convertChordLine: convertChordLineToNashville,
+          generateChordDiagramsSvgs,
+        }),
+        timeoutPromise,
+      ]);
       toast.success("Complete sheet music package downloaded!");
     } catch (err: any) {
       console.error("[CombinedPDF] Export error:", err);
-      toast.error("Failed to generate combined PDF");
+      const message = err?.message?.includes("timed out")
+        ? "PDF generation timed out. Try refreshing the page and trying again."
+        : "Failed to generate combined PDF. Try using Print All instead.";
+      toast.error(message);
     } finally {
       setExporting(false);
     }

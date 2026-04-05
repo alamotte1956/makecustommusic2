@@ -10,6 +10,7 @@
  */
 import jsPDF from "jspdf";
 import type { LeadSheet } from "./leadSheetExtractor";
+import { renderSvgToCanvas, getSvgDimensions } from "./pdfExport";
 
 // ─── Page Constants ───
 const PAGE_WIDTH = 210; // A4 mm
@@ -87,50 +88,7 @@ function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
-/**
- * Render an SVG element to a PNG data URL via canvas.
- */
-function svgToDataUrl(
-  svgElement: SVGElement,
-  scale = 3
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const svgClone = svgElement.cloneNode(true) as SVGElement;
-    const bbox = svgElement.getBoundingClientRect();
-    const w = bbox.width || 700;
-    const h = bbox.height || 400;
-
-    svgClone.setAttribute("width", String(w));
-    svgClone.setAttribute("height", String(h));
-    svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-
-    const canvas = document.createElement("canvas");
-    canvas.width = w * scale;
-    canvas.height = h * scale;
-    const ctx = canvas.getContext("2d")!;
-    ctx.scale(scale, scale);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, w, h);
-
-    const svgData = new XMLSerializer().serializeToString(svgClone);
-    const blob = new Blob([svgData], {
-      type: "image/svg+xml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/png", 1.0));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Failed to render SVG to image"));
-    };
-    img.src = url;
-  });
-}
+// svgToDataUrl replaced by renderSvgToCanvas from pdfExport.ts for robust SVG-to-image conversion
 
 /**
  * Draw a section divider page that introduces a new section of the PDF.
@@ -218,12 +176,9 @@ async function addFullNotationSection(
   doc.line(MARGIN_LEFT, y, PAGE_WIDTH - MARGIN_RIGHT, y);
   y += 8;
 
-  // Render the sheet music SVG
+  // Render the sheet music SVG using robust renderSvgToCanvas
   try {
-    const imgData = await svgToDataUrl(svgElement);
-    const bbox = svgElement.getBoundingClientRect();
-    const svgWidth = bbox.width || 700;
-    const svgHeight = bbox.height || 400;
+    const { canvas, dataUrl: imgData, width: svgWidth, height: svgHeight } = await renderSvgToCanvas(svgElement);
     const imgAspect = svgWidth / svgHeight;
     const fitWidth = CONTENT_WIDTH;
     const fitHeight = fitWidth / imgAspect;
@@ -235,23 +190,6 @@ async function addFullNotationSection(
       y += fitHeight + 6;
     } else {
       // Split across pages using tiling
-      const canvas = document.createElement("canvas");
-      const scale = 3;
-      canvas.width = svgWidth * scale;
-      canvas.height = svgHeight * scale;
-      const ctx = canvas.getContext("2d")!;
-      ctx.scale(scale, scale);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, svgWidth, svgHeight);
-
-      const tempImg = new Image();
-      await new Promise<void>((resolve, reject) => {
-        tempImg.onload = () => resolve();
-        tempImg.onerror = () => reject(new Error("Image load failed"));
-        tempImg.src = imgData;
-      });
-      ctx.drawImage(tempImg, 0, 0, svgWidth, svgHeight);
-
       const totalImageHeightMM = fitHeight;
       const tempCanvas = document.createElement("canvas");
       const tempCtx = tempCanvas.getContext("2d")!;
@@ -283,7 +221,13 @@ async function addFullNotationSection(
           tempCanvas.height
         );
 
-        const sliceData = tempCanvas.toDataURL("image/png", 1.0);
+        let sliceData: string;
+        try {
+          sliceData = tempCanvas.toDataURL("image/png", 1.0);
+        } catch {
+          console.warn("[CombinedPDF] Slice canvas tainted, skipping slice");
+          break;
+        }
         doc.addImage(
           sliceData,
           "PNG",
@@ -341,50 +285,8 @@ async function addFullNotationSection(
       y = checkPageBreak(doc, y, diagramHeight + 4);
 
       try {
-        const svgBBox = svg.getBoundingClientRect();
-        const w = svgBBox.width || 100;
-        const h = svgBBox.height || 140;
-
-        const svgClone = svg.cloneNode(true) as SVGElement;
-        svgClone.setAttribute("width", String(w));
-        svgClone.setAttribute("height", String(h));
-        svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-
-        const svgData = new XMLSerializer().serializeToString(svgClone);
-        const blob = new Blob([svgData], {
-          type: "image/svg+xml;charset=utf-8",
-        });
-        const imgUrl = URL.createObjectURL(blob);
-
-        const imgDataUrl = await new Promise<string | null>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            try {
-              const canvas = document.createElement("canvas");
-              canvas.width = w * 3;
-              canvas.height = h * 3;
-              const ctx = canvas.getContext("2d")!;
-              ctx.scale(3, 3);
-              ctx.fillStyle = "#ffffff";
-              ctx.fillRect(0, 0, w, h);
-              ctx.drawImage(img, 0, 0, w, h);
-              resolve(canvas.toDataURL("image/png"));
-            } catch {
-              resolve(null);
-            } finally {
-              URL.revokeObjectURL(imgUrl);
-            }
-          };
-          img.onerror = () => {
-            URL.revokeObjectURL(imgUrl);
-            resolve(null);
-          };
-          img.src = imgUrl;
-        });
-
-        if (imgDataUrl) {
-          doc.addImage(imgDataUrl, "PNG", dx, y, diagramWidth, diagramHeight);
-        }
+        const { dataUrl: imgDataUrl } = await renderSvgToCanvas(svg, 3);
+        doc.addImage(imgDataUrl, "PNG", dx, y, diagramWidth, diagramHeight);
       } catch {
         // Skip diagram on error
       }

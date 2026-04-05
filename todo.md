@@ -1991,3 +1991,10 @@
 - [x] Add the Print All button to the SheetMusicViewer action bar
 - [x] Write tests for the print all functionality
 - [x] All 1,679 tests passing across 77 files
+
+## Bug Fix: PDF Download Sometimes Fails
+- [x] Investigate all PDF export code paths for failure conditions
+- [x] Fix issues preventing PDF download under certain conditions
+- [x] Add robust error handling and fallback logic
+- [x] Write/update tests to cover edge cases
+- [x] All 1,691 tests passing across 78 files (12 new tests for PDF helpers)

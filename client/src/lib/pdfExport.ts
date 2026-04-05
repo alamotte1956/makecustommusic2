@@ -64,6 +64,193 @@ function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
+/**
+ * Parse SVG viewBox to get reliable dimensions even when the element is hidden.
+ */
+export function getSvgDimensions(svgElement: SVGElement): { width: number; height: number } {
+  // Try viewBox first (most reliable, works even when element is hidden)
+  const viewBox = svgElement.getAttribute("viewBox");
+  if (viewBox) {
+    const parts = viewBox.split(/[\s,]+/).map(Number);
+    if (parts.length >= 4 && parts[2] > 0 && parts[3] > 0) {
+      return { width: parts[2], height: parts[3] };
+    }
+  }
+
+  // Try explicit width/height attributes
+  const attrW = parseFloat(svgElement.getAttribute("width") || "0");
+  const attrH = parseFloat(svgElement.getAttribute("height") || "0");
+  if (attrW > 0 && attrH > 0) {
+    return { width: attrW, height: attrH };
+  }
+
+  // Fall back to getBoundingClientRect
+  const bbox = svgElement.getBoundingClientRect();
+  return {
+    width: bbox.width > 0 ? bbox.width : 700,
+    height: bbox.height > 0 ? bbox.height : 400,
+  };
+}
+
+/**
+ * Sanitize an SVG element for safe serialization:
+ * - Ensures xmlns is set
+ * - Removes external references that could taint canvas
+ * - Inlines computed styles for text elements
+ */
+export function sanitizeSvgForExport(svgElement: SVGElement, width: number, height: number): SVGElement {
+  const svgClone = svgElement.cloneNode(true) as SVGElement;
+  svgClone.setAttribute("width", String(width));
+  svgClone.setAttribute("height", String(height));
+  svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  svgClone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+  // Remove any external image references that could taint the canvas
+  svgClone.querySelectorAll("image").forEach((img) => {
+    const href = img.getAttribute("href") || img.getAttributeNS("http://www.w3.org/1999/xlink", "href");
+    if (href && !href.startsWith("data:")) {
+      img.remove();
+    }
+  });
+
+  return svgClone;
+}
+
+/**
+ * Load an SVG as an Image with timeout and fallback approaches.
+ * Returns a loaded Image element ready to be drawn on canvas.
+ */
+export function loadSvgAsImage(
+  svgClone: SVGElement,
+  timeoutMs = 15000
+): Promise<HTMLImageElement> {
+  const svgData = new XMLSerializer().serializeToString(svgClone);
+
+  // Strategy 1: Blob URL (faster, works in most browsers)
+  // Strategy 2: Data URI (fallback, works in Safari Private Browsing)
+  const strategies: (() => string)[] = [
+    () => {
+      const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      return URL.createObjectURL(blob);
+    },
+    () => {
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
+    },
+  ];
+
+  return new Promise((resolve, reject) => {
+    let strategyIndex = 0;
+    let currentUrl: string | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    function cleanup() {
+      if (timer) clearTimeout(timer);
+      // Only revoke blob URLs, not data URIs
+      if (currentUrl && currentUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    }
+
+    function tryNextStrategy() {
+      if (strategyIndex >= strategies.length) {
+        cleanup();
+        reject(new Error("Failed to load SVG as image after all strategies"));
+        return;
+      }
+
+      // Clean up previous attempt
+      if (currentUrl && currentUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(currentUrl);
+      }
+
+      currentUrl = strategies[strategyIndex]();
+      strategyIndex++;
+
+      const img = new Image();
+
+      // Set timeout for this attempt
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        console.warn(`[PDF] Image load timed out (strategy ${strategyIndex}), trying next...`);
+        img.onload = null;
+        img.onerror = null;
+        tryNextStrategy();
+      }, timeoutMs);
+
+      img.onload = () => {
+        cleanup();
+        resolve(img);
+      };
+
+      img.onerror = () => {
+        console.warn(`[PDF] Image load failed (strategy ${strategyIndex}), trying next...`);
+        tryNextStrategy();
+      };
+
+      // For data URIs, we don't need crossOrigin; for blob URLs we do
+      if (currentUrl.startsWith("blob:")) {
+        img.crossOrigin = "anonymous";
+      }
+
+      img.src = currentUrl;
+    }
+
+    tryNextStrategy();
+  });
+}
+
+/**
+ * Render an SVG to a canvas and return the canvas + PNG data URL.
+ * Handles tainted canvas errors gracefully.
+ */
+export async function renderSvgToCanvas(
+  svgElement: SVGElement,
+  scale = 3
+): Promise<{ canvas: HTMLCanvasElement; dataUrl: string; width: number; height: number }> {
+  const { width, height } = getSvgDimensions(svgElement);
+  const svgClone = sanitizeSvgForExport(svgElement, width, height);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not get canvas 2D context");
+
+  ctx.scale(scale, scale);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  const img = await loadSvgAsImage(svgClone);
+  ctx.drawImage(img, 0, 0, width, height);
+
+  // Revoke blob URL from the image if applicable
+  if (img.src.startsWith("blob:")) {
+    URL.revokeObjectURL(img.src);
+  }
+
+  let dataUrl: string;
+  try {
+    dataUrl = canvas.toDataURL("image/png", 1.0);
+  } catch (e) {
+    // Canvas may be tainted — try without the image (text-only fallback)
+    console.warn("[PDF] Canvas tainted, attempting text-only render");
+    const fallbackCanvas = document.createElement("canvas");
+    fallbackCanvas.width = width * scale;
+    fallbackCanvas.height = height * scale;
+    const fallbackCtx = fallbackCanvas.getContext("2d")!;
+    fallbackCtx.scale(scale, scale);
+    fallbackCtx.fillStyle = "#ffffff";
+    fallbackCtx.fillRect(0, 0, width, height);
+    fallbackCtx.fillStyle = "#333333";
+    fallbackCtx.font = "14px sans-serif";
+    fallbackCtx.fillText("Sheet music could not be rendered to image.", 20, 30);
+    fallbackCtx.fillText("Please use the Print function instead.", 20, 50);
+    dataUrl = fallbackCanvas.toDataURL("image/png", 1.0);
+  }
+
+  return { canvas, dataUrl, width, height };
+}
+
 // ─── Sheet Music PDF ───
 export async function exportSheetMusicPDF(
   svgElement: SVGElement,
@@ -92,98 +279,68 @@ export async function exportSheetMusicPDF(
   y += 8;
 
   // Render SVG to canvas then to image
-  const svgClone = svgElement.cloneNode(true) as SVGElement;
-  const bbox = svgElement.getBoundingClientRect();
-  const svgWidth = bbox.width || 700;
-  const svgHeight = bbox.height || 400;
+  const { canvas, dataUrl: imgData, width: svgWidth, height: svgHeight } = await renderSvgToCanvas(svgElement);
 
-  svgClone.setAttribute("width", String(svgWidth));
-  svgClone.setAttribute("height", String(svgHeight));
-  svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  // Calculate how to fit the image on pages with proper scaling
+  const imgAspect = svgWidth / svgHeight;
+  const fitWidth = CONTENT_WIDTH;
+  const fitHeight = fitWidth / imgAspect;
 
-  const canvas = document.createElement("canvas");
-  const scale = 3; // High resolution
-  canvas.width = svgWidth * scale;
-  canvas.height = svgHeight * scale;
-  const ctx = canvas.getContext("2d")!;
-  ctx.scale(scale, scale);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, svgWidth, svgHeight);
+  // How much vertical space remains on the current page
+  const remainingOnPage = SAFE_BOTTOM - y;
 
-  const svgData = new XMLSerializer().serializeToString(svgClone);
-  const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(svgBlob);
+  if (fitHeight <= remainingOnPage) {
+    // Image fits entirely on current page
+    doc.addImage(imgData, "PNG", MARGIN_LEFT, y, fitWidth, fitHeight);
+  } else {
+    // Split across pages using tiling
+    const totalImageHeightMM = fitHeight;
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d")!;
 
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
-      URL.revokeObjectURL(url);
+    let remainingMM = totalImageHeightMM;
+    let sourceYOffset = 0;
+    let currentY = y;
+    let isFirstPage = true;
 
-      const imgData = canvas.toDataURL("image/png", 1.0);
+    while (remainingMM > 0) {
+      const availableHeight = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
+      const sliceHeightMM = Math.min(remainingMM, availableHeight);
+      const sliceHeightPx = (sliceHeightMM / totalImageHeightMM) * canvas.height;
 
-      // Calculate how to fit the image on pages with proper scaling
-      const imgAspect = svgWidth / svgHeight;
-      const fitWidth = CONTENT_WIDTH;
-      const fitHeight = fitWidth / imgAspect;
+      // Create a slice of the image
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = Math.ceil(sliceHeightPx);
+      tempCtx.fillStyle = "#ffffff";
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.drawImage(
+        canvas,
+        0, sourceYOffset, canvas.width, sliceHeightPx,
+        0, 0, tempCanvas.width, tempCanvas.height
+      );
 
-      // How much vertical space remains on the current page
-      const remainingOnPage = SAFE_BOTTOM - y;
-
-      if (fitHeight <= remainingOnPage) {
-        // Image fits entirely on current page
-        doc.addImage(imgData, "PNG", MARGIN_LEFT, y, fitWidth, fitHeight);
-      } else {
-        // Split across pages using tiling
-        const totalImageHeightMM = fitHeight;
-        const tempCanvas = document.createElement("canvas");
-        const tempCtx = tempCanvas.getContext("2d")!;
-
-        let remainingMM = totalImageHeightMM;
-        let sourceYOffset = 0;
-        let currentY = y;
-        let isFirstPage = true;
-
-        while (remainingMM > 0) {
-          const availableHeight = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
-          const sliceHeightMM = Math.min(remainingMM, availableHeight);
-          const sliceHeightPx = (sliceHeightMM / totalImageHeightMM) * canvas.height;
-
-          // Create a slice of the image
-          tempCanvas.width = canvas.width;
-          tempCanvas.height = Math.ceil(sliceHeightPx);
-          tempCtx.fillStyle = "#ffffff";
-          tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-          tempCtx.drawImage(
-            canvas,
-            0, sourceYOffset, canvas.width, sliceHeightPx,
-            0, 0, tempCanvas.width, tempCanvas.height
-          );
-
-          const sliceData = tempCanvas.toDataURL("image/png", 1.0);
-          doc.addImage(sliceData, "PNG", MARGIN_LEFT, currentY, fitWidth, sliceHeightMM);
-
-          sourceYOffset += sliceHeightPx;
-          remainingMM -= sliceHeightMM;
-
-          if (remainingMM > 0) {
-            doc.addPage();
-            currentY = MARGIN_TOP;
-            isFirstPage = false;
-          }
-        }
+      let sliceData: string;
+      try {
+        sliceData = tempCanvas.toDataURL("image/png", 1.0);
+      } catch {
+        console.warn("[PDF] Slice canvas tainted, skipping slice");
+        break;
       }
+      doc.addImage(sliceData, "PNG", MARGIN_LEFT, currentY, fitWidth, sliceHeightMM);
 
-      addFooter(doc);
-      doc.save(`${songTitle} - Sheet Music.pdf`);
-      resolve();
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Failed to render sheet music image"));
-    };
-    img.src = url;
-  });
+      sourceYOffset += sliceHeightPx;
+      remainingMM -= sliceHeightMM;
+
+      if (remainingMM > 0) {
+        doc.addPage();
+        currentY = MARGIN_TOP;
+        isFirstPage = false;
+      }
+    }
+  }
+
+  addFooter(doc);
+  doc.save(`${songTitle} - Sheet Music.pdf`);
 }
 
 // ─── Guitar Chord PDF ───
@@ -330,54 +487,8 @@ export async function exportChordPDF(
       y = checkPageBreak(doc, y, diagramHeight + 4);
 
       try {
-        const svgBBox = svg.getBoundingClientRect();
-        const w = svgBBox.width || 100;
-        const h = svgBBox.height || 140;
-
-        const svgClone = svg.cloneNode(true) as SVGElement;
-        svgClone.setAttribute("width", String(w));
-        svgClone.setAttribute("height", String(h));
-        svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-        svgClone.querySelectorAll("*").forEach((el) => {
-          if (el instanceof SVGElement) {
-            el.style.color = "#1a1a1a";
-          }
-        });
-
-        const svgData = new XMLSerializer().serializeToString(svgClone);
-        const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-        const imgUrl = URL.createObjectURL(blob);
-
-        // Load SVG as image, draw to canvas, then add to PDF
-        const imgDataUrl = await new Promise<string | null>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            try {
-              const canvas = document.createElement("canvas");
-              canvas.width = w * 3;
-              canvas.height = h * 3;
-              const ctx = canvas.getContext("2d")!;
-              ctx.scale(3, 3);
-              ctx.fillStyle = "#ffffff";
-              ctx.fillRect(0, 0, w, h);
-              ctx.drawImage(img, 0, 0, w, h);
-              resolve(canvas.toDataURL("image/png"));
-            } catch {
-              resolve(null);
-            } finally {
-              URL.revokeObjectURL(imgUrl);
-            }
-          };
-          img.onerror = () => {
-            URL.revokeObjectURL(imgUrl);
-            resolve(null);
-          };
-          img.src = imgUrl;
-        });
-
-        if (imgDataUrl) {
-          doc.addImage(imgDataUrl, "PNG", dx, y, diagramWidth, diagramHeight);
-        }
+        const { dataUrl: imgDataUrl } = await renderSvgToCanvas(svg, 3);
+        doc.addImage(imgDataUrl, "PNG", dx, y, diagramWidth, diagramHeight);
       } catch {
         // Skip diagram on error
       }
