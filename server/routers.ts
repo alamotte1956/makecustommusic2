@@ -40,7 +40,7 @@ import { extractLLMText } from "./llmHelpers";
 import {
   getUserPlan, getCreditBalance, deductCredits, refundCredits, getUsageSummary,
   getTransactionHistory, checkDailyLimit, getPlanLimits, getLicenseType,
-  getUserSubscription, canUserGenerate, checkMonthlyBonus, useMonthlyBonus,
+  getUserSubscription, canUserGenerate, canUserGenerateWithAdminBypass, checkMonthlyBonus, useMonthlyBonus,
   getDailyUsageChart,
 } from "./credits";
 import { PLAN_LIMITS, REFERRAL_BONUS_CREDITS, type PlanName, LITURGICAL_SEASONS, SERVICE_SEGMENTS, BAND_INSTRUMENTS, CHOIR_PARTS } from "../drizzle/schema";
@@ -348,9 +348,9 @@ export const appRouter = router({
           mode, customTitle, customLyrics, customStyle
         } = input;
 
-        // ── Plan gate: free users cannot generate ──
+        // ── Plan gate: free users cannot generate (admins always bypass) ──
         const userPlan = await getUserPlan(ctx.user.id);
-        if (!canUserGenerate(userPlan)) {
+        if (!(await canUserGenerateWithAdminBypass(ctx.user.id, userPlan))) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "A paid subscription is required to generate music. Please choose a Pro or Premier plan to get started.",
@@ -694,8 +694,11 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
       }))
       .mutation(async ({ ctx, input }) => {
         const plan = await getUserPlan(ctx.user.id);
-        const balance = await getCreditBalance(ctx.user.id);
-        if (balance.totalCredits < 1) throw new Error("Insufficient credits. Please upgrade or purchase more credits.");
+        // Admins bypass credit checks
+        if (ctx.user.role !== "admin") {
+          const balance = await getCreditBalance(ctx.user.id);
+          if (balance.totalCredits < 1) throw new Error("Insufficient credits. Please upgrade or purchase more credits.");
+        }
 
         // Decode base64 and upload to S3
         const buffer = Buffer.from(input.fileData, "base64");
@@ -735,8 +738,11 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         mimeType: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const balance = await getCreditBalance(ctx.user.id);
-        if (balance.totalCredits < 1) throw new Error("Insufficient credits.");
+        // Admins bypass credit checks
+        if (ctx.user.role !== "admin") {
+          const balance = await getCreditBalance(ctx.user.id);
+          if (balance.totalCredits < 1) throw new Error("Insufficient credits.");
+        }
 
         const buffer = Buffer.from(input.fileData, "base64");
         if (buffer.length > 20 * 1024 * 1024) throw new Error("File too large. Maximum 20MB.");
@@ -783,8 +789,11 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
       }))
       .mutation(async ({ ctx, input }) => {
         const plan = await getUserPlan(ctx.user.id);
-        const balance = await getCreditBalance(ctx.user.id);
-        if (balance.totalCredits < 1) throw new Error("Insufficient credits.");
+        // Admins bypass credit checks
+        if (ctx.user.role !== "admin") {
+          const balance = await getCreditBalance(ctx.user.id);
+          if (balance.totalCredits < 1) throw new Error("Insufficient credits.");
+        }
 
         if (!isSunoAvailable()) throw new Error("Music generation service unavailable.");
 
@@ -1380,13 +1389,17 @@ RULES:
         ),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Check credits
-        const balance = await getCreditBalance(ctx.user.id);
-        if (balance.totalCredits < 1) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Insufficient credits. You need at least 1 credit to convert audio to sheet music. Please upgrade your plan or purchase more credits.",
-          });
+        // Check credits (admins bypass)
+        const { isUserAdmin } = await import("./credits");
+        const isAdmin = await isUserAdmin(ctx.user.id);
+        if (!isAdmin) {
+          const balance = await getCreditBalance(ctx.user.id);
+          if (balance.totalCredits < 1) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Insufficient credits. You need at least 1 credit to convert audio to sheet music. Please upgrade your plan or purchase more credits.",
+            });
+          }
         }
 
         // Decode and validate file size (16MB limit for Whisper)

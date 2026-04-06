@@ -85,12 +85,14 @@ const planLabel: Record<string, string> = {
   free: "Free",
   creator: "Pro",
   professional: "Premier",
+  studio: "Studio",
 };
 
 const planBadgeStyle: Record<string, string> = {
   free: "bg-white/10 text-white/70 border-white/10",
   creator: "bg-pink-500/20 text-pink-300 border-pink-500/30",
   professional: "bg-gradient-to-r from-pink-500/20 to-orange-500/20 text-orange-300 border-orange-500/30",
+  studio: "bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30",
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

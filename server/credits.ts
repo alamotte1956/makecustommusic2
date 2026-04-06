@@ -4,10 +4,25 @@ import {
   creditBalances,
   creditTransactions,
   userSubscriptions,
+  users,
   PLAN_LIMITS,
   type PlanName,
   type LicenseType,
 } from "../drizzle/schema";
+
+// ─── Admin bypass helper ───────────────────────────────────────────────────
+// Admins bypass all credit checks, generation limits, and plan restrictions.
+
+export async function isUserAdmin(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const [user] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return user?.role === "admin";
+}
 
 // ─── Plan helpers ───────────────────────────────────────────────────────────
 
@@ -39,6 +54,8 @@ export async function getUserSubscription(userId: number) {
 }
 
 export async function getUserPlan(userId: number): Promise<PlanName> {
+  // Admins always get studio-level access regardless of subscription state
+  if (await isUserAdmin(userId)) return "studio";
   const sub = await getUserSubscription(userId);
   if (!sub || sub.status === "canceled" || sub.status === "incomplete") return "free";
   return sub.plan as PlanName;
@@ -172,6 +189,14 @@ export async function deductCredits(
 ): Promise<{ success: boolean; remaining: number; error?: string }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // Admins never run out of credits — skip deduction entirely
+  if (await isUserAdmin(userId)) {
+    const balance = await getCreditBalance(userId);
+    await logTransaction(userId, 0, type, `[Admin] ${description}`, balance.totalCredits, relatedSongId);
+    return { success: true, remaining: balance.totalCredits };
+  }
+
   const balance = await getCreditBalance(userId);
 
   if (balance.totalCredits < amount) {
@@ -382,6 +407,12 @@ export function canUserGenerate(plan: PlanName): boolean {
   return PLAN_LIMITS[plan].canGenerate;
 }
 
+// Admin-aware version that checks user role before plan limits
+export async function canUserGenerateWithAdminBypass(userId: number, plan: PlanName): Promise<boolean> {
+  if (await isUserAdmin(userId)) return true;
+  return PLAN_LIMITS[plan].canGenerate;
+}
+
 // ─── Daily limit tracking ───────────────────────────────────────────────────
 
 export async function getDailyUsage(userId: number, type: "generation" | "tts" | "takes"): Promise<number> {
@@ -409,6 +440,9 @@ export async function checkDailyLimit(
   type: "generation",
   plan: PlanName
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
+  // Admins have no daily limits
+  if (await isUserAdmin(userId)) return { allowed: true, used: 0, limit: -1 };
+
   const limits = getPlanLimits(plan);
   const dailyLimit = limits.dailySongLimit as number;
 
@@ -466,7 +500,7 @@ export async function getUsageSummary(userId: number) {
     limits,
     balance,
     subscription: sub,
-    canGenerate: canUserGenerate(plan),
+    canGenerate: (await isUserAdmin(userId)) || canUserGenerate(plan),
     usage: {
       dailySongsGenerated: dailyGen?.total ?? 0,
       monthlyCreditsUsed: monthlyTotal?.total ?? 0,

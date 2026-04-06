@@ -2005,3 +2005,18 @@
 - [x] Add fallback mechanisms so PDF is available even with edge-case ABC notation
 - [x] Ensure error states still allow PDF download when partial rendering succeeds
 - [x] All 1,691 tests passing across 78 files
+
+## Bug Fix: Sheet Music Generator Still Not Working
+- [ ] Check browser console and server logs for errors
+- [ ] Investigate the full sheet music generation pipeline (backend LLM call, ABC sanitization, rendering)
+- [ ] Fix root cause preventing sheet music from generating/rendering
+- [ ] Ensure PDF download works reliably after fix
+
+## Admin Setup: alamotte1956@gmail.com
+- [x] Set alamotte1956@gmail.com as admin role
+- [x] Give unlimited credits and free access to all features
+- [x] Ensure admin bypasses all credit/generation limits
+- [x] Add admin bypass to getUserPlan, deductCredits, checkDailyLimit, canUserGenerate, getUsageSummary
+- [x] Add admin bypass to uploadAudio, analyzeSheetMusic, generateFromSheetMusic, mp3ToSheet credit checks
+- [x] Add Studio plan badge to sidebar layout
+- [x] All 1,691 tests passing across 78 files
