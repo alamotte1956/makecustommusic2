@@ -2026,3 +2026,19 @@
 - [x] Show success message with song title and regeneration time
 - [x] Integrate with existing sheet music generation flow
 - [x] All 1,691 tests passing across 78 files
+
+## Bug Fix: Sheet Music Generator Comprehensive Audit
+- [ ] Audit backend sheet music generation (LLM call, ABC notation quality)
+- [ ] Check ABC sanitization logic for edge cases
+- [ ] Verify abcjs rendering with various ABC inputs
+- [ ] Add detailed error logging throughout the pipeline
+- [ ] Test with multiple songs to identify patterns
+- [ ] Fix all identified failure points
+
+## Bug Fix: Sheet Music Generator Comprehensive Fix
+- [x] Harden ABC sanitizer to enforce K: as last header
+- [x] Strengthen validation to catch invalid header placement
+- [x] Add error persistence to database for debugging
+- [x] Update error handling to persist detailed error messages
+- [x] Test all edge cases and fix failing tests
+- [x] All 1,691 tests passing across 78 files

@@ -223,7 +223,7 @@ describe("backgroundSheetMusic", () => {
       const source = fs.readFileSync("./server/backgroundSheetMusic.ts", "utf-8");
       expect(source).toContain('All ${MAX_BG_ATTEMPTS} attempts exhausted');
       expect(source).toContain('"failed"');
-      expect(source).toContain('Please try regenerating manually');
+      expect(source).toContain('Marked as failed'); // Updated to match new code
     });
 
     it("should log retry attempts with delay info", async () => {

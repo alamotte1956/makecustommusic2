@@ -157,6 +157,9 @@ export function buildSongContext(song: {
 export function sanitiseAbc(raw: string): string {
   // 1. Strip markdown code fences
   let abc = raw.replace(/^```[a-z]*\n?/gm, "").replace(/```\s*$/gm, "").trim();
+  
+  // Handle empty input early
+  if (!abc) return "";
 
   // 2. Try to extract just the ABC block if there is surrounding text
   const xMatch = abc.match(/^(X:\s*\d+)/m);
@@ -219,16 +222,57 @@ export function sanitiseAbc(raw: string): string {
 
   abc = filtered.slice(0, lastMusicLine + 1).join("\n").trim();
 
-  // 5. Ensure essential headers exist — inject defaults if missing
-  if (!/^M:/m.test(abc)) {
-    abc = abc.replace(/^(K:)/m, "M:4/4\n$1");
+  // 5. CRITICAL: Separate header block from music body and enforce K: as last header
+  const lines = abc.split("\n");
+  const headerLines: string[] = [];
+  const musicLines: string[] = [];
+  let foundFirstMusic = false;
+  let kLineContent = "";
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const isHeader = /^[A-Z]:/.test(trimmed);
+    const isComment = trimmed.startsWith("%");
+
+    if (!foundFirstMusic && (isHeader || isComment)) {
+      // Capture K: content but don't add to headers yet
+      if (isHeader && trimmed.startsWith("K:")) {
+        kLineContent = line;
+      } else {
+        headerLines.push(line);
+      }
+    } else {
+      foundFirstMusic = true;
+      musicLines.push(line);
+    }
   }
-  if (!/^L:/m.test(abc)) {
-    abc = abc.replace(/^(K:)/m, "L:1/8\n$1");
+
+  // 6. Only inject missing headers if we have music content
+  // If there's no music, return the headers as-is
+  if (musicLines.length === 0) {
+    // No music content — return headers only
+    if (kLineContent) headerLines.push(kLineContent);
+    return headerLines.join("\n").trim();
   }
-  if (!/^Q:/m.test(abc)) {
-    abc = abc.replace(/^(K:)/m, "Q:1/4=120\n$1");
+
+  // Inject missing essential headers (M, L, Q) BEFORE K:
+  const hasM = headerLines.some((l) => l.trim().startsWith("M:"));
+  const hasL = headerLines.some((l) => l.trim().startsWith("L:"));
+  const hasQ = headerLines.some((l) => l.trim().startsWith("Q:"));
+
+  if (!hasM) headerLines.push("M:4/4");
+  if (!hasL) headerLines.push("L:1/8");
+  if (!hasQ) headerLines.push("Q:1/4=120");
+
+  // Ensure K: is the last header line
+  if (kLineContent) {
+    headerLines.push(kLineContent);
+  } else {
+    headerLines.push("K:C"); // Default key if missing
   }
+
+  // Reconstruct ABC with headers followed by music
+  abc = [...headerLines, ...musicLines].join("\n").trim();
 
   return abc;
 }
@@ -253,6 +297,18 @@ export function validateAbc(abc: string): string | null {
   if (!hasX) return "Missing X: (reference number) header";
   if (!hasT) return "Missing T: (title) header";
   if (!hasK) return "Missing K: (key) header";
+
+  // CRITICAL: Verify K: is the last header line (no headers after it)
+  const kIndex = lines.findIndex((l) => l.trim().startsWith("K:"));
+  if (kIndex !== -1) {
+    for (let i = kIndex + 1; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      // Allow lyrics (w:, W:) after K:, but no other headers
+      if (/^[A-Z]:/.test(trimmed) && !trimmed.startsWith("w:") && !trimmed.startsWith("W:")) {
+        return `Invalid header after K: (line ${i + 1}: ${trimmed}). K: must be the last header.`;
+      }
+    }
+  }
 
   // Validate K: header has a recognizable key value
   const kLine = headerLines.find((l) => l.trim().startsWith("K:"));
@@ -408,6 +464,16 @@ export function generateSheetMusicInBackground(songId: number): void {
           `[BackgroundSheetMusic] Attempt ${attempt}/${MAX_BG_ATTEMPTS} failed for song ${songId}: ${msg}`
         );
 
+        // On the last attempt, persist the error message to the database
+        if (attempt === MAX_BG_ATTEMPTS) {
+          const errorMsg = msg.length > 500 ? msg.substring(0, 500) + "..." : msg;
+          await updateSongSheetMusicStatus(
+            songId,
+            "failed",
+            errorMsg
+          ).catch(() => {});
+        }
+
         if (attempt < MAX_BG_ATTEMPTS) {
           const delay = RETRY_DELAYS[attempt - 1] || 5000;
           console.log(
@@ -418,14 +484,9 @@ export function generateSheetMusicInBackground(songId: number): void {
       }
     }
 
-    // All attempts exhausted — mark as failed
+    // All attempts exhausted — final error logging
     console.error(
-      `[BackgroundSheetMusic] All ${MAX_BG_ATTEMPTS} attempts exhausted for song ${songId}. Marking as failed.`
+      `[BackgroundSheetMusic] All ${MAX_BG_ATTEMPTS} attempts exhausted for song ${songId}. Marked as failed.`
     );
-    await updateSongSheetMusicStatus(
-      songId,
-      "failed",
-      `Generation failed after ${MAX_BG_ATTEMPTS} attempts. Please try regenerating manually from the Sheet Music tab.`
-    ).catch(() => {});
   }, 3000);
 }
