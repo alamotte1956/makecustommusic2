@@ -262,8 +262,10 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const handleGenerate = useCallback(async () => {
     setError(null);
     try {
+      const startTime = Date.now();
       const keyParam = generateInKey === "auto" ? undefined : generateInKey;
       const result = await generateMutation.mutateAsync({ songId, key: keyParam });
+      const regenerationTime = ((Date.now() - startTime) / 1000).toFixed(1);
       setAbc(result.abcNotation);
       setSelectedKey("original");
       // Reset render tracking so the new ABC will be rendered fresh
@@ -271,7 +273,10 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       lastRenderedAbcRef.current = null;
       setRenderAttempt((n) => n + 1);
       utils.songs.getById.invalidate({ id: songId });
-      toast.success("Sheet music generated!");
+      toast.success(`Sheet music regenerated for "${songTitle}"`, {
+        description: `Generated in ${regenerationTime}s. All formats ready to download.`,
+        duration: 4000,
+      });
     } catch (err: any) {
       const errorState = classifyError(err);
       setError(errorState);

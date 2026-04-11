@@ -2020,3 +2020,9 @@
 - [x] Add admin bypass to uploadAudio, analyzeSheetMusic, generateFromSheetMusic, mp3ToSheet credit checks
 - [x] Add Studio plan badge to sidebar layout
 - [x] All 1,691 tests passing across 78 files
+
+## Toast Notification for Sheet Music Regeneration
+- [x] Add toast notification when sheet music regeneration completes successfully
+- [x] Show success message with song title and regeneration time
+- [x] Integrate with existing sheet music generation flow
+- [x] All 1,691 tests passing across 78 files
