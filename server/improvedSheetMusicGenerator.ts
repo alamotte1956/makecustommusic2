@@ -78,10 +78,17 @@ Return ONLY valid JSON (no markdown, no explanation) with this exact structure:
     ],
   });
 
-  const jsonText =
+  let jsonText =
     typeof response.choices[0].message.content === "string"
       ? response.choices[0].message.content
       : "";
+  
+  // Extract JSON from markdown code blocks if present
+  const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    jsonText = jsonMatch[1].trim();
+  }
+  
   const structure = JSON.parse(jsonText);
   return structure;
 }
@@ -178,10 +185,17 @@ Rules:
     ],
   });
 
-  const jsonText =
+  let jsonText =
     typeof response.choices[0].message.content === "string"
       ? response.choices[0].message.content
       : "";
+  
+  // Extract JSON from markdown code blocks if present
+  const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    jsonText = jsonMatch[1].trim();
+  }
+  
   const chords = JSON.parse(jsonText);
   return chords;
 }
@@ -208,33 +222,44 @@ function buildAbcNotation(
   lines.push(`K: ${key}`);
   lines.push("");
 
-  // Build a simple melody based on the structure
-  // This is a placeholder - in production, you'd generate actual notes
+  // Build a proper melody based on the structure
   const notesPerMeasure = timeSignature === "3/4" ? 6 : 8; // 8 eighth notes per 4/4 measure
   const totalNotes = structure.measures * notesPerMeasure;
 
-  // Generate a simple ascending/descending melody
-  const notes: string[] = [];
+  // Generate a simple ascending/descending melody with proper ABC notation
   const noteSequence = ["C", "D", "E", "F", "G", "A", "B", "c"];
   let noteIndex = 0;
+  let measureCount = 0;
+  let notesInMeasure = 0;
+  let measureLine = "";
 
   for (let i = 0; i < totalNotes; i++) {
-    if (i % 8 === 0 && i > 0) {
-      notes.push("|"); // Bar line
-    }
-
     // Add chord symbol at measure boundaries
-    const measureNumber = Math.floor(i / notesPerMeasure) + 1;
-    const chordAtMeasure = chords.find((c) => c.measureNumber === measureNumber);
-    if (chordAtMeasure && i % notesPerMeasure === 0) {
-      notes.push(`"${chordAtMeasure.chord}"`);
+    const chordAtMeasure = chords.find((c) => c.measureNumber === measureCount + 1);
+    if (chordAtMeasure && notesInMeasure === 0) {
+      measureLine += `"${chordAtMeasure.chord}"`;
     }
 
-    notes.push(noteSequence[noteIndex % noteSequence.length]);
+    // Add note with duration (quarter note = 4 eighth notes, so each note is 1 unit)
+    const note = noteSequence[noteIndex % noteSequence.length];
+    measureLine += note + "2"; // 2 = quarter note (since L:1/8)
+    notesInMeasure++;
     noteIndex++;
+
+    // Check if measure is complete
+    if (notesInMeasure >= notesPerMeasure) {
+      lines.push(measureLine + " |");
+      measureLine = "";
+      notesInMeasure = 0;
+      measureCount++;
+    }
   }
 
-  lines.push(notes.join(""));
+  // Add any remaining notes
+  if (measureLine.length > 0) {
+    lines.push(measureLine);
+  }
+
   lines.push("");
 
   return lines.join("\n");

@@ -566,11 +566,26 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
   const handleDownloadPDF = useCallback(async () => {
     if (!sheetRef.current) return;
+    
+    // Debug: Log what's in the container
+    console.log("[PDF] Container HTML:", sheetRef.current.innerHTML.substring(0, 500));
+    console.log("[PDF] Container children count:", sheetRef.current.children.length);
+    
     const svgElement = sheetRef.current.querySelector("svg");
     if (!svgElement) {
+      console.error("[PDF] No SVG found in container");
+      console.log("[PDF] Container content:", sheetRef.current.innerHTML);
       toast.error("No sheet music to export");
       return;
     }
+    
+    // Debug: Log SVG details
+    console.log("[PDF] SVG found, element count:", svgElement.children.length);
+    console.log("[PDF] SVG paths:", svgElement.querySelectorAll("path").length);
+    console.log("[PDF] SVG lines:", svgElement.querySelectorAll("line").length);
+    console.log("[PDF] SVG texts:", svgElement.querySelectorAll("text").length);
+    console.log("[PDF] SVG rects:", svgElement.querySelectorAll("rect").length);
+    console.log("[PDF] SVG viewBox:", svgElement.getAttribute("viewBox"));
     
     // Validate PDF content before exporting
     const validation = validatePdfContent(svgElement);
