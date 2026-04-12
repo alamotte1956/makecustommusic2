@@ -225,8 +225,8 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
     .format-divider {
       page-break-before: always;
       break-before: page;
-      padding: 40px 0 24px;
-      margin-bottom: 20px;
+      padding: 20px 0 16px;
+      margin-bottom: 16px;
       border-bottom: 3px solid #333;
       text-align: center;
     }
@@ -262,9 +262,12 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
     /* ── Shared header ────────────────────────────────── */
     .print-header {
       text-align: center;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
       border-bottom: 2px solid #333;
+    }
+    .print-header.section-header {
+      display: none;
     }
     .print-title {
       font-size: 28px;
@@ -309,8 +312,8 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
 
     /* ── Chord diagrams ───────────────────────────────── */
     .chord-section {
-      margin-top: 32px;
-      padding-top: 20px;
+      margin-top: 20px;
+      padding-top: 16px;
       border-top: 1px solid #ddd;
     }
     .chord-section-title {
@@ -329,7 +332,7 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
 
     /* ── Lead sheet & Nashville ────────────────────────── */
     .section {
-      margin-bottom: 24px;
+      margin-bottom: 16px;
       page-break-inside: avoid;
       break-inside: avoid;
     }
@@ -344,7 +347,7 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
       border-bottom: 1px solid #ddd;
     }
     .lead-line {
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .chord-line {
       font-family: 'Courier New', 'Consolas', monospace;
@@ -426,7 +429,6 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
 
     <div class="print-header">
       <div class="print-title">${escapeHtml(displayTitle)}</div>
-      <div class="print-subtitle">Full Notation</div>
       <div class="print-meta">
         ${displayKey ? `<span>${escapeHtml(displayKey)}</span>` : ""}
         ${displayMeter ? `<span>${escapeHtml(displayMeter)}</span>` : ""}
@@ -444,14 +446,6 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
       <div class="format-divider-desc">Lyrics with chord symbols for vocalists and instrumentalists</div>
     </div>
 
-    <div class="print-header">
-      <div class="print-title">${escapeHtml(displayTitle)}</div>
-      <div class="print-subtitle">Lead Sheet</div>
-      <div class="print-meta">
-        ${displayKey ? `<span>${escapeHtml(displayKey)}</span>` : ""}
-        ${displayMeter ? `<span>${escapeHtml(displayMeter)}</span>` : ""}
-      </div>
-    </div>
     ${leadSheetSectionsHtml}
 
     <!-- ═══ SECTION 3: Nashville Number Chart ═══ -->
@@ -461,14 +455,6 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
       <div class="format-divider-desc">Number-based chord notation for easy transposition</div>
     </div>
 
-    <div class="print-header">
-      <div class="print-title">${escapeHtml(displayTitle)}</div>
-      <div class="print-subtitle">Nashville Number Chart</div>
-      <div class="print-meta">
-        ${displayKey ? `<span>${escapeHtml(displayKey)}</span>` : ""}
-        ${displayMeter ? `<span>${escapeHtml(displayMeter)}</span>` : ""}
-      </div>
-    </div>
     ${nashvilleSectionsHtml}
     <div class="nns-legend">
       <strong>Nashville Number System:</strong>
