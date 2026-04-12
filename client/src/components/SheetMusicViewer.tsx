@@ -695,7 +695,14 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             justify-content: flex-start;
           }
           @media print {
-            body { margin: 0; }
+            @page {
+              size: landscape;
+              margin: 0.5in;
+            }
+            body { 
+              margin: 0;
+              size: landscape;
+            }
             .no-print { display: none !important; }
             .print-header {
               page-break-after: avoid;
@@ -705,6 +712,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             }
             .print-content svg {
               page-break-inside: avoid;
+              max-width: 100%;
             }
             .chord-section {
               page-break-before: auto;
