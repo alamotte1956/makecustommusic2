@@ -63,6 +63,7 @@ function Router() {
         <Route path={"/"} component={Home} />
         <Route path={"/generate"} component={Generator} />
         <Route path={"/history"} component={History} />
+        <Route path={"/library"} component={History} />
         <Route path={"/albums"} component={Albums} />
         <Route path={"/albums/:id"} component={AlbumDetail} />
         <Route path={"/favorites"} component={Favorites} />

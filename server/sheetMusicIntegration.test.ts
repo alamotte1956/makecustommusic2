@@ -208,7 +208,7 @@ describe("sanitiseAbc", () => {
 
 describe("validateAbc", () => {
   it("returns null for valid ABC", () => {
-    const abc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
+    const abc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|";
     expect(validateAbc(abc)).toBeNull();
   });
 
@@ -250,17 +250,17 @@ describe("validateAbc", () => {
   });
 
   it("accepts ABC with lyrics lines", () => {
-    const abc = "X:1\nT:Test\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nw:Ama-zing grace how sweet";
+    const abc = "X:1\nT:Test\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nw:Ama-zing grace how sweet";
     expect(validateAbc(abc)).toBeNull();
   });
 
   it("accepts ABC with comments", () => {
-    const abc = "X:1\nT:Test\nK:C\n% Verse 1\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
+    const abc = "X:1\nT:Test\nK:C\n% Verse 1\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|";
     expect(validateAbc(abc)).toBeNull();
   });
 
   it("accepts ABC with chord symbols", () => {
-    const abc = 'X:1\nT:Test\nK:C\n"Am"A2 B2 "F"c2 d2|"C"e2 d2 "G"c2 B2|\n"Am"A2 B2 "F"c2 d2|"G"e2 d2 c2 B2|\n"C"E2 F2 G2 A2|';
+    const abc = 'X:1\nT:Test\nK:C\n"Am"A2 B2 "F"c2 d2|"C"e2 d2 "G"c2 B2|\n"Am"A2 B2 "F"c2 d2|"G"e2 d2 c2 B2|\n"C"E2 F2 G2 A2|"Am"A2 B2 "F"c2 d2|\n"C"e2 d2 "G"c2 B2|"Am"A2 B2 "F"c2 d2|\n"G"e2 d2 c2 B2|"C"E2 F2 G2 A2|\n"Am"A2 B2 "F"c2 d2|"C"e2 d2 "G"c2 B2|\n"Am"A2 B2 "F"c2 d2|"G"e2 d2 c2 B2|\n"C"E2 F2 G2 A2|"Am"A2 B2 "F"c2 d2|';
     expect(validateAbc(abc)).toBeNull();
   });
 
@@ -271,7 +271,7 @@ describe("validateAbc", () => {
   });
 
   it("accepts valid key signatures with modes", () => {
-    const abc = "X:1\nT:Test\nK:Dmix\nDEFG|ABcd|\ndefg|ABcd|\nDEFG|";
+    const abc = "X:1\nT:Test\nK:Dmix\nDEFG|ABcd|\ndefg|ABcd|\nDEFG|ABcd|\ndefg|ABcd|\nDEFG|ABcd|\ndefg|ABcd|\nDEFG|ABcd|\ndefg|ABcd|\nDEFG|ABcd|\ndefg|ABcd|";
     expect(validateAbc(abc)).toBeNull();
   });
 });
@@ -330,7 +330,7 @@ describe("KEY_ACCIDENTALS", () => {
 
 describe("Full pipeline: sanitise + validate", () => {
   it("handles ABC wrapped in code fences with preamble and postamble", () => {
-    const raw = "Here is the notation:\n\n```abc\nX:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|\n```\n\nEnjoy!";
+    const raw = "Here is the notation:\n\n```abc\nX:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\n```\n\nEnjoy!";
     const cleaned = sanitiseAbc(raw);
     expect(cleaned).toMatch(/^X:1/);
     expect(cleaned).not.toContain("```");
@@ -340,7 +340,7 @@ describe("Full pipeline: sanitise + validate", () => {
   });
 
   it("handles valid ABC directly", () => {
-    const validAbc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
+    const validAbc = "X:1\nT:Test Song\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|";
     const cleaned = sanitiseAbc(validAbc);
     expect(cleaned).toContain("X:1");
     expect(cleaned).toContain("T:Test Song");
@@ -348,7 +348,7 @@ describe("Full pipeline: sanitise + validate", () => {
   });
 
   it("handles ABC with V: directives and dynamics", () => {
-    const raw = "X:1\nT:Test\nM:4/4\nL:1/8\nK:C\nV:1 clef=treble\n!mf!CDEF GABc|!f!cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|";
+    const raw = "X:1\nT:Test\nM:4/4\nL:1/8\nK:C\nV:1 clef=treble\n!mf!CDEF GABc|!f!cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|";
     const cleaned = sanitiseAbc(raw);
     expect(cleaned).not.toContain("V:1");
     expect(cleaned).not.toContain("!mf!");
