@@ -133,6 +133,15 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [error, setError] = useState<ErrorState | null>(null);
   // Print margin customization
   const [showMarginSettings, setShowMarginSettings] = useState(false);
+  const [printOrientation, setPrintOrientation] = useState<'landscape' | 'portrait'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('printOrientation');
+      if (saved === 'portrait' || saved === 'landscape') {
+        return saved;
+      }
+    }
+    return 'landscape';
+  });
   const [printMargins, setPrintMargins] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('printMargins');
@@ -163,6 +172,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   useEffect(() => {
     localStorage.setItem('printMargins', JSON.stringify(printMargins));
   }, [printMargins]);
+
+  // Save orientation settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('printOrientation', printOrientation);
+  }, [printOrientation]);
 
   // Sync local abc state when the parent passes updated initialAbc (e.g. from background generation)
   useEffect(() => {
@@ -638,7 +652,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <title>${songTitle} - Sheet Music</title>
         <style>
           @page {
-            size: letter portrait;
+            size: letter ${printOrientation};
             margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
           }
           * {
@@ -716,12 +730,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           }
           @media print {
             @page {
-              size: landscape;
+              size: ${printOrientation};
               margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
             }
             body { 
               margin: 0;
-              size: landscape;
+              size: ${printOrientation};
             }
             .no-print { display: none !important; }
             .print-header {
@@ -1387,9 +1401,36 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               ✕
             </button>
           </div>
+          {/* Orientation Toggle */}
+          <div className="mb-4 pb-4 border-b border-blue-200 dark:border-blue-700">
+            <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">Page Orientation:</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPrintOrientation('landscape')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  printOrientation === 'landscape'
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                    : 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 hover:bg-blue-300 dark:hover:bg-blue-700'
+                }`}
+              >
+                Landscape
+              </button>
+              <button
+                onClick={() => setPrintOrientation('portrait')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  printOrientation === 'portrait'
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                    : 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 hover:bg-blue-300 dark:hover:bg-blue-700'
+                }`}
+              >
+                Portrait
+              </button>
+            </div>
+          </div>
+
           {/* Preset margin templates */}
           <div className="mb-4 pb-4 border-b border-blue-200 dark:border-blue-700">
-            <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">Quick Presets:</p>
+            <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">Margin Presets:</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPrintMargins({ top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 })}
