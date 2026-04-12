@@ -2060,3 +2060,11 @@
 - [x] Remove reference number (X:) from rendered output
 - [x] Added logging to debug line-skipping issues
 - [x] All 1,691 tests passing
+
+## Redesign: Sheet Music Generation with Improved Approach
+- [x] Analyze current LLM limitations and design alternative strategy
+- [x] Implement two-phase generation: melody + lyrics separately, then combine
+- [x] Improve ABC validation to ensure complete output with all lyrics
+- [x] Create improvedSheetMusicGenerator.ts with JSON-based LLM approach
+- [x] Integrate improved generator with fallback to original LLM approach
+- [x] All 1,691 tests passing

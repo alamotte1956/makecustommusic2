@@ -11,6 +11,7 @@ import { invokeLLM } from "./_core/llm";
 import { getSongById, updateSongSheetMusic, updateSongSheetMusicStatus } from "./db";
 import { extractLLMText } from "./llmHelpers";
 
+import { generateSheetMusicImproved } from "./improvedSheetMusicGenerator";
 // ─── Key Signature Accidentals Map ───────────────────────────────────────────
 // Maps key names to the set of notes that are sharped or flatted by default.
 // Used by validation and could be exported for the player.
@@ -377,6 +378,27 @@ export async function generateAbcNotation(
   const MAX_ATTEMPTS = 2;
   let lastError: Error | null = null;
 
+  // Try the improved two-phase approach first
+  try {
+    console.log("[SheetMusic] Attempting improved two-phase generation...");
+    const abc = await generateSheetMusicImproved(
+      song.title,
+      song.genre || "Christian",
+      song.keySignature || "C",
+      song.timeSignature || "4/4",
+      song.tempo || 120,
+      song.lyrics || ""
+    );
+    console.log("[SheetMusic] Improved generation succeeded");
+    return abc;
+  } catch (error) {
+    console.warn(
+      "[SheetMusic] Improved generation failed, falling back to original LLM approach:",
+      error
+    );
+  }
+
+  // Fall back to original LLM approach
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const response = await invokeLLM({
