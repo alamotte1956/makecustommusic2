@@ -18,6 +18,7 @@ import { convertChordLineToNashville } from "@/lib/nashvilleNumbers";
 import { CapoChart } from "@/components/CapoChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
+import { SheetMusicEditor } from "@/components/SheetMusicEditor";
 import type { PlaybackState } from "@/lib/abcPlayer";
 
 interface SheetMusicViewerProps {
@@ -125,6 +126,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
   const [isRendered, setIsRendered] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>("original");
   const [generateInKey, setGenerateInKey] = useState<string>("auto");
   const [error, setError] = useState<ErrorState | null>(null);
@@ -1267,6 +1270,18 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             Download All
           </Button>
 
+          {/* Edit Sheet Music */}
+          <Button
+            variant={isEditing ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsEditing(!isEditing)}
+            disabled={!isRendered}
+            className="gap-1.5"
+            title="Edit lyrics and chords"
+          >
+            {isEditing ? "Done Editing" : "Edit"}
+          </Button>
+
           {/* Regenerate with key selection */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Regenerate in:</span>
@@ -1342,6 +1357,30 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <div className="guitar-chord-chart-container bg-card rounded-lg border border-border p-4">
           <GuitarChordChart chords={chords} />
         </div>
+      )}
+
+      {/* Sheet Music Editor */}
+      {isEditing && abc && (
+        <SheetMusicEditor
+          abc={abc}
+          onSave={async (updatedAbc) => {
+            setIsSavingEdit(true);
+            try {
+              // Update local ABC state
+              setAbc(updatedAbc);
+              // Reset render tracking to re-render with new ABC
+              hasRenderedOnceRef.current = false;
+              lastRenderedAbcRef.current = null;
+              setRenderAttempt((n) => n + 1);
+              // Exit edit mode
+              setIsEditing(false);
+            } finally {
+              setIsSavingEdit(false);
+            }
+          }}
+          onCancel={() => setIsEditing(false)}
+          isSaving={isSavingEdit}
+        />
       )}
 
       {/* Capo chart for guitarists */}

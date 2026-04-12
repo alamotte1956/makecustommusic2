@@ -2068,3 +2068,15 @@
 - [x] Create improvedSheetMusicGenerator.ts with JSON-based LLM approach
 - [x] Integrate improved generator with fallback to original LLM approach
 - [x] All 1,691 tests passing
+
+## Feature: Sheet Music Direct Editing
+- [x] Design edit mode UI with inline editing for lyrics and chords
+- [x] Add Edit/Done toggle button to SheetMusicViewer
+- [x] Implement inline editing for lyrics (w: lines in ABC notation)
+- [x] Implement inline editing for chords (chord symbols above notes)
+- [x] Update ABC notation when lyrics/chords are edited
+- [x] Re-render sheet music in real-time as user makes edits
+- [x] Add Save button to persist edits to the database
+- [x] Add Cancel button to discard unsaved edits
+- [x] Show unsaved changes indicator
+- [x] Write tests for editing functionality (19 new tests for abcEditor)
