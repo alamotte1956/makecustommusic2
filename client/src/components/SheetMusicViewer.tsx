@@ -131,6 +131,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [selectedKey, setSelectedKey] = useState<string>("original");
   const [generateInKey, setGenerateInKey] = useState<string>("auto");
   const [error, setError] = useState<ErrorState | null>(null);
+  // Print margin customization
+  const [showMarginSettings, setShowMarginSettings] = useState(false);
+  const [printMargins, setPrintMargins] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('printMargins');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          // Fall back to defaults if parsing fails
+        }
+      }
+    }
+    return { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 };
+  });
   // Counter to force re-render attempts
   const [renderAttempt, setRenderAttempt] = useState(0);
   // Track whether the container has a non-zero width (visible)
@@ -143,6 +158,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const lastRenderedAbcRef = useRef<string | null>(null);
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
+
+  // Save margin settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('printMargins', JSON.stringify(printMargins));
+  }, [printMargins]);
 
   // Sync local abc state when the parent passes updated initialAbc (e.g. from background generation)
   useEffect(() => {
@@ -619,7 +639,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <style>
           @page {
             size: letter portrait;
-            margin: 0.75in;
+            margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
           }
           * {
             margin: 0;
@@ -697,7 +717,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           @media print {
             @page {
               size: landscape;
-              margin: 0.5in;
+              margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
             }
             body { 
               margin: 0;
@@ -818,7 +838,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       return;
     }
 
-    const html = generateLeadSheetHtml(leadSheet, songTitle, keyLabel);
+    const html = generateLeadSheetHtml(leadSheet, songTitle, keyLabel, printMargins);
     printWindow.document.write(html);
     printWindow.document.close();
 
@@ -955,7 +975,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       return;
     }
 
-    const html = generateNashvilleLeadSheetHtml(leadSheet, songTitle, keyLabel, convertChordLineToNashville);
+    const html = generateNashvilleLeadSheetHtml(leadSheet, songTitle, keyLabel, convertChordLineToNashville, printMargins);
     printWindow.document.write(html);
     printWindow.document.close();
 
@@ -1265,6 +1285,18 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             Nashville
           </Button>
 
+          {/* Print Margin Settings */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowMarginSettings(!showMarginSettings)}
+            className="gap-1.5"
+            title="Customize print margins"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Margins
+          </Button>
+
           {/* Print All — all formats in one print-friendly window */}
           <Button
             variant="default"
@@ -1342,6 +1374,53 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           </Button>
         </div>
       </div>
+
+      {/* Print Margin Settings Panel */}
+      {showMarginSettings && (
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Print Margins (inches)</h3>
+            <button
+              onClick={() => setShowMarginSettings(false)}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { key: 'top', label: 'Top' },
+              { key: 'right', label: 'Right' },
+              { key: 'bottom', label: 'Bottom' },
+              { key: 'left', label: 'Left' },
+            ].map(({ key, label }) => (
+              <div key={key}>
+                <label className="text-xs font-medium text-blue-700 dark:text-blue-300 block mb-1">
+                  {label}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={printMargins[key as keyof typeof printMargins]}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    setPrintMargins((prev: typeof printMargins) => ({
+                      ...prev,
+                      [key]: Math.max(0, Math.min(2, val))
+                    }));
+                  }}
+                  className="w-full px-2 py-1 text-xs border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-blue-900/50 text-blue-900 dark:text-blue-100"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
+            These settings will be saved and applied to all future prints.
+          </p>
+        </div>
+      )}
 
       {/* Playback controls with note highlighting and progress tracking */}
       <PlaybackControls

@@ -276,7 +276,8 @@ function extractSimpleLeadSheet(abc: string): LeadSheetSection[] {
 export function generateLeadSheetHtml(
   leadSheet: LeadSheet,
   songTitle: string,
-  keyLabel: string
+  keyLabel: string,
+  margins?: { top: number; right: number; bottom: number; left: number }
 ): string {
   const currentYear = new Date().getFullYear();
   const displayTitle = leadSheet.title || songTitle;
@@ -306,6 +307,10 @@ export function generateLeadSheetHtml(
     sectionsHtml += `<div class="section">${sectionContent}</div>`;
   }
 
+  const marginStr = margins 
+    ? `${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in`
+    : '0.75in';
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -313,7 +318,7 @@ export function generateLeadSheetHtml(
   <style>
     @page {
       size: letter portrait;
-      margin: 0.75in;
+      margin: ${marginStr};
     }
     * {
       margin: 0;
@@ -469,7 +474,8 @@ export function generateNashvilleLeadSheetHtml(
   leadSheet: LeadSheet,
   songTitle: string,
   keyLabel: string,
-  convertChordLine: (chordLine: string, key: string) => string
+  convertChordLine: (chordLine: string, key: string) => string,
+  margins?: { top: number; right: number; bottom: number; left: number }
 ): string {
   const currentYear = new Date().getFullYear();
   const displayTitle = leadSheet.title || songTitle;
@@ -501,6 +507,10 @@ export function generateNashvilleLeadSheetHtml(
     sectionsHtml += `<div class="section">${sectionContent}</div>`;
   }
 
+  const marginStr = margins 
+    ? `${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in`
+    : '0.75in';
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -508,7 +518,7 @@ export function generateNashvilleLeadSheetHtml(
   <style>
     @page {
       size: letter portrait;
-      margin: 0.75in;
+      margin: ${marginStr};
     }
     * {
       margin: 0;
