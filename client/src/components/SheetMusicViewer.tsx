@@ -1387,6 +1387,31 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               ✕
             </button>
           </div>
+          {/* Preset margin templates */}
+          <div className="mb-4 pb-4 border-b border-blue-200 dark:border-blue-700">
+            <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">Quick Presets:</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPrintMargins({ top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 })}
+                className="px-3 py-1.5 text-xs font-medium bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 rounded hover:bg-blue-300 dark:hover:bg-blue-700 transition-colors"
+              >
+                Narrow (0.5")
+              </button>
+              <button
+                onClick={() => setPrintMargins({ top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 })}
+                className="px-3 py-1.5 text-xs font-medium bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 rounded hover:bg-blue-300 dark:hover:bg-blue-700 transition-colors"
+              >
+                Standard (0.75")
+              </button>
+              <button
+                onClick={() => setPrintMargins({ top: 1.0, right: 1.0, bottom: 1.0, left: 1.0 })}
+                className="px-3 py-1.5 text-xs font-medium bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 rounded hover:bg-blue-300 dark:hover:bg-blue-700 transition-colors"
+              >
+                Wide (1.0")
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-4 gap-3">
             {[
               { key: 'top', label: 'Top' },
