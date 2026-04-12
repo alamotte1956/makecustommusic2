@@ -339,9 +339,20 @@ export function validateAbc(abc: string): string | null {
     return "No bar lines found in music content — notation may be malformed";
   }
 
-  // Check minimum length: at least 4 music lines (roughly 8+ measures)
-  if (musicLines.length < 3) {
-    return "Sheet music is too short — need at least a few measures of music";
+  // Check minimum length: at least 16 measures by counting bar lines
+  const allMusicText = musicLines.join(" ");
+  const barLineCount = (allMusicText.match(/\|/g) || []).length;
+  if (barLineCount < 16) {
+    return `Sheet music is too short — found only ${barLineCount} measures, need at least 16 measures`;
+  }
+
+  // Verify music lines have reasonable content (not just bar lines)
+  const validMusicLines = musicLines.filter((l) => {
+    const withoutBars = l.replace(/[|:]/g, "").trim();
+    return withoutBars.length > 2; // At least some notes/rests beyond just bar lines
+  });
+  if (validMusicLines.length < 2) {
+    return "Sheet music content appears to be mostly bar lines with no actual notes";
   }
 
   return null;

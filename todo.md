@@ -2042,3 +2042,12 @@
 - [x] Update error handling to persist detailed error messages
 - [x] Test all edge cases and fix failing tests
 - [x] All 1,691 tests passing across 78 files
+
+## Bug Fix: Sheet Music Bars Cut Off/Missing
+- [x] Investigate why bars/measures are being truncated in the rendered sheet music
+- [x] Check ABC notation generation for length/completeness issues
+- [x] Review abcjs rendering configuration and page layout settings
+- [x] Fix truncation to ensure all bars render properly
+- [x] Strengthened validation to enforce minimum 16 measures
+- [x] Improved abcjs rendering with wider staff width and wrap settings
+- [x] All 1,691 tests passing

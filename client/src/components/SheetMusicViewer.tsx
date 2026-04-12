@@ -363,15 +363,22 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           return;
         }
 
-        // Render the ABC notation
+        // Render the ABC notation with optimized settings for longer pieces
         const visualObj = abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
           responsive: "resize",
-          staffwidth: Math.max(600, Math.floor(postRafRect.width - 40)),
+          // Use a wider staff width to prevent measure compression
+          staffwidth: Math.max(900, Math.floor(postRafRect.width - 40)),
           paddingtop: 20,
           paddingbottom: 20,
           paddingleft: 15,
           paddingright: 15,
           add_classes: true,
+          // Allow multiple lines per system to prevent horizontal compression
+          wrap: {
+            minSpacing: 1.8,
+            maxSpacing: 2.4,
+            preferredMeasuresPerLine: 4,
+          },
         });
 
         if (cancelled) { isRenderingRef.current = false; return; }
