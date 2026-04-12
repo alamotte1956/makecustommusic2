@@ -233,6 +233,7 @@ export function sanitiseAbc(raw: string): string {
     const trimmed = line.trim();
     const isHeader = /^[A-Z]:/.test(trimmed);
     const isComment = trimmed.startsWith("%");
+    const isLyrics = trimmed.startsWith("w:") || trimmed.startsWith("W:");
 
     if (!foundFirstMusic && (isHeader || isComment)) {
       // Capture K: content but don't add to headers yet
@@ -242,9 +243,16 @@ export function sanitiseAbc(raw: string): string {
         headerLines.push(line);
       }
     } else {
+      // Once we hit music, lyrics, or comments after headers, everything is part of the music body
       foundFirstMusic = true;
       musicLines.push(line);
     }
+  }
+
+  // Debug logging for line-skipping issues
+  if (musicLines.length > 0) {
+    const lyricLineCount = musicLines.filter((l) => l.trim().startsWith("w:") || l.trim().startsWith("W:")).length;
+    console.log(`[Sanitizer] Music block: ${musicLines.length} lines (${lyricLineCount} lyric lines)`);
   }
 
   // 6. Only inject missing headers if we have music content

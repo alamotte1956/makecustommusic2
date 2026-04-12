@@ -2051,3 +2051,12 @@
 - [x] Strengthened validation to enforce minimum 16 measures
 - [x] Improved abcjs rendering with wider staff width and wrap settings
 - [x] All 1,691 tests passing
+
+## Bug Fix: Sheet Music Skipping Every Other Line
+- [x] Investigate ABC notation generation for line-skipping issue
+- [x] Check sanitization logic that might be dropping lines
+- [x] Fix the root cause and ensure all music and lyric lines are preserved
+- [x] Remove duplicate title from rendered output
+- [x] Remove reference number (X:) from rendered output
+- [x] Added logging to debug line-skipping issues
+- [x] All 1,691 tests passing

@@ -381,6 +381,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           },
         });
 
+        // Hide the reference number (X:) that abcjs renders at the top
+        const svgs = renderTarget.querySelectorAll('svg');
+        svgs.forEach((svg) => {
+          const textElements = svg.querySelectorAll('text');
+          textElements.forEach((text) => {
+            const content = text.textContent?.trim();
+            // Hide numeric reference numbers that appear alone (e.g., "1")
+            if (content && /^\d+$/.test(content)) {
+              (text as SVGTextElement).style.display = 'none';
+            }
+          });
+        });
+
         if (cancelled) { isRenderingRef.current = false; return; }
 
         // Log warnings for debugging
