@@ -34,6 +34,64 @@ const FOOTER_SIZE = 8;
 const FOOTER_TEXT = "Generated with Create Christian Music \u2022 createchristianmusic.com";
 
 /**
+ * Validate that SVG contains complete sheet music content.
+ * Checks for presence of essential elements like staff lines, notes, and text.
+ */
+export function validatePdfContent(svgElement: SVGElement): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Check if SVG element exists and has content
+  if (!svgElement) {
+    errors.push("SVG element not found");
+    return { isValid: false, errors };
+  }
+
+  // Check SVG dimensions
+  const { width, height } = getSvgDimensions(svgElement);
+  if (width <= 0 || height <= 0) {
+    errors.push("SVG has invalid dimensions");
+  }
+
+  // Count SVG elements to ensure content is present
+  const paths = svgElement.querySelectorAll("path").length;
+  const lines = svgElement.querySelectorAll("line").length;
+  const texts = svgElement.querySelectorAll("text").length;
+  const rects = svgElement.querySelectorAll("rect").length;
+
+  // Minimum expected elements for valid sheet music
+  const totalElements = paths + lines + texts + rects;
+  if (totalElements < 50) {
+    errors.push(`Insufficient content: only ${totalElements} elements found (expected at least 50)`);
+  }
+
+  // Check for staff lines (typically represented as lines or paths)
+  if (lines < 5 && paths < 10) {
+    errors.push("Staff lines not detected - sheet music may be incomplete");
+  }
+
+  // Check for text content (notes, lyrics, chords)
+  if (texts < 5) {
+    errors.push("Text content missing - lyrics or chord symbols not detected");
+  }
+
+  // Check for note symbols (typically represented as paths or circles)
+  if (paths < 20) {
+    errors.push("Note symbols not detected - sheet music may be incomplete");
+  }
+
+  // Check SVG viewBox attribute
+  const viewBox = svgElement.getAttribute("viewBox");
+  if (!viewBox) {
+    errors.push("SVG viewBox attribute missing");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
  * Add footer to all pages. Footer is placed in the FOOTER_RESERVE zone
  * below SAFE_BOTTOM, ensuring it never overlaps content.
  */

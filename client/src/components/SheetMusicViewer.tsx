@@ -5,7 +5,7 @@ import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, 
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { exportSheetMusicPDF } from "@/lib/pdfExport";
+import { exportSheetMusicPDF, validatePdfContent } from "@/lib/pdfExport";
 import { exportCombinedPdf } from "@/lib/combinedPdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
@@ -571,6 +571,16 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       toast.error("No sheet music to export");
       return;
     }
+    
+    // Validate PDF content before exporting
+    const validation = validatePdfContent(svgElement);
+    if (!validation.isValid) {
+      const errorMsg = validation.errors.join("; ");
+      console.warn("[PDF] Validation warnings:", validation.errors);
+      // Show warning but allow download to proceed
+      toast.warning(`Sheet music may be incomplete: ${errorMsg}`);
+    }
+    
     setExporting(true);
     try {
       const keyLabel = selectedKey === "original"

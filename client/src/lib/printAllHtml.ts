@@ -427,8 +427,8 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
       <div class="format-divider-desc">Complete musical score with melody, rhythm, and chord symbols</div>
     </div>
 
-    <div class="print-header">
-      <div class="print-title">${escapeHtml(displayTitle)}</div>
+    <!-- Title is already in the SVG, show only key and meter -->
+    <div class="print-header" style="margin-top: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: none;">
       <div class="print-meta">
         ${displayKey ? `<span>${escapeHtml(displayKey)}</span>` : ""}
         ${displayMeter ? `<span>${escapeHtml(displayMeter)}</span>` : ""}
