@@ -466,6 +466,23 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [sanitisedDisplayAbc, isRendered]);
 
+  // ─── Aggressive safety net: Force enable PDF button after 8 seconds ───
+  // If rendering is taking too long, allow user to download whatever was rendered
+  // This prevents the PDF button from being stuck disabled indefinitely
+  useEffect(() => {
+    if (sanitisedDisplayAbc && !isRendered) {
+      const aggressiveTimer = setTimeout(() => {
+        if (!isRendered && !isRenderingRef.current) {
+          console.warn("[SheetMusic] Aggressive safety net: Forcing isRendered=true after 8s timeout");
+          hasRenderedOnceRef.current = true;
+          lastRenderedAbcRef.current = sanitisedDisplayAbc;
+          setIsRendered(true);
+        }
+      }, 8000); // Force enable after 8 seconds
+      return () => clearTimeout(aggressiveTimer);
+    }
+  }, [sanitisedDisplayAbc, isRendered]);
+
   const handleDownloadPDF = useCallback(async () => {
     if (!sheetRef.current) return;
     const svgElement = sheetRef.current.querySelector("svg");
