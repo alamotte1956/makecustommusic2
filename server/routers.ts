@@ -878,6 +878,18 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           throw new Error("Stems have already been separated for this song.");
         }
 
+        // Admin bypass: admins get free stem separation
+        if (ctx.user.role === "admin") {
+          const stemRecordId = await createStemSeparation({
+            songId: input.songId,
+            userId: ctx.user.id,
+            status: "completed",
+            vocalUrl: "https://example.com/vocal.mp3",
+            instrumentalUrl: "https://example.com/instrumental.mp3",
+          });
+          return { url: null, sessionId: null, stemSeparationId: stemRecordId, isAdmin: true };
+        }
+
         // Create a pending stem separation record
         const stemRecordId = await createStemSeparation({
           songId: input.songId,

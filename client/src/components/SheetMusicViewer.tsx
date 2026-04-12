@@ -155,6 +155,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
     return { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 };
   });
+  const [customPresets, setCustomPresets] = useState<Array<{ name: string; margins: typeof printMargins; orientation: 'landscape' | 'portrait' }>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('printPresets');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          // Fall back to empty array if parsing fails
+        }
+      }
+    }
+    return [];
+  });
+  const [presetName, setPresetName] = useState('');
+  const [showPresetInput, setShowPresetInput] = useState(false);
   // Counter to force re-render attempts
   const [renderAttempt, setRenderAttempt] = useState(0);
   // Track whether the container has a non-zero width (visible)
@@ -177,6 +192,38 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   useEffect(() => {
     localStorage.setItem('printOrientation', printOrientation);
   }, [printOrientation]);
+
+  // Save custom presets to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('printPresets', JSON.stringify(customPresets));
+  }, [customPresets]);
+
+  // Save current settings as a custom preset
+  const saveAsPreset = () => {
+    if (!presetName.trim()) {
+      alert('Please enter a preset name');
+      return;
+    }
+    const newPreset = {
+      name: presetName,
+      margins: printMargins,
+      orientation: printOrientation,
+    };
+    setCustomPresets([...customPresets, newPreset]);
+    setPresetName('');
+    setShowPresetInput(false);
+  };
+
+  // Load a custom preset
+  const loadPreset = (preset: typeof customPresets[0]) => {
+    setPrintMargins(preset.margins);
+    setPrintOrientation(preset.orientation);
+  };
+
+  // Delete a custom preset
+  const deletePreset = (index: number) => {
+    setCustomPresets(customPresets.filter((_, i) => i !== index));
+  };
 
   // Sync local abc state when the parent passes updated initialAbc (e.g. from background generation)
   useEffect(() => {
@@ -1485,6 +1532,78 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
             These settings will be saved and applied to all future prints.
           </p>
+
+          {/* Custom Presets Section */}
+          <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700">
+            <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">Custom Presets:</p>
+            
+            {/* Save Preset Input */}
+            {showPresetInput ? (
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="Preset name..."
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && saveAsPreset()}
+                  className="flex-1 px-2 py-1.5 text-xs border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-blue-900/50 text-blue-900 dark:text-blue-100"
+                  autoFocus
+                />
+                <button
+                  onClick={saveAsPreset}
+                  className="px-3 py-1.5 text-xs font-medium bg-green-500 dark:bg-green-600 text-white rounded hover:bg-green-600 dark:hover:bg-green-700 transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPresetInput(false);
+                    setPresetName('');
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowPresetInput(true)}
+                className="w-full px-3 py-1.5 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors mb-3"
+              >
+                + Save Current Settings as Preset
+              </button>
+            )}
+
+            {/* Custom Presets List */}
+            {customPresets.length > 0 && (
+              <div className="space-y-2">
+                {customPresets.map((preset, index) => (
+                  <div key={index} className="flex items-center justify-between bg-blue-100 dark:bg-blue-900/50 p-2 rounded">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-blue-900 dark:text-blue-100">{preset.name}</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        {preset.orientation} • {preset.margins.top}" margins
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => loadPreset(preset)}
+                        className="px-2 py-1 text-xs font-medium bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+                      >
+                        Load
+                      </button>
+                      <button
+                        onClick={() => deletePreset(index)}
+                        className="px-2 py-1 text-xs font-medium bg-red-500 dark:bg-red-600 text-white rounded hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
