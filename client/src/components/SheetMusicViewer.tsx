@@ -1400,20 +1400,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             Preview
           </Button>
 
-          {/* Download PDF */}
+          {/* Download PDF - Enhanced with primary styling */}
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={handleDownloadPDF}
             disabled={!isRendered || exporting}
-            className="gap-1.5"
+            className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all"
+            title="Download sheet music as PDF"
           >
             {exporting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <Download className="w-3.5 h-3.5" />
             )}
-            PDF
+            {exporting ? "Generating..." : "Download PDF"}
           </Button>
 
           {/* Print */}
@@ -1730,8 +1731,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         isPlaying={playbackIsPlaying}
       />
 
-      {/* Sheet music rendering area with skeleton overlay */}
-      <div className="relative">
+      {/* Sheet music rendering area with skeleton overlay and floating download button */}
+      <div className="relative group">
         {/* Skeleton shown while rendering */}
         {sanitisedDisplayAbc && !isRendered && !error?.type && (
           <div className="absolute inset-0 z-10">
@@ -1748,6 +1749,22 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           }`}
           style={{ colorScheme: "light", maxHeight: "600px" }}
         />
+        
+        {/* Floating Download PDF Button - appears on hover */}
+        {isRendered && (
+          <Button
+            onClick={handleDownloadPDF}
+            disabled={exporting}
+            className="absolute bottom-4 right-4 z-20 rounded-full w-12 h-12 p-0 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center"
+            title="Download sheet music as PDF"
+          >
+            {exporting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Guitar chord diagrams */}

@@ -2120,3 +2120,13 @@
 - [ ] Check ABC notation generation for truncation
 - [ ] Verify all measures are being included in the notation
 - [ ] Fix rendering to show complete song
+
+
+## PDF Download Button Enhancement
+- [x] Add prominent "Download PDF" button in sheet music viewer toolbar
+- [x] Ensure button is easily accessible and clearly labeled
+- [x] Add floating download button that appears on hover over sheet music
+- [x] Enhance button styling with gradient colors and shadow effects
+- [x] Test PDF download functionality in browser
+- [x] Verify loading state during PDF generation
+- [x] Confirm success/error toast notifications work
