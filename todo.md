@@ -2096,3 +2096,8 @@
 - [x] Remove MIDI button from SheetMusicViewer component
 - [x] Remove MIDI export functionality from sheet music export options
 - [x] Update tests to remove MIDI references
+
+## Remove MusicXML Feature
+- [x] Remove MusicXML button from SheetMusicViewer component
+- [x] Remove MusicXML export functionality
+- [x] Remove MusicXML import statement

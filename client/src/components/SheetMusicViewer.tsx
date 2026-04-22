@@ -10,7 +10,7 @@ import { exportSheetMusicPDF, validatePdfContent } from "@/lib/pdfExport";
 import { exportCombinedPdf } from "@/lib/combinedPdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
-import { downloadMusicXml } from "@/lib/musicXmlExport";
+
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
 import { generatePrintAllHtml } from "@/lib/printAllHtml";
@@ -739,18 +739,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
 
 
-  const handleDownloadMusicXml = useCallback(() => {
-    if (!sanitisedDisplayAbc) return;
-    try {
-      const keyLabel = selectedKey === "original"
-        ? (originalKey ? `-${originalKey}` : "")
-        : `-${selectedKey}`;
-      downloadMusicXml(sanitisedDisplayAbc, `${songTitle}${keyLabel}`);
-      toast.success("MusicXML file downloaded! Open it in MuseScore, Finale, or Sibelius.");
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to export MusicXML file");
-    }
-  }, [sanitisedDisplayAbc, songTitle, selectedKey, originalKey]);
+
 
   const handlePrint = useCallback(() => {
     if (!sheetRef.current) return;
@@ -1423,19 +1412,6 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               <Download className="w-3.5 h-3.5" />
             )}
             PDF
-          </Button>
-
-          {/* Download MusicXML */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadMusicXml}
-            disabled={!isRendered}
-            className="gap-1.5"
-            title="Download MusicXML for Finale, MuseScore, Sibelius"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            MusicXML
           </Button>
 
           {/* Print */}
