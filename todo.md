@@ -2130,3 +2130,15 @@
 - [x] Test PDF download functionality in browser
 - [x] Verify loading state during PDF generation
 - [x] Confirm success/error toast notifications work
+
+
+## PDF Customization Options Feature
+- [ ] Create PDF customization dialog component
+- [ ] Add page size selector (Letter, A4, Legal)
+- [ ] Add orientation selector (Portrait, Landscape)
+- [ ] Add margin input fields (top, right, bottom, left)
+- [ ] Add preset margin templates (Narrow, Standard, Wide)
+- [ ] Integrate dialog with PDF download flow
+- [ ] Save user preferences to localStorage
+- [ ] Test PDF output with different customization options
+- [ ] Verify PDF quality across different settings

@@ -12,6 +12,8 @@ import { getSongById, updateSongSheetMusic, updateSongSheetMusicStatus } from ".
 import { extractLLMText } from "./llmHelpers";
 
 import { generateSheetMusicImproved } from "./improvedSheetMusicGenerator";
+import { generateSimpleSheetMusic } from "./simpleSheetMusicGenerator";
+import { generateComprehensiveSheetMusic } from "./comprehensiveSheetMusicGenerator";
 // ─── Key Signature Accidentals Map ───────────────────────────────────────────
 // Maps key names to the set of notes that are sharped or flatted by default.
 // Used by validation and could be exported for the player.
@@ -446,7 +448,22 @@ export async function generateAbcNotation(
     }
   }
 
-  throw lastError || new Error("Sheet music generation failed after all retries");
+  // Final fallback: use comprehensive generator to ensure we always have valid ABC notation
+  try {
+    console.warn("[SheetMusic] All LLM attempts failed, using comprehensive fallback generator...");
+    const fallbackAbc = generateComprehensiveSheetMusic({
+      title: song.title,
+      key: song.keySignature || "C",
+      timeSignature: song.timeSignature || "4/4",
+      tempo: song.tempo || 120,
+      lyrics: song.lyrics || ""
+    });
+    console.log("[SheetMusic] Comprehensive fallback generator succeeded");
+    return fallbackAbc;
+  } catch (fallbackError) {
+    console.error("[SheetMusic] Even fallback generator failed:", fallbackError);
+    throw lastError || new Error("Sheet music generation failed after all retries");
+  }
 }
 
 /**

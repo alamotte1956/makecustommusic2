@@ -52,7 +52,7 @@ Lyrics: ${lyrics}
 
 Return ONLY valid JSON (no markdown, no explanation) with this exact structure:
 {
-  "measures": <number of measures, minimum 16>,
+  "measures": <number of measures, minimum 32>,
   "timeSignature": "${timeSignature}",
   "key": "${key}",
   "tempo": <BPM, 60-180>,
@@ -101,79 +101,18 @@ async function generateLyricsWithSyllables(
   genre: string,
   lyrics: string
 ): Promise<LyricLine[]> {
-  const prompt = `You are a lyricist. Break down these lyrics into syllables for sheet music alignment.
+  const prompt = `You are a music lyricist. Break down these lyrics into syllables for sheet music alignment.
 
 Song: "${title}"
 Genre: ${genre}
-Lyrics: ${lyrics}
+Lyrics:
+${lyrics}
 
 Return ONLY valid JSON (no markdown, no explanation) with this structure:
 [
-  {
-    "text": "Amazing grace how sweet the sound",
-    "syllables": ["A", "ma", "zing", "grace", "how", "sweet", "the", "sound"]
-  },
-  {
-    "text": "That saved a wretch like me",
-    "syllables": ["That", "saved", "a", "wretch", "like", "me"]
-  }
-]
-
-Rules:
-- Each syllable should be a single word or syllable
-- Keep syllables short and singable
-- Use hyphens for multi-syllable words: "A-ma-zing" becomes ["A", "ma", "zing"]
-- Match the number of syllables to the number of notes in each phrase`;
-
-  const response = await invokeLLM({
-    messages: [
-      {
-        role: "system",
-        content: "You are a JSON-only API. Return only valid JSON, no other text.",
-      },
-      { role: "user", content: prompt },
-    ],
-  });
-
-  const jsonText =
-    typeof response.choices[0].message.content === "string"
-      ? response.choices[0].message.content
-      : "";
-  const lyricLines = JSON.parse(jsonText);
-  return lyricLines;
-}
-
-/**
- * Phase 3: Generate chord progression
- */
-async function generateChordProgression(
-  title: string,
-  genre: string,
-  key: string,
-  structure: MelodyStructure
-): Promise<ChordProgression[]> {
-  const prompt = `You are a music theory expert. Generate a chord progression for this song.
-
-Song: "${title}"
-Genre: ${genre}
-Key: ${key}
-Total Measures: ${structure.measures}
-
-Return ONLY valid JSON (no markdown, no explanation) with chord changes at key points:
-[
-  {"measureNumber": 1, "chord": "C"},
-  {"measureNumber": 5, "chord": "Am"},
-  {"measureNumber": 9, "chord": "F"},
-  {"measureNumber": 13, "chord": "G"},
-  {"measureNumber": 17, "chord": "C"}
-]
-
-Rules:
-- Use standard chord symbols (C, Am, F, G, Dm, etc.)
-- Include chord changes at the start of each section
-- For ${key} key, use chords that fit the key signature
-- Minimum 8 chords, maximum 20 chords
-- Space chords evenly across the ${structure.measures} measures`;
+  {"text": "A-ma-zing grace", "syllables": ["A", "ma", "zing", "grace"]},
+  {"text": "How sweet the sound", "syllables": ["How", "sweet", "the", "sound"]}
+]`;
 
   const response = await invokeLLM({
     messages: [
@@ -189,15 +128,111 @@ Rules:
     typeof response.choices[0].message.content === "string"
       ? response.choices[0].message.content
       : "";
-  
-  // Extract JSON from markdown code blocks if present
+
   const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) {
     jsonText = jsonMatch[1].trim();
   }
-  
+
+  const lines = JSON.parse(jsonText);
+  return lines;
+}
+
+/**
+ * Phase 3: Generate chord progression
+ */
+async function generateChordProgression(
+  title: string,
+  genre: string,
+  key: string,
+  structure: MelodyStructure
+): Promise<ChordProgression[]> {
+  const prompt = `You are a music composer. Generate a chord progression for this song structure.
+
+Song: "${title}"
+Genre: ${genre}
+Key: ${key}
+Total Measures: ${structure.measures}
+Sections: ${structure.sections.map((s) => `${s.name} (measures ${s.startMeasure}-${s.endMeasure})`).join(", ")}
+
+Return ONLY valid JSON (no markdown, no explanation) with chord changes at key measures:
+[
+  {"measureNumber": 1, "chord": "C"},
+  {"measureNumber": 5, "chord": "Am"},
+  {"measureNumber": 9, "chord": "F"},
+  {"measureNumber": 13, "chord": "G"}
+]`;
+
+  const response = await invokeLLM({
+    messages: [
+      {
+        role: "system",
+        content: "You are a JSON-only API. Return only valid JSON, no other text.",
+      },
+      { role: "user", content: prompt },
+    ],
+  });
+
+  let jsonText =
+    typeof response.choices[0].message.content === "string"
+      ? response.choices[0].message.content
+      : "";
+
+  const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    jsonText = jsonMatch[1].trim();
+  }
+
   const chords = JSON.parse(jsonText);
   return chords;
+}
+
+/**
+ * Generate a musically coherent melody phrase for a section
+ */
+function generateMelodyPhrase(
+  startNote: string,
+  length: number,
+  key: string,
+  sectionType: string
+): string {
+  // Define note sequences for different keys
+  const keySequences: Record<string, string[]> = {
+    C: ["C", "D", "E", "F", "G", "A", "B", "c"],
+    G: ["G", "A", "B", "c", "d", "e", "f#", "g"],
+    D: ["D", "E", "F#", "G", "A", "B", "C#", "d"],
+    A: ["A", "B", "C#", "D", "E", "F#", "G#", "a"],
+    E: ["E", "F#", "G#", "A", "B", "C#", "D#", "e"],
+    F: ["F", "G", "A", "Bb", "C", "D", "E", "f"],
+    Bb: ["Bb", "C", "D", "Eb", "F", "G", "A", "Bb"],
+    Am: ["A", "B", "C", "D", "E", "F", "G", "a"],
+    Em: ["E", "F#", "G", "A", "B", "C", "D", "e"],
+    Dm: ["D", "E", "F", "G", "A", "Bb", "C", "d"],
+  };
+
+  const notes = keySequences[key] || keySequences["C"];
+  let phrase = "";
+
+  // Create varied patterns based on section type
+  if (sectionType === "Intro" || sectionType === "Outro") {
+    // Simpler, more sparse melody
+    for (let i = 0; i < length; i += 2) {
+      phrase += notes[i % notes.length] + "4 z4 ";
+    }
+  } else if (sectionType === "Chorus") {
+    // More active, energetic melody
+    for (let i = 0; i < length; i++) {
+      phrase += notes[i % notes.length] + "2 ";
+    }
+  } else {
+    // Verse: moderate activity
+    for (let i = 0; i < length; i++) {
+      const duration = i % 3 === 0 ? "4" : "2"; // Mix of quarter and eighth notes
+      phrase += notes[i % notes.length] + duration + " ";
+    }
+  }
+
+  return phrase.trim();
 }
 
 /**
@@ -222,44 +257,59 @@ function buildAbcNotation(
   lines.push(`K: ${key}`);
   lines.push("");
 
-  // Build a proper melody based on the structure
+  // Build melody for each section
   const notesPerMeasure = timeSignature === "3/4" ? 6 : 8; // 8 eighth notes per 4/4 measure
-  const totalNotes = structure.measures * notesPerMeasure;
-
-  // Generate a simple ascending/descending melody with proper ABC notation
-  const noteSequence = ["C", "D", "E", "F", "G", "A", "B", "c"];
-  let noteIndex = 0;
+  let currentNote = "C";
   let measureCount = 0;
   let notesInMeasure = 0;
   let measureLine = "";
+  let lastChord = "C";
 
-  for (let i = 0; i < totalNotes; i++) {
-    // Add chord symbol at measure boundaries (placed before first note)
-    const chordAtMeasure = chords.find((c) => c.measureNumber === measureCount + 1);
-    if (chordAtMeasure && notesInMeasure === 0) {
-      measureLine += `"${chordAtMeasure.chord}"`;
+  // Create a chord map for quick lookup
+  const chordMap: Record<number, string> = {};
+  chords.forEach((c) => {
+    chordMap[c.measureNumber] = c.chord;
+  });
+
+  // Generate notes for each measure
+  for (let measure = 1; measure <= structure.measures; measure++) {
+    // Find current section
+    const currentSection = structure.sections.find(
+      (s) => measure >= s.startMeasure && measure <= s.endMeasure
+    );
+    const sectionName = currentSection?.name || "Verse";
+
+    // Add chord symbol at measure start if it changes
+    if (chordMap[measure]) {
+      lastChord = chordMap[measure];
+      measureLine += `"${lastChord}" `;
+    } else if (measure === 1) {
+      // Add initial chord
+      const firstChord = chords.length > 0 ? chords[0].chord : "C";
+      measureLine += `"${firstChord}" `;
+      lastChord = firstChord;
     }
 
-    // Add note with duration (quarter note = 4 eighth notes, so each note is 1 unit)
-    const note = noteSequence[noteIndex % noteSequence.length];
-    measureLine += note + "2"; // 2 = quarter note (since L:1/8)
-    notesInMeasure++;
-    noteIndex++;
+    // Generate notes for this measure
+    const noteSequence = ["C", "D", "E", "F", "G", "A", "B", "c"];
+    let notesThisMeasure = 0;
 
-    // Check if measure is complete
-    if (notesInMeasure >= notesPerMeasure) {
+    while (notesThisMeasure < notesPerMeasure && notesThisMeasure < 8) {
+      const note = noteSequence[(measure + notesThisMeasure) % noteSequence.length];
+      const duration = sectionName === "Intro" || sectionName === "Outro" ? "4" : "2";
+      measureLine += note + duration + " ";
+      notesThisMeasure += parseInt(duration);
+    }
+
+    // Complete the measure with bar line
+    measureLine = measureLine.trim();
+    if (measureLine.length > 0) {
       lines.push(measureLine + " |");
-      measureLine = "";
-      notesInMeasure = 0;
-      measureCount++;
     }
+    measureLine = "";
   }
 
-  // Add any remaining notes
-  if (measureLine.length > 0) {
-    lines.push(measureLine);
-  }
-
+  // Add final bar line
   lines.push("");
 
   return lines.join("\n");
