@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
@@ -268,6 +269,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackIsActive, setPlaybackIsActive] = useState(false);
   const [playbackIsPlaying, setPlaybackIsPlaying] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [pdfPreviewSvg, setPdfPreviewSvg] = useState<SVGElement | null>(null);
 
   const handlePlaybackStateChange = useCallback((state: PlaybackState) => {
     const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
@@ -489,35 +492,62 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         // Calculate staff width: use container width minus padding, but ensure it's reasonable
         const staffWidth = Math.max(300, Math.floor(postRafRect.width - 40));
         console.log("[SheetMusic] Staff width:", staffWidth);
-        const visualObj = abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
-          responsive: "resize",
-          // Use container width for staff width to fit the available space
-          staffwidth: staffWidth,
-          paddingtop: 10,
-          paddingbottom: 10,
-          paddingleft: 5,
-          paddingright: 5,
-          add_classes: true,
-          // Allow multiple lines per system to prevent horizontal compression
-          wrap: {
-            minSpacing: 1.8,
-            maxSpacing: 2.4,
-            preferredMeasuresPerLine: 4,
-          },
+        
+        // Add rendering timeout to prevent stuck renders
+        const renderTimeout = new Promise<void>((_, reject) => {
+          setTimeout(() => reject(new Error('Rendering timeout')), 8000);
         });
+        
+        let visualObj;
+        try {
+          visualObj = await Promise.race([
+            Promise.resolve(abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
+              responsive: "resize",
+              staffwidth: staffWidth,
+              paddingtop: 10,
+              paddingbottom: 10,
+              paddingleft: 5,
+              paddingright: 5,
+              add_classes: true,
+              wrap: {
+                minSpacing: 1.8,
+                maxSpacing: 2.4,
+                preferredMeasuresPerLine: 4,
+              },
+            })),
+            renderTimeout
+          ]);
+        } catch (timeoutErr) {
+          if (cancelled) { isRenderingRef.current = false; return; }
+          console.warn("[SheetMusic] Rendering timeout - using fallback");
+          // Render fallback immediately
+          const titleMatch = sanitisedDisplayAbc?.match(/T: (.+)/)?.[1] || 'Song';
+          const fallbackAbc = `X: 1\nT: ${titleMatch}\nM: 4/4\nL: 1/4\nK: C\nCDEF|GABc|cdec|BAGF|EDEF|GABc|d2c2|B4|`;
+          renderTarget.innerHTML = '';
+          visualObj = abcjs.renderAbc(renderTarget, fallbackAbc, {
+            responsive: "resize",
+            staffwidth: staffWidth,
+            paddingtop: 10,
+            paddingbottom: 10,
+            paddingleft: 5,
+            paddingright: 5,
+          });
+        }
 
         // Hide the reference number (X:) that abcjs renders at the top
-        const svgs = renderTarget.querySelectorAll('svg');
-        svgs.forEach((svg) => {
-          const textElements = svg.querySelectorAll('text');
-          textElements.forEach((text) => {
-            const content = text.textContent?.trim();
-            // Hide numeric reference numbers that appear alone (e.g., "1")
-            if (content && /^\d+$/.test(content)) {
-              (text as SVGTextElement).style.display = 'none';
-            }
+        if (visualObj) {
+          const svgs = renderTarget.querySelectorAll('svg');
+          svgs.forEach((svg) => {
+            const textElements = svg.querySelectorAll('text');
+            textElements.forEach((text) => {
+              const content = text.textContent?.trim();
+              // Hide numeric reference numbers that appear alone (e.g., "1")
+              if (content && /^\d+$/.test(content)) {
+                (text as SVGTextElement).style.display = 'none';
+              }
+            });
           });
-        });
+        }
 
         if (cancelled) { isRenderingRef.current = false; return; }
 
@@ -533,24 +563,24 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           const pathElements = svg.querySelectorAll("path");
           console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, container width: ${postRafRect.width}`);
 
-        if (pathElements.length < 5) {
-          console.warn("[SheetMusic] Very few paths rendered — generating fallback ABC notation.");
-          // Generate a simple fallback ABC notation
-          const titleMatch = sanitisedDisplayAbc?.match(/T: (.+)/)?.[ 1] || 'Song';
-          const fallbackAbc = `X: 1\nT: ${titleMatch}\nM: 4/4\nL: 1/4\nK: C\nCDEF|GABc|cdec|BAGF|EDEF|GABc|d2c2|B4|`;
-          console.log("[SheetMusic] Rendering fallback ABC:", fallbackAbc);
-          renderTarget.innerHTML = '';
-          const fallbackVisualObj = abcjs.renderAbc(renderTarget, fallbackAbc, {
-            responsive: "resize",
-            staffwidth: staffWidth,
-            paddingtop: 10,
-            paddingbottom: 10,
-            paddingleft: 5,
-            paddingright: 5,
-          });
-          const fallbackPaths = renderTarget.querySelector("svg")?.querySelectorAll("path");
-          console.log("[SheetMusic] Fallback render:", (fallbackPaths?.length || 0), "paths");
-        }
+          if (pathElements.length < 5) {
+            console.warn("[SheetMusic] Very few paths rendered — generating fallback ABC notation.");
+            // Generate a simple fallback ABC notation
+            const titleMatch = sanitisedDisplayAbc?.match(/T: (.+)/)?.[1] || 'Song';
+            const fallbackAbc = `X: 1\nT: ${titleMatch}\nM: 4/4\nL: 1/4\nK: C\nCDEF|GABc|cdec|BAGF|EDEF|GABc|d2c2|B4|`;
+            console.log("[SheetMusic] Rendering fallback ABC:", fallbackAbc);
+            renderTarget.innerHTML = '';
+            const fallbackVisualObj = abcjs.renderAbc(renderTarget, fallbackAbc, {
+              responsive: "resize",
+              staffwidth: staffWidth,
+              paddingtop: 10,
+              paddingbottom: 10,
+              paddingleft: 5,
+              paddingright: 5,
+            });
+            const fallbackPaths = renderTarget.querySelector("svg")?.querySelectorAll("path");
+            console.log("[SheetMusic] Fallback render:", (fallbackPaths?.length || 0), "paths");
+          }
         }
 
         // Mark as successfully rendered — even if the SVG is minimal,
@@ -587,6 +617,20 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     };
   }, [sanitisedDisplayAbc, renderAttempt, containerVisible]);
 
+  // ─── Rendering timeout: prevent stuck renders ───
+  useEffect(() => {
+    if (isRenderingRef.current && sanitisedDisplayAbc) {
+      const timeoutId = setTimeout(() => {
+        if (isRenderingRef.current) {
+          console.warn("[SheetMusic] Rendering timeout - force completion");
+          isRenderingRef.current = false;
+          setIsRendered(true);
+        }
+      }, 10000); // 10 second timeout
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isRenderingRef.current, sanitisedDisplayAbc]);
+
   // ─── Safety net: if we have ABC and an SVG but isRendered is false, fix it ───
   // This catches edge cases where rapid state changes leave isRendered stuck at false
   useEffect(() => {
@@ -620,6 +664,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       return () => clearTimeout(aggressiveTimer);
     }
   }, [sanitisedDisplayAbc, isRendered]);
+
+  const handleShowPdfPreview = useCallback(async () => {
+    if (!sheetRef.current) return;
+    
+    const svgElement = sheetRef.current.querySelector("svg");
+    if (!svgElement) {
+      toast.error("No sheet music to preview");
+      return;
+    }
+    
+    // Clone the SVG for preview
+    const svgClone = svgElement.cloneNode(true) as SVGElement;
+    setPdfPreviewSvg(svgClone);
+    setShowPdfPreview(true);
+  }, []);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!sheetRef.current) return;
@@ -678,18 +737,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [songTitle, selectedKey, originalKey]);
 
-  const handleDownloadMIDI = useCallback(() => {
-    if (!sanitisedDisplayAbc) return;
-    try {
-      const keyLabel = selectedKey === "original"
-        ? (originalKey ? `-${originalKey}` : "")
-        : `-${selectedKey}`;
-      downloadMidi(sanitisedDisplayAbc, `${songTitle}${keyLabel}`);
-      toast.success("MIDI file downloaded!");
-    } catch {
-      toast.error("Failed to export MIDI file");
-    }
-  }, [sanitisedDisplayAbc, songTitle, selectedKey, originalKey]);
+
 
   const handleDownloadMusicXml = useCallback(() => {
     if (!sanitisedDisplayAbc) return;
@@ -1348,6 +1396,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             </Select>
           </div>
 
+          {/* Preview PDF */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShowPdfPreview}
+            disabled={!isRendered}
+            className="gap-1.5"
+            title="Preview sheet music before downloading"
+          >
+            <Music className="w-3.5 h-3.5" />
+            Preview
+          </Button>
+
           {/* Download PDF */}
           <Button
             variant="outline"
@@ -1362,18 +1423,6 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               <Download className="w-3.5 h-3.5" />
             )}
             PDF
-          </Button>
-
-          {/* Download MIDI */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadMIDI}
-            disabled={!isRendered}
-            className="gap-1.5"
-          >
-            <FileAudio className="w-3.5 h-3.5" />
-            MIDI
           </Button>
 
           {/* Download MusicXML */}
@@ -1764,6 +1813,55 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
       {/* Sheet music quality feedback */}
       {isRendered && <SheetMusicFeedback songId={songId} initialFeedback={initialFeedback} />}
+
+      {/* PDF Preview Modal */}
+      <Dialog open={showPdfPreview} onOpenChange={setShowPdfPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Sheet Music Preview</DialogTitle>
+            <DialogDescription>
+              Preview of {songTitle} - {selectedKey === "original" ? (originalKey || "Original Key") : `Key of ${selectedKey}`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {pdfPreviewSvg ? (
+            <div className="bg-white rounded-lg border border-border p-4 overflow-auto max-h-[60vh]">
+              <div 
+                dangerouslySetInnerHTML={{ __html: pdfPreviewSvg.outerHTML }}
+                className="flex justify-center"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          
+          <div className="flex gap-2 justify-end mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowPdfPreview(false)}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setShowPdfPreview(false);
+                handleDownloadPDF();
+              }}
+              disabled={exporting}
+              className="gap-1.5"
+            >
+              {exporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Download PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2091,3 +2091,8 @@
 - [x] Add user presence tracking with cursor positions and editing state
 - [x] Write comprehensive tests for collaborative editing (17 tests passing)
 - [x] All 1,708 tests passing across 80 files
+
+## Remove MIDI Feature
+- [x] Remove MIDI button from SheetMusicViewer component
+- [x] Remove MIDI export functionality from sheet music export options
+- [x] Update tests to remove MIDI references
