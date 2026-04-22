@@ -181,6 +181,9 @@ export function sanitiseAbc(raw: string): string {
     if (/^!(crescendo|diminuendo|<|>)[(!)]+$/.test(trimmed)) return false;
     return true;
   }).map((line) => {
+    // CRITICAL FIX: Convert bracket chords [C] to quoted chords "C"
+    // This handles LLM outputs that ignore the double-quote instruction
+    line = line.replace(/\[([A-G][#b]?(?:m|maj|min|7|9|11|13|sus|add|dim|aug|maj7|min7|dom7)?(?:\/[A-G][#b]?)?)\]/g, '"$1"');
     const trimmed = line.trim();
     // Convert [P:...] section markers to comment lines for abcjs compatibility
     if (/^\[P:.*\]$/.test(trimmed)) {
@@ -194,6 +197,8 @@ export function sanitiseAbc(raw: string): string {
     cleaned = cleaned.replace(/!(crescendo|diminuendo|<|>)[(!)]+/g, "");
     // Strip other common unsupported decorations
     cleaned = cleaned.replace(/!(accent|fermata|tenuto|staccato|trill|turn|mordent|pralltriller|emphasis|segno|coda|D\.S\.|D\.C\.|fine)!/g, "");
+    // Additional bracket chord conversion (in case it wasn't caught earlier)
+    cleaned = cleaned.replace(/\[([A-G][#b]?(?:m|maj|min|7|9|11|13|sus|add|dim|aug|maj7|min7|dom7)?(?:\/[A-G][#b]?)?)\]/g, '"$1"');
     return cleaned;
   });
 

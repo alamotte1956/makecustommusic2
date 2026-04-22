@@ -237,7 +237,7 @@ function buildAbcNotation(
     // Add chord symbol at measure boundaries (placed before first note)
     const chordAtMeasure = chords.find((c) => c.measureNumber === measureCount + 1);
     if (chordAtMeasure && notesInMeasure === 0) {
-      measureLine += `[${chordAtMeasure.chord}]`;
+      measureLine += `"${chordAtMeasure.chord}"`;
     }
 
     // Add note with duration (quarter note = 4 eighth notes, so each note is 1 unit)
