@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { exportSheetMusicPDF, validatePdfContent } from "@/lib/pdfExport";
 import { exportCombinedPdf } from "@/lib/combinedPdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
-import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
+import { extractChordsFromABC } from "@/lib/midiExport";
 
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
@@ -271,6 +271,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [playbackIsPlaying, setPlaybackIsPlaying] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [pdfPreviewSvg, setPdfPreviewSvg] = useState<SVGElement | null>(null);
+  const [previewFormat, setPreviewFormat] = useState<'pdf' | 'lead-sheet' | 'nashville'>('pdf');
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
   const handlePlaybackStateChange = useCallback((state: PlaybackState) => {
     const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
@@ -1741,10 +1743,10 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <div
           id="sheet-music-render"
           ref={sheetRef}
-          className={`bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth transition-opacity duration-500 ease-in-out ${
+          className={`bg-white rounded-lg border border-border p-4 overflow-auto scroll-smooth transition-opacity duration-500 ease-in-out ${
             isRendered ? "opacity-100" : "opacity-0"
           }`}
-          style={{ colorScheme: "light" }}
+          style={{ colorScheme: "light", maxHeight: "600px" }}
         />
       </div>
 

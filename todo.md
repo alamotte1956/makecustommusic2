@@ -2101,3 +2101,22 @@
 - [x] Remove MusicXML button from SheetMusicViewer component
 - [x] Remove MusicXML export functionality
 - [x] Remove MusicXML import statement
+
+## Sheet Music Preview Modal
+- [ ] Create SheetMusicPreviewModal component with live preview
+- [ ] Show preview of PDF, Lead Sheet, Nashville, and other formats
+- [ ] Add Download and Print buttons in the modal
+- [ ] Integrate preview modal into SheetMusicViewer
+- [ ] Test preview modal on dev server
+
+
+## Current Issues - Live Site
+- [ ] PDF button is grayed out on live site (should be enabled when sheet music renders)
+- [ ] MIDI button is still present on live site (should have been removed)
+- [ ] Verify MIDI removal was deployed to live site
+
+## Sheet Music Rendering Issue
+- [ ] Sheet music only renders first line, rest of song is missing
+- [ ] Check ABC notation generation for truncation
+- [ ] Verify all measures are being included in the notation
+- [ ] Fix rendering to show complete song
