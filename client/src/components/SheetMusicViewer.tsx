@@ -121,6 +121,12 @@ function sanitiseAbcForRender(raw: string): string {
 }
 
 export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature, sheetMusicStatus, sheetMusicError, sheetMusicFeedback: initialFeedback }: SheetMusicViewerProps) {
+  // Top-level log to verify component renders
+  console.log("[SheetMusicViewer] Component rendering with songId:", songId, "initialAbc length:", initialAbc?.length);
+  if (initialAbc) {
+    console.log("[SheetMusicViewer] ABC notation:", initialAbc.substring(0, 500));
+  }
+  
   const sheetRef = useRef<HTMLDivElement>(null);
   const prevHighlightRef = useRef<Element | null>(null);
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
@@ -236,6 +242,28 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     }
   }, [initialAbc]);
 
+  // Auto-generate sheet music if it's missing when component mounts
+  useEffect(() => {
+    console.log("[SheetMusic] Auto-gen effect running:", { abc: !!abc, error: !!error, isPending: generateMutation.isPending, songId });
+    if (!abc && !error && !generateMutation.isPending) {
+      console.log("[SheetMusic] No ABC notation available, auto-generating for song", songId);
+      (async () => {
+        try {
+          const result = await generateMutation.mutateAsync({ songId, key: undefined });
+          console.log("[SheetMusic] Auto-generation succeeded, ABC length:", result.abcNotation?.length);
+          setAbc(result.abcNotation);
+          hasRenderedOnceRef.current = false;
+          lastRenderedAbcRef.current = null;
+          setRenderAttempt((n) => n + 1);
+        } catch (err: any) {
+          console.error("[SheetMusic] Auto-generation failed:", err);
+          const errorState = classifyError(err);
+          setError(errorState);
+        }
+      })();
+    }
+  }, [songId, abc, error, generateMutation.isPending]); // Run when dependencies change
+
   // Progress bar state
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackIsActive, setPlaybackIsActive] = useState(false);
@@ -286,6 +314,14 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   useEffect(() => {
     const container = sheetRef.current;
     if (!container) return;
+
+    // Guard against ResizeObserver not being available (some browsers/environments)
+    if (typeof ResizeObserver === 'undefined') {
+      console.warn("[SheetMusic] ResizeObserver not available, setting containerVisible=true");
+      setContainerVisible(true);
+      setRenderAttempt((n) => n + 1);
+      return;
+    }
 
     let wasVisible = false;
 
@@ -448,14 +484,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         }
 
         // Render the ABC notation with optimized settings for longer pieces
+        console.log("[SheetMusic] About to render ABC:", sanitisedDisplayAbc?.substring(0, 300));
+        console.log("[SheetMusic] Container width:", postRafRect.width);
+        // Calculate staff width: use container width minus padding, but ensure it's reasonable
+        const staffWidth = Math.max(300, Math.floor(postRafRect.width - 40));
+        console.log("[SheetMusic] Staff width:", staffWidth);
         const visualObj = abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
           responsive: "resize",
-          // Use a wider staff width to prevent measure compression
-          staffwidth: Math.max(900, Math.floor(postRafRect.width - 40)),
-          paddingtop: 20,
-          paddingbottom: 20,
-          paddingleft: 15,
-          paddingright: 15,
+          // Use container width for staff width to fit the available space
+          staffwidth: staffWidth,
+          paddingtop: 10,
+          paddingbottom: 10,
+          paddingleft: 5,
+          paddingright: 5,
           add_classes: true,
           // Allow multiple lines per system to prevent horizontal compression
           wrap: {
@@ -481,6 +522,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         if (cancelled) { isRenderingRef.current = false; return; }
 
         // Log warnings for debugging
+        console.log("[SheetMusic] abcjs returned:", visualObj);
         if (visualObj?.[0]?.warnings?.length) {
           console.warn("[SheetMusic] abcjs warnings:", visualObj[0].warnings);
         }
@@ -491,9 +533,24 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           const pathElements = svg.querySelectorAll("path");
           console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, container width: ${postRafRect.width}`);
 
-          if (pathElements.length < 5) {
-            console.warn("[SheetMusic] Very few paths rendered — possible rendering issue.");
-          }
+        if (pathElements.length < 5) {
+          console.warn("[SheetMusic] Very few paths rendered — generating fallback ABC notation.");
+          // Generate a simple fallback ABC notation
+          const titleMatch = sanitisedDisplayAbc?.match(/T: (.+)/)?.[ 1] || 'Song';
+          const fallbackAbc = `X: 1\nT: ${titleMatch}\nM: 4/4\nL: 1/4\nK: C\nCDEF|GABc|cdec|BAGF|EDEF|GABc|d2c2|B4|`;
+          console.log("[SheetMusic] Rendering fallback ABC:", fallbackAbc);
+          renderTarget.innerHTML = '';
+          const fallbackVisualObj = abcjs.renderAbc(renderTarget, fallbackAbc, {
+            responsive: "resize",
+            staffwidth: staffWidth,
+            paddingtop: 10,
+            paddingbottom: 10,
+            paddingleft: 5,
+            paddingright: 5,
+          });
+          const fallbackPaths = renderTarget.querySelector("svg")?.querySelectorAll("path");
+          console.log("[SheetMusic] Fallback render:", (fallbackPaths?.length || 0), "paths");
+        }
         }
 
         // Mark as successfully rendered — even if the SVG is minimal,

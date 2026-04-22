@@ -392,12 +392,12 @@ export default function SongDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="sheet-music">
+        <TabsContent value="sheet-music" forceMount>
           <Card>
             <CardContent className="pt-6">
               <SheetMusicViewer
                 songId={song.id}
-                abcNotation={song.sheetMusicAbc}
+                abcNotation={song.sheetMusicAbc || song.abcNotation}
                 songTitle={song.title}
                 songKeySignature={song.keySignature}
                 sheetMusicStatus={song.sheetMusicStatus}
