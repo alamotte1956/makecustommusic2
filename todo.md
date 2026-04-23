@@ -2294,3 +2294,9 @@
 - [x] Include capo recommendations, key, and copyright on each chart
 - [x] Each song gets its own page break for clean printing
 - [x] Open in a new window for printing
+
+## Worship Set - Download Chord Charts as PDF
+- [x] Add "Download PDF" button next to "Print Chord Charts" on Worship Set detail page
+- [x] Generate native jsPDF with cover page, TOC, and per-song chord charts (no HTML-to-PDF conversion)
+- [x] Download the PDF file automatically with set title as filename
+- [x] Includes song number badges, key/time/capo metadata, section labels, blue chord text, and copyright footer

@@ -17,7 +17,7 @@ import {
   Plus, Trash2, GripVertical, Music, BookOpen, Clock, ChevronRight,
   Sparkles, Loader2, Calendar, Church, ListMusic, Edit2, Copy,
   ArrowUp, ArrowDown, FileText, Cross, Mic, Heart, Hand, MessageSquare,
-  Printer
+  Printer, Download
 } from "lucide-react";
 import { Link } from "wouter";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -323,6 +323,7 @@ function WorshipSetDetail({
   const [suggestScripture, setSuggestScripture] = useState("");
   const [suggestMood, setSuggestMood] = useState("");
   const [isPrintingChords, setIsPrintingChords] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const { user } = useAuth();
 
   const worshipSet = setQuery.data;
@@ -629,6 +630,267 @@ function WorshipSetDetail({
     }
   };
 
+  // ─── Download Chord Charts as PDF ───
+  const handleDownloadChordChartsPDF = async () => {
+    setIsDownloadingPdf(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const result = await setAbcQuery.refetch();
+      const data = result.data;
+      if (!data) {
+        toast.error("Failed to load song data for this set");
+        return;
+      }
+
+      const songItems = data.items.filter((item) => item.abc && item.itemType === "song");
+      if (songItems.length === 0) {
+        toast.error("No songs with sheet music found in this set");
+        return;
+      }
+
+      const currentYear = new Date().getFullYear();
+      const copyrightName = user?.name || "Albert LaMotte";
+      const setTitle = data.setTitle || "Worship Set";
+      const setDate = data.setDate
+        ? new Date(data.setDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+        : "";
+
+      // PDF constants
+      const PW = 215.9; // Letter width mm
+      const PH = 279.4; // Letter height mm
+      const ML = 18;
+      const MR = 18;
+      const MT = 22;
+      const MB = 22;
+      const CW = PW - ML - MR;
+      const SAFE_B = PH - MB - 10;
+      const FOOTER_Y = PH - MB + 2;
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+
+      const pgBreak = (y: number, needed: number): number => {
+        if (y + needed > SAFE_B) { doc.addPage(); return MT; }
+        return y;
+      };
+
+      // ─── Cover Page ───
+      let y = MT + 30;
+      doc.setFontSize(28);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont("helvetica", "bold");
+      doc.text(setTitle, PW / 2, y, { align: "center" });
+      y += 10;
+      doc.setFontSize(12);
+      doc.setTextColor(120, 120, 120);
+      doc.setFont("helvetica", "italic");
+      doc.text("Chord Charts \u2022 Lead Sheets", PW / 2, y, { align: "center" });
+      y += 8;
+      if (setDate) {
+        doc.setFontSize(13);
+        doc.setTextColor(60, 60, 60);
+        doc.setFont("helvetica", "normal");
+        doc.text(setDate, PW / 2, y, { align: "center" });
+        y += 6;
+      }
+      if (data.serviceType) {
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        doc.text(data.serviceType, PW / 2, y, { align: "center" });
+        y += 6;
+      }
+
+      // Divider
+      y += 6;
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.5);
+      doc.line(ML + 20, y, PW - MR - 20, y);
+      y += 10;
+
+      // Table of contents
+      doc.setFontSize(16);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont("helvetica", "bold");
+      doc.text("Set List", ML, y);
+      y += 8;
+
+      for (let i = 0; i < songItems.length; i++) {
+        const item = songItems[i];
+        const k = item.songKey || detectKeyFromABC(item.abc!) || item.songKeySignature || "";
+        y = pgBreak(y, 7);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${i + 1}.`, ML, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(40, 40, 40);
+        doc.text(item.title, ML + 10, y);
+        if (k) {
+          doc.setFontSize(10);
+          doc.setTextColor(120, 120, 120);
+          doc.text(`Key: ${k}`, PW - MR, y, { align: "right" });
+        }
+        // Dotted line
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineDashPattern([1, 1], 0);
+        const titleW = doc.getTextWidth(item.title);
+        const keyW = k ? doc.getTextWidth(`Key: ${k}`) + 2 : 0;
+        doc.line(ML + 10 + titleW + 2, y, PW - MR - keyW - 2, y);
+        doc.setLineDashPattern([], 0);
+        y += 6;
+      }
+
+      // ─── Song Pages ───
+      for (let i = 0; i < songItems.length; i++) {
+        const item = songItems[i];
+        const abc = item.abc!;
+        const songKey = detectKeyFromABC(abc) || item.songKeySignature || null;
+        const leadSheet = extractLeadSheet(abc);
+        if (!leadSheet || leadSheet.sections.length === 0) continue;
+
+        const chords = extractChordsFromABC(abc);
+        let capoLabel = "";
+        if (songKey && chords.length > 0) {
+          const best = getBestCapoPositions(songKey, chords, 1);
+          if (best.length > 0 && best[0].fret > 0) {
+            capoLabel = `Capo: Fret ${best[0].fret} (play in ${best[0].playKey})`;
+          }
+        }
+        const keyLabel = item.songKey || songKey || "";
+
+        // New page for each song
+        doc.addPage();
+        y = MT;
+
+        // Song number badge
+        doc.setFillColor(50, 50, 50);
+        doc.circle(PW / 2, y + 3, 5, "F");
+        doc.setFontSize(10);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${i + 1}`, PW / 2, y + 4.5, { align: "center" });
+        y += 12;
+
+        // Song title
+        doc.setFontSize(22);
+        doc.setTextColor(30, 30, 30);
+        doc.setFont("helvetica", "bold");
+        doc.text(item.title, PW / 2, y, { align: "center" });
+        y += 7;
+
+        // Meta line (key, time, capo)
+        const metaParts: string[] = [];
+        if (keyLabel) metaParts.push(`Key: ${keyLabel}`);
+        if (leadSheet.meter) metaParts.push(`Time: ${leadSheet.meter}`);
+        if (metaParts.length > 0 || capoLabel) {
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(80, 80, 80);
+          const metaStr = metaParts.join("  \u2022  ");
+          if (metaStr) {
+            doc.text(metaStr, PW / 2, y, { align: "center" });
+            y += 5;
+          }
+          if (capoLabel) {
+            // Capo badge
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            const capW = doc.getTextWidth(capoLabel) + 8;
+            const capX = (PW - capW) / 2;
+            doc.setFillColor(254, 243, 199);
+            doc.setDrawColor(252, 211, 77);
+            doc.roundedRect(capX, y - 3.5, capW, 6, 1.5, 1.5, "FD");
+            doc.setTextColor(146, 64, 14);
+            doc.text(capoLabel, PW / 2, y + 0.5, { align: "center" });
+            y += 6;
+          }
+        }
+
+        // Notes
+        if (item.notes) {
+          doc.setFontSize(9);
+          doc.setTextColor(140, 140, 140);
+          doc.setFont("helvetica", "italic");
+          doc.text(item.notes, PW / 2, y, { align: "center" });
+          y += 5;
+        }
+
+        // Divider
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.4);
+        doc.line(ML, y, PW - MR, y);
+        y += 8;
+
+        // Sections
+        for (const section of leadSheet.sections) {
+          // Section label
+          if (section.label) {
+            y = pgBreak(y, 12);
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.setFont("helvetica", "bold");
+            doc.text(section.label.toUpperCase(), ML, y);
+            y += 2;
+            doc.setDrawColor(220, 220, 220);
+            doc.setLineWidth(0.2);
+            doc.line(ML, y, ML + doc.getTextWidth(section.label.toUpperCase()) + 4, y);
+            y += 4;
+          }
+
+          for (const line of section.lines) {
+            const chordH = line.chords ? 4.5 : 0;
+            const lyricsH = line.lyrics ? 4.5 : 0;
+            y = pgBreak(y, chordH + lyricsH + 1);
+
+            if (line.chords) {
+              doc.setFontSize(10);
+              doc.setTextColor(26, 86, 219); // Blue chords
+              doc.setFont("courier", "bold");
+              doc.text(line.chords, ML, y);
+              y += chordH;
+            }
+            if (line.lyrics) {
+              doc.setFontSize(10);
+              doc.setTextColor(50, 50, 50);
+              doc.setFont("times", "normal");
+              // Wrap long lyrics
+              const wrapped = doc.splitTextToSize(line.lyrics, CW);
+              for (const wl of wrapped) {
+                y = pgBreak(y, 4.5);
+                doc.text(wl, ML, y);
+                y += 4.5;
+              }
+            }
+            y += 1; // Small gap between lines
+          }
+          y += 4; // Gap between sections
+        }
+      }
+
+      // ─── Footer on all pages ───
+      const pageCount = doc.getNumberOfPages();
+      for (let p = 1; p <= pageCount; p++) {
+        doc.setPage(p);
+        doc.setFontSize(7);
+        doc.setTextColor(160, 160, 160);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `\u00A9 ${currentYear} ${copyrightName} \u2022 Generated with Create Christian Music \u2022 createchristianmusic.com`,
+          PW / 2, FOOTER_Y, { align: "center" }
+        );
+        doc.text(`Page ${p} of ${pageCount}`, PW - MR, FOOTER_Y, { align: "right" });
+      }
+
+      const safeTitle = setTitle.replace(/[^a-zA-Z0-9 ]/g, "").trim();
+      doc.save(`${safeTitle} - Chord Charts.pdf`);
+      toast.success(`PDF downloaded with ${songItems.length} chord chart${songItems.length > 1 ? "s" : ""}!`);
+    } catch (err: any) {
+      console.error("Download chord charts PDF error:", err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   if (setQuery.isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -756,7 +1018,16 @@ function WorshipSetDetail({
             onClick={handlePrintChordCharts}
           >
             {isPrintingChords ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-            Print Chord Charts
+            Print Chords
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+            disabled={isDownloadingPdf || items.filter(i => i.songId).length === 0}
+            onClick={handleDownloadChordChartsPDF}
+          >
+            {isDownloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            PDF
           </Button>
           <Button onClick={() => setShowAddItem(true)} className="gap-2">
             <Plus className="w-4 h-4" />
