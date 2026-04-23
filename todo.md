@@ -2227,3 +2227,11 @@
 - [ ] Add per-part PDF download buttons
 - [ ] Remove MIDI export button from MP3 to Sheet Music page
 - [ ] Write tests for instrument part generation
+
+## Enhance ABC Notation Quality
+- [x] Analyze current LLM prompts and fallback generators for sources of repetitive patterns
+- [x] Rewrite LLM system prompts to produce musically varied melodies with proper phrasing
+- [x] Improve the improvedSheetMusicGenerator fallback to use genre-appropriate patterns instead of scale runs
+- [x] Enhance the backgroundSheetMusic prompt for MP3 to Sheet Music with better musical guidance
+- [x] Add post-processing to detect and reject overly repetitive ABC output
+- [x] Write tests to verify improved output quality
