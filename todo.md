@@ -2225,7 +2225,7 @@
 - [x] Build frontend UI with instrument part cards/tabs
 - [x] Add per-part ABC rendering with abcjs
 - [x] Add per-part PDF download buttons
-- [ ] Remove MIDI export button from MP3 to Sheet Music page
+- [x] Remove MIDI export button from MP3 to Sheet Music page
 - [x] Write tests for instrument part generation
 
 ## Enhance ABC Notation Quality

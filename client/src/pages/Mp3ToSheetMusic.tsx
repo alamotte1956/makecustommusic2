@@ -16,7 +16,7 @@ import {
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
-import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
+import { extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
@@ -196,19 +196,7 @@ export default function Mp3ToSheetMusic() {
     return extractChordsFromABC(sanitisedDisplayAbc);
   }, [sanitisedDisplayAbc]);
 
-  const handleDownloadMIDI = useCallback(() => {
-    if (!sanitisedDisplayAbc) return;
-    try {
-      const title = file?.name.replace(/\.[^/.]+$/, "") || "Sheet Music";
-      const keyLabel = selectedKey === "original"
-        ? (originalKey ? `-${originalKey}` : "")
-        : `-${selectedKey}`;
-      downloadMidi(sanitisedDisplayAbc, `${title}${keyLabel}`);
-      toast.success("MIDI file downloaded!");
-    } catch {
-      toast.error("Failed to export MIDI file");
-    }
-  }, [sanitisedDisplayAbc, file, selectedKey, originalKey]);
+
 
   const handleDownloadMusicXml = useCallback(() => {
     if (!sanitisedDisplayAbc) return;
@@ -958,16 +946,6 @@ export default function Mp3ToSheetMusic() {
                     PDF
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownloadMIDI}
-                    disabled={!isRendered}
-                    className="gap-1.5"
-                  >
-                    <FileAudio className="w-3.5 h-3.5" />
-                    MIDI
-                  </Button>
 
                   <Button
                     variant="outline"
@@ -1156,7 +1134,7 @@ export default function Mp3ToSheetMusic() {
             <p>
               Our AI uses audio transcription and advanced music analysis to identify melody, chords,
               key signature, tempo, and song structure from your audio file. The result is a professional
-              lead sheet in ABC notation that you can transpose to any key and download as PDF or MIDI.
+              lead sheet in ABC notation that you can transpose to any key and download as PDF or MusicXML.
               Guitar chord diagrams are shown automatically. Each conversion costs 1 credit.
               Best results come from clear recordings with prominent melody lines.
             </p>
