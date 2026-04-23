@@ -245,6 +245,13 @@ export async function processMp3SheetJob(
     }
 
     // ── Step 4: Mark done ────────────────────────────────────────────
+    // Log the ABC being saved for debugging
+    const abcLines = cleanAbc.split('\n');
+    const musicLines = abcLines.filter(l => l.match(/[A-Ga-gz|:\[\]^_=,']/));
+    console.log(`[Mp3SheetJob ${jobId}] Saving ABC: ${abcLines.length} total lines, ${musicLines.length} music lines`);
+    console.log(`[Mp3SheetJob ${jobId}] ABC header (first 300 chars): ${cleanAbc.substring(0, 300)}`);
+    console.log(`[Mp3SheetJob ${jobId}] ABC body (lines 5-15): ${abcLines.slice(4, 15).join(' | ')}`);
+    
     await updateMp3SheetJob(jobId, {
       status: "done",
       abcNotation: cleanAbc,

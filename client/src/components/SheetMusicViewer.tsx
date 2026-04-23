@@ -419,7 +419,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   // Uses renderAttempt as a dependency to allow forced re-renders.
   // IMPORTANT: Guards against re-entry and infinite loops from ResizeObserver.
   useEffect(() => {
-    if (!sanitisedDisplayAbc) return;
+    if (!sanitisedDisplayAbc) {
+      console.log('[SheetMusicViewer] Render effect skipped: no sanitisedDisplayAbc');
+      return;
+    }
+    console.log('[SheetMusicViewer] Render effect triggered, ABC length:', sanitisedDisplayAbc.length, 'renderAttempt:', renderAttempt, 'containerVisible:', containerVisible);
 
     // Skip if the same ABC was already rendered successfully (no need to re-render)
     // BUT allow re-render if renderAttempt changed (user clicked Re-render)
@@ -442,11 +446,17 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
     async function doRender() {
       const container = sheetRef.current;
-      if (!container) return;
+      if (!container) {
+        console.log('[SheetMusicViewer] doRender: no container ref');
+        return;
+      }
+      console.log('[SheetMusicViewer] doRender starting, container:', container.id || 'no-id');
 
       // CRITICAL: Check that the container has a non-zero width.
       const rect = container.getBoundingClientRect();
+      console.log('[SheetMusicViewer] Container width:', rect.width);
       if (rect.width < 10) {
+        console.log('[SheetMusicViewer] Container too narrow, scheduling retry');
         // Schedule a retry — the container may become visible soon
         if (!cancelled) {
           setTimeout(() => {
