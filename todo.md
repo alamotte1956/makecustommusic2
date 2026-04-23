@@ -2335,3 +2335,13 @@
 - [x] Pass ABC notation and song metadata to ChordChartView
 - [x] Chord chart includes its own transpose, font size, print, PDF, copy, guitar diagrams, and capo chart
 - [x] Reset viewMode to "sheet" when starting a new conversion
+
+## Chord Chart - Nashville Number System Format
+- [x] Create nashvilleNumber.ts utility to convert chord names to Nashville numbers based on key
+- [x] Handle major, minor, diminished, augmented, 7th, sus, add, slash chords in Nashville format
+- [x] Add a chord format toggle (Standard / Nashville) to ChordChartView (pill-style toggle)
+- [x] Apply Nashville format to the chord chart display, print, PDF export, and copy
+- [x] Include Nashville format in the Worship Set chord chart print/PDF flow
+- [x] Added chord format toggle to the Worship Set transpose dialog
+- [x] Nashville badge and reference legend on both print HTML and PDF outputs
+- [x] Full test coverage for Nashville Number converter (nashvilleNumber.test.ts)

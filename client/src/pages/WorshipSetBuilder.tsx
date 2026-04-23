@@ -4,6 +4,7 @@ import { extractLeadSheet, type LeadSheet } from "@/lib/leadSheetExtractor";
 import { detectKeyFromABC, transposeABC, COMMON_KEYS } from "@/lib/transpose";
 import { extractChordsFromABC } from "@/lib/midiExport";
 import { getBestCapoPositions } from "@/lib/capoChart";
+import { convertChordLineToNashville, getNashvilleLegend } from "@/lib/nashvilleNumber";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -328,6 +329,7 @@ function WorshipSetDetail({
   const [transposeMode, setTransposeMode] = useState<"print" | "pdf">("print");
   const [songTransposeKeys, setSongTransposeKeys] = useState<Record<number, string>>({});
   const [songOriginalKeys, setSongOriginalKeys] = useState<Record<number, string>>({});
+  const [chordFormat, setChordFormat] = useState<"standard" | "nashville">("standard");
   const { user } = useAuth();
 
   const worshipSet = setQuery.data;
@@ -481,6 +483,8 @@ function WorshipSetDetail({
 
       const currentYear = new Date().getFullYear();
       const copyrightName = user?.name || "Albert LaMotte";
+      const isNashville = chordFormat === "nashville";
+      const formatLabel = isNashville ? "Nashville Numbers" : "Standard Chords";
 
       // Build HTML for each song's chord chart
       let allSongsHtml = "";
@@ -533,7 +537,10 @@ function WorshipSetDetail({
               sectionContent += `<pre class="chord-line-orig">${escHtml(origChordLines[origLineIdx])}</pre>`;
             }
             if (line.chords) {
-              sectionContent += `<pre class="chord-line">${escHtml(line.chords)}</pre>`;
+              const displayChords = isNashville && songKey
+                ? convertChordLineToNashville(line.chords, songKey)
+                : line.chords;
+              sectionContent += `<pre class="chord-line">${escHtml(displayChords)}</pre>`;
             }
             if (line.lyrics) {
               sectionContent += `<pre class="lyrics-line">${escHtml(line.lyrics)}</pre>`;
@@ -542,6 +549,20 @@ function WorshipSetDetail({
             origLineIdx++;
           }
           sectionsHtml += `<div class="section">${sectionContent}</div>`;
+        }
+
+        // Nashville legend for this song
+        let nashvilleLegendHtml = "";
+        if (isNashville && songKey) {
+          const legend = getNashvilleLegend(songKey);
+          if (legend.length > 0) {
+            nashvilleLegendHtml = `<div class="nashville-legend">
+              <div class="nashville-legend-title">Nashville Reference (Key of ${escHtml(songKey)})</div>
+              <div class="nashville-legend-items">
+                ${legend.map(l => `<span class="nashville-legend-item"><strong>${escHtml(l.number)}</strong> = ${escHtml(l.chord)}</span>`).join("")}
+              </div>
+            </div>`;
+          }
         }
 
         const pageBreak = i < songItems.length - 1 ? 'page-break-after: always;' : '';
@@ -555,6 +576,7 @@ function WorshipSetDetail({
                 ${origKeyLabel ? `<span class="meta-item orig-key">${origKeyLabel}</span>` : ""}
                 ${leadSheet.meter ? `<span class="meta-item">Time: ${leadSheet.meter}</span>` : ""}
                 ${capoLabel ? `<span class="capo-badge">${capoLabel}</span>` : ""}
+                ${isNashville ? `<span class="format-badge">Nashville</span>` : ""}
               </div>
               ${item.notes ? `<div class="song-notes">${escHtml(item.notes)}</div>` : ""}
               ${wasTransposed ? `<div class="transpose-legend">
@@ -562,6 +584,7 @@ function WorshipSetDetail({
                 <span><span class="legend-swatch legend-new"></span>Transposed (${escHtml(transposedKey)})</span>
               </div>` : ""}
             </div>
+            ${nashvilleLegendHtml}
             ${sectionsHtml}
           </div>`;
       }
@@ -662,6 +685,26 @@ function WorshipSetDetail({
     }
     .legend-orig { background: #999; }
     .legend-new { background: #1a56db; }
+    .format-badge {
+      background: #ede9fe; color: #5b21b6; padding: 2px 8px;
+      border-radius: 4px; font-weight: 600; border: 1px solid #c4b5fd;
+      font-size: 11px;
+    }
+    .nashville-legend {
+      background: #f8f7ff; border: 1px solid #e0ddf5;
+      border-radius: 6px; padding: 8px 12px; margin-bottom: 16px;
+    }
+    .nashville-legend-title {
+      font-size: 10px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #5b21b6; margin-bottom: 4px;
+    }
+    .nashville-legend-items {
+      display: flex; flex-wrap: wrap; gap: 6px 14px;
+    }
+    .nashville-legend-item {
+      font-size: 11px; color: #444; font-family: 'Courier New', monospace;
+    }
+    .nashville-legend-item strong { color: #1a56db; }
     .lyrics-line {
       font-family: 'Georgia', serif;
       font-size: 13px; line-height: 1.4; margin: 0 0 4px 0;
@@ -677,7 +720,7 @@ function WorshipSetDetail({
 <body>
   <div class="cover">
     <div class="cover-title">${escHtml(setTitle)}</div>
-    <div class="cover-subtitle">Chord Charts &bull; Lead Sheets</div>
+    <div class="cover-subtitle">Chord Charts &bull; Lead Sheets${isNashville ? " &bull; Nashville Numbers" : ""}</div>
     ${setDate ? `<div class="cover-date">${setDate}</div>` : ""}
     ${data.serviceType ? `<div class="cover-service">${escHtml(data.serviceType)}</div>` : ""}
     <div class="toc">
@@ -736,6 +779,7 @@ function WorshipSetDetail({
 
       const currentYear = new Date().getFullYear();
       const copyrightName = user?.name || "Albert LaMotte";
+      const isNashville = chordFormat === "nashville";
       const setTitle = data.setTitle || "Worship Set";
       const setDate = data.setDate
         ? new Date(data.setDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
@@ -769,7 +813,7 @@ function WorshipSetDetail({
       doc.setFontSize(12);
       doc.setTextColor(120, 120, 120);
       doc.setFont("helvetica", "italic");
-      doc.text("Chord Charts \u2022 Lead Sheets", PW / 2, y, { align: "center" });
+      doc.text(`Chord Charts \u2022 Lead Sheets${isNashville ? " \u2022 Nashville Numbers" : ""}`, PW / 2, y, { align: "center" });
       y += 8;
       if (setDate) {
         doc.setFontSize(13);
@@ -934,6 +978,52 @@ function WorshipSetDetail({
           y += 5;
         }
 
+        // Nashville format badge
+        if (isNashville) {
+          y += 1;
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          const nBadge = "Nashville Numbers";
+          const nBadgeW = doc.getTextWidth(nBadge) + 8;
+          const nBadgeX = (PW - nBadgeW) / 2;
+          doc.setFillColor(237, 233, 254);
+          doc.setDrawColor(196, 181, 253);
+          doc.roundedRect(nBadgeX, y - 3.5, nBadgeW, 6, 1.5, 1.5, "FD");
+          doc.setTextColor(91, 33, 182);
+          doc.text(nBadge, PW / 2, y + 0.5, { align: "center" });
+          y += 6;
+        }
+
+        // Nashville legend
+        if (isNashville && songKey) {
+          const legend = getNashvilleLegend(songKey);
+          if (legend.length > 0) {
+            y += 2;
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(91, 33, 182);
+            doc.text(`NASHVILLE REFERENCE (KEY OF ${songKey.toUpperCase()})`, ML, y);
+            y += 4;
+            doc.setFontSize(8);
+            doc.setFont("courier", "normal");
+            let lx = ML;
+            for (const l of legend) {
+              const txt = `${l.number} = ${l.chord}`;
+              const tw = doc.getTextWidth(txt) + 6;
+              if (lx + tw > PW - MR) { lx = ML; y += 4; }
+              doc.setTextColor(26, 86, 219);
+              doc.setFont("courier", "bold");
+              doc.text(l.number, lx, y);
+              const nw = doc.getTextWidth(l.number);
+              doc.setTextColor(100, 100, 100);
+              doc.setFont("courier", "normal");
+              doc.text(` = ${l.chord}`, lx + nw, y);
+              lx += tw;
+            }
+            y += 6;
+          }
+        }
+
         // Divider
         doc.setDrawColor(180, 180, 180);
         doc.setLineWidth(0.4);
@@ -973,10 +1063,13 @@ function WorshipSetDetail({
             }
 
             if (line.chords) {
+              const displayChords = isNashville && songKey
+                ? convertChordLineToNashville(line.chords, songKey)
+                : line.chords;
               doc.setFontSize(10);
               doc.setTextColor(26, 86, 219); // Blue chords
               doc.setFont("courier", "bold");
-              doc.text(line.chords, ML, y);
+              doc.text(displayChords, ML, y);
               y += chordH;
             }
             pdfOrigLineIdx++;
@@ -1454,6 +1547,33 @@ function WorshipSetDetail({
                 </span>
               </div>
             )}
+
+            {/* Chord Format Toggle */}
+            <div className="pt-2 border-t border-white/5">
+              <div className="text-xs text-white/50 mb-2">Chord Format</div>
+              <div className="flex gap-1 p-0.5 rounded-lg bg-white/[0.03] border border-white/5">
+                <button
+                  onClick={() => setChordFormat("standard")}
+                  className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
+                    chordFormat === "standard"
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "text-white/50 hover:text-white/70 hover:bg-white/5"
+                  }`}
+                >
+                  Standard (A, Bm, C#)
+                </button>
+                <button
+                  onClick={() => setChordFormat("nashville")}
+                  className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
+                    chordFormat === "nashville"
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "text-white/50 hover:text-white/70 hover:bg-white/5"
+                  }`}
+                >
+                  Nashville (1, 2m, 3)
+                </button>
+              </div>
+            </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button

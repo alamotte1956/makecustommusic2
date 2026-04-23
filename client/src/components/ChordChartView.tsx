@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Printer, Guitar, Music, Loader2, Copy, Check } from "lucide-react";
+import { Download, Printer, Guitar, Music, Loader2, Copy, Check, Hash } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
@@ -12,6 +12,9 @@ import { CapoChart } from "@/components/CapoChart";
 import { extractChordsFromABC } from "@/lib/midiExport";
 import { getBestCapoPositions } from "@/lib/capoChart";
 import { exportLyricsPDF } from "@/lib/pdfExport";
+import { convertChordLineToNashville, getNashvilleLegend } from "@/lib/nashvilleNumber";
+
+type ChordFormat = "standard" | "nashville";
 
 interface ChordChartViewProps {
   /** ABC notation string */
@@ -25,7 +28,7 @@ interface ChordChartViewProps {
 /**
  * ChordChartView — a worship-team-friendly lead sheet view that shows
  * chord symbols above lyrics in a clean, readable format.
- * This is the format most commonly used by worship leaders and guitarists.
+ * Supports both standard chord names and Nashville Number System.
  */
 export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartViewProps) {
   const { user } = useAuth();
@@ -34,6 +37,7 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState<"sm" | "md" | "lg">("md");
+  const [chordFormat, setChordFormat] = useState<ChordFormat>("standard");
 
   // Detect original key from ABC
   const originalKey = useMemo(() => {
@@ -73,6 +77,20 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     return null;
   }, [displayKey, chords]);
 
+  // Nashville legend for the current key
+  const nashvilleLegend = useMemo(() => {
+    if (!displayKey) return [];
+    return getNashvilleLegend(displayKey);
+  }, [displayKey]);
+
+  // Convert a chord line to the selected format
+  const formatChordLine = useCallback((chordLine: string): string => {
+    if (chordFormat === "nashville" && displayKey) {
+      return convertChordLineToNashville(chordLine, displayKey);
+    }
+    return chordLine;
+  }, [chordFormat, displayKey]);
+
   // Font size classes
   const fontClasses = {
     sm: { chord: "text-xs", lyrics: "text-sm", section: "text-xs" },
@@ -88,6 +106,18 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     const keyLabel = displayKey ? `Key: ${displayKey}` : "";
     const capoLabel = capoInfo ? `Capo: Fret ${capoInfo.fret} (play in ${capoInfo.playKey})` : "";
     const copyrightName = user?.name || "Albert LaMotte";
+    const formatLabel = chordFormat === "nashville" ? "Nashville Numbers" : "Standard Chords";
+
+    // Build Nashville legend HTML if in Nashville mode
+    let legendHtml = "";
+    if (chordFormat === "nashville" && nashvilleLegend.length > 0) {
+      legendHtml = `<div class="legend">
+        <div class="legend-title">Nashville Number Reference (Key of ${displayKey || "?"})</div>
+        <div class="legend-items">
+          ${nashvilleLegend.map(l => `<span class="legend-item"><strong>${l.number}</strong> = ${l.chord}</span>`).join("")}
+        </div>
+      </div>`;
+    }
 
     let sectionsHtml = "";
     for (const section of leadSheet.sections) {
@@ -98,7 +128,10 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
       for (const line of section.lines) {
         sectionContent += `<div class="lead-line">`;
         if (line.chords) {
-          sectionContent += `<pre class="chord-line">${escapeHtml(line.chords)}</pre>`;
+          const displayChords = chordFormat === "nashville" && displayKey
+            ? convertChordLineToNashville(line.chords, displayKey)
+            : line.chords;
+          sectionContent += `<pre class="chord-line">${escapeHtml(displayChords)}</pre>`;
         }
         if (line.lyrics) {
           sectionContent += `<pre class="lyrics-line">${escapeHtml(line.lyrics)}</pre>`;
@@ -132,12 +165,32 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     .meta {
       display: flex; justify-content: center; gap: 20px;
       font-size: 13px; color: #444; margin-top: 6px;
+      flex-wrap: wrap; align-items: center;
     }
     .meta-item { font-weight: 600; }
     .capo-badge {
       background: #fef3c7; color: #92400e; padding: 2px 10px;
       border-radius: 4px; font-weight: 600; border: 1px solid #fcd34d;
     }
+    .format-badge {
+      background: #ede9fe; color: #5b21b6; padding: 2px 10px;
+      border-radius: 4px; font-weight: 600; border: 1px solid #c4b5fd;
+    }
+    .legend {
+      background: #f8f7ff; border: 1px solid #e0ddf5;
+      border-radius: 6px; padding: 10px 14px; margin-bottom: 20px;
+    }
+    .legend-title {
+      font-size: 11px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #5b21b6; margin-bottom: 6px;
+    }
+    .legend-items {
+      display: flex; flex-wrap: wrap; gap: 8px 16px;
+    }
+    .legend-item {
+      font-size: 12px; color: #444; font-family: 'Courier New', monospace;
+    }
+    .legend-item strong { color: #1a56db; }
     .section { margin-bottom: 20px; page-break-inside: avoid; break-inside: avoid; }
     .section-label {
       font-size: 13px; font-weight: bold; text-transform: uppercase;
@@ -170,8 +223,10 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
       ${keyLabel ? `<span class="meta-item">${keyLabel}</span>` : ""}
       ${leadSheet.meter ? `<span class="meta-item">Time: ${leadSheet.meter}</span>` : ""}
       ${capoLabel ? `<span class="capo-badge">${capoLabel}</span>` : ""}
+      <span class="format-badge">${formatLabel}</span>
     </div>
   </div>
+  ${legendHtml}
   ${sectionsHtml}
   <div class="footer">
     &copy; ${currentYear} ${escapeHtml(copyrightName)} &middot; Generated with Create Christian Music &middot; createchristianmusic.com
@@ -187,7 +242,7 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.onload = () => printWindow.focus();
-  }, [leadSheet, songTitle, displayKey, capoInfo, user?.name]);
+  }, [leadSheet, songTitle, displayKey, capoInfo, user?.name, chordFormat, nashvilleLegend]);
 
   // Copy chord chart as plain text
   const handleCopy = useCallback(() => {
@@ -195,12 +250,25 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     let text = `${songTitle}\n`;
     if (displayKey) text += `Key: ${displayKey}\n`;
     if (capoInfo) text += `Capo: Fret ${capoInfo.fret} (play in ${capoInfo.playKey})\n`;
+    if (chordFormat === "nashville") text += `Format: Nashville Numbers\n`;
     text += "\n";
+
+    // Add Nashville legend if in Nashville mode
+    if (chordFormat === "nashville" && nashvilleLegend.length > 0) {
+      text += `Nashville Reference (Key of ${displayKey || "?"}):\n`;
+      text += nashvilleLegend.map(l => `  ${l.number} = ${l.chord}`).join("\n");
+      text += "\n\n";
+    }
 
     for (const section of leadSheet.sections) {
       if (section.label) text += `[${section.label}]\n`;
       for (const line of section.lines) {
-        if (line.chords) text += `${line.chords}\n`;
+        if (line.chords) {
+          const displayChords = chordFormat === "nashville" && displayKey
+            ? convertChordLineToNashville(line.chords, displayKey)
+            : line.chords;
+          text += `${displayChords}\n`;
+        }
         if (line.lyrics) text += `${line.lyrics}\n`;
       }
       text += "\n";
@@ -213,7 +281,7 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     }).catch(() => {
       toast.error("Failed to copy to clipboard");
     });
-  }, [leadSheet, songTitle, displayKey, capoInfo]);
+  }, [leadSheet, songTitle, displayKey, capoInfo, chordFormat, nashvilleLegend]);
 
   // Download as PDF (uses lyrics PDF format with chord info)
   const handleDownloadPDF = useCallback(async () => {
@@ -222,10 +290,23 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     try {
       // Build a text version with chords above lyrics
       let fullText = "";
+
+      // Add Nashville legend at the top if in Nashville mode
+      if (chordFormat === "nashville" && nashvilleLegend.length > 0) {
+        fullText += `Nashville Reference (Key of ${displayKey || "?"}):\n`;
+        fullText += nashvilleLegend.map(l => `  ${l.number} = ${l.chord}`).join("\n");
+        fullText += "\n\n---\n\n";
+      }
+
       for (const section of leadSheet.sections) {
         if (section.label) fullText += `[${section.label}]\n\n`;
         for (const line of section.lines) {
-          if (line.chords) fullText += `${line.chords}\n`;
+          if (line.chords) {
+            const displayChords = chordFormat === "nashville" && displayKey
+              ? convertChordLineToNashville(line.chords, displayKey)
+              : line.chords;
+            fullText += `${displayChords}\n`;
+          }
           if (line.lyrics) fullText += `${line.lyrics}\n`;
         }
         fullText += "\n";
@@ -236,11 +317,12 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
           ? ` (Key: ${selectedKey})`
           : ` (Key: ${originalKey})`
         : "";
+      const formatSuffix = chordFormat === "nashville" ? " - Nashville" : "";
 
       const copyrightName = user?.name || undefined;
       exportLyricsPDF(
         fullText.trim(),
-        songTitle + keyLabel,
+        songTitle + keyLabel + formatSuffix,
         {
           key: displayKey || undefined,
         },
@@ -252,7 +334,7 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
     } finally {
       setExporting(false);
     }
-  }, [leadSheet, songTitle, displayKey, selectedKey, originalKey, user?.name]);
+  }, [leadSheet, songTitle, displayKey, selectedKey, originalKey, user?.name, chordFormat, nashvilleLegend]);
 
   if (!abc) {
     return (
@@ -286,12 +368,40 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
             </Badge>
           )}
           {capoInfo && (
-            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
               Capo {capoInfo.fret} (play {capoInfo.playKey})
             </Badge>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Chord Format Toggle */}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-md p-0.5">
+            <button
+              onClick={() => setChordFormat("standard")}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                chordFormat === "standard"
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Standard chord names (C, Am, G7)"
+            >
+              <Music className="w-3 h-3" />
+              Standard
+            </button>
+            <button
+              onClick={() => setChordFormat("nashville")}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                chordFormat === "nashville"
+                  ? "bg-white text-violet-700 shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Nashville Number System (1, 6m, 5⁷)"
+            >
+              <Hash className="w-3 h-3" />
+              Nashville
+            </button>
+          </div>
+
           {/* Transpose */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Key:</span>
@@ -376,7 +486,7 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
         {/* Header */}
         <div className="text-center border-b border-gray-200 pb-4">
           <h2 className="text-xl font-bold text-gray-900">{songTitle}</h2>
-          <div className="flex items-center justify-center gap-3 mt-2 text-xs text-gray-500">
+          <div className="flex items-center justify-center gap-3 mt-2 text-xs text-gray-500 flex-wrap">
             {displayKey && <span className="font-semibold">Key: {displayKey}</span>}
             {leadSheet.meter && <span>Time: {leadSheet.meter}</span>}
             {capoInfo && (
@@ -384,12 +494,40 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
                 Capo {capoInfo.fret} (play {capoInfo.playKey})
               </span>
             )}
+            {chordFormat === "nashville" && (
+              <span className="bg-violet-100 text-violet-800 px-2 py-0.5 rounded font-semibold">
+                Nashville Numbers
+              </span>
+            )}
           </div>
         </div>
 
+        {/* Nashville Number Legend */}
+        {chordFormat === "nashville" && nashvilleLegend.length > 0 && (
+          <div className="bg-violet-50 border border-violet-200 rounded-lg p-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-violet-700 mb-1.5">
+              Nashville Reference (Key of {displayKey || "?"})
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {nashvilleLegend.map((item) => (
+                <span key={item.number} className="text-xs font-mono text-gray-700">
+                  <span className="font-bold text-blue-700">{item.number}</span>
+                  <span className="text-gray-400"> = </span>
+                  <span>{item.chord}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Sections */}
         {leadSheet.sections.map((section, sIdx) => (
-          <ChordChartSection key={sIdx} section={section} fontClasses={fc} />
+          <ChordChartSection
+            key={sIdx}
+            section={section}
+            fontClasses={fc}
+            formatChordLine={formatChordLine}
+          />
         ))}
 
         {/* Copyright */}
@@ -398,8 +536,8 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
         </div>
       </div>
 
-      {/* Guitar chord diagrams */}
-      {chords.length > 0 && (
+      {/* Guitar chord diagrams (only show in standard mode) */}
+      {chordFormat === "standard" && chords.length > 0 && (
         <div className="bg-card rounded-lg border border-border p-4">
           <GuitarChordChart chords={chords} />
         </div>
@@ -417,9 +555,11 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
 function ChordChartSection({
   section,
   fontClasses,
+  formatChordLine,
 }: {
   section: LeadSheetSection;
   fontClasses: { chord: string; lyrics: string; section: string };
+  formatChordLine: (line: string) => string;
 }) {
   return (
     <div className="space-y-1">
@@ -432,7 +572,7 @@ function ChordChartSection({
         <div key={lIdx} className="leading-tight">
           {line.chords && (
             <pre className={`font-mono font-bold text-blue-700 ${fontClasses.chord} whitespace-pre leading-snug`}>
-              {line.chords}
+              {formatChordLine(line.chords)}
             </pre>
           )}
           {line.lyrics && (
