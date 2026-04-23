@@ -2204,3 +2204,12 @@
 - [ ] Add individual download buttons for each part
 - [ ] Test part generation end-to-end
 - [ ] Verify PDF downloads work correctly for each part
+
+## ABC Rendering Bug Fix (blank line after K: header)
+- [x] Diagnose root cause: blank line between K: header and music body causes abcjs to render 0 paths
+- [x] Fix buildAbcNotation() in improvedSheetMusicGenerator.ts: remove blank line push after K:
+- [x] Fix sanitiseAbc() in backgroundSheetMusic.ts: strip leading blank lines from music body
+- [x] Fix sanitiseAbcForRender() in SheetMusicViewer.tsx: strip blank lines after K: header
+- [x] Fix sanitisedDisplayAbc memo in Mp3ToSheetMusic.tsx: strip blank lines after K: header
+- [x] Add unit tests for blank line fix (4 tests passing)
+- [x] All 1769 tests passing

@@ -292,7 +292,13 @@ export function sanitiseAbc(raw: string): string {
     headerLines.push("K:C"); // Default key if missing
   }
 
-  // Reconstruct ABC with headers followed by music
+  // CRITICAL: Strip leading blank lines from musicLines to prevent
+  // abcjs from treating music as a separate tune (blank line = tune separator)
+  while (musicLines.length > 0 && musicLines[0].trim() === "") {
+    musicLines.shift();
+  }
+
+  // Reconstruct ABC with headers followed by music (NO blank line between them)
   abc = [...headerLines, ...musicLines].join("\n").trim();
 
   return abc;

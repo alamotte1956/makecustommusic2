@@ -269,7 +269,6 @@ function buildAbcNotation(
   lines.push("L: 1/8");
   lines.push(`Q: 1/4=${tempo}`);
   lines.push(`K: ${key}`);
-  lines.push("");
 
   // Build melody for each section
   const notesPerMeasure = timeSignature === "3/4" ? 6 : 8; // 8 eighth notes per 4/4 measure
@@ -325,8 +324,7 @@ function buildAbcNotation(
     measureLine = "";
   }
 
-  // Add final bar line
-  lines.push("");
+  // Final bar line already added by measure loop
 
   return lines.join("\n");
 }

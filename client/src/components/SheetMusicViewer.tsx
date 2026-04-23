@@ -110,15 +110,24 @@ function classifyError(error: any): ErrorState {
  * was stored before the backend sanitiser was improved.
  */
 function sanitiseAbcForRender(raw: string): string {
-  return raw
+  const lines = raw
     .split("\n")
     .filter((l) => {
       const t = l.trim();
       if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
       return true;
-    })
-    .join("\n")
-    .trim();
+    });
+  // CRITICAL: Remove blank lines between K: header and first music line.
+  // In ABC notation, a blank line separates tunes — if one appears after K:,
+  // abcjs treats the music as a separate (headerless) tune and renders 0 paths.
+  const kIdx = lines.findIndex((l) => l.trim().startsWith("K:"));
+  if (kIdx >= 0) {
+    let i = kIdx + 1;
+    while (i < lines.length && lines[i].trim() === "") {
+      lines.splice(i, 1);
+    }
+  }
+  return lines.join("\n").trim();
 }
 
 export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature, sheetMusicStatus, sheetMusicError, sheetMusicFeedback: initialFeedback }: SheetMusicViewerProps) {
