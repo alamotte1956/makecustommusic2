@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Music, FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Download, Play, Pause, Volume2, VolumeX, RefreshCw, WifiOff,
-  Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save, RotateCcw,
+  Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save, RotateCcw, ListMusic,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
@@ -26,6 +26,7 @@ import AudioWaveform from "@/components/AudioWaveform";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
 import { InstrumentPartsSection } from "@/components/InstrumentPartsSection";
+import { ChordChartView } from "@/components/ChordChartView";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.aiff,.aif";
@@ -112,6 +113,7 @@ export default function Mp3ToSheetMusic() {
   const { sheetRef, onActiveNoteChange } = useNoteHighlight();
   const [isRendered, setIsRendered] = useState(false);
   const [errorInfo, setErrorInfo] = useState<{ type: ErrorType; message: string; detail?: string } | null>(null);
+  const [viewMode, setViewMode] = useState<"sheet" | "chordChart">("sheet");
 
   // Progress bar state for sheet music playback
   const [playbackProgress, setPlaybackProgress] = useState(0);
@@ -585,6 +587,7 @@ export default function Mp3ToSheetMusic() {
     setSavedSongId(null);
     setSaveTitle("");
     setShowSaveDialog(false);
+    setViewMode("sheet");
   }, [stopPreview]);
 
   // ─── AUTH GATE ───
@@ -1056,46 +1059,86 @@ export default function Mp3ToSheetMusic() {
                 </div>
               )}
 
-              {/* Playback controls with note highlighting and progress tracking */}
-              <PlaybackControls
-                abc={sanitisedDisplayAbc}
-                className="mb-4"
-                onActiveNoteChange={onActiveNoteChange}
-                onPlaybackStateChange={handlePlaybackStateChange}
-              />
-
-              {/* Progress bar above sheet music */}
-              <SheetMusicProgressBar
-                progress={playbackProgress}
-                isActive={playbackIsActive}
-                isPlaying={playbackIsPlaying}
-              />
-
-              {/* Sheet music rendering area — no overlay, always visible */}
-              <div className="relative">
-                {/* Loading indicator shown before first render */}
-                {sanitisedDisplayAbc && !isRendered && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span className="text-sm">Rendering sheet music...</span>
-                    </div>
-                  </div>
-                )}
-                {/* Actual rendering container — always visible, no opacity tricks */}
-                <div
-                  id="mp3-sheet-music-render"
-                  ref={sheetRef}
-                  className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
-                  style={{ colorScheme: "light" }}
-                />
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 mb-4 bg-muted/50 rounded-lg p-1 w-fit">
+                <button
+                  onClick={() => setViewMode("sheet")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "sheet"
+                      ? "bg-white text-violet-700 shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Music className="w-3.5 h-3.5" />
+                  Sheet Music
+                </button>
+                <button
+                  onClick={() => setViewMode("chordChart")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "chordChart"
+                      ? "bg-white text-violet-700 shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ListMusic className="w-3.5 h-3.5" />
+                  Chord Chart
+                </button>
               </div>
 
-              {/* Guitar chord diagrams */}
-              {chords.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <GuitarChordChart chords={chords} />
-                </div>
+              {/* Sheet Music View */}
+              {viewMode === "sheet" && (
+                <>
+                  {/* Playback controls with note highlighting and progress tracking */}
+                  <PlaybackControls
+                    abc={sanitisedDisplayAbc}
+                    className="mb-4"
+                    onActiveNoteChange={onActiveNoteChange}
+                    onPlaybackStateChange={handlePlaybackStateChange}
+                  />
+
+                  {/* Progress bar above sheet music */}
+                  <SheetMusicProgressBar
+                    progress={playbackProgress}
+                    isActive={playbackIsActive}
+                    isPlaying={playbackIsPlaying}
+                  />
+
+                  {/* Sheet music rendering area — no overlay, always visible */}
+                  <div className="relative">
+                    {/* Loading indicator shown before first render */}
+                    {sanitisedDisplayAbc && !isRendered && (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="flex items-center gap-3 text-muted-foreground">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span className="text-sm">Rendering sheet music...</span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Actual rendering container — always visible, no opacity tricks */}
+                    <div
+                      id="mp3-sheet-music-render"
+                      ref={sheetRef}
+                      className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
+                      style={{ colorScheme: "light" }}
+                    />
+                  </div>
+
+                  {/* Guitar chord diagrams */}
+                  {chords.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <GuitarChordChart chords={chords} />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Chord Chart View */}
+              {viewMode === "chordChart" && sanitisedDisplayAbc && (
+                <ChordChartView
+                  abc={sanitisedDisplayAbc}
+                  songTitle={file?.name?.replace(/\.[^.]+$/, "") || "Sheet Music"}
+                  songKeySignature={originalKey}
+                />
               )}
             </div>
 

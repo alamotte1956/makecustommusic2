@@ -2328,3 +2328,10 @@
 - [x] Added stuck job recovery at server startup — resets songs stuck in 'generating' status
 - [x] Added 90-second timeout detection in SheetMusicViewer with "Retry Generation" button
 - [x] Frontend shows helpful message when generation is taking too long
+
+## MP3 to Sheet Music - Chord Chart View
+- [x] Add ChordChartView component to the MP3 to Sheet Music page
+- [x] Add a toggle between Sheet Music view and Chord Chart view (pill-style toggle)
+- [x] Pass ABC notation and song metadata to ChordChartView
+- [x] Chord chart includes its own transpose, font size, print, PDF, copy, guitar diagrams, and capo chart
+- [x] Reset viewMode to "sheet" when starting a new conversion
