@@ -491,6 +491,13 @@ function WorshipSetDetail({
         const leadSheet = extractLeadSheet(abc);
         if (!leadSheet || leadSheet.sections.length === 0) continue;
 
+        const transposedKey = transposeKeys[item.id];
+        const originalKey = origKeys[item.id];
+        const wasTransposed = transposedKey && originalKey && transposedKey !== originalKey;
+
+        // Also extract the original (un-transposed) lead sheet for comparison
+        const origLeadSheet = wasTransposed ? extractLeadSheet(item.abc!) : null;
+
         const chords = extractChordsFromABC(abc);
         let capoLabel = "";
         if (songKey && chords.length > 0) {
@@ -500,13 +507,20 @@ function WorshipSetDetail({
           }
         }
 
-        const transposedKey = transposeKeys[item.id];
-        const originalKey = origKeys[item.id];
-        const wasTransposed = transposedKey && originalKey && transposedKey !== originalKey;
         const keyLabel = transposedKey || item.songKey || songKey || "";
         const origKeyLabel = wasTransposed ? `(orig: ${originalKey})` : "";
 
         let sectionsHtml = "";
+        // Build a flat list of original chord lines for comparison
+        const origChordLines: string[] = [];
+        if (origLeadSheet) {
+          for (const sec of origLeadSheet.sections) {
+            for (const ln of sec.lines) {
+              origChordLines.push(ln.chords || "");
+            }
+          }
+        }
+        let origLineIdx = 0;
         for (const section of leadSheet.sections) {
           let sectionContent = "";
           if (section.label) {
@@ -514,6 +528,10 @@ function WorshipSetDetail({
           }
           for (const line of section.lines) {
             sectionContent += `<div class="lead-line">`;
+            if (wasTransposed && origChordLines[origLineIdx]) {
+              // Show original chords in muted style above transposed chords
+              sectionContent += `<pre class="chord-line-orig">${escHtml(origChordLines[origLineIdx])}</pre>`;
+            }
             if (line.chords) {
               sectionContent += `<pre class="chord-line">${escHtml(line.chords)}</pre>`;
             }
@@ -521,6 +539,7 @@ function WorshipSetDetail({
               sectionContent += `<pre class="lyrics-line">${escHtml(line.lyrics)}</pre>`;
             }
             sectionContent += `</div>`;
+            origLineIdx++;
           }
           sectionsHtml += `<div class="section">${sectionContent}</div>`;
         }
@@ -538,6 +557,10 @@ function WorshipSetDetail({
                 ${capoLabel ? `<span class="capo-badge">${capoLabel}</span>` : ""}
               </div>
               ${item.notes ? `<div class="song-notes">${escHtml(item.notes)}</div>` : ""}
+              ${wasTransposed ? `<div class="transpose-legend">
+                <span><span class="legend-swatch legend-orig"></span>Original (${escHtml(originalKey)})</span>
+                <span><span class="legend-swatch legend-new"></span>Transposed (${escHtml(transposedKey)})</span>
+              </div>` : ""}
             </div>
             ${sectionsHtml}
           </div>`;
@@ -617,11 +640,28 @@ function WorshipSetDetail({
       padding-bottom: 2px; border-bottom: 1px solid #ddd;
     }
     .lead-line { margin-bottom: 2px; }
+    .chord-line-orig {
+      font-family: 'Courier New', monospace;
+      font-size: 10px; font-weight: normal; color: #999;
+      line-height: 1.3; margin: 0; white-space: pre;
+      letter-spacing: 0.3px;
+    }
     .chord-line {
       font-family: 'Courier New', monospace;
       font-size: 12px; font-weight: bold; color: #1a56db;
       line-height: 1.4; margin: 0; white-space: pre;
     }
+    .transpose-legend {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 10px; color: #888; margin-top: 8px;
+      justify-content: center;
+    }
+    .legend-swatch {
+      display: inline-block; width: 10px; height: 3px;
+      border-radius: 1px; margin-right: 4px; vertical-align: middle;
+    }
+    .legend-orig { background: #999; }
+    .legend-new { background: #1a56db; }
     .lyrics-line {
       font-family: 'Georgia', serif;
       font-size: 13px; line-height: 1.4; margin: 0 0 4px 0;
@@ -793,6 +833,21 @@ function WorshipSetDetail({
         const leadSheet = extractLeadSheet(abc);
         if (!leadSheet || leadSheet.sections.length === 0) continue;
 
+        const transposedKey = transposeKeys[item.id];
+        const originalKey = origKeys[item.id];
+        const wasTransposed = transposedKey && originalKey && transposedKey !== originalKey;
+
+        // Extract original lead sheet for dual-chord comparison
+        const origLeadSheet = wasTransposed ? extractLeadSheet(item.abc!) : null;
+        const origChordLinesPdf: string[] = [];
+        if (origLeadSheet) {
+          for (const sec of origLeadSheet.sections) {
+            for (const ln of sec.lines) {
+              origChordLinesPdf.push(ln.chords || "");
+            }
+          }
+        }
+
         const chords = extractChordsFromABC(abc);
         let capoLabel = "";
         if (songKey && chords.length > 0) {
@@ -801,9 +856,6 @@ function WorshipSetDetail({
             capoLabel = `Capo: Fret ${best[0].fret} (play in ${best[0].playKey})`;
           }
         }
-        const transposedKey = transposeKeys[item.id];
-        const originalKey = origKeys[item.id];
-        const wasTransposed = transposedKey && originalKey && transposedKey !== originalKey;
         const keyLabel = transposedKey || item.songKey || songKey || "";
 
         // New page for each song
@@ -864,6 +916,24 @@ function WorshipSetDetail({
           y += 5;
         }
 
+        // Transpose legend in PDF
+        if (wasTransposed) {
+          y += 2;
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          // Original legend
+          doc.setFillColor(170, 170, 170);
+          doc.rect(PW / 2 - 42, y - 1.5, 8, 2, "F");
+          doc.setTextColor(140, 140, 140);
+          doc.text(`Original (${originalKey})`, PW / 2 - 32, y);
+          // Transposed legend
+          doc.setFillColor(26, 86, 219);
+          doc.rect(PW / 2 + 10, y - 1.5, 8, 2, "F");
+          doc.setTextColor(26, 86, 219);
+          doc.text(`Transposed (${transposedKey})`, PW / 2 + 20, y);
+          y += 5;
+        }
+
         // Divider
         doc.setDrawColor(180, 180, 180);
         doc.setLineWidth(0.4);
@@ -871,6 +941,7 @@ function WorshipSetDetail({
         y += 8;
 
         // Sections
+        let pdfOrigLineIdx = 0;
         for (const section of leadSheet.sections) {
           // Section label
           if (section.label) {
@@ -887,9 +958,19 @@ function WorshipSetDetail({
           }
 
           for (const line of section.lines) {
+            const origChordH = (wasTransposed && origChordLinesPdf[pdfOrigLineIdx]) ? 3.5 : 0;
             const chordH = line.chords ? 4.5 : 0;
             const lyricsH = line.lyrics ? 4.5 : 0;
-            y = pgBreak(y, chordH + lyricsH + 1);
+            y = pgBreak(y, origChordH + chordH + lyricsH + 1);
+
+            // Original chords (muted, smaller) when transposed
+            if (wasTransposed && origChordLinesPdf[pdfOrigLineIdx]) {
+              doc.setFontSize(8);
+              doc.setTextColor(170, 170, 170);
+              doc.setFont("courier", "normal");
+              doc.text(origChordLinesPdf[pdfOrigLineIdx], ML, y);
+              y += origChordH;
+            }
 
             if (line.chords) {
               doc.setFontSize(10);
@@ -898,6 +979,7 @@ function WorshipSetDetail({
               doc.text(line.chords, ML, y);
               y += chordH;
             }
+            pdfOrigLineIdx++;
             if (line.lyrics) {
               doc.setFontSize(10);
               doc.setTextColor(50, 50, 50);

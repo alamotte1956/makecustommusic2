@@ -2309,3 +2309,10 @@
 - [x] Show transposed key in the chord chart output with original key noted
 - [x] Reset All button to revert all songs to original keys
 - [x] Visual indicator showing how many songs will be transposed
+
+## Chord Chart - Dual Chord Display (Original + Transposed)
+- [x] Show both original and transposed chords on the same line when a song is transposed
+- [x] Apply to print HTML chord chart output (muted gray original chords above bold blue transposed chords)
+- [x] Apply to PDF chord chart output (8pt gray original above 10pt blue transposed)
+- [x] Style original chords differently (smaller, muted) so transposed chords remain prominent
+- [x] Added color-coded legend (gray=original, blue=transposed) on transposed songs
