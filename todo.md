@@ -2265,11 +2265,12 @@
 - [ ] Fix any issues found during testing
 
 ## Chord Chart / Guitar Tab View
-- [ ] Create ChordChartView component that displays chord progressions in a readable chart format
-- [ ] Parse ABC notation to extract chord symbols and timing
-- [ ] Display chord chart with lyrics aligned underneath chords
-- [ ] Add toggle between Sheet Music view and Chord Chart view on song detail and MP3 to Sheet pages
-- [ ] Style chord chart for print-friendly output
+- [x] Create ChordChartView component that displays chord progressions in a readable chart format
+- [x] Parse ABC notation to extract chord symbols and timing (uses extractLeadSheet)
+- [x] Display chord chart with lyrics aligned underneath chords
+- [x] Add Chord Chart tab to SongDetail page (7-tab layout with ListMusic icon)
+- [x] Style chord chart for print-friendly output (print, copy, PDF export)
+- [x] Includes transpose, font size selector, guitar chord diagrams, and capo chart
 
 ## PDF Export - Last Bar Cut Off
 - [x] Fix PDF export cutting off the very end/last bar of the sheet music (added exportSheetMusicPDFFromAbc with fixed staffwidth 740 and extra bottom padding)

@@ -14,11 +14,12 @@ import SheetMusicViewer from "@/components/SheetMusicViewer";
 import GuitarChordViewer from "@/components/GuitarChordViewer";
 import SingabilityAnalysis from "@/components/SingabilityAnalysis";
 import ArrangementPartsPanel from "@/components/ArrangementPartsPanel";
+import { ChordChartView } from "@/components/ChordChartView";
 import { exportLyricsPDF } from "@/lib/pdfExport";
 import {
   Music, FileText, Guitar, Download, Share2, ArrowLeft,
   Clock, Gauge, Tag, Mic, Loader2, FileAudio, Pencil, Check, X,
-  Scissors, Play, Pause, Volume2, DollarSign, BarChart3
+  Scissors, Play, Pause, Volume2, DollarSign, BarChart3, ListMusic
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -320,7 +321,7 @@ export default function SongDetail() {
 
       {/* Tabs: Lyrics / Sheet Music / Guitar Chords / Stems */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="lyrics" className="gap-1.5" data-tour="lyrics-tab">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Lyrics</span>
@@ -332,6 +333,10 @@ export default function SongDetail() {
           <TabsTrigger value="arrangement" className="gap-1.5">
             <Music className="w-4 h-4" />
             <span className="hidden sm:inline">Arrangement</span>
+          </TabsTrigger>
+          <TabsTrigger value="chord-chart" className="gap-1.5">
+            <ListMusic className="w-4 h-4" />
+            <span className="hidden sm:inline">Chord Chart</span>
           </TabsTrigger>
           <TabsTrigger value="guitar" className="gap-1.5" data-tour="chords-tab">
             <Guitar className="w-4 h-4" />
@@ -417,6 +422,18 @@ export default function SongDetail() {
           <Card>
             <CardContent className="pt-6">
               <ArrangementPartsPanel songId={song.id} songTitle={song.title} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="chord-chart">
+          <Card>
+            <CardContent className="pt-6">
+              <ChordChartView
+                abc={song.sheetMusicAbc || song.abcNotation || ""}
+                songTitle={song.title}
+                songKeySignature={song.keySignature}
+              />
             </CardContent>
           </Card>
         </TabsContent>
