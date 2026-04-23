@@ -1273,6 +1273,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   // If status is null/undefined (never started) or failed, show the generate button instead
   const isPreparing = !abc && !error && !generateMutation.isPending && !isBackgroundFailed && isBackgroundGenerating;
 
+  // Track how long we've been in "preparing" state to detect stuck jobs
+  const [preparingStartTime] = useState(() => isPreparing ? Date.now() : 0);
+  const [isStuckGenerating, setIsStuckGenerating] = useState(false);
+  useEffect(() => {
+    if (!isPreparing) {
+      setIsStuckGenerating(false);
+      return;
+    }
+    // If stuck in preparing for more than 90 seconds, show a retry option
+    const timer = setTimeout(() => {
+      setIsStuckGenerating(true);
+    }, 90000);
+    return () => clearTimeout(timer);
+  }, [isPreparing, preparingStartTime]);
+
   // No ABC notation yet — show preparing state, key picker + generate button, or error
   if (!abc) {
     return (
@@ -1311,9 +1326,34 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             <div className="text-center space-y-1">
               <p className="text-sm font-medium text-foreground">Preparing sheet music...</p>
               <p className="text-xs text-muted-foreground">
-                Sheet music is being generated automatically. This usually takes 15–30 seconds.
+                {isStuckGenerating
+                  ? "This is taking longer than expected. You can try regenerating below."
+                  : "Sheet music is being generated automatically. This usually takes 15\u201330 seconds."}
               </p>
             </div>
+            {isStuckGenerating && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                onClick={() => {
+                  setIsStuckGenerating(false);
+                  generateMutation.mutateAsync({ songId, key: undefined, force: true }).then((result) => {
+                    if (result.abcNotation) {
+                      setAbc(result.abcNotation);
+                      hasRenderedOnceRef.current = false;
+                      lastRenderedAbcRef.current = null;
+                      setRenderAttempt((n) => n + 1);
+                    }
+                  }).catch((err: any) => {
+                    setError(classifyError(err));
+                  });
+                }}
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Retry Generation
+              </Button>
+            )}
           </>
         ) : (
           <>

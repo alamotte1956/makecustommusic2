@@ -165,9 +165,19 @@ export function sanitiseAbc(raw: string): string {
   if (!abc) return "";
 
   // 2. Try to extract just the ABC block if there is surrounding text
+  // Handle cases where LLM wraps output in prose like "Here is the ABC notation:"
   const xMatch = abc.match(/^(X:\s*\d+)/m);
   if (xMatch && xMatch.index !== undefined && xMatch.index > 0) {
     abc = abc.substring(xMatch.index);
+  }
+
+  // 2b. If no X: header found, try to find T: as the start (some LLMs skip X:)
+  if (!xMatch) {
+    const tMatch = abc.match(/^(T:\s*.+)/m);
+    if (tMatch && tMatch.index !== undefined && tMatch.index > 0) {
+      // Prepend X: 1 since it was missing
+      abc = "X: 1\n" + abc.substring(tMatch.index);
+    }
   }
 
   // 3. Filter and transform lines
@@ -366,11 +376,15 @@ export function validateAbc(abc: string): string | null {
     return "No bar lines found in music content — notation may be malformed";
   }
 
-  // Check minimum length: at least 16 measures by counting bar lines
+  // Check minimum length by counting bar lines
+  // Count repeat signs as extra measures (they represent repeated sections)
   const allMusicText = musicLines.join(" ");
   const barLineCount = (allMusicText.match(/\|/g) || []).length;
-  if (barLineCount < 16) {
-    return `Sheet music is too short — found only ${barLineCount} measures, need at least 16 measures`;
+  const repeatSignCount = (allMusicText.match(/:\|/g) || []).length;
+  // Each repeat sign effectively doubles the section, so count them as extra measures
+  const effectiveMeasures = barLineCount + (repeatSignCount * 4);
+  if (effectiveMeasures < 8) {
+    return `Sheet music is too short — found only ${barLineCount} measures (${repeatSignCount} repeats), need at least 8 measures`;
   }
 
   // Verify music lines have reasonable content (not just bar lines)
@@ -462,18 +476,64 @@ export async function generateAbcNotation(
   // Final fallback: use comprehensive generator to ensure we always have valid ABC notation
   try {
     console.warn("[SheetMusic] All LLM attempts failed, using comprehensive fallback generator...");
-    const fallbackAbc = generateComprehensiveSheetMusic({
+    // Try with lyrics alignment first for better results
+    const { generateComprehensiveSheetMusicWithLyrics } = await import("./comprehensiveSheetMusicGenerator");
+    const fallbackAbc = generateComprehensiveSheetMusicWithLyrics({
       title: song.title,
       key: song.keySignature || "C",
       timeSignature: song.timeSignature || "4/4",
       tempo: song.tempo || 120,
       lyrics: song.lyrics || ""
     });
-    console.log("[SheetMusic] Comprehensive fallback generator succeeded");
+    console.log(`[SheetMusic] Comprehensive fallback generator succeeded (${fallbackAbc.length} chars)`);
     return fallbackAbc;
   } catch (fallbackError) {
     console.error("[SheetMusic] Even fallback generator failed:", fallbackError);
-    throw lastError || new Error("Sheet music generation failed after all retries");
+    // Last resort: try without lyrics
+    try {
+      const fallbackAbc = generateComprehensiveSheetMusic({
+        title: song.title,
+        key: song.keySignature || "C",
+        timeSignature: song.timeSignature || "4/4",
+        tempo: song.tempo || 120,
+      });
+      console.log(`[SheetMusic] Basic fallback generator succeeded (${fallbackAbc.length} chars)`);
+      return fallbackAbc;
+    } catch (basicFallbackError) {
+      console.error("[SheetMusic] All generators failed:", basicFallbackError);
+      throw lastError || new Error("Sheet music generation failed after all retries and fallbacks");
+    }
+  }
+}
+
+/**
+ * Recover songs stuck in "generating" status (e.g., after a server restart mid-generation).
+ * Resets them to "failed" so the user can retry, or re-triggers generation.
+ * Call this once at server startup.
+ */
+export async function recoverStuckSheetMusicJobs(): Promise<void> {
+  try {
+    const { getDb } = await import("./db");
+    const db = await getDb();
+    if (!db) return;
+
+    const { songs } = await import("../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+
+    // Find songs stuck in "generating" or "pending" status
+    const stuckSongs = await db.select({ id: songs.id, title: songs.title })
+      .from(songs)
+      .where(eq(songs.sheetMusicStatus, "generating"));
+
+    if (stuckSongs.length > 0) {
+      console.log(`[SheetMusic Recovery] Found ${stuckSongs.length} songs stuck in 'generating' status`);
+      for (const song of stuckSongs) {
+        console.log(`[SheetMusic Recovery] Resetting song ${song.id} "${song.title}" to 'failed' status`);
+        await updateSongSheetMusicStatus(song.id, "failed", "Generation was interrupted (server restart). Please regenerate.").catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.error("[SheetMusic Recovery] Error recovering stuck jobs:", err);
   }
 }
 

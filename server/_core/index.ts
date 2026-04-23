@@ -11,6 +11,7 @@ import { registerSitemapRoute } from "../sitemap";
 import { registerLyricsExportRoute } from "../lyricsExport";
 import { registerOgTagsMiddleware } from "../ogTags";
 import { appRouter, recoverPendingGenerationTasks } from "../routers";
+import { recoverStuckSheetMusicJobs } from "../backgroundSheetMusic";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startCreditMonitor } from "../creditMonitor";
@@ -94,6 +95,8 @@ async function startServer() {
     startCreditMonitor();
     // Recover any pending generation tasks from before server restart
     recoverPendingGenerationTasks();
+    // Recover songs stuck in 'generating' status from before server restart
+    recoverStuckSheetMusicJobs().catch((err) => console.error("[Startup] Sheet music recovery failed:", err));
   });
 }
 

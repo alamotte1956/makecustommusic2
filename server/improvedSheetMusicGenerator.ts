@@ -110,7 +110,7 @@ export async function generateSheetMusicImproved(
   tempo: number,
   lyrics: string
 ): Promise<string> {
-  const MAX_ATTEMPTS = 2;
+  const MAX_ATTEMPTS = 3;
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -120,17 +120,32 @@ export async function generateSheetMusicImproved(
       // Build the user prompt with song context
       const userPrompt = buildUserPrompt(title, genre, key, timeSignature, tempo, lyrics);
 
-      const response = await invokeLLM({
-        messages: [
-          { role: "system", content: ENHANCED_SHEET_MUSIC_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-      });
+      let response: any;
+      try {
+        response = await invokeLLM({
+          messages: [
+            { role: "system", content: ENHANCED_SHEET_MUSIC_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+        });
+      } catch (llmErr: any) {
+        console.error(`[ImprovedGenerator] LLM call failed (attempt ${attempt}):`, llmErr?.message || llmErr);
+        throw new Error(`LLM call failed: ${llmErr?.message || "Unknown LLM error"}`);
+      }
 
-      const rawAbc = extractLLMText(response.choices?.[0]?.message?.content);
+      // Defensive: check response structure
+      if (!response || !response.choices || !Array.isArray(response.choices) || response.choices.length === 0) {
+        console.warn(`[ImprovedGenerator] LLM returned unexpected response structure:`, JSON.stringify(response)?.substring(0, 300));
+        throw new Error("LLM returned unexpected response structure (no choices)");
+      }
+
+      const rawAbc = extractLLMText(response.choices[0]?.message?.content);
       if (!rawAbc) {
+        console.warn(`[ImprovedGenerator] LLM returned empty content. Raw message:`, JSON.stringify(response.choices[0]?.message)?.substring(0, 300));
         throw new Error("LLM returned empty content");
       }
+
+      console.log(`[ImprovedGenerator] Raw ABC length: ${rawAbc.length}, first 200 chars: ${rawAbc.substring(0, 200)}`);
 
       // Sanitise and validate
       const cleanAbc = sanitiseAbc(rawAbc);
@@ -164,7 +179,9 @@ export async function generateSheetMusicImproved(
       lastError = err instanceof Error ? err : new Error(String(err));
       console.warn(`[ImprovedGenerator] Attempt ${attempt} failed: ${lastError.message}`);
       if (attempt < MAX_ATTEMPTS) {
-        await new Promise((r) => setTimeout(r, 1500));
+        const delay = 1500 * attempt; // Increasing backoff: 1.5s, 3s, 4.5s
+        console.log(`[ImprovedGenerator] Retrying in ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
   }

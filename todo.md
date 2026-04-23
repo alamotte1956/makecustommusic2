@@ -2316,3 +2316,15 @@
 - [x] Apply to PDF chord chart output (8pt gray original above 10pt blue transposed)
 - [x] Style original chords differently (smaller, muted) so transposed chords remain prominent
 - [x] Added color-coded legend (gray=original, blue=transposed) on transposed songs
+
+## Sheet Music Generator - Reliability Improvements
+- [x] Increased improved generator retries from 2 to 3 with increasing backoff
+- [x] Added defensive LLM response structure checks (no choices, empty content)
+- [x] Better error logging with raw response details for debugging
+- [x] Relaxed validation — lowered minimum from 16 to 8 measures, count repeat signs as extra measures
+- [x] Improved ABC extraction from LLM output (handle missing X: header, T:-only starts)
+- [x] Fallback chain now uses generateComprehensiveSheetMusicWithLyrics for better results
+- [x] Added last-resort fallback (comprehensive generator without lyrics)
+- [x] Added stuck job recovery at server startup — resets songs stuck in 'generating' status
+- [x] Added 90-second timeout detection in SheetMusicViewer with "Retry Generation" button
+- [x] Frontend shows helpful message when generation is taking too long
