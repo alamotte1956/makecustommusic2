@@ -2283,3 +2283,14 @@
 ## Capo Position on Sheet Music
 - [x] Add capo position to sheet music PDF exports (Mp3ToSheetMusic + SheetMusicViewer)
 - [x] Capo calculated via getBestCapoPositions and shown as "Capo: Fret X (play in Y shapes)"
+
+## Worship Set - Print Chord Charts for Entire Set
+- [x] Add "Print Chord Charts" button to Worship Set detail page (amber styled)
+- [x] Add backend route (worship.getSetSongsAbc) to fetch ABC notation for all songs in a set
+- [x] Add getSongsByIds helper to db.ts for batch song fetching
+- [x] Extract lead sheet (chords above lyrics) for each song using extractLeadSheet
+- [x] Generate a combined print-friendly HTML page with all chord charts
+- [x] Include cover page with set list table of contents, date, and service type
+- [x] Include capo recommendations, key, and copyright on each chart
+- [x] Each song gets its own page break for clean printing
+- [x] Open in a new window for printing

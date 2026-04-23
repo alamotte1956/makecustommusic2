@@ -1,5 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { extractLeadSheet, type LeadSheet } from "@/lib/leadSheetExtractor";
+import { detectKeyFromABC, transposeABC } from "@/lib/transpose";
+import { extractChordsFromABC } from "@/lib/midiExport";
+import { getBestCapoPositions } from "@/lib/capoChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +16,8 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, GripVertical, Music, BookOpen, Clock, ChevronRight,
   Sparkles, Loader2, Calendar, Church, ListMusic, Edit2, Copy,
-  ArrowUp, ArrowDown, FileText, Cross, Mic, Heart, Hand, MessageSquare
+  ArrowUp, ArrowDown, FileText, Cross, Mic, Heart, Hand, MessageSquare,
+  Printer
 } from "lucide-react";
 import { Link } from "wouter";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -317,6 +322,8 @@ function WorshipSetDetail({
   const [suggestTheme, setSuggestTheme] = useState("");
   const [suggestScripture, setSuggestScripture] = useState("");
   const [suggestMood, setSuggestMood] = useState("");
+  const [isPrintingChords, setIsPrintingChords] = useState(false);
+  const { user } = useAuth();
 
   const worshipSet = setQuery.data;
   const items = worshipSet?.items ?? [];
@@ -406,6 +413,219 @@ function WorshipSetDetail({
       toast.error(err.message || "Failed to generate suggestions");
     } finally {
       setIsSuggesting(false);
+    }
+  };
+
+  // ─── Print Chord Charts for entire set ───
+  const setAbcQuery = trpc.worship.getSetSongsAbc.useQuery(
+    { id: setId },
+    { enabled: false } // only fetch on demand
+  );
+
+  const handlePrintChordCharts = async () => {
+    setIsPrintingChords(true);
+    try {
+      const result = await setAbcQuery.refetch();
+      const data = result.data;
+      if (!data) {
+        toast.error("Failed to load song data for this set");
+        return;
+      }
+
+      const songItems = data.items.filter((item) => item.abc && item.itemType === "song");
+      if (songItems.length === 0) {
+        toast.error("No songs with sheet music found in this set");
+        return;
+      }
+
+      const currentYear = new Date().getFullYear();
+      const copyrightName = user?.name || "Albert LaMotte";
+
+      // Build HTML for each song's chord chart
+      let allSongsHtml = "";
+      for (let i = 0; i < songItems.length; i++) {
+        const item = songItems[i];
+        const abc = item.abc!;
+        const songKey = detectKeyFromABC(abc) || item.songKeySignature || null;
+        const leadSheet = extractLeadSheet(abc);
+        if (!leadSheet || leadSheet.sections.length === 0) continue;
+
+        const chords = extractChordsFromABC(abc);
+        let capoLabel = "";
+        if (songKey && chords.length > 0) {
+          const best = getBestCapoPositions(songKey, chords, 1);
+          if (best.length > 0 && best[0].fret > 0) {
+            capoLabel = `Capo: Fret ${best[0].fret} (play in ${best[0].playKey})`;
+          }
+        }
+
+        const keyLabel = item.songKey || songKey || "";
+
+        let sectionsHtml = "";
+        for (const section of leadSheet.sections) {
+          let sectionContent = "";
+          if (section.label) {
+            sectionContent += `<div class="section-label">${escHtml(section.label)}</div>`;
+          }
+          for (const line of section.lines) {
+            sectionContent += `<div class="lead-line">`;
+            if (line.chords) {
+              sectionContent += `<pre class="chord-line">${escHtml(line.chords)}</pre>`;
+            }
+            if (line.lyrics) {
+              sectionContent += `<pre class="lyrics-line">${escHtml(line.lyrics)}</pre>`;
+            }
+            sectionContent += `</div>`;
+          }
+          sectionsHtml += `<div class="section">${sectionContent}</div>`;
+        }
+
+        const pageBreak = i < songItems.length - 1 ? 'page-break-after: always;' : '';
+        allSongsHtml += `
+          <div class="song" style="${pageBreak}">
+            <div class="song-header">
+              <div class="song-number">${i + 1}</div>
+              <div class="song-title">${escHtml(item.title)}</div>
+              <div class="song-meta">
+                ${keyLabel ? `<span class="meta-item">Key: ${escHtml(keyLabel)}</span>` : ""}
+                ${leadSheet.meter ? `<span class="meta-item">Time: ${leadSheet.meter}</span>` : ""}
+                ${capoLabel ? `<span class="capo-badge">${capoLabel}</span>` : ""}
+              </div>
+              ${item.notes ? `<div class="song-notes">${escHtml(item.notes)}</div>` : ""}
+            </div>
+            ${sectionsHtml}
+          </div>`;
+      }
+
+      const setTitle = data.setTitle || "Worship Set";
+      const setDate = data.setDate
+        ? new Date(data.setDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+        : "";
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${escHtml(setTitle)} - Chord Charts</title>
+  <style>
+    @page { size: letter portrait; margin: 0.6in; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: #000; background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      text-align: center;
+      padding: 40px 0 30px;
+      border-bottom: 3px solid #333;
+      margin-bottom: 30px;
+      page-break-after: always;
+    }
+    .cover-title { font-size: 32px; font-weight: bold; margin-bottom: 8px; }
+    .cover-subtitle { font-size: 14px; color: #666; font-style: italic; }
+    .cover-date { font-size: 16px; color: #444; margin-top: 12px; }
+    .cover-service { font-size: 13px; color: #666; margin-top: 4px; }
+    .toc { margin: 20px 0; }
+    .toc-title { font-size: 18px; font-weight: bold; margin-bottom: 12px; }
+    .toc-item {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 4px 0; border-bottom: 1px dotted #ccc; font-size: 13px;
+    }
+    .toc-num { font-weight: bold; color: #666; min-width: 24px; }
+    .toc-song { flex: 1; }
+    .toc-key { color: #666; font-size: 12px; }
+    .song { margin-bottom: 20px; }
+    .song-header {
+      text-align: center;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #333;
+    }
+    .song-number {
+      display: inline-block;
+      background: #333; color: #fff;
+      width: 28px; height: 28px; line-height: 28px;
+      border-radius: 50%; font-size: 13px; font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .song-title { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
+    .song-meta {
+      display: flex; justify-content: center; gap: 16px;
+      font-size: 12px; color: #444; margin-top: 4px;
+    }
+    .meta-item { font-weight: 600; }
+    .capo-badge {
+      background: #fef3c7; color: #92400e; padding: 2px 8px;
+      border-radius: 4px; font-weight: 600; border: 1px solid #fcd34d;
+    }
+    .song-notes {
+      font-size: 11px; color: #888; font-style: italic;
+      margin-top: 6px;
+    }
+    .section { margin-bottom: 16px; page-break-inside: avoid; break-inside: avoid; }
+    .section-label {
+      font-size: 12px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 1px; color: #444; margin-bottom: 4px;
+      padding-bottom: 2px; border-bottom: 1px solid #ddd;
+    }
+    .lead-line { margin-bottom: 2px; }
+    .chord-line {
+      font-family: 'Courier New', monospace;
+      font-size: 12px; font-weight: bold; color: #1a56db;
+      line-height: 1.4; margin: 0; white-space: pre;
+    }
+    .lyrics-line {
+      font-family: 'Georgia', serif;
+      font-size: 13px; line-height: 1.4; margin: 0 0 4px 0;
+      white-space: pre-wrap;
+    }
+    .footer {
+      margin-top: 20px; padding-top: 8px;
+      border-top: 1px solid #ccc; text-align: center;
+      font-size: 9px; color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="cover-title">${escHtml(setTitle)}</div>
+    <div class="cover-subtitle">Chord Charts &bull; Lead Sheets</div>
+    ${setDate ? `<div class="cover-date">${setDate}</div>` : ""}
+    ${data.serviceType ? `<div class="cover-service">${escHtml(data.serviceType)}</div>` : ""}
+    <div class="toc">
+      <div class="toc-title">Set List</div>
+      ${songItems.map((item, idx) => {
+        const k = item.songKey || detectKeyFromABC(item.abc!) || item.songKeySignature || "";
+        return `<div class="toc-item">
+          <span class="toc-num">${idx + 1}.</span>
+          <span class="toc-song">${escHtml(item.title)}</span>
+          ${k ? `<span class="toc-key">Key: ${escHtml(k)}</span>` : ""}
+        </div>`;
+      }).join("")}
+    </div>
+  </div>
+  ${allSongsHtml}
+  <div class="footer">
+    &copy; ${currentYear} ${escHtml(copyrightName)} &middot; Generated with Create Christian Music &middot; createchristianmusic.com
+  </div>
+</body>
+</html>`;
+
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+        return;
+      }
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.onload = () => printWindow.focus();
+      toast.success(`Chord charts ready for ${songItems.length} song${songItems.length > 1 ? "s" : ""}!`);
+    } catch (err: any) {
+      console.error("Print chord charts error:", err);
+      toast.error("Failed to generate chord charts");
+    } finally {
+      setIsPrintingChords(false);
     }
   };
 
@@ -529,6 +749,15 @@ function WorshipSetDetail({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button
+            variant="outline"
+            className="gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+            disabled={isPrintingChords || items.filter(i => i.songId).length === 0}
+            onClick={handlePrintChordCharts}
+          >
+            {isPrintingChords ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+            Print Chord Charts
+          </Button>
           <Button onClick={() => setShowAddItem(true)} className="gap-2">
             <Plus className="w-4 h-4" />
             Add Item
@@ -803,4 +1032,14 @@ export default function WorshipSetBuilder() {
       />
     </div>
   );
+}
+
+/** Escape HTML special characters */
+function escHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

@@ -105,6 +105,13 @@ export async function getSongById(id: number) {
   return result[0] ?? null;
 }
 
+export async function getSongsByIds(ids: number[]) {
+  if (ids.length === 0) return [];
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(songs).where(inArray(songs.id, ids));
+}
+
 export async function getUserSongs(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

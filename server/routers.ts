@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import {
-  createSong, getSongById, getUserSongs, deleteSong, updateSong, updateSongMp3,
+  createSong, getSongById, getSongsByIds, getUserSongs, deleteSong, updateSong, updateSongMp3,
   updateSongAudioUrl, updateSongShareToken, getSongByShareToken,
   updateSongSheetMusic, updateSongSheetMusicStatus, updateSongChordProgression,
   updateSongStems, updateSongTakes, updateSongPostProcessPreset, updateSongImageUrl,
@@ -2826,6 +2826,41 @@ Focus on creating a natural flow from gathering to sending forth.`;
         const text = extractLLMText(rawContent);
         if (!text) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate suggestion" });
         return JSON.parse(text);
+      }),
+
+    // ─── Get ABC notation for all songs in a worship set ───
+    getSetSongsAbc: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const set = await getWorshipSetById(input.id, ctx.user.id);
+        if (!set) throw new TRPCError({ code: "NOT_FOUND", message: "Worship set not found" });
+        const items = await getWorshipSetItems(input.id);
+        // Collect all songIds from items that are songs
+        const songIds = items
+          .filter((item) => item.songId)
+          .map((item) => item.songId as number);
+        const songsData = await getSongsByIds(songIds);
+        const songMap = new Map(songsData.map((s) => [s.id, s]));
+        // Return items with their ABC notation and song metadata
+        return {
+          setTitle: set.title,
+          setDate: set.date,
+          serviceType: set.serviceType,
+          items: items.map((item) => {
+            const song = item.songId ? songMap.get(item.songId) : null;
+            return {
+              id: item.id,
+              title: item.title,
+              itemType: item.itemType,
+              songKey: item.songKey,
+              notes: item.notes,
+              songId: item.songId,
+              abc: song?.sheetMusicAbc || song?.abcNotation || null,
+              songKeySignature: song?.keySignature || null,
+              lyrics: song?.lyrics || null,
+            };
+          }),
+        };
       }),
 
     // ─── Scripture Song Link ───
