@@ -2213,3 +2213,7 @@
 - [x] Fix sanitisedDisplayAbc memo in Mp3ToSheetMusic.tsx: strip blank lines after K: header
 - [x] Add unit tests for blank line fix (4 tests passing)
 - [x] All 1769 tests passing
+
+## White overlay covering rendered sheet music on MP3 to Sheet page
+- [x] Diagnose the white overlay/covering that hides the rendered sheet music despite 838 paths rendering
+- [x] Fix the CSS/overlay issue so sheet music is visible

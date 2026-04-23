@@ -239,6 +239,23 @@ export default function Mp3ToSheetMusic() {
   const [renderAttempt, setRenderAttempt] = useState(0);
   const [containerVisible, setContainerVisible] = useState(false);
 
+  // Safety net: if isRendered stays false for 3s after ABC is available,
+  // check if the container actually has rendered SVG content and force-show it.
+  useEffect(() => {
+    if (isRendered || !sanitisedDisplayAbc) return;
+    const timer = setTimeout(() => {
+      const container = sheetRef.current;
+      if (!container) return;
+      const svg = container.querySelector("svg");
+      const paths = svg?.querySelectorAll("path");
+      if (paths && paths.length > 5) {
+        console.log(`[Mp3SheetMusic] Safety net: forcing isRendered=true (${paths.length} paths found)`);
+        setIsRendered(true);
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [isRendered, sanitisedDisplayAbc]);
+
   // ResizeObserver: detect when the container becomes visible (non-zero width)
   // This prevents abcjs from rendering into a zero-width container, which produces
   // a minimal SVG with only the title text and no musical notation.
@@ -338,7 +355,11 @@ export default function Mp3ToSheetMusic() {
           }
         }
 
-        if (!cancelled) setIsRendered(true);
+        // CRITICAL: Always set isRendered=true after a successful render,
+        // even if the effect was "cancelled" by a dependency change.
+        // The SVG is already in the DOM with real content — hiding it
+        // behind opacity-0 + skeleton overlay makes it invisible to the user.
+        setIsRendered(true);
       } catch (renderErr: any) {
         if (!cancelled) {
           console.error("Sheet music render error:", renderErr);
