@@ -183,7 +183,21 @@ Return ONLY valid JSON (no markdown, no explanation) with chord changes at key m
     jsonText = jsonMatch[1].trim();
   }
 
-  const chords = JSON.parse(jsonText);
+  let chords = JSON.parse(jsonText);
+  
+  // Ensure chords is always an array
+  if (!Array.isArray(chords)) {
+    console.warn('[generateChordProgression] LLM returned non-array chords, converting to array');
+    // If it's a single object, wrap it in an array
+    if (typeof chords === 'object' && chords !== null && 'chord' in chords) {
+      chords = [chords];
+    } else {
+      // Fallback: return empty array
+      console.warn('[generateChordProgression] Invalid chord format, using fallback');
+      chords = [];
+    }
+  }
+  
   return chords;
 }
 
@@ -267,9 +281,11 @@ function buildAbcNotation(
 
   // Create a chord map for quick lookup
   const chordMap: Record<number, string> = {};
-  chords.forEach((c) => {
-    chordMap[c.measureNumber] = c.chord;
-  });
+  if (Array.isArray(chords)) {
+    chords.forEach((c) => {
+      chordMap[c.measureNumber] = c.chord;
+    });
+  }
 
   // Generate notes for each measure
   for (let measure = 1; measure <= structure.measures; measure++) {
