@@ -90,8 +90,8 @@ const STEP_LABELS: Record<ProcessingStep, string> = {
 export default function Mp3ToSheetMusic() {
   usePageMeta({
     title: "MP3 to Sheet Music Converter",
-    description: "Convert worship songs and hymns from MP3 to professional sheet music with AI. Get printable lead sheets with chords and lyrics.",
-    keywords: "MP3 to sheet music, worship song transcription, hymn sheet music converter, church music notation, chord chart generator, lead sheet maker, worship chord charts, gospel sheet music, church choir music notation, praise song chords",
+    description: "Convert worship songs and hymns from MP3 to AI-generated lead sheet arrangements with chords and lyrics. Get printable sheet music in any key.",
+    keywords: "MP3 to sheet music, worship song arrangement, hymn sheet music converter, church music notation, chord chart generator, lead sheet maker, worship chord charts, gospel sheet music, church choir music notation, praise song chords",
     canonicalPath: "/mp3-to-sheet-music",
   });
 
@@ -834,8 +834,10 @@ export default function Mp3ToSheetMusic() {
               <Music className="h-4 w-4 text-violet-500" /> Generate Sheet Music
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Our AI will listen to the audio, identify the melody, chords, key, tempo, and structure,
-              then generate a professional lead sheet in ABC notation. If vocals are detected, lyrics will be aligned beneath the notes.
+              Our AI analyzes your audio to detect chords, key, tempo, and structure, then generates
+               a professional lead sheet arrangement based on those elements. Note: the melody is an AI-composed
+               arrangement inspired by your song's harmony and structure, not a note-for-note transcription.
+               If vocals are detected, lyrics will be aligned beneath the notes.
             </p>
             <Button
               onClick={handleGenerate}
@@ -1132,11 +1134,11 @@ export default function Mp3ToSheetMusic() {
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">How It Works</p>
             <p>
-              Our AI uses audio transcription and advanced music analysis to identify melody, chords,
-              key signature, tempo, and song structure from your audio file. The result is a professional
-              lead sheet in ABC notation that you can transpose to any key and download as PDF or MusicXML.
+              Our AI analyzes your audio to detect chords, key signature, tempo, and song structure.
+              It then generates a professional lead sheet arrangement with a melody composed to fit your
+              song's harmony — this is an AI-composed arrangement, not a note-for-note transcription of
+              the original melody. You can transpose to any key and download as PDF or MusicXML.
               Guitar chord diagrams are shown automatically. Each conversion costs 1 credit.
-              Best results come from clear recordings with prominent melody lines.
             </p>
           </div>
         </div>

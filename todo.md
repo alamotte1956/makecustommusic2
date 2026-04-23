@@ -2244,3 +2244,11 @@
 - [x] Fix PDF download only containing one bar of music instead of the full sheet
 - [x] Fix white overlay in SheetMusicViewer (song detail page) - removed skeleton overlay and opacity-0 pattern
 - [x] Add exportSheetMusicPDFFromAbc function for reliable off-screen PDF rendering
+
+## MP3 to Sheet Music - Accuracy Improvements
+- [x] Update UI copy to clarify that sheet music is an AI-generated arrangement, not a direct note-for-note transcription
+- [x] Research audio-to-note transcription APIs/libraries (basic-pitch-ts requires browser AudioContext, not viable for server)
+- [x] Enhanced LLM prompt with lyrics syllable analysis, structure detection, and rhythm-matched melody generation
+- [x] Added estimateSyllables() and analyzeLyrics() functions for structured lyrics analysis
+- [x] LLM now receives syllable counts per line, section structure, and rhythm guidance
+- [ ] Future: Investigate server-side Python basic-pitch for actual audio pitch detection

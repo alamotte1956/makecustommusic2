@@ -173,6 +173,114 @@ export async function generateSheetMusicImproved(
 }
 
 /**
+ * Estimate syllable count for a word using a simple heuristic.
+ * Counts vowel groups, adjusts for silent-e and common patterns.
+ */
+function estimateSyllables(word: string): number {
+  const w = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (w.length <= 2) return 1;
+  // Count vowel groups
+  const vowelGroups = w.match(/[aeiouy]+/g);
+  let count = vowelGroups ? vowelGroups.length : 1;
+  // Silent e at end
+  if (w.endsWith("e") && count > 1) count--;
+  // -le at end adds a syllable if preceded by consonant
+  if (w.endsWith("le") && w.length > 2 && !/[aeiouy]/.test(w[w.length - 3])) count++;
+  // -ed at end usually doesn't add syllable unless preceded by t or d
+  if (w.endsWith("ed") && count > 1 && !/[td]/.test(w[w.length - 3])) count--;
+  return Math.max(1, count);
+}
+
+/**
+ * Analyze lyrics to extract structural information for the LLM.
+ * Detects verse/chorus patterns, syllable counts, and rhythmic hints.
+ */
+function analyzeLyrics(lyrics: string): {
+  structure: string;
+  syllableGuide: string;
+  totalLines: number;
+  hasRepeatedSections: boolean;
+} {
+  const rawLines = lyrics.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  if (rawLines.length === 0) {
+    return { structure: "", syllableGuide: "", totalLines: 0, hasRepeatedSections: false };
+  }
+
+  // Detect section headers and group lines
+  const sections: { label: string; lines: string[] }[] = [];
+  let currentSection: { label: string; lines: string[] } = { label: "Verse 1", lines: [] };
+
+  for (const line of rawLines) {
+    // Detect section labels like [Verse], [Chorus], (Verse 1), Chorus:, etc.
+    const sectionMatch = line.match(/^[\[\(]?(verse|chorus|bridge|pre-?chorus|intro|outro|hook|refrain|tag|interlude)\s*(\d*)[\]\):]?\s*$/i);
+    if (sectionMatch) {
+      if (currentSection.lines.length > 0) sections.push(currentSection);
+      const sectionType = sectionMatch[1].charAt(0).toUpperCase() + sectionMatch[1].slice(1).toLowerCase();
+      const num = sectionMatch[2] || "";
+      currentSection = { label: `${sectionType} ${num}`.trim(), lines: [] };
+      continue;
+    }
+    // Detect blank-line-separated sections (if no explicit labels)
+    currentSection.lines.push(line);
+  }
+  if (currentSection.lines.length > 0) sections.push(currentSection);
+
+  // If no explicit labels were found and we have multiple sections,
+  // try to auto-detect verse/chorus by looking for repeated line groups
+  if (sections.length === 1 && rawLines.length > 8) {
+    // Split by blank lines in original text
+    const blocks = lyrics.split(/\n\s*\n/).map(b => b.trim()).filter(b => b.length > 0);
+    if (blocks.length >= 2) {
+      sections.length = 0;
+      const seenBlocks = new Map<string, number>();
+      let verseNum = 1;
+      for (const block of blocks) {
+        const normalized = block.toLowerCase().replace(/[^a-z\s]/g, "").trim();
+        if (seenBlocks.has(normalized)) {
+          sections.push({ label: "Chorus", lines: block.split("\n").map(l => l.trim()) });
+        } else {
+          seenBlocks.set(normalized, verseNum);
+          sections.push({ label: `Verse ${verseNum}`, lines: block.split("\n").map(l => l.trim()) });
+          verseNum++;
+        }
+      }
+    }
+  }
+
+  // Build structure description and syllable guide
+  const structureParts: string[] = [];
+  const syllableGuideParts: string[] = [];
+  let hasRepeatedSections = false;
+  const seenLabels = new Set<string>();
+
+  for (const section of sections) {
+    if (seenLabels.has(section.label)) hasRepeatedSections = true;
+    seenLabels.add(section.label);
+
+    const lineAnalysis = section.lines.map(line => {
+      const words = line.split(/\s+/).filter(w => w.length > 0);
+      const syllCount = words.reduce((sum, w) => sum + estimateSyllables(w), 0);
+      return { text: line, wordCount: words.length, syllableCount: syllCount };
+    });
+
+    const avgSyllables = Math.round(lineAnalysis.reduce((s, l) => s + l.syllableCount, 0) / lineAnalysis.length);
+    structureParts.push(`${section.label}: ${section.lines.length} lines, avg ${avgSyllables} syllables/line`);
+
+    syllableGuideParts.push(`[${section.label}]`);
+    for (const la of lineAnalysis) {
+      syllableGuideParts.push(`  "${la.text}" → ${la.syllableCount} syllables (${la.wordCount} words)`);
+    }
+  }
+
+  return {
+    structure: structureParts.join("\n"),
+    syllableGuide: syllableGuideParts.join("\n"),
+    totalLines: rawLines.length,
+    hasRepeatedSections,
+  };
+}
+
+/**
  * Build the user prompt with all available song context
  */
 function buildUserPrompt(
@@ -194,12 +302,38 @@ function buildUserPrompt(
   parts.push(`Tempo: ${tempo || 120} BPM`);
 
   if (lyrics && lyrics.trim().length > 10) {
+    // Analyze lyrics for structure and syllable patterns
+    const analysis = analyzeLyrics(lyrics);
+
     parts.push(``);
-    parts.push(`Lyrics:`);
+    parts.push(`═══ LYRICS ═══`);
     parts.push(lyrics.trim());
+
+    if (analysis.structure) {
+      parts.push(``);
+      parts.push(`═══ SONG STRUCTURE ANALYSIS ═══`);
+      parts.push(analysis.structure);
+      if (analysis.hasRepeatedSections) {
+        parts.push(`Note: This song has repeated sections (likely a chorus). Use the same melody for repeated sections.`);
+      }
+    }
+
+    if (analysis.syllableGuide) {
+      parts.push(``);
+      parts.push(`═══ SYLLABLE GUIDE (match melody rhythm to these counts) ═══`);
+      parts.push(analysis.syllableGuide);
+      parts.push(``);
+      parts.push(`CRITICAL: Each syllable needs its own note or tied note group in the melody.`);
+      parts.push(`A line with 8 syllables needs approximately 8 notes (some syllables may be held longer).`);
+      parts.push(`Use the syllable count to determine how many notes per measure.`);
+      parts.push(`For lines with many syllables, use shorter note values (eighth notes).`);
+      parts.push(`For lines with few syllables, use longer note values (quarter/half notes) or melismas.`);
+    }
+
     parts.push(``);
     parts.push(`IMPORTANT: Align the melody to these lyrics using w: lines after each music line.`);
     parts.push(`The melody should match the emotional arc of the lyrics — build intensity toward the chorus.`);
+    parts.push(`Each w: line must have the correct number of syllables matching the notes above it.`);
   } else {
     parts.push(``);
     parts.push(`This is an instrumental piece. Write a memorable, singable melody with clear sections.`);
@@ -229,6 +363,7 @@ function buildUserPrompt(
   parts.push(``);
   parts.push(`Remember: Write a REAL melody with musical phrasing, NOT a scale exercise.`);
   parts.push(`The melody must have contour (rise and fall), rhythmic variety, and breathing space.`);
+  parts.push(`Match the melody rhythm to the natural speech rhythm of the lyrics.`);
 
   return parts.join("\n");
 }
