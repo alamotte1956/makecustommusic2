@@ -258,9 +258,14 @@ export function sanitiseAbc(raw: string): string {
   }
 
   // Debug logging for line-skipping issues
+  console.log(`[Sanitizer] After header/music split: ${headerLines.length} header lines, ${musicLines.length} music lines`);
   if (musicLines.length > 0) {
     const lyricLineCount = musicLines.filter((l) => l.trim().startsWith("w:") || l.trim().startsWith("W:")).length;
     console.log(`[Sanitizer] Music block: ${musicLines.length} lines (${lyricLineCount} lyric lines)`);
+    console.log(`[Sanitizer] First music line: "${musicLines[0]}"`);
+  } else {
+    console.log(`[Sanitizer] NO MUSIC LINES FOUND! Filtered lines: ${filtered.length}`);
+    console.log(`[Sanitizer] Filtered content sample:`, filtered.slice(0, 10));
   }
 
   // 6. Only inject missing headers if we have music content
