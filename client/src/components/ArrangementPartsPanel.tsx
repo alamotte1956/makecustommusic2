@@ -319,8 +319,8 @@ export default function ArrangementPartsPanel({ songId, songTitle }: Arrangement
                 return (
                   <Card key={idx} className={`cursor-pointer transition-all ${
                     isSelected
-                      ? "bg-purple-50 dark:bg-purple-950 border-purple-300 dark:border-purple-700"
-                      : "hover:bg-accent"
+                      ? 'bg-purple-50 dark:bg-purple-950 border-purple-300 dark:border-purple-700'
+                      : 'hover:bg-accent'
                   }`}>
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
