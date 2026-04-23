@@ -25,6 +25,7 @@ import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import AudioWaveform from "@/components/AudioWaveform";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
+import { InstrumentPartsSection } from "@/components/InstrumentPartsSection";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.aiff,.aif";
@@ -1169,6 +1170,14 @@ export default function Mp3ToSheetMusic() {
               )}
             </div>
 
+            {/* Instrument Parts */}
+            {completedJobId && (
+              <InstrumentPartsSection
+                jobId={completedJobId}
+                songTitle={file?.name?.replace(/\.[^.]+$/, "") || "Sheet Music"}
+              />
+            )}
+
             {/* Detected Lyrics */}
             {lyrics && (
               <div className="bg-card rounded-xl border p-6">
@@ -1198,6 +1207,7 @@ export default function Mp3ToSheetMusic() {
             setStep("done");
             setSelectedKey("original");
             setIsRendered(false);
+            setCompletedJobId(job.id);
             toast.success(`Loaded sheet music for "${job.fileName}"`);
           }}
         />

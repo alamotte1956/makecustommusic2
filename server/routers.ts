@@ -53,6 +53,7 @@ import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
 import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
 import { processMp3SheetJob } from "./mp3SheetProcessor";
+import { generateAllPartAbcs, PART_NAMES, INSTRUMENT_PARTS } from "./multiPartAbcGenerator";
 import { getAdminUserList, getAdminUserDetail, getAdminSiteStats, type AdminRevenueStats } from "./adminDb";
 import { eq, isNull, or, sql } from "drizzle-orm";
 import { users as usersTable, songs } from "../drizzle/schema";
@@ -1571,6 +1572,71 @@ RULES:
         });
 
         return { songId: song!.id, title: song!.title };
+      }),
+
+    // Generate instrument parts for a completed MP3-to-sheet-music job
+    generateInstrumentParts: protectedProcedure
+      .input(z.object({ jobId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const job = await getMp3SheetJob(input.jobId, ctx.user.id);
+        if (!job) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
+        }
+        if (job.status !== "done" || !job.abcNotation) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Job must be completed with sheet music before generating parts" });
+        }
+        if (job.partsStatus === "generating") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Parts are already being generated" });
+        }
+
+        // Mark as generating
+        await updateMp3SheetJob(input.jobId, { partsStatus: "generating" });
+
+        // Fire and forget — generate in background
+        const songTitle = job.fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
+        generateAllPartAbcs(songTitle, job.abcNotation, job.lyrics || null)
+          .then(async (parts) => {
+            await updateMp3SheetJob(input.jobId, {
+              instrumentParts: parts,
+              partsStatus: "done",
+            });
+            console.log(`[InstrumentParts] Generated ${Object.keys(parts).length} parts for job ${input.jobId}`);
+          })
+          .catch(async (err) => {
+            console.error(`[InstrumentParts] Failed for job ${input.jobId}:`, err);
+            await updateMp3SheetJob(input.jobId, { partsStatus: "error" });
+          });
+
+        return { status: "generating" as const };
+      }),
+
+    // Get instrument parts for a completed MP3-to-sheet-music job
+    getInstrumentParts: protectedProcedure
+      .input(z.object({ jobId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const job = await getMp3SheetJob(input.jobId, ctx.user.id);
+        if (!job) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
+        }
+        let parts: Record<string, string> = {};
+        if (job.instrumentParts) {
+          try {
+            parts = typeof job.instrumentParts === "string"
+              ? JSON.parse(job.instrumentParts)
+              : job.instrumentParts as Record<string, string>;
+          } catch {
+            parts = {};
+          }
+        }
+        return {
+          partsStatus: job.partsStatus || "idle",
+          parts,
+          availableParts: PART_NAMES.map((name) => ({
+            name,
+            label: INSTRUMENT_PARTS[name].label,
+            hasAbc: !!parts[name],
+          })),
+        };
       }),
   }),
 

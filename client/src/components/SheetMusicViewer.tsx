@@ -681,8 +681,28 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       return;
     }
     
-    // Clone the SVG for preview
+    // Clone the SVG for preview and fix dimensions
     const svgClone = svgElement.cloneNode(true) as SVGElement;
+    
+    // Ensure the SVG has a proper viewBox so it scales correctly in the modal.
+    // abcjs sets width/height attributes but may not set viewBox, causing clipping.
+    const origWidth = svgElement.getAttribute("width") || svgElement.getBoundingClientRect().width.toString();
+    const origHeight = svgElement.getAttribute("height") || svgElement.getBoundingClientRect().height.toString();
+    if (!svgClone.getAttribute("viewBox") && origWidth && origHeight) {
+      const w = parseFloat(origWidth);
+      const h = parseFloat(origHeight);
+      if (w > 0 && h > 0) {
+        svgClone.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      }
+    }
+    // Remove fixed width/height so SVG scales to container
+    svgClone.removeAttribute("width");
+    svgClone.removeAttribute("height");
+    svgClone.style.width = "100%";
+    svgClone.style.height = "auto";
+    svgClone.style.maxWidth = "100%";
+    svgClone.style.overflow = "visible";
+    
     setPdfPreviewSvg(svgClone);
     setShowPdfPreview(true);
   }, []);
@@ -1825,10 +1845,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           </DialogHeader>
           
           {pdfPreviewSvg ? (
-            <div className="bg-white rounded-lg border border-border p-4 overflow-auto max-h-[60vh]">
+            <div className="bg-white rounded-lg border border-border p-4 overflow-auto max-h-[65vh]">
               <div 
                 dangerouslySetInnerHTML={{ __html: pdfPreviewSvg.outerHTML }}
-                className="flex justify-center"
+                className="flex justify-center [&>svg]:w-full [&>svg]:h-auto [&>svg]:overflow-visible"
+                style={{ colorScheme: "light" }}
               />
             </div>
           ) : (

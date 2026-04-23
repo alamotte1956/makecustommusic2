@@ -2219,14 +2219,14 @@
 - [x] Fix the CSS/overlay issue so sheet music is visible
 
 ## Separate Instrument Part PDFs for MP3 to Sheet Music
-- [ ] Add instrumentParts JSON column to mp3_sheet_jobs table
-- [ ] Create LLM prompt and generation function for individual instrument parts (Vocals, Bass, Piano, Drums)
-- [ ] Add tRPC route to generate instrument parts on-demand for a completed job
-- [ ] Build frontend UI with instrument part cards/tabs
-- [ ] Add per-part ABC rendering with abcjs
-- [ ] Add per-part PDF download buttons
+- [x] Add instrumentParts JSON column to mp3_sheet_jobs table
+- [x] Create LLM prompt and generation function for individual instrument parts (Vocals, Bass, Piano)
+- [x] Add tRPC route to generate instrument parts on-demand for a completed job
+- [x] Build frontend UI with instrument part cards/tabs
+- [x] Add per-part ABC rendering with abcjs
+- [x] Add per-part PDF download buttons
 - [ ] Remove MIDI export button from MP3 to Sheet Music page
-- [ ] Write tests for instrument part generation
+- [x] Write tests for instrument part generation
 
 ## Enhance ABC Notation Quality
 - [x] Analyze current LLM prompts and fallback generators for sources of repetitive patterns
@@ -2235,3 +2235,6 @@
 - [x] Enhance the backgroundSheetMusic prompt for MP3 to Sheet Music with better musical guidance
 - [x] Add post-processing to detect and reject overly repetitive ABC output
 - [x] Write tests to verify improved output quality
+
+## Sheet Music Preview Modal White Overlay Bug
+- [x] Fix white overlay covering sheet music in the preview modal (song detail page)
