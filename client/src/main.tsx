@@ -45,16 +45,12 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
-        // Set a 120-second timeout for long-running operations like MP3 to sheet music
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds
-        
+        // Use default browser timeout for all requests
+        // Polling requests are quick and should complete within seconds
+        // Long-running operations (MP3 generation) use background jobs with polling
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
-          signal: controller.signal,
-        }).finally(() => {
-          clearTimeout(timeoutId);
         });
       },
     }),
