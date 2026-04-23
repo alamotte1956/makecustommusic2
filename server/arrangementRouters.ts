@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc";
-import ArrangementAnalyzer from "./arrangementAnalyzer";
+import ArrangementAnalyzer, { InstrumentationConfig } from "./arrangementAnalyzer";
 import MultiPartMelodyGenerator from "./multiPartMelodyGenerator";
 import MultiPartPdfExporter from "./multiPartPdfExporter";
 import * as path from "path";
@@ -26,7 +26,17 @@ export const arrangementRouter = router({
         tempo: z.number(),
         keySignature: z.string(),
         timeSignature: z.string().optional().default("4/4"),
-        lyrics: z.string().optional()
+        lyrics: z.string().optional(),
+        instrumentationConfig: z.object({
+          presetId: z.string().optional(),
+          parts: z.record(
+            z.string(),
+            z.object({
+              enabled: z.boolean(),
+              prominence: z.number().min(1).max(10)
+            })
+          )
+        }).optional()
       })
     )
     .mutation(async ({ input }: any) => {
@@ -38,7 +48,8 @@ export const arrangementRouter = router({
           input.tempo,
           input.keySignature,
           input.timeSignature,
-          input.lyrics
+          input.lyrics,
+          input.instrumentationConfig as InstrumentationConfig | undefined
         );
 
         return {

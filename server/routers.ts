@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
+import { arrangementRouter } from "./arrangementRouters";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -2859,7 +2860,8 @@ Focus on creating a natural flow from gathering to sending forth.`;
       .query(async ({ ctx }) => {
         return getUserSharedLyrics(ctx.user.id);
       }),
-  }),
-});
+   }),
 
+  arrangement: arrangementRouter,
+});
 export type AppRouter = typeof appRouter;

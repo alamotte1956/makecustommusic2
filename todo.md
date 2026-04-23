@@ -2153,3 +2153,25 @@
 - [x] Show completion percentage and estimated time remaining
 - [x] Create enhanced preview component with timing and animations
 - [x] Support both SSE and WebSocket streaming modes
+
+
+## Multi-Part Arrangement UI Integration
+- [ ] Add "Generate Arrangement" button to Generator page result card
+- [ ] Create ArrangementParts page to display all generated parts
+- [ ] Add arrangement parts section to song detail page
+- [ ] Integrate ArrangementPreviewEnhanced component into Generator workflow
+- [ ] Add part selection checkboxes for selective PDF export
+- [ ] Create "Download All Parts as ZIP" functionality
+- [ ] Add arrangement parts to History page song cards
+- [ ] Display arrangement parts in Favorites page
+- [ ] Add arrangement parts to AlbumDetail page
+
+
+## Instrumentation Customization Feature
+- [x] Create instrumentation customization dialog component with presets and toggles
+- [x] Build arrangement preset system (Pop, Worship, Classical, Jazz, Acoustic)
+- [x] Add individual instrument toggles for custom selection
+- [x] Implement instrument prominence/volume controls (1-10 scale)
+- [x] Integrate customization into arrangement generation workflow
+- [x] Add preset quick-select buttons in arrangement panel
+- [x] Test customization feature end-to-end

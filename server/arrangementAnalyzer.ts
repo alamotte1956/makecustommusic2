@@ -34,6 +34,16 @@ export interface ArrangementAnalysis {
   description: string;
 }
 
+export interface InstrumentationConfig {
+  presetId?: string;
+  parts: {
+    [key: string]: {
+      enabled: boolean;
+      prominence: number;
+    };
+  };
+}
+
 const INSTRUMENT_RANGES = {
   soprano: { low: 60, high: 84 },      // C4 to C6
   alto: { low: 55, high: 79 },         // G3 to G5
@@ -55,6 +65,7 @@ const INSTRUMENT_RANGES = {
 export class ArrangementAnalyzer {
   /**
    * Analyze a song and determine the arrangement
+   * Optionally filter by instrumentation config
    */
   static async analyzeSong(
     songTitle: string,
@@ -63,7 +74,8 @@ export class ArrangementAnalyzer {
     tempo: number,
     keySignature: string,
     timeSignature: string = "4/4",
-    lyrics?: string
+    lyrics?: string,
+    instrumentationConfig?: InstrumentationConfig
   ): Promise<ArrangementAnalysis> {
     const prompt = `You are a professional music arranger. Analyze this song and create a detailed arrangement.
 
@@ -134,7 +146,8 @@ Respond in this exact JSON format:
         tempo,
         keySignature,
         timeSignature,
-        analysis
+        analysis,
+        instrumentationConfig
       );
     } catch (error) {
       console.error("Error analyzing arrangement:", error);
@@ -153,9 +166,10 @@ Respond in this exact JSON format:
     tempo: number,
     keySignature: string,
     timeSignature: string,
-    analysis: any
+    analysis: any,
+    instrumentationConfig?: InstrumentationConfig
   ): ArrangementAnalysis {
-    const parts: ArrangementPart[] = [];
+    let parts: ArrangementPart[] = [];
 
     // Add vocal parts
     if (analysis.vocalParts && Array.isArray(analysis.vocalParts)) {
@@ -191,6 +205,13 @@ Respond in this exact JSON format:
           description: instrument.role || ""
         });
       }
+    }
+
+    // Filter parts based on instrumentation config if provided
+    if (instrumentationConfig) {
+      parts = parts.filter(
+        (part) => instrumentationConfig.parts[part.name]?.enabled !== false
+      );
     }
 
     return {
