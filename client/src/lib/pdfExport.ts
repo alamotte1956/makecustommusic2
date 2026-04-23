@@ -401,6 +401,54 @@ export async function exportSheetMusicPDF(
   doc.save(`${songTitle} - Sheet Music.pdf`);
 }
 
+/**
+ * Export sheet music PDF by re-rendering ABC notation into an off-screen container.
+ * This ensures the full music content is captured regardless of the on-screen container state.
+ * Falls back to the existing SVG-based export if ABC is not available.
+ */
+export async function exportSheetMusicPDFFromAbc(
+  abc: string,
+  songTitle: string,
+  fallbackSvg?: SVGElement
+): Promise<void> {
+  // Create an off-screen container for rendering
+  const offscreen = document.createElement("div");
+  offscreen.style.position = "absolute";
+  offscreen.style.left = "-9999px";
+  offscreen.style.top = "0";
+  offscreen.style.width = "800px";
+  offscreen.style.background = "white";
+  offscreen.style.colorScheme = "light";
+  document.body.appendChild(offscreen);
+
+  try {
+    const mod = await import("abcjs");
+    const abcjs = mod.default || mod;
+
+    // Render with a fixed staffwidth for consistent PDF output (no responsive mode)
+    abcjs.renderAbc(offscreen, abc, {
+      staffwidth: 740,
+      paddingtop: 20,
+      paddingbottom: 20,
+      paddingleft: 15,
+      paddingright: 15,
+      add_classes: true,
+    });
+
+    const svg = offscreen.querySelector("svg");
+    if (svg && svg.querySelectorAll("path").length >= 5) {
+      await exportSheetMusicPDF(svg as SVGElement, songTitle);
+    } else if (fallbackSvg) {
+      console.warn("[PDF] Off-screen render produced insufficient content, using fallback SVG");
+      await exportSheetMusicPDF(fallbackSvg, songTitle);
+    } else {
+      throw new Error("Failed to render sheet music for PDF export");
+    }
+  } finally {
+    document.body.removeChild(offscreen);
+  }
+}
+
 // ─── Guitar Chord PDF ───
 export interface ChordPDFSection {
   section: string;

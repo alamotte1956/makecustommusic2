@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { exportSheetMusicPDF } from "@/lib/pdfExport";
+import { exportSheetMusicPDFFromAbc, exportSheetMusicPDF } from "@/lib/pdfExport";
 
 interface InstrumentPartsSectionProps {
   jobId: number;
@@ -52,53 +52,42 @@ function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: str
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendered, setIsRendered] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const hasRenderedOnceRef = useRef(false);
+  const renderAttemptRef = useRef(0);
+  const [renderTrigger, setRenderTrigger] = useState(0);
 
   const sanitisedAbc = useMemo(() => sanitisePartAbc(abc), [abc]);
 
   // Reset when ABC changes
   useEffect(() => {
-    hasRenderedOnceRef.current = false;
     setIsRendered(false);
+    renderAttemptRef.current = 0;
+    setRenderTrigger((n) => n + 1);
   }, [abc]);
 
-  // Render ABC with abcjs
+  // Render ABC with abcjs — simple timeout-based, no cancelled race
   useEffect(() => {
     if (!sanitisedAbc || !containerRef.current) return;
-    if (hasRenderedOnceRef.current && isRendered) return;
 
-    let cancelled = false;
+    const container = containerRef.current;
 
-    async function doRender() {
-      const container = containerRef.current;
-      if (!container || cancelled) return;
-
-      const rect = container.getBoundingClientRect();
-      if (rect.width < 10) {
-        setTimeout(() => {
-          if (!cancelled && containerRef.current) {
-            setIsRendered(false); // trigger re-render
-          }
-        }, 300);
-        return;
-      }
-
+    const timer = setTimeout(async () => {
       try {
+        const rect = container.getBoundingClientRect();
+        if (rect.width < 10) {
+          if (renderAttemptRef.current < 10) {
+            renderAttemptRef.current++;
+            setRenderTrigger((n) => n + 1);
+          }
+          return;
+        }
+
         const mod = await import("abcjs");
-        if (cancelled) return;
         const abcjs = mod.default || mod;
-        if (!containerRef.current) return;
-        containerRef.current.innerHTML = "";
+        container.innerHTML = "";
 
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        if (cancelled || !containerRef.current) return;
-
-        const postRafRect = containerRef.current.getBoundingClientRect();
-        if (postRafRect.width < 10) return;
-
-        abcjs.renderAbc(containerRef.current, sanitisedAbc, {
+        abcjs.renderAbc(container, sanitisedAbc, {
           responsive: "resize",
-          staffwidth: Math.max(500, Math.floor(postRafRect.width - 40)),
+          staffwidth: Math.max(500, Math.floor(rect.width - 40)),
           paddingtop: 15,
           paddingbottom: 15,
           paddingleft: 10,
@@ -106,53 +95,53 @@ function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: str
           add_classes: true,
         });
 
-        const svg = containerRef.current.querySelector("svg");
+        const svg = container.querySelector("svg");
         if (svg) {
           const paths = svg.querySelectorAll("path");
           if (paths.length > 3) {
-            hasRenderedOnceRef.current = true;
             setIsRendered(true);
+          } else if (renderAttemptRef.current < 3) {
+            renderAttemptRef.current++;
+            setRenderTrigger((n) => n + 1);
+          } else {
+            setIsRendered(true); // Show whatever we have
           }
+        } else {
+          setIsRendered(true);
         }
       } catch (err) {
-        if (!cancelled) {
-          console.error(`[InstrumentPart:${partName}] Render error:`, err);
-        }
+        console.error(`[InstrumentPart:${partName}] Render error:`, err);
+        setIsRendered(true); // Show container even on error
       }
-    }
+    }, 100);
 
-    doRender();
-    return () => { cancelled = true; };
-  }, [sanitisedAbc, isRendered, partName]);
-
-  // Safety net
-  useEffect(() => {
-    if (isRendered || !sanitisedAbc) return;
-    const timer = setTimeout(() => {
-      const container = containerRef.current;
-      if (!container) return;
-      const svg = container.querySelector("svg");
-      const paths = svg?.querySelectorAll("path");
-      if (paths && paths.length > 3) {
-        hasRenderedOnceRef.current = true;
-        setIsRendered(true);
-      }
-    }, 3000);
     return () => clearTimeout(timer);
-  }, [isRendered, sanitisedAbc]);
+  }, [sanitisedAbc, renderTrigger, partName]);
 
   const handleDownloadPDF = useCallback(async () => {
-    if (!containerRef.current) return;
-    const svgElement = containerRef.current.querySelector("svg");
-    if (!svgElement) {
-      toast.error("No sheet music to export");
-      return;
-    }
     setExporting(true);
     try {
       const config = PART_CONFIG[partName];
       const label = config ? partName.charAt(0).toUpperCase() + partName.slice(1) : partName;
-      await exportSheetMusicPDF(svgElement, `${songTitle} - ${label}`);
+      const fullTitle = `${songTitle} - ${label}`;
+
+      // Use off-screen rendering for reliable full-content PDF
+      if (sanitisedAbc) {
+        const fallbackSvg = containerRef.current?.querySelector("svg") as SVGElement | undefined;
+        await exportSheetMusicPDFFromAbc(sanitisedAbc, fullTitle, fallbackSvg);
+      } else if (containerRef.current) {
+        const svgElement = containerRef.current.querySelector("svg");
+        if (!svgElement) {
+          toast.error("No sheet music to export");
+          setExporting(false);
+          return;
+        }
+        await exportSheetMusicPDF(svgElement, fullTitle);
+      } else {
+        toast.error("No sheet music to export");
+        setExporting(false);
+        return;
+      }
       toast.success(`${label} part PDF downloaded!`);
     } catch (err) {
       toast.error("Failed to export PDF");
@@ -160,7 +149,7 @@ function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: str
     } finally {
       setExporting(false);
     }
-  }, [partName, songTitle]);
+  }, [partName, songTitle, sanitisedAbc]);
 
   const config = PART_CONFIG[partName] || PART_CONFIG.vocals;
   const Icon = config.icon;
@@ -190,15 +179,13 @@ function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: str
       </div>
       <div className="relative">
         {!isRendered && sanitisedAbc && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         )}
         <div
           ref={containerRef}
-          className={`bg-white p-3 min-h-[120px] overflow-x-auto transition-opacity duration-300 ${
-            isRendered ? "opacity-100" : "opacity-0"
-          }`}
+          className="bg-white p-3 min-h-[120px] overflow-x-auto"
           style={{ colorScheme: "light" }}
         />
       </div>

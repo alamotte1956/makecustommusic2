@@ -2238,3 +2238,9 @@
 
 ## Sheet Music Preview Modal White Overlay Bug
 - [x] Fix white overlay covering sheet music in the preview modal (song detail page)
+
+## Critical Bugs - White Overlay and PDF Export
+- [x] Fix white overlay blocking all sheet music (main lead sheet + instrument parts) on MP3 to Sheet Music page
+- [x] Fix PDF download only containing one bar of music instead of the full sheet
+- [x] Fix white overlay in SheetMusicViewer (song detail page) - removed skeleton overlay and opacity-0 pattern
+- [x] Add exportSheetMusicPDFFromAbc function for reliable off-screen PDF rendering

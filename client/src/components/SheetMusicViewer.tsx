@@ -1756,22 +1756,22 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         isPlaying={playbackIsPlaying}
       />
 
-      {/* Sheet music rendering area with skeleton overlay and floating download button */}
+      {/* Sheet music rendering area with floating download button */}
       <div className="relative group">
-        {/* Skeleton shown while rendering */}
+        {/* Loading indicator shown before first render */}
         {sanitisedDisplayAbc && !isRendered && !error?.type && (
-          <div className="absolute inset-0 z-10">
-            <SheetMusicSkeleton />
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Rendering sheet music...</span>
+            </div>
           </div>
         )}
-        {/* Actual rendering container — always in the DOM with full width so
-            abcjs can compute staff layout. Opacity transitions to reveal once rendered. */}
+        {/* Actual rendering container — always visible, no opacity tricks */}
         <div
           id="sheet-music-render"
           ref={sheetRef}
-          className={`bg-white rounded-lg border border-border p-4 overflow-auto scroll-smooth transition-opacity duration-500 ease-in-out ${
-            isRendered ? "opacity-100" : "opacity-0"
-          }`}
+          className="bg-white rounded-lg border border-border p-4 overflow-auto scroll-smooth"
           style={{ colorScheme: "light", maxHeight: "600px" }}
         />
         

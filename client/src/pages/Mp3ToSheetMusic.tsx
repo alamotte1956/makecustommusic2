@@ -14,14 +14,13 @@ import {
   Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save, RotateCcw,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { exportSheetMusicPDF } from "@/lib/pdfExport";
+import { exportSheetMusicPDF, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { downloadMidi, extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
-import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import AudioWaveform from "@/components/AudioWaveform";
 import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
@@ -236,158 +235,82 @@ export default function Mp3ToSheetMusic() {
     };
   }, [previewUrl]);
 
-  // Track render attempt counter for ResizeObserver-triggered re-renders
-  const [renderAttempt, setRenderAttempt] = useState(0);
-  const [containerVisible, setContainerVisible] = useState(false);
-  // Once true, the skeleton never re-appears and the container stays visible.
-  const hasRenderedOnceRef = useRef(false);
+  // Track render attempt counter for retries
+  const renderAttemptRef = useRef(0);
+  const [renderTrigger, setRenderTrigger] = useState(0);
 
-  // Reset hasRenderedOnceRef when the ABC content changes (new song)
+  // Reset render state when ABC content changes (new song)
   useEffect(() => {
-    hasRenderedOnceRef.current = false;
-  }, [abcNotation]);
-
-  // Safety net: if isRendered stays false for 2s after ABC is available,
-  // check if the container actually has rendered SVG content and force-show it.
-  useEffect(() => {
-    if (isRendered || !sanitisedDisplayAbc) return;
-    const timer = setTimeout(() => {
-      const container = sheetRef.current;
-      if (!container) return;
-      const svg = container.querySelector("svg");
-      const paths = svg?.querySelectorAll("path");
-      if (paths && paths.length > 5) {
-        console.log(`[Mp3SheetMusic] Safety net: forcing isRendered=true (${paths.length} paths found)`);
-        hasRenderedOnceRef.current = true;
-        setIsRendered(true);
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [isRendered, sanitisedDisplayAbc]);
-
-  // ResizeObserver: detect when the container becomes visible (non-zero width)
-  // Only triggers re-render if we haven't successfully rendered yet.
-  useEffect(() => {
-    const container = sheetRef.current;
-    if (!container) return;
-
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0) {
-          setContainerVisible(true);
-          // Only trigger re-render if we haven't rendered successfully yet
-          if (!hasRenderedOnceRef.current) {
-            setRenderAttempt((n) => n + 1);
-          }
-        }
-      }
-    });
-
-    observer.observe(container);
-
-    // Also check immediately in case the container is already visible
-    const rect = container.getBoundingClientRect();
-    if (rect.width > 10) {
-      setContainerVisible(true);
+    if (sanitisedDisplayAbc) {
+      setIsRendered(false);
+      renderAttemptRef.current = 0;
+      setRenderTrigger((n) => n + 1);
     }
+  }, [sanitisedDisplayAbc]);
 
-    return () => observer.disconnect();
-  }, [sanitisedDisplayAbc, step]);
-
-  // Render ABC notation using abcjs
+  // Render ABC notation using abcjs — simple, no skeleton overlay, no cancelled race
   useEffect(() => {
     if (!sanitisedDisplayAbc || !sheetRef.current) return;
 
-    // If already rendered once for this ABC, skip re-render
-    // (ResizeObserver or other deps may re-trigger this effect)
-    if (hasRenderedOnceRef.current && isRendered) return;
+    const container = sheetRef.current;
+    if (!container.id) container.id = "mp3-sheet-music-render";
 
-    let cancelled = false;
-
-    async function doRender() {
-      const container = sheetRef.current;
-      if (!container || cancelled) return;
-
-      const rect = container.getBoundingClientRect();
-      // CRITICAL: Do not render if container has zero width (hidden tab, collapsed section)
-      if (rect.width < 10) {
-        // Schedule a retry — the container may not be laid out yet
-        setTimeout(() => {
-          if (!cancelled) setRenderAttempt((n) => n + 1);
-        }, 200);
-        return;
-      }
-
-      // Only show skeleton on the very first render, not on re-renders
-      if (!hasRenderedOnceRef.current) {
-        setIsRendered(false);
-      }
-
+    // Use a timeout to ensure the container is laid out
+    const timer = setTimeout(async () => {
       try {
-        const mod = await import("abcjs");
-        if (cancelled) return;
-        const abcjs = mod.default || mod;
-        if (!sheetRef.current) return;
-        sheetRef.current.innerHTML = "";
-        if (!sheetRef.current.id) sheetRef.current.id = "mp3-sheet-music-render";
-
-        // Wait for next animation frame to ensure layout is fully computed
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        if (cancelled || !sheetRef.current) return;
-
-        const postRafRect = sheetRef.current.getBoundingClientRect();
-        if (postRafRect.width < 10) {
-          // Still not visible — retry
-          setTimeout(() => { if (!cancelled) setRenderAttempt((n) => n + 1); }, 300);
+        const rect = container.getBoundingClientRect();
+        if (rect.width < 10) {
+          // Container not visible yet — retry
+          if (renderAttemptRef.current < 10) {
+            renderAttemptRef.current++;
+            setRenderTrigger((n) => n + 1);
+          }
           return;
         }
 
-        // DEBUG: Log the ABC being passed to abcjs
-        console.log(`[Mp3SheetMusic] ABC passed to abcjs (${sanitisedDisplayAbc!.length} chars):`, sanitisedDisplayAbc!.substring(0, 500));
+        const mod = await import("abcjs");
+        const abcjs = mod.default || mod;
+        container.innerHTML = "";
 
-        const visualObj = abcjs.renderAbc(sheetRef.current, sanitisedDisplayAbc!, {
+        console.log(`[Mp3SheetMusic] ABC passed to abcjs (${sanitisedDisplayAbc.length} chars):`, sanitisedDisplayAbc.substring(0, 500));
+
+        const visualObj = abcjs.renderAbc(container, sanitisedDisplayAbc, {
           responsive: "resize",
-          staffwidth: Math.max(600, Math.floor(postRafRect.width - 40)),
+          staffwidth: Math.max(600, Math.floor(rect.width - 40)),
           paddingtop: 20,
           paddingbottom: 20,
           paddingleft: 15,
           paddingright: 15,
           add_classes: true,
         });
-        if (visualObj && visualObj.length > 0 && visualObj[0].warnings && visualObj[0].warnings.length > 0) {
+        if (visualObj && visualObj[0] && visualObj[0].warnings && visualObj[0].warnings.length > 0) {
           console.warn("[SheetMusic] abcjs warnings:", visualObj[0].warnings);
         }
 
         // Verify SVG was actually rendered with content
-        const svg = sheetRef.current.querySelector("svg");
+        const svg = container.querySelector("svg");
         if (svg) {
           const paths = svg.querySelectorAll("path");
-          console.log(`[Mp3SheetMusic] Rendered: ${paths.length} paths, container width: ${postRafRect.width}`);
-          if (paths.length < 5 && renderAttempt < 3 && !hasRenderedOnceRef.current) {
-            // Very few paths — likely a failed render, retry (max 3 attempts)
-            console.warn(`[Mp3SheetMusic] Very few paths rendered (attempt ${renderAttempt + 1}/3), scheduling retry`);
-            setTimeout(() => { if (!cancelled) setRenderAttempt((n) => n + 1); }, 500);
-            return;
-          } else if (paths.length < 5) {
-            console.error(`[Mp3SheetMusic] Failed to render after 3 attempts. ABC content:`, sanitisedDisplayAbc!.substring(0, 200));
+          console.log(`[Mp3SheetMusic] Rendered: ${paths.length} paths, container width: ${rect.width}`);
+          if (paths.length >= 5) {
+            setIsRendered(true);
+          } else if (renderAttemptRef.current < 3) {
+            console.warn(`[Mp3SheetMusic] Few paths (${paths.length}), retrying...`);
+            renderAttemptRef.current++;
+            setRenderTrigger((n) => n + 1);
           }
+        } else {
+          setIsRendered(true); // No SVG but no error — show whatever is there
         }
-
-        // Mark as rendered — skeleton disappears, container becomes visible
-        hasRenderedOnceRef.current = true;
-        setIsRendered(true);
       } catch (renderErr: any) {
-        if (!cancelled) {
-          console.error("Sheet music render error:", renderErr);
-          toast.error("Failed to render sheet music notation");
-        }
+        console.error("Sheet music render error:", renderErr);
+        toast.error("Failed to render sheet music notation");
+        setIsRendered(true); // Show container even on error so it's not permanently hidden
       }
-    }
+    }, 100);
 
-    doRender();
-
-    return () => { cancelled = true; };
-  }, [sanitisedDisplayAbc, renderAttempt, containerVisible, isRendered]);
+    return () => clearTimeout(timer);
+  }, [sanitisedDisplayAbc, renderTrigger]);
 
   const stopPreview = useCallback(() => {
     if (audioRef.current) {
@@ -585,26 +508,38 @@ export default function Mp3ToSheetMusic() {
   }, [file, readFileAsBase64, startJobMutation, pollJobStatus]);
 
   const handleDownloadPDF = useCallback(async () => {
-    if (!sheetRef.current) return;
-    const svgElement = sheetRef.current.querySelector("svg");
-    if (!svgElement) {
-      toast.error("No sheet music to export");
-      return;
-    }
     setExporting(true);
     try {
       const title = file?.name.replace(/\.[^/.]+$/, "") || "Sheet Music";
       const keyLabel = selectedKey === "original"
         ? (originalKey ? ` (Key: ${originalKey})` : "")
         : ` (Key: ${selectedKey})`;
-      await exportSheetMusicPDF(svgElement, title + keyLabel);
+      const fullTitle = title + keyLabel;
+
+      // Use the ABC-based off-screen rendering for reliable full-content PDF
+      if (sanitisedDisplayAbc) {
+        const fallbackSvg = sheetRef.current?.querySelector("svg") as SVGElement | undefined;
+        await exportSheetMusicPDFFromAbc(sanitisedDisplayAbc, fullTitle, fallbackSvg);
+      } else if (sheetRef.current) {
+        const svgElement = sheetRef.current.querySelector("svg");
+        if (!svgElement) {
+          toast.error("No sheet music to export");
+          setExporting(false);
+          return;
+        }
+        await exportSheetMusicPDF(svgElement, fullTitle);
+      } else {
+        toast.error("No sheet music to export");
+        setExporting(false);
+        return;
+      }
       toast.success("Sheet music PDF downloaded!");
     } catch {
       toast.error("Failed to export PDF");
     } finally {
       setExporting(false);
     }
-  }, [file, selectedKey, originalKey]);
+  }, [file, selectedKey, originalKey, sanitisedDisplayAbc]);
 
   const handleSaveToLibrary = useCallback(async () => {
     const jobId = completedJobId || activeJobId;
@@ -1143,21 +1078,22 @@ export default function Mp3ToSheetMusic() {
                 isPlaying={playbackIsPlaying}
               />
 
-              {/* Sheet music rendering area with skeleton overlay */}
+              {/* Sheet music rendering area — no overlay, always visible */}
               <div className="relative">
-                {/* Skeleton shown while rendering */}
+                {/* Loading indicator shown before first render */}
                 {sanitisedDisplayAbc && !isRendered && (
-                  <div className="absolute inset-0 z-10">
-                    <SheetMusicSkeleton />
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span className="text-sm">Rendering sheet music...</span>
+                    </div>
                   </div>
                 )}
-                {/* Actual rendering container — always in the DOM with full width */}
+                {/* Actual rendering container — always visible, no opacity tricks */}
                 <div
                   id="mp3-sheet-music-render"
                   ref={sheetRef}
-                  className={`bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth transition-opacity duration-500 ease-in-out ${
-                    isRendered ? "opacity-100" : "opacity-0"
-                  }`}
+                  className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
                   style={{ colorScheme: "light" }}
                 />
               </div>
