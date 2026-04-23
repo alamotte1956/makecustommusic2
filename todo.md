@@ -2175,3 +2175,13 @@
 - [x] Integrate customization into arrangement generation workflow
 - [x] Add preset quick-select buttons in arrangement panel
 - [x] Test customization feature end-to-end
+
+
+## Download All Parts as ZIP Feature
+- [x] Create backend Express endpoint for arrangement ZIP generation
+- [x] Implement PDF generation for individual arrangement parts
+- [x] Add "Download All Parts" button to ArrangementPartsPanel
+- [x] Stream ZIP file with proper headers and content-type
+- [x] Add loading state and progress feedback during ZIP generation
+- [x] Test ZIP download end-to-end with multiple parts
+- [x] Verify file integrity and naming conventions

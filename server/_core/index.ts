@@ -5,6 +5,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerAlbumZipRoute } from "../albumZip";
+import { registerArrangementZipRoute } from "../arrangementZipRoute";
 import { registerStripeWebhookRoute } from "../stripeWebhook";
 import { registerSitemapRoute } from "../sitemap";
 import { registerLyricsExportRoute } from "../lyricsExport";
@@ -57,6 +58,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Album ZIP download
   registerAlbumZipRoute(app);
+  // Arrangement ZIP download
+  registerArrangementZipRoute(app);
   // Lyrics export (PDF, TXT, DOCX)
   registerLyricsExportRoute(app);
   // Dynamic sitemap.xml

@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Music, Loader2, Download, Music2, Zap, AlertCircle } from "lucide-react";
+import { Music, Loader2, Download, Music2, Zap, AlertCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 import InstrumentationCustomizer, { InstrumentationConfig } from "./InstrumentationCustomizer";
 
@@ -20,6 +20,7 @@ interface ArrangementPartsPanelProps {
 export default function ArrangementPartsPanel({ songId, songTitle }: ArrangementPartsPanelProps) {
   const { data: song } = trpc.songs.getById.useQuery({ id: songId });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const [arrangementAnalysis, setArrangementAnalysis] = useState<any>(null);
   const [generatedMelodies, setGeneratedMelodies] = useState<any>(null);
   const [instrumentationConfig, setInstrumentationConfig] = useState<InstrumentationConfig | null>(null);
@@ -115,6 +116,54 @@ export default function ArrangementPartsPanel({ songId, songTitle }: Arrangement
     });
   };
 
+  const handleDownloadAllPartsAsZip = async () => {
+    if (!generatedMelodies || generatedMelodies.length === 0) {
+      toast.error("No parts generated yet");
+      return;
+    }
+
+    setIsDownloadingZip(true);
+    try {
+      const response = await fetch("/api/arrangements/download-zip", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          songTitle: song?.title || "Arrangement",
+          composer: "Unknown",
+          arranger: undefined,
+          tempo: song?.tempo || 120,
+          keySignature: song?.keySignature || "C",
+          timeSignature: song?.timeSignature || "4/4",
+          melodyLines: generatedMelodies,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to download ZIP");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${song?.title || "Arrangement"} - Parts.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("ZIP file downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading ZIP:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to download ZIP file");
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
   if (!song) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -195,7 +244,28 @@ export default function ArrangementPartsPanel({ songId, songTitle }: Arrangement
 
           {generatedMelodies && (
             <div className="space-y-3">
-              <h4 className="font-semibold">Generated Parts</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold">Generated Parts ({generatedMelodies.length})</h4>
+                <Button
+                  onClick={handleDownloadAllPartsAsZip}
+                  disabled={isDownloadingZip}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  {isDownloadingZip ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Preparing ZIP...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="h-4 w-4" />
+                      Download All as ZIP
+                    </>
+                  )}
+                </Button>
+              </div>
               {generatedMelodies.map((part: any, idx: number) => (
                 <Card key={idx} className="hover:bg-accent transition-colors">
                   <CardContent className="pt-6">

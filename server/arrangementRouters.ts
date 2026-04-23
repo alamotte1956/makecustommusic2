@@ -10,6 +10,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import ArrangementAnalyzer, { InstrumentationConfig } from "./arrangementAnalyzer";
 import MultiPartMelodyGenerator from "./multiPartMelodyGenerator";
 import MultiPartPdfExporter from "./multiPartPdfExporter";
+import { ArrangementZipDownload } from "./arrangementZipDownload";
 import * as path from "path";
 import * as fs from "fs";
 
