@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Guitar, RefreshCw, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { exportChordPDF, type ChordPDFData } from "@/lib/pdfExport";
 import { COMMON_KEYS, getSemitoneInterval, transposeChordWithSlash, recommendCapo, getAllCapoOptions, type CapoRecommendation } from "@/lib/transpose";
@@ -230,6 +231,7 @@ function CapoRecommendationCard({
 }
 
 export default function GuitarChordViewer({ songId, chordProgression: initialData, songTitle }: GuitarChordViewerProps) {
+  const { user } = useAuth();
   const [data, setData] = useState<ChordProgressionData | null>(initialData ?? null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -332,7 +334,7 @@ export default function GuitarChordViewer({ songId, chordProgression: initialDat
       };
 
       const keyLabel = selectedKey !== "original" ? ` (Key: ${selectedKey})` : "";
-      await exportChordPDF(pdfData, songTitle + keyLabel, diagramSvgs);
+      await exportChordPDF(pdfData, songTitle + keyLabel, diagramSvgs, user?.name || undefined);
       toast.success("Chord chart PDF downloaded!");
     } catch {
       toast.error("Failed to export chord chart PDF");

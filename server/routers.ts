@@ -1071,16 +1071,22 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
 
     // Generate professional sheet music (ABC notation) from song data
     generateSheetMusic: protectedProcedure
-      .input(z.object({ songId: z.number(), key: z.string().optional() }))
+      .input(z.object({ songId: z.number(), key: z.string().optional(), force: z.boolean().optional() }))
       .mutation(async ({ ctx, input }) => {
         const song = await getSongById(input.songId);
         if (!song || song.userId !== ctx.user.id) {
           throw new Error("Song not found");
         }
 
-        // If already generated and no specific key requested, return cached
-        if (song.sheetMusicAbc && !input.key) {
+        // If already generated and no specific key requested and not forced, return cached
+        if (song.sheetMusicAbc && !input.key && !input.force) {
           return { status: "done", abcNotation: song.sheetMusicAbc };
+        }
+
+        // If force regeneration, clear existing ABC first
+        if (input.force) {
+          await updateSongSheetMusic(input.songId, "");
+          console.log(`[SheetMusic] Force regeneration requested for song ${input.songId}`);
         }
 
         // Mark as generating

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
+import { getBestCapoPositions } from "@/lib/capoChart";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
 import { extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
@@ -504,10 +505,22 @@ export default function Mp3ToSheetMusic() {
         : ` (Key: ${selectedKey})`;
       const fullTitle = title + keyLabel;
 
+      const copyrightName = user?.name || undefined;
+
+      // Calculate best capo position for the PDF
+      const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+      let capoInfo: { fret: number; playKey: string } | null = null;
+      if (currentKey && chords.length > 0) {
+        const bestCapos = getBestCapoPositions(currentKey, chords, 1);
+        if (bestCapos.length > 0 && bestCapos[0].fret > 0) {
+          capoInfo = { fret: bestCapos[0].fret, playKey: bestCapos[0].playKey };
+        }
+      }
+
       // Use the ABC-based off-screen rendering for reliable full-content PDF
       if (sanitisedDisplayAbc) {
         const fallbackSvg = sheetRef.current?.querySelector("svg") as SVGElement | undefined;
-        await exportSheetMusicPDFFromAbc(sanitisedDisplayAbc, fullTitle, fallbackSvg);
+        await exportSheetMusicPDFFromAbc(sanitisedDisplayAbc, fullTitle, fallbackSvg, copyrightName, capoInfo);
       } else if (sheetRef.current) {
         const svgElement = sheetRef.current.querySelector("svg");
         if (!svgElement) {
@@ -515,7 +528,7 @@ export default function Mp3ToSheetMusic() {
           setExporting(false);
           return;
         }
-        await exportSheetMusicPDF(svgElement, fullTitle);
+        await exportSheetMusicPDF(svgElement, fullTitle, copyrightName, capoInfo);
       } else {
         toast.error("No sheet music to export");
         setExporting(false);
@@ -527,7 +540,7 @@ export default function Mp3ToSheetMusic() {
     } finally {
       setExporting(false);
     }
-  }, [file, selectedKey, originalKey, sanitisedDisplayAbc]);
+  }, [file, selectedKey, originalKey, sanitisedDisplayAbc, user?.name, chords]);
 
   const handleSaveToLibrary = useCallback(async () => {
     const jobId = completedJobId || activeJobId;

@@ -5,10 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { exportSheetMusicPDF, validatePdfContent } from "@/lib/pdfExport";
 import { exportCombinedPdf } from "@/lib/combinedPdfExport";
 import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
+import { getBestCapoPositions } from "@/lib/capoChart";
 import { extractChordsFromABC } from "@/lib/midiExport";
 
 import { GuitarChordChart } from "@/components/GuitarChordChart";
@@ -137,6 +139,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     console.log("[SheetMusicViewer] ABC notation:", initialAbc.substring(0, 500));
   }
   
+  const { user } = useAuth();
   const sheetRef = useRef<HTMLDivElement>(null);
   const prevHighlightRef = useRef<Element | null>(null);
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
@@ -401,7 +404,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     try {
       const startTime = Date.now();
       const keyParam = generateInKey === "auto" ? undefined : generateInKey;
-      const result = await generateMutation.mutateAsync({ songId, key: keyParam });
+      // Pass force: true to bypass cache and regenerate with improved generator
+      const result = await generateMutation.mutateAsync({ songId, key: keyParam, force: true });
       const regenerationTime = ((Date.now() - startTime) / 1000).toFixed(1);
       setAbc(result.abcNotation || null);
       setSelectedKey("original");
@@ -748,8 +752,18 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("PDF generation timed out after 30 seconds")), 30000)
       );
+      // Calculate best capo position for the PDF
+      const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+      let capoInfo: { fret: number; playKey: string } | null = null;
+      if (currentKey && chords.length > 0) {
+        const bestCapos = getBestCapoPositions(currentKey, chords, 1);
+        if (bestCapos.length > 0 && bestCapos[0].fret > 0) {
+          capoInfo = { fret: bestCapos[0].fret, playKey: bestCapos[0].playKey };
+        }
+      }
+
       await Promise.race([
-        exportSheetMusicPDF(svgElement, songTitle + keyLabel),
+        exportSheetMusicPDF(svgElement, songTitle + keyLabel, user?.name || undefined, capoInfo),
         timeoutPromise,
       ]);
       toast.success("Sheet music PDF downloaded!");

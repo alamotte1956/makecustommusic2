@@ -15,6 +15,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { exportSheetMusicPDFFromAbc, exportSheetMusicPDF } from "@/lib/pdfExport";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface InstrumentPartsSectionProps {
   jobId: number;
@@ -49,6 +50,7 @@ function sanitisePartAbc(abc: string): string {
 }
 
 function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: string; songTitle: string }) {
+  const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendered, setIsRendered] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -125,10 +127,12 @@ function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: str
       const label = config ? partName.charAt(0).toUpperCase() + partName.slice(1) : partName;
       const fullTitle = `${songTitle} - ${label}`;
 
+      const copyrightName = user?.name || undefined;
+
       // Use off-screen rendering for reliable full-content PDF
       if (sanitisedAbc) {
         const fallbackSvg = containerRef.current?.querySelector("svg") as SVGElement | undefined;
-        await exportSheetMusicPDFFromAbc(sanitisedAbc, fullTitle, fallbackSvg);
+        await exportSheetMusicPDFFromAbc(sanitisedAbc, fullTitle, fallbackSvg, copyrightName);
       } else if (containerRef.current) {
         const svgElement = containerRef.current.querySelector("svg");
         if (!svgElement) {
@@ -136,7 +140,7 @@ function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: str
           setExporting(false);
           return;
         }
-        await exportSheetMusicPDF(svgElement, fullTitle);
+        await exportSheetMusicPDF(svgElement, fullTitle, copyrightName);
       } else {
         toast.error("No sheet music to export");
         setExporting(false);

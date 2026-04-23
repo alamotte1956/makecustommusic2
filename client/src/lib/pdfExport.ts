@@ -312,7 +312,9 @@ export async function renderSvgToCanvas(
 // ─── Sheet Music PDF ───
 export async function exportSheetMusicPDF(
   svgElement: SVGElement,
-  songTitle: string
+  songTitle: string,
+  copyrightHolder?: string,
+  capoInfo?: { fret: number; playKey: string } | null
 ): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
@@ -329,6 +331,24 @@ export async function exportSheetMusicPDF(
   doc.setFont("helvetica", "normal");
   doc.text("Sheet Music \u2022 Lead Sheet", PAGE_WIDTH / 2, y, { align: "center" });
   y += 5;
+
+  // Copyright notice
+  if (copyrightHolder) {
+    doc.setFontSize(SMALL_SIZE);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "italic");
+    doc.text(`\u00A9 2026 ${copyrightHolder}. All rights reserved.`, PAGE_WIDTH / 2, y, { align: "center" });
+    y += 4;
+  }
+
+  // Capo recommendation
+  if (capoInfo && capoInfo.fret > 0) {
+    doc.setFontSize(SMALL_SIZE);
+    doc.setTextColor(140, 100, 30);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Capo: Fret ${capoInfo.fret} (play in ${capoInfo.playKey} shapes)`, PAGE_WIDTH / 2, y, { align: "center" });
+    y += 5;
+  }
 
   // Divider line
   doc.setDrawColor(200, 200, 200);
@@ -409,7 +429,9 @@ export async function exportSheetMusicPDF(
 export async function exportSheetMusicPDFFromAbc(
   abc: string,
   songTitle: string,
-  fallbackSvg?: SVGElement
+  fallbackSvg?: SVGElement,
+  copyrightHolder?: string,
+  capoInfo?: { fret: number; playKey: string } | null
 ): Promise<void> {
   // Create an off-screen container for rendering
   const offscreen = document.createElement("div");
@@ -426,10 +448,11 @@ export async function exportSheetMusicPDFFromAbc(
     const abcjs = mod.default || mod;
 
     // Render with a fixed staffwidth for consistent PDF output (no responsive mode)
+    // Extra bottom padding ensures the last bar/staff line is never cut off
     abcjs.renderAbc(offscreen, abc, {
       staffwidth: 740,
       paddingtop: 20,
-      paddingbottom: 20,
+      paddingbottom: 60,
       paddingleft: 15,
       paddingright: 15,
       add_classes: true,
@@ -437,10 +460,10 @@ export async function exportSheetMusicPDFFromAbc(
 
     const svg = offscreen.querySelector("svg");
     if (svg && svg.querySelectorAll("path").length >= 5) {
-      await exportSheetMusicPDF(svg as SVGElement, songTitle);
+      await exportSheetMusicPDF(svg as SVGElement, songTitle, copyrightHolder, capoInfo);
     } else if (fallbackSvg) {
       console.warn("[PDF] Off-screen render produced insufficient content, using fallback SVG");
-      await exportSheetMusicPDF(fallbackSvg, songTitle);
+      await exportSheetMusicPDF(fallbackSvg, songTitle, copyrightHolder, capoInfo);
     } else {
       throw new Error("Failed to render sheet music for PDF export");
     }
@@ -476,7 +499,8 @@ export interface ChordPDFData {
 export async function exportChordPDF(
   data: ChordPDFData,
   songTitle: string,
-  diagramSvgs?: SVGElement[]
+  diagramSvgs?: SVGElement[],
+  copyrightHolder?: string
 ): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
@@ -493,6 +517,15 @@ export async function exportChordPDF(
   doc.setFont("helvetica", "normal");
   doc.text("Guitar Chord Chart", PAGE_WIDTH / 2, y, { align: "center" });
   y += 5;
+
+  // Copyright notice
+  if (copyrightHolder) {
+    doc.setFontSize(SMALL_SIZE);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "italic");
+    doc.text(`\u00A9 2026 ${copyrightHolder}. All rights reserved.`, PAGE_WIDTH / 2, y, { align: "center" });
+    y += 4;
+  }
 
   // Divider
   doc.setDrawColor(200, 200, 200);
@@ -700,7 +733,8 @@ export function exportLyricsPDF(
     key?: string;
     tempo?: number;
     vocalType?: string;
-  }
+  },
+  copyrightHolder?: string
 ): void {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
@@ -717,6 +751,15 @@ export function exportLyricsPDF(
   doc.setFont("helvetica", "normal");
   doc.text("Lyrics", PAGE_WIDTH / 2, y, { align: "center" });
   y += 5;
+
+  // Copyright notice
+  if (copyrightHolder) {
+    doc.setFontSize(SMALL_SIZE);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "italic");
+    doc.text(`\u00A9 2026 ${copyrightHolder}. All rights reserved.`, PAGE_WIDTH / 2, y, { align: "center" });
+    y += 4;
+  }
 
   // Divider
   doc.setDrawColor(200, 200, 200);

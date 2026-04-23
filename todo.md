@@ -2252,3 +2252,33 @@
 - [x] Added estimateSyllables() and analyzeLyrics() functions for structured lyrics analysis
 - [x] LLM now receives syllable counts per line, section structure, and rhythm guidance
 - [ ] Future: Investigate server-side Python basic-pitch for actual audio pitch detection
+
+## Re-generate Sheet Music Button
+- [x] Add force parameter to generateSheetMusic tRPC mutation that clears existing ABC and re-generates using improved generator
+- [x] Existing "Regenerate" button in SheetMusicViewer already works with key selection - now passes force: true
+- [x] Loading state already shown during regeneration (spinner on button)
+- [x] Queries already invalidated after regeneration to refresh the UI
+
+## Instrument Parts Generation - End-to-End Verification
+- [ ] Verify generateInstrumentParts tRPC route works correctly
+- [ ] Verify InstrumentPartsSection UI renders parts and allows PDF download
+- [ ] Fix any issues found during testing
+
+## Chord Chart / Guitar Tab View
+- [ ] Create ChordChartView component that displays chord progressions in a readable chart format
+- [ ] Parse ABC notation to extract chord symbols and timing
+- [ ] Display chord chart with lyrics aligned underneath chords
+- [ ] Add toggle between Sheet Music view and Chord Chart view on song detail and MP3 to Sheet pages
+- [ ] Style chord chart for print-friendly output
+
+## PDF Export - Last Bar Cut Off
+- [x] Fix PDF export cutting off the very end/last bar of the sheet music (added exportSheetMusicPDFFromAbc with fixed staffwidth 740 and extra bottom padding)
+
+## Copyright 2026 on PDFs and Sheet Music
+- [x] Add copyright © 2026 with logged-in user's name to all PDF exports (sheet music, chord chart, lyrics)
+- [x] Pass user name through the export flow to the PDF functions
+- [x] Copyright shown on sheet music PDF, chord chart PDF, lyrics PDF, and instrument parts PDFs
+
+## Capo Position on Sheet Music
+- [x] Add capo position to sheet music PDF exports (Mp3ToSheetMusic + SheetMusicViewer)
+- [x] Capo calculated via getBestCapoPositions and shown as "Capo: Fret X (play in Y shapes)"
