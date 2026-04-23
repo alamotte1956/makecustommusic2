@@ -1079,7 +1079,7 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
 
         // If already generated and no specific key requested, return cached
         if (song.sheetMusicAbc && !input.key) {
-          return { abcNotation: song.sheetMusicAbc };
+          return { status: "done", abcNotation: song.sheetMusicAbc };
         }
 
         // Mark as generating
@@ -1090,19 +1090,24 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
           ? { ...song, keySignature: input.key }
           : song;
 
-        try {
-          const cleanAbc = await generateAbcNotation(songForGeneration);
-          await updateSongSheetMusic(input.songId, cleanAbc);
-          // updateSongSheetMusic already sets status to "done"
-          return { abcNotation: cleanAbc };
-        } catch (err: any) {
-          console.error(`[SheetMusic] Generation failed for song ${input.songId}:`, err?.message || err);
-          await updateSongSheetMusicStatus(input.songId, "failed", err?.message || "Unknown error").catch(() => {});
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Sheet music generation failed: ${err?.message || "Unknown error"}. Please try again.`,
-          });
-        }
+        // Fire-and-forget: start background generation and return immediately
+        // This prevents upstream timeout by not blocking the request
+        (async () => {
+          try {
+            const cleanAbc = await generateAbcNotation(songForGeneration);
+            await updateSongSheetMusic(input.songId, cleanAbc);
+            // updateSongSheetMusic already sets status to "done"
+            console.log(`[SheetMusic] Generation completed for song ${input.songId}`);
+          } catch (err: any) {
+            console.error(`[SheetMusic] Generation failed for song ${input.songId}:`, err?.message || err);
+            await updateSongSheetMusicStatus(input.songId, "failed", err?.message || "Unknown error").catch(() => {});
+          }
+        })().catch((err) => {
+          console.error(`[SheetMusic] Uncaught error in background generation for song ${input.songId}:`, err);
+        });
+
+        // Return immediately with status "generating"
+        return { status: "generating", message: "Sheet music generation started. Polling for updates..." };
       }),
 
     // Submit feedback on sheet music quality
