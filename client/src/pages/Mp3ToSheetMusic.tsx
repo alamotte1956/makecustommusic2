@@ -298,6 +298,9 @@ export default function Mp3ToSheetMusic() {
           return;
         }
 
+        // DEBUG: Log the ABC being passed to abcjs
+        console.log(`[Mp3SheetMusic] ABC passed to abcjs (${sanitisedDisplayAbc!.length} chars):`, sanitisedDisplayAbc!.substring(0, 500));
+
         const visualObj = abcjs.renderAbc(sheetRef.current, sanitisedDisplayAbc!, {
           responsive: "resize",
           staffwidth: Math.max(600, Math.floor(postRafRect.width - 40)),
@@ -316,11 +319,13 @@ export default function Mp3ToSheetMusic() {
         if (svg) {
           const paths = svg.querySelectorAll("path");
           console.log(`[Mp3SheetMusic] Rendered: ${paths.length} paths, container width: ${postRafRect.width}`);
-          if (paths.length < 5) {
-            // Very few paths — likely a failed render, retry
-            console.warn("[Mp3SheetMusic] Very few paths rendered, scheduling retry");
+          if (paths.length < 5 && renderAttempt < 3) {
+            // Very few paths — likely a failed render, retry (max 3 attempts)
+            console.warn(`[Mp3SheetMusic] Very few paths rendered (attempt ${renderAttempt + 1}/3), scheduling retry`);
             setTimeout(() => { if (!cancelled) setRenderAttempt((n) => n + 1); }, 500);
             return;
+          } else if (paths.length < 5) {
+            console.error(`[Mp3SheetMusic] Failed to render after 3 attempts. ABC content:`, sanitisedDisplayAbc!.substring(0, 200));
           }
         }
 
