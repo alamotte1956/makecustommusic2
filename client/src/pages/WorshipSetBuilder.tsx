@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { extractLeadSheet, type LeadSheet } from "@/lib/leadSheetExtractor";
-import { detectKeyFromABC, transposeABC } from "@/lib/transpose";
+import { detectKeyFromABC, transposeABC, COMMON_KEYS } from "@/lib/transpose";
 import { extractChordsFromABC } from "@/lib/midiExport";
 import { getBestCapoPositions } from "@/lib/capoChart";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, GripVertical, Music, BookOpen, Clock, ChevronRight,
   Sparkles, Loader2, Calendar, Church, ListMusic, Edit2, Copy,
   ArrowUp, ArrowDown, FileText, Cross, Mic, Heart, Hand, MessageSquare,
-  Printer, Download
+  Printer, Download, Settings2
 } from "lucide-react";
 import { Link } from "wouter";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -324,6 +324,10 @@ function WorshipSetDetail({
   const [suggestMood, setSuggestMood] = useState("");
   const [isPrintingChords, setIsPrintingChords] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [showTransposeDialog, setShowTransposeDialog] = useState(false);
+  const [transposeMode, setTransposeMode] = useState<"print" | "pdf">("print");
+  const [songTransposeKeys, setSongTransposeKeys] = useState<Record<number, string>>({});
+  const [songOriginalKeys, setSongOriginalKeys] = useState<Record<number, string>>({});
   const { user } = useAuth();
 
   const worshipSet = setQuery.data;
@@ -423,7 +427,43 @@ function WorshipSetDetail({
     { enabled: false } // only fetch on demand
   );
 
-  const handlePrintChordCharts = async () => {
+  /** Open the transpose dialog, pre-populating each song's detected key */
+  const openTransposeDialog = useCallback(async (mode: "print" | "pdf") => {
+    setTransposeMode(mode);
+    // Pre-fetch ABC data to detect keys
+    const result = await setAbcQuery.refetch();
+    const data = result.data;
+    if (!data) {
+      toast.error("Failed to load song data for this set");
+      return;
+    }
+    const songItems = data.items.filter((item) => item.abc && item.itemType === "song");
+    if (songItems.length === 0) {
+      toast.error("No songs with sheet music found in this set");
+      return;
+    }
+    // Build original keys map and default transpose keys (same as original)
+    const origKeys: Record<number, string> = {};
+    const transpKeys: Record<number, string> = {};
+    for (const item of songItems) {
+      const detected = detectKeyFromABC(item.abc!) || item.songKeySignature || item.songKey || "C";
+      origKeys[item.id] = detected;
+      transpKeys[item.id] = detected; // default: no transpose
+    }
+    setSongOriginalKeys(origKeys);
+    setSongTransposeKeys(transpKeys);
+    setShowTransposeDialog(true);
+  }, [setAbcQuery]);
+
+  /** Get the (possibly transposed) ABC for a song item */
+  const getTransposedAbc = (item: { id: number; abc: string }, transposeKeys: Record<number, string>, origKeys: Record<number, string>): string => {
+    const origKey = origKeys[item.id];
+    const targetKey = transposeKeys[item.id];
+    if (!origKey || !targetKey || origKey === targetKey) return item.abc;
+    return transposeABC(item.abc, origKey, targetKey);
+  };
+
+  const handlePrintChordCharts = async (transposeKeys: Record<number, string>, origKeys: Record<number, string>) => {
     setIsPrintingChords(true);
     try {
       const result = await setAbcQuery.refetch();
@@ -446,7 +486,7 @@ function WorshipSetDetail({
       let allSongsHtml = "";
       for (let i = 0; i < songItems.length; i++) {
         const item = songItems[i];
-        const abc = item.abc!;
+        const abc = getTransposedAbc({ id: item.id, abc: item.abc! }, transposeKeys, origKeys);
         const songKey = detectKeyFromABC(abc) || item.songKeySignature || null;
         const leadSheet = extractLeadSheet(abc);
         if (!leadSheet || leadSheet.sections.length === 0) continue;
@@ -460,7 +500,11 @@ function WorshipSetDetail({
           }
         }
 
-        const keyLabel = item.songKey || songKey || "";
+        const transposedKey = transposeKeys[item.id];
+        const originalKey = origKeys[item.id];
+        const wasTransposed = transposedKey && originalKey && transposedKey !== originalKey;
+        const keyLabel = transposedKey || item.songKey || songKey || "";
+        const origKeyLabel = wasTransposed ? `(orig: ${originalKey})` : "";
 
         let sectionsHtml = "";
         for (const section of leadSheet.sections) {
@@ -489,6 +533,7 @@ function WorshipSetDetail({
               <div class="song-title">${escHtml(item.title)}</div>
               <div class="song-meta">
                 ${keyLabel ? `<span class="meta-item">Key: ${escHtml(keyLabel)}</span>` : ""}
+                ${origKeyLabel ? `<span class="meta-item orig-key">${origKeyLabel}</span>` : ""}
                 ${leadSheet.meter ? `<span class="meta-item">Time: ${leadSheet.meter}</span>` : ""}
                 ${capoLabel ? `<span class="capo-badge">${capoLabel}</span>` : ""}
               </div>
@@ -556,6 +601,7 @@ function WorshipSetDetail({
       font-size: 12px; color: #444; margin-top: 4px;
     }
     .meta-item { font-weight: 600; }
+    .orig-key { font-weight: normal; font-style: italic; color: #888; }
     .capo-badge {
       background: #fef3c7; color: #92400e; padding: 2px 8px;
       border-radius: 4px; font-weight: 600; border: 1px solid #fcd34d;
@@ -631,7 +677,7 @@ function WorshipSetDetail({
   };
 
   // ─── Download Chord Charts as PDF ───
-  const handleDownloadChordChartsPDF = async () => {
+  const handleDownloadChordChartsPDF = async (transposeKeys: Record<number, string>, origKeys: Record<number, string>) => {
     setIsDownloadingPdf(true);
     try {
       const { default: jsPDF } = await import("jspdf");
@@ -715,7 +761,7 @@ function WorshipSetDetail({
 
       for (let i = 0; i < songItems.length; i++) {
         const item = songItems[i];
-        const k = item.songKey || detectKeyFromABC(item.abc!) || item.songKeySignature || "";
+        const tocKey = transposeKeys[item.id] || item.songKey || detectKeyFromABC(item.abc!) || item.songKeySignature || "";
         y = pgBreak(y, 7);
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
@@ -724,16 +770,16 @@ function WorshipSetDetail({
         doc.setFont("helvetica", "normal");
         doc.setTextColor(40, 40, 40);
         doc.text(item.title, ML + 10, y);
-        if (k) {
+        if (tocKey) {
           doc.setFontSize(10);
           doc.setTextColor(120, 120, 120);
-          doc.text(`Key: ${k}`, PW - MR, y, { align: "right" });
+          doc.text(`Key: ${tocKey}`, PW - MR, y, { align: "right" });
         }
         // Dotted line
         doc.setDrawColor(200, 200, 200);
         doc.setLineDashPattern([1, 1], 0);
         const titleW = doc.getTextWidth(item.title);
-        const keyW = k ? doc.getTextWidth(`Key: ${k}`) + 2 : 0;
+        const keyW = tocKey ? doc.getTextWidth(`Key: ${tocKey}`) + 2 : 0;
         doc.line(ML + 10 + titleW + 2, y, PW - MR - keyW - 2, y);
         doc.setLineDashPattern([], 0);
         y += 6;
@@ -742,7 +788,7 @@ function WorshipSetDetail({
       // ─── Song Pages ───
       for (let i = 0; i < songItems.length; i++) {
         const item = songItems[i];
-        const abc = item.abc!;
+        const abc = getTransposedAbc({ id: item.id, abc: item.abc! }, transposeKeys, origKeys);
         const songKey = detectKeyFromABC(abc) || item.songKeySignature || null;
         const leadSheet = extractLeadSheet(abc);
         if (!leadSheet || leadSheet.sections.length === 0) continue;
@@ -755,7 +801,10 @@ function WorshipSetDetail({
             capoLabel = `Capo: Fret ${best[0].fret} (play in ${best[0].playKey})`;
           }
         }
-        const keyLabel = item.songKey || songKey || "";
+        const transposedKey = transposeKeys[item.id];
+        const originalKey = origKeys[item.id];
+        const wasTransposed = transposedKey && originalKey && transposedKey !== originalKey;
+        const keyLabel = transposedKey || item.songKey || songKey || "";
 
         // New page for each song
         doc.addPage();
@@ -780,6 +829,7 @@ function WorshipSetDetail({
         // Meta line (key, time, capo)
         const metaParts: string[] = [];
         if (keyLabel) metaParts.push(`Key: ${keyLabel}`);
+        if (wasTransposed) metaParts.push(`(orig: ${originalKey})`);
         if (leadSheet.meter) metaParts.push(`Time: ${leadSheet.meter}`);
         if (metaParts.length > 0 || capoLabel) {
           doc.setFontSize(10);
@@ -1014,8 +1064,8 @@ function WorshipSetDetail({
           <Button
             variant="outline"
             className="gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-            disabled={isPrintingChords || items.filter(i => i.songId).length === 0}
-            onClick={handlePrintChordCharts}
+            disabled={isPrintingChords || isDownloadingPdf || items.filter(i => i.songId).length === 0}
+            onClick={() => openTransposeDialog("print")}
           >
             {isPrintingChords ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
             Print Chords
@@ -1023,8 +1073,8 @@ function WorshipSetDetail({
           <Button
             variant="outline"
             className="gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-            disabled={isDownloadingPdf || items.filter(i => i.songId).length === 0}
-            onClick={handleDownloadChordChartsPDF}
+            disabled={isPrintingChords || isDownloadingPdf || items.filter(i => i.songId).length === 0}
+            onClick={() => openTransposeDialog("pdf")}
           >
             {isDownloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             PDF
@@ -1263,6 +1313,101 @@ function WorshipSetDetail({
           </Card>
         </div>
       )}
+
+      {/* Transpose Dialog */}
+      <Dialog open={showTransposeDialog} onOpenChange={setShowTransposeDialog}>
+        <DialogContent className="bg-[#1a1a1a] border-white/10 text-white max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-amber-400" />
+              {transposeMode === "print" ? "Print" : "Download"} Chord Charts
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-white/50">
+              Adjust the key for each song before {transposeMode === "print" ? "printing" : "downloading"}. Select a new key to transpose, or leave as-is.
+            </p>
+            <div className="space-y-2">
+              {Object.entries(songOriginalKeys).map(([idStr, origKey]) => {
+                const id = Number(idStr);
+                const songItem = items.find(i => i.id === id) ||
+                  (setAbcQuery.data?.items.find(i => i.id === id));
+                const title = songItem?.title || `Song #${id}`;
+                const currentTarget = songTransposeKeys[id] || origKey;
+                const isTransposed = currentTarget !== origKey;
+                return (
+                  <div key={id} className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.03] border border-white/5">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">{title}</div>
+                      <div className="text-xs text-white/40">Original: {origKey}</div>
+                    </div>
+                    <Select
+                      value={currentTarget}
+                      onValueChange={(val) => setSongTransposeKeys(prev => ({ ...prev, [id]: val }))}
+                    >
+                      <SelectTrigger className={`w-24 h-8 text-xs ${
+                        isTransposed
+                          ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                          : "bg-white/5 border-white/10 text-white"
+                      }`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#222] border-white/10">
+                        {COMMON_KEYS.map(k => (
+                          <SelectItem key={k} value={k} className="text-white text-xs">
+                            {k}{k === origKey ? " (orig)" : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              })}
+            </div>
+            {Object.entries(songTransposeKeys).some(([id, key]) => key !== songOriginalKeys[Number(id)]) && (
+              <div className="flex items-center gap-2 p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                <Settings2 className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-xs text-amber-300">
+                  {Object.entries(songTransposeKeys).filter(([id, key]) => key !== songOriginalKeys[Number(id)]).length} song(s) will be transposed
+                </span>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Reset all to original keys
+                setSongTransposeKeys({ ...songOriginalKeys });
+              }}
+              className="text-white/60 border-white/10 hover:bg-white/5"
+            >
+              Reset All
+            </Button>
+            <Button
+              onClick={async () => {
+                setShowTransposeDialog(false);
+                if (transposeMode === "print") {
+                  await handlePrintChordCharts(songTransposeKeys, songOriginalKeys);
+                } else {
+                  await handleDownloadChordChartsPDF(songTransposeKeys, songOriginalKeys);
+                }
+              }}
+              className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+              disabled={isPrintingChords || isDownloadingPdf}
+            >
+              {(isPrintingChords || isDownloadingPdf) ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : transposeMode === "print" ? (
+                <Printer className="w-4 h-4" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {transposeMode === "print" ? "Print" : "Download PDF"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

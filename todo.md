@@ -2300,3 +2300,12 @@
 - [x] Generate native jsPDF with cover page, TOC, and per-song chord charts (no HTML-to-PDF conversion)
 - [x] Download the PDF file automatically with set title as filename
 - [x] Includes song number badges, key/time/capo metadata, section labels, blue chord text, and copyright footer
+
+## Worship Set - Transpose Option for Chord Chart PDF/Print
+- [x] Add a transpose dialog that appears before generating print or PDF
+- [x] Allow per-song transpose settings (each song can be transposed independently)
+- [x] Apply transpose to ABC notation before extracting lead sheet
+- [x] Update both Print Chords and PDF buttons to use the transpose settings
+- [x] Show transposed key in the chord chart output with original key noted
+- [x] Reset All button to revert all songs to original keys
+- [x] Visual indicator showing how many songs will be transposed
