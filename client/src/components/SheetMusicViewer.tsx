@@ -252,7 +252,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         try {
           const result = await generateMutation.mutateAsync({ songId, key: undefined });
           console.log("[SheetMusic] Auto-generation succeeded, ABC length:", result.abcNotation?.length);
-          setAbc(result.abcNotation);
+          setAbc(result.abcNotation || null);
           hasRenderedOnceRef.current = false;
           lastRenderedAbcRef.current = null;
           setRenderAttempt((n) => n + 1);
@@ -391,7 +391,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const keyParam = generateInKey === "auto" ? undefined : generateInKey;
       const result = await generateMutation.mutateAsync({ songId, key: keyParam });
       const regenerationTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      setAbc(result.abcNotation);
+      setAbc(result.abcNotation || null);
       setSelectedKey("original");
       // Reset render tracking so the new ABC will be rendered fresh
       hasRenderedOnceRef.current = false;

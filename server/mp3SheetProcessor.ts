@@ -215,6 +215,10 @@ export async function processMp3SheetJob(
         lyrics: lyricsText,
         // We don't have genre/mood/key from audio, but the LLM will infer from lyrics
       });
+      console.log(`[Mp3SheetJob ${jobId}] Generated ABC (${cleanAbc.length} chars):`, cleanAbc.substring(0, 300));
+      if (!cleanAbc || cleanAbc.trim().length === 0) {
+        console.error(`[Mp3SheetJob ${jobId}] ERROR: cleanAbc is empty after generation!`);
+      }
     } catch (genErr: any) {
       const classified = classifyError(genErr, "generation");
       console.error(`[Mp3SheetJob ${jobId}] Generation error [${classified.code}]:`, genErr?.message);
