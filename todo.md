@@ -2195,3 +2195,12 @@
 - [x] Add visual feedback for selected/unselected parts
 - [x] Test part selection functionality end-to-end
 - [x] Verify ZIP contains only selected parts
+
+
+## Separate Instrument Parts for MP3 to Sheet Music
+- [ ] Modify ABC generation to create separate notations for each instrument part (Vocals, Bass, Drums, etc.)
+- [ ] Generate individual PDFs for each part from separate ABC notations
+- [ ] Display instrument parts with tabs/cards on sheet music page
+- [ ] Add individual download buttons for each part
+- [ ] Test part generation end-to-end
+- [ ] Verify PDF downloads work correctly for each part

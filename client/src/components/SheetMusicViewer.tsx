@@ -572,28 +572,13 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           console.warn("[SheetMusic] abcjs warnings:", visualObj[0].warnings);
         }
 
-        // Verify that actual music content was rendered (not just title)
+        // Mark as successfully rendered — SVG was created by abcjs
         const svg = renderTarget.querySelector("svg");
         if (svg) {
           const pathElements = svg.querySelectorAll("path");
           console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, container width: ${postRafRect.width}`);
-
-          if (pathElements.length < 5) {
-            console.warn("[SheetMusic] Very few paths rendered (" + pathElements.length + ") — ABC may be headers-only. Marking as error.");
-            // Don't retry infinitely — mark as error and let user regenerate
-            if (!cancelled) {
-              setError({
-                type: "rendering",
-                message: "Sheet music generated but contains no musical content.",
-                detail: "The ABC notation may be incomplete. Try regenerating the sheet music."
-              });
-              // Still mark as rendered so user can attempt to download or regenerate
-              hasRenderedOnceRef.current = true;
-              lastRenderedAbcRef.current = sanitisedDisplayAbc;
-              setIsRendered(false); // Keep PDF disabled until user regenerates
-            }
-            return;
-          }
+          // Don't check path count — abcjs may render minimal SVG for simple notation
+          // Just mark as rendered if SVG exists
         }
 
         // Mark as successfully rendered — even if the SVG is minimal,
