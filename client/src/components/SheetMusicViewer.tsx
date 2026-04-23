@@ -335,12 +335,11 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         const width = entry.contentRect.width;
         const isNowVisible = width > 10;
         if (isNowVisible && !wasVisible) {
-          // Transition from invisible to visible — trigger one render
+          // Transition from invisible to visible — trigger render
           wasVisible = true;
           setContainerVisible(true);
-          if (!hasRenderedOnceRef.current) {
-            setRenderAttempt((n) => n + 1);
-          }
+          // Always bump renderAttempt on visibility transition
+          setRenderAttempt((n) => n + 1);
         } else if (!isNowVisible && wasVisible) {
           wasVisible = false;
           setContainerVisible(false);
@@ -350,11 +349,15 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
     observer.observe(container);
 
-    // Check initial width
+    // Check initial width and trigger render immediately if visible
     const rect = container.getBoundingClientRect();
     if (rect.width > 10) {
       wasVisible = true;
       setContainerVisible(true);
+      // Trigger render on next tick to ensure layout is ready
+      setTimeout(() => {
+        setRenderAttempt((n) => n + 1);
+      }, 0);
     }
 
     return () => observer.disconnect();
@@ -566,22 +569,20 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           console.log(`[SheetMusic] Rendered: SVG found, ${pathElements.length} paths, container width: ${postRafRect.width}`);
 
           if (pathElements.length < 5) {
-            console.warn("[SheetMusic] Very few paths rendered — generating fallback ABC notation.");
-            // Generate a simple fallback ABC notation
-            const titleMatch = sanitisedDisplayAbc?.match(/T: (.+)/)?.[1] || 'Song';
-            const fallbackAbc = `X: 1\nT: ${titleMatch}\nM: 4/4\nL: 1/4\nK: C\nCDEF|GABc|cdec|BAGF|EDEF|GABc|d2c2|B4|`;
-            console.log("[SheetMusic] Rendering fallback ABC:", fallbackAbc);
-            renderTarget.innerHTML = '';
-            const fallbackVisualObj = abcjs.renderAbc(renderTarget, fallbackAbc, {
-              responsive: "resize",
-              staffwidth: staffWidth,
-              paddingtop: 10,
-              paddingbottom: 10,
-              paddingleft: 5,
-              paddingright: 5,
-            });
-            const fallbackPaths = renderTarget.querySelector("svg")?.querySelectorAll("path");
-            console.log("[SheetMusic] Fallback render:", (fallbackPaths?.length || 0), "paths");
+            console.warn("[SheetMusic] Very few paths rendered (" + pathElements.length + ") — ABC may be headers-only. Marking as error.");
+            // Don't retry infinitely — mark as error and let user regenerate
+            if (!cancelled) {
+              setError({
+                type: "rendering",
+                message: "Sheet music generated but contains no musical content.",
+                detail: "The ABC notation may be incomplete. Try regenerating the sheet music."
+              });
+              // Still mark as rendered so user can attempt to download or regenerate
+              hasRenderedOnceRef.current = true;
+              lastRenderedAbcRef.current = sanitisedDisplayAbc;
+              setIsRendered(false); // Keep PDF disabled until user regenerates
+            }
+            return;
           }
         }
 
