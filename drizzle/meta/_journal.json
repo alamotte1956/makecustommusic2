@@ -211,6 +211,13 @@
       "when": 1775359675220,
       "tag": "0029_dry_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1776956158462,
+      "tag": "0030_square_hydra",
+      "breakpoints": true
     }
   ]
 }

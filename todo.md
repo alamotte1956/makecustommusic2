@@ -2217,3 +2217,13 @@
 ## White overlay covering rendered sheet music on MP3 to Sheet page
 - [x] Diagnose the white overlay/covering that hides the rendered sheet music despite 838 paths rendering
 - [x] Fix the CSS/overlay issue so sheet music is visible
+
+## Separate Instrument Part PDFs for MP3 to Sheet Music
+- [ ] Add instrumentParts JSON column to mp3_sheet_jobs table
+- [ ] Create LLM prompt and generation function for individual instrument parts (Vocals, Bass, Piano, Drums)
+- [ ] Add tRPC route to generate instrument parts on-demand for a completed job
+- [ ] Build frontend UI with instrument part cards/tabs
+- [ ] Add per-part ABC rendering with abcjs
+- [ ] Add per-part PDF download buttons
+- [ ] Remove MIDI export button from MP3 to Sheet Music page
+- [ ] Write tests for instrument part generation

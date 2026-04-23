@@ -252,6 +252,9 @@ export type LicenseType = typeof licenseTypes[number];
 
 // ─── MP3 to Sheet Music Jobs ───
 
+// Type for instrument parts stored as JSON
+export type InstrumentPartsData = Record<string, string>; // e.g. { vocals: "X:1\nT:...", bass: "X:1\nT:...", piano: "X:1\nT:..." }
+
 export const mp3SheetJobs = mysqlTable("mp3_sheet_jobs", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -260,6 +263,8 @@ export const mp3SheetJobs = mysqlTable("mp3_sheet_jobs", {
   audioUrl: text("audioUrl"),
   abcNotation: text("abcNotation"),
   lyrics: text("lyrics"),
+  instrumentParts: json("instrumentParts").$type<InstrumentPartsData>(),
+  partsStatus: mysqlEnum("partsStatus", ["idle", "generating", "done", "error"]).default("idle"),
   errorMessage: text("errorMessage"),
   errorCode: varchar("errorCode", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
