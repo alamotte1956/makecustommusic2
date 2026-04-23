@@ -8,7 +8,8 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Music, Loader2, Download, Music2, Zap, AlertCircle, Package } from "lucide-react";
+import { Music, Loader2, Download, Music2, Zap, AlertCircle, Package, Check, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import InstrumentationCustomizer, { InstrumentationConfig } from "./InstrumentationCustomizer";
 
@@ -24,6 +25,7 @@ export default function ArrangementPartsPanel({ songId, songTitle }: Arrangement
   const [arrangementAnalysis, setArrangementAnalysis] = useState<any>(null);
   const [generatedMelodies, setGeneratedMelodies] = useState<any>(null);
   const [instrumentationConfig, setInstrumentationConfig] = useState<InstrumentationConfig | null>(null);
+  const [selectedParts, setSelectedParts] = useState<Set<number>>(new Set());
 
   const analyzeSongMutation = trpc.arrangement.analyzeSong.useMutation({
     onSuccess: (data: any) => {
@@ -83,6 +85,32 @@ export default function ArrangementPartsPanel({ songId, songTitle }: Arrangement
     });
   };
 
+  const togglePartSelection = (partIndex: number) => {
+    const newSelected = new Set(selectedParts);
+    if (newSelected.has(partIndex)) {
+      newSelected.delete(partIndex);
+    } else {
+      newSelected.add(partIndex);
+    }
+    setSelectedParts(newSelected);
+  };
+
+  const selectAllParts = () => {
+    if (generatedMelodies) {
+      const allIndices = new Set<number>(generatedMelodies.map((_: any, idx: number) => idx));
+      setSelectedParts(allIndices);
+    }
+  };
+
+  const deselectAllParts = () => {
+    setSelectedParts(new Set());
+  };
+
+  const getSelectedMelodies = () => {
+    if (!generatedMelodies) return [];
+    return generatedMelodies.filter((_: any, idx: number) => selectedParts.has(idx));
+  };
+
   const handleGenerateArrangement = async () => {
     if (!song) return;
 
@@ -136,7 +164,7 @@ export default function ArrangementPartsPanel({ songId, songTitle }: Arrangement
           tempo: song?.tempo || 120,
           keySignature: song?.keySignature || "C",
           timeSignature: song?.timeSignature || "4/4",
-          melodyLines: generatedMelodies,
+          melodyLines: getSelectedMelodies(),
         }),
       });
 
@@ -245,44 +273,78 @@ export default function ArrangementPartsPanel({ songId, songTitle }: Arrangement
           {generatedMelodies && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Generated Parts ({generatedMelodies.length})</h4>
-                <Button
-                  onClick={handleDownloadAllPartsAsZip}
-                  disabled={isDownloadingZip}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
-                  {isDownloadingZip ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Preparing ZIP...
-                    </>
-                  ) : (
-                    <>
-                      <Package className="h-4 w-4" />
-                      Download All as ZIP
-                    </>
-                  )}
-                </Button>
+                <h4 className="font-semibold">Generated Parts ({generatedMelodies.length}) - Selected: {selectedParts.size}</h4>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={selectAllParts}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                  >
+                    <Check className="h-3 w-3" />
+                    Select All
+                  </Button>
+                  <Button
+                    onClick={deselectAllParts}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                  >
+                    <X className="h-3 w-3" />
+                    Deselect All
+                  </Button>
+                  <Button
+                    onClick={handleDownloadAllPartsAsZip}
+                    disabled={isDownloadingZip || selectedParts.size === 0}
+                    variant="default"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {isDownloadingZip ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Preparing ZIP...
+                      </>
+                    ) : (
+                      <>
+                        <Package className="h-4 w-4" />
+                        Download Selected as ZIP
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-              {generatedMelodies.map((part: any, idx: number) => (
-                <Card key={idx} className="hover:bg-accent transition-colors">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{part.partName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {part.partType === "vocal" ? "🎤 Vocal" : "🎸 Instrument"}
-                        </p>
+              {generatedMelodies.map((part: any, idx: number) => {
+                const isSelected = selectedParts.has(idx);
+                return (
+                  <Card key={idx} className={`cursor-pointer transition-all ${
+                    isSelected
+                      ? "bg-purple-50 dark:bg-purple-950 border-purple-300 dark:border-purple-700"
+                      : "hover:bg-accent"
+                  }`}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => togglePartSelection(idx)}
+                            className="h-5 w-5"
+                          />
+                          <div>
+                            <p className="font-medium">{part.partName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {part.partType === "vocal" ? "🎤 Vocal" : "🎸 Instrument"}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="default" className="bg-green-600">
+                          ✓ Ready
+                        </Badge>
                       </div>
-                      <Badge variant="default" className="bg-green-600">
-                        ✓ Ready
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

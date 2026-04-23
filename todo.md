@@ -2185,3 +2185,13 @@
 - [x] Add loading state and progress feedback during ZIP generation
 - [x] Test ZIP download end-to-end with multiple parts
 - [x] Verify file integrity and naming conventions
+
+
+## Part Selection for ZIP Download
+- [x] Create part selection state management in ArrangementPartsPanel
+- [x] Add checkboxes for each arrangement part
+- [x] Implement "Select All" and "Deselect All" buttons
+- [x] Update download handler to filter parts based on selection
+- [x] Add visual feedback for selected/unselected parts
+- [x] Test part selection functionality end-to-end
+- [x] Verify ZIP contains only selected parts
