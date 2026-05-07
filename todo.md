@@ -2359,3 +2359,24 @@
 - [x] Falls back to text-only generator if audio analysis fails completely
 - [x] Proper section markers (Verse, Chorus, Bridge, etc.) from audio structure detection
 - [x] Full song coverage — LLM hears the entire audio file, not just a snippet
+
+## Sheet Music - Manual Correction Tool
+- [ ] Make notes/chords in the rendered sheet music clickable
+- [ ] Show an editor popover when a note or chord is clicked
+- [ ] Allow changing note pitch (up/down by step or octave)
+- [ ] Allow changing note duration (whole, half, quarter, eighth, sixteenth)
+- [ ] Allow editing chord symbols above notes
+- [ ] Update the ABC notation in real-time when edits are made
+- [ ] Add undo/redo support for corrections
+- [ ] Save corrected ABC notation back to the database
+- [ ] Add visual indicator for "Edit Mode" toggle
+
+## Sheet Music Generator - Only 4 Bars in PDF
+- [x] Investigated: issue is in LLM generation (produces too few bars), not in PDF export
+- [x] Added max_tokens: 16384 to all LLM calls (improved, audio, background fallback)
+- [x] Added "ABSOLUTE LENGTH REQUIREMENT" section to all system prompts
+- [x] Added explicit failure mode warnings ("4-8 bars is WRONG")
+- [x] Updated validateAbc to require 16+ bars for songs with lyrics
+- [x] Added length requirement to direct audio transcription prompt
+- [x] Added length requirement to buildAbcPromptFromAnalysis
+- [x] Updated SHEET_MUSIC_SYSTEM_PROMPT with full section structure template

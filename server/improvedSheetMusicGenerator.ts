@@ -96,6 +96,13 @@ Notice how the melody:
 - The chorus is higher in range than the verse
 - Chord symbols align with strong beats
 
+═══ ABSOLUTE LENGTH REQUIREMENT ═══
+- You MUST generate the COMPLETE song with ALL sections
+- Minimum 32 measures total (typically 40-60 for a full worship song)
+- Do NOT stop after one verse and chorus
+- If lyrics have multiple verses, write them ALL out with different w: lines
+- FAILURE MODE TO AVOID: Generating only 4-8 bars. A complete song needs 40+ measures.
+
 ═══ OUTPUT ═══
 Output ONLY valid ABC notation. No markdown fences, no explanations, no JSON.`;
 
@@ -127,6 +134,7 @@ export async function generateSheetMusicImproved(
             { role: "system", content: ENHANCED_SHEET_MUSIC_PROMPT },
             { role: "user", content: userPrompt },
           ],
+          max_tokens: 16384,
         });
       } catch (llmErr: any) {
         console.error(`[ImprovedGenerator] LLM call failed (attempt ${attempt}):`, llmErr?.message || llmErr);
@@ -381,6 +389,20 @@ function buildUserPrompt(
   parts.push(`Remember: Write a REAL melody with musical phrasing, NOT a scale exercise.`);
   parts.push(`The melody must have contour (rise and fall), rhythmic variety, and breathing space.`);
   parts.push(`Match the melody rhythm to the natural speech rhythm of the lyrics.`);
+  parts.push(``);
+  parts.push(`═══ ABSOLUTE LENGTH REQUIREMENT ═══`);
+  parts.push(`You MUST generate the COMPLETE song. This means:`);
+  parts.push(`- Every verse gets its own music lines with w: lyrics`);
+  parts.push(`- Every chorus gets its own music lines with w: lyrics`);
+  parts.push(`- Every bridge/pre-chorus/outro gets its own music lines`);
+  parts.push(`- Minimum 32 measures total (typically 40-60 for a full song)`);
+  parts.push(`- Do NOT stop after one verse and chorus — write out ALL sections`);
+  parts.push(`- If the lyrics have 3 verses, write 3 verses of music`);
+  parts.push(`- Use repeat signs |: :| ONLY for sections with identical lyrics AND melody`);
+  parts.push(`- Different verses with different lyrics MUST be written out separately`);
+  parts.push(``);
+  parts.push(`FAILURE MODE TO AVOID: Generating only 4-8 bars and stopping. This is WRONG.`);
+  parts.push(`A complete worship song needs 40+ measures minimum.`);
 
   return parts.join("\n");
 }

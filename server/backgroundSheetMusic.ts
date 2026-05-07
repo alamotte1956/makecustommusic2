@@ -105,10 +105,14 @@ const SHEET_MUSIC_SYSTEM_PROMPT = [
   "- Include rests where musically appropriate: z (eighth rest), z2 (quarter rest), z4 (half rest), z8 (whole rest)",
   "- Ensure every measure has the correct number of beats matching the time signature",
   "",
-  "MINIMUM LENGTH:",
-  "- Generate at least 16 measures of music",
+  "ABSOLUTE LENGTH REQUIREMENT:",
+  "- Generate the COMPLETE song with ALL sections — minimum 32 measures (typically 40-60)",
+  "- If the lyrics have multiple verses, write out EACH verse with its own music and w: lines",
+  "- Include: Intro (2-4 bars) + Verse 1 (8 bars) + Chorus (8 bars) + Verse 2 (8 bars) + Chorus (8 bars) + Bridge (4 bars) + Chorus (8 bars) + Outro (2-4 bars)",
+  "- Do NOT stop after one verse and chorus — that is only 16 bars and is INCOMPLETE",
+  "- FAILURE MODE TO AVOID: Generating only 4-8 bars and stopping. This is WRONG.",
+  "- A complete worship song needs 40+ measures minimum",
   "- If the lyrics are short, repeat them with melodic variation across sections",
-  "- Include an intro (2-4 measures), verse sections, a chorus, and an ending",
   "- For instrumental songs, generate at least 32 measures with clear sections",
   "",
   "QUALITY:",
@@ -382,9 +386,14 @@ export function validateAbc(abc: string): string | null {
   const barLineCount = (allMusicText.match(/\|/g) || []).length;
   const repeatSignCount = (allMusicText.match(/:\|/g) || []).length;
   // Each repeat sign effectively doubles the section, so count them as extra measures
-  const effectiveMeasures = barLineCount + (repeatSignCount * 4);
-  if (effectiveMeasures < 8) {
-    return `Sheet music is too short — found only ${barLineCount} measures (${repeatSignCount} repeats), need at least 8 measures`;
+  const effectiveMeasures = barLineCount + (repeatSignCount * 8);
+  
+  // Check if there are lyrics (w: lines) — songs with lyrics need more bars
+  const hasLyrics = lines.some((l) => l.trim().startsWith("w:") || l.trim().startsWith("W:"));
+  const minMeasures = hasLyrics ? 16 : 8;
+  
+  if (effectiveMeasures < minMeasures) {
+    return `Sheet music is too short — found only ${barLineCount} measures (${repeatSignCount} repeats, effective: ${effectiveMeasures}), need at least ${minMeasures} measures for a ${hasLyrics ? 'song with lyrics' : 'piece'}`;
   }
 
   // Verify music lines have reasonable content (not just bar lines)
@@ -439,10 +448,11 @@ export async function generateAbcNotation(
           {
             role: "user",
             content:
-              "Generate a professional lead sheet in ABC notation for this song:\n\n" +
+              "Generate a professional lead sheet in ABC notation for this song. IMPORTANT: Generate the COMPLETE song with ALL sections (minimum 32 measures). Do NOT stop after 4-8 bars.\n\n" +
               songContext,
           },
         ],
+        max_tokens: 16384,
       });
 
       const rawContent = response.choices?.[0]?.message?.content;

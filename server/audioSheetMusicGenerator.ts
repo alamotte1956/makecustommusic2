@@ -130,6 +130,14 @@ K: <key from analysis>
 - K: must be the LAST header line before music begins
 - NO blank line between K: and the first music line
 
+═══ ABSOLUTE LENGTH REQUIREMENT ═══
+- Generate the COMPLETE song — ALL sections from the analysis
+- Minimum 32 measures for a song with lyrics (typically 40-60 measures)
+- Do NOT stop after one verse and chorus
+- Every section in the structure analysis MUST appear in the ABC output
+- Different verses with different lyrics MUST be written out separately
+- FAILURE MODE TO AVOID: Generating only 4-8 bars and stopping. This is WRONG.
+
 ═══ OUTPUT ═══
 Output ONLY valid ABC notation. No markdown fences, no explanations, no JSON.`;
 
@@ -316,7 +324,15 @@ K: <detected key>
 - If you can hear lyrics, add w: lines aligned with the melody
 - Use proper bar lines | at every measure boundary
 - NO dynamics, NO decorations, NO V: directives
-- Output ONLY valid ABC notation — no markdown, no explanations`;
+- Output ONLY valid ABC notation — no markdown, no explanations
+
+═══ ABSOLUTE LENGTH REQUIREMENT ═══
+- Transcribe the ENTIRE song from start to finish
+- Include ALL verses, choruses, bridges, intros, and outros
+- Minimum 32 measures for a song with lyrics (typically 40-60 measures)
+- Do NOT stop after the first verse and chorus
+- FAILURE MODE TO AVOID: Transcribing only 4-8 bars and stopping. This is WRONG.
+- A complete song transcription covers the full duration of the audio`;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -333,8 +349,8 @@ K: <detected key>
         {
           type: "text",
           text: lyrics
-            ? `Transcribe this audio recording into ABC notation. The lyrics are:\n\n${lyrics}\n\nAlign the melody notes with these lyrics using w: lines.`
-            : `Transcribe this audio recording into ABC notation. Write out the full melody with chord symbols.`,
+            ? `Transcribe this audio recording into ABC notation. The lyrics are:\n\n${lyrics}\n\nAlign the melody notes with these lyrics using w: lines. You MUST transcribe the ENTIRE song — all verses, all choruses, all bridges. Do not stop early.`
+            : `Transcribe this audio recording into ABC notation. Write out the full melody with chord symbols. Transcribe the ENTIRE piece from start to finish — do not stop early.`,
         },
       ];
 
@@ -489,6 +505,12 @@ function buildAbcPromptFromAnalysis(
   parts.push(`CRITICAL: Listen to the audio and transcribe the ACTUAL melody you hear.`);
   parts.push(`The analysis above is a guide — trust your ears over the analysis if they differ.`);
   parts.push(`Generate the COMPLETE song — all sections, full length. Do not truncate.`);
+  parts.push(``);
+  parts.push(`ABSOLUTE LENGTH REQUIREMENT:`);
+  parts.push(`- You MUST generate at least 32 measures (typically 40-60 for a full song)`);
+  parts.push(`- Every section in the structure above MUST appear in the ABC output`);
+  parts.push(`- If there are 3 verses, write out ALL 3 verses with their different lyrics`);
+  parts.push(`- FAILURE MODE: Generating only 4-8 bars is WRONG. Write the FULL song.`);
 
   return parts.join("\n");
 }
