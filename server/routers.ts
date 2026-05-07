@@ -52,6 +52,7 @@ import Stripe from "stripe";
 import { ENV } from "./_core/env";
 import { notifyOwner } from "./_core/notification";
 import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
+import { generateSheetMusicFromAudio } from "./audioSheetMusicGenerator";
 import { processMp3SheetJob } from "./mp3SheetProcessor";
 import { generateAllPartAbcs, PART_NAMES, INSTRUMENT_PARTS } from "./multiPartAbcGenerator";
 import { getAdminUserList, getAdminUserDetail, getAdminSiteStats, type AdminRevenueStats } from "./adminDb";
@@ -1101,7 +1102,30 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
         // This prevents upstream timeout by not blocking the request
         (async () => {
           try {
-            const cleanAbc = await generateAbcNotation(songForGeneration);
+            let cleanAbc: string;
+
+            // If the song has an audio URL, use the audio-aware generator
+            // This sends the actual audio to the LLM so it can hear the melody
+            if (songForGeneration.audioUrl) {
+              console.log(`[SheetMusic] Using audio-aware generator for song ${input.songId} (has audioUrl)`);
+              const result = await generateSheetMusicFromAudio(
+                songForGeneration.title,
+                songForGeneration.audioUrl,
+                songForGeneration.lyrics || null,
+                {
+                  key: songForGeneration.keySignature || undefined,
+                  genre: songForGeneration.genre || undefined,
+                  tempo: songForGeneration.tempo || undefined,
+                  timeSignature: songForGeneration.timeSignature || undefined,
+                }
+              );
+              cleanAbc = result.abc;
+            } else {
+              // No audio — use text-based generator (from lyrics/metadata)
+              console.log(`[SheetMusic] Using text-based generator for song ${input.songId} (no audioUrl)`);
+              cleanAbc = await generateAbcNotation(songForGeneration);
+            }
+
             await updateSongSheetMusic(input.songId, cleanAbc);
             // updateSongSheetMusic already sets status to "done"
             console.log(`[SheetMusic] Generation completed for song ${input.songId}`);

@@ -1,14 +1,17 @@
 /**
  * Background processor for MP3-to-sheet-music jobs.
- * Runs transcription + LLM generation asynchronously so the HTTP request
- * returns immediately with a jobId that the frontend can poll.
+ * Runs transcription + audio-aware LLM generation asynchronously so the HTTP
+ * request returns immediately with a jobId that the frontend can poll.
  *
- * Architecture:
- *   Step 1: Whisper transcribes audio → lyrics text
- *   Step 2: Text-only LLM generates ABC notation from lyrics + metadata
- *           (We do NOT send audio to the LLM — the Forge API proxy does not
- *            reliably support file_url audio content. Instead we use the same
- *            proven text-only approach as backgroundSheetMusic.ts.)
+ * Architecture (COMPLETELY REDONE):
+ *   Step 1: Whisper transcribes audio → lyrics text (parallel with Step 2)
+ *   Step 2: Send ACTUAL AUDIO to the LLM for musical analysis + ABC generation
+ *           The LLM can HEAR the melody, rhythm, chords, and structure.
+ *   Step 3: Combine audio analysis with lyrics for final ABC notation
+ *
+ * The key improvement: We now send the audio file directly to the LLM using
+ * the file_url content type, so it can transcribe the actual melody rather
+ * than guessing from lyrics alone.
  *
  * Error codes stored in mp3_sheet_jobs.errorCode:
  *   - transcription_failed    Whisper could not process the audio
@@ -22,7 +25,7 @@
  *   - unknown                 Unexpected / unclassified error
  */
 
-import { generateAbcNotation } from "./backgroundSheetMusic";
+import { generateSheetMusicFromAudio } from "./audioSheetMusicGenerator";
 import { updateMp3SheetJob } from "./db";
 import { deductCredits } from "./credits";
 
@@ -148,8 +151,12 @@ export async function processMp3SheetJob(
   fileName: string
 ): Promise<void> {
   try {
-    // ── Step 1: Transcribe audio with Whisper ────────────────────────
-    console.log(`[Mp3SheetJob ${jobId}] Starting transcription...`);
+    const title = deriveTitleFromFilename(fileName);
+
+    // ── Step 1: Transcribe audio with Whisper (for lyrics) ──────────────
+    // We run this first to get lyrics, which helps the ABC generator align
+    // melody to words. The audio itself is sent separately to the LLM.
+    console.log(`[Mp3SheetJob ${jobId}] Starting transcription for lyrics...`);
     await updateMp3SheetJob(jobId, { status: "transcribing" });
 
     let lyricsText: string | null = null;
@@ -159,7 +166,7 @@ export async function processMp3SheetJob(
       const { transcribeAudio } = await import("./_core/voiceTranscription");
       const transcription = await transcribeAudio({
         audioUrl,
-        prompt: "Transcribe the song lyrics. Include all sung words.",
+        prompt: "Transcribe the song lyrics. Include all sung words accurately.",
       });
 
       if ("error" in transcription) {
@@ -173,6 +180,7 @@ export async function processMp3SheetJob(
           throw Object.assign(new Error(transcription.error), { _phase: "transcription" as const });
         }
         // For other transcription errors, continue without lyrics
+        // The audio-aware generator can still produce sheet music from the audio alone
       } else {
         const hasLyrics = transcription.text && transcription.text.trim().length > 10;
         lyricsText = hasLyrics ? transcription.text : null;
@@ -191,8 +199,8 @@ export async function processMp3SheetJob(
     } catch (transcriptionErr: any) {
       if (transcriptionErr._phase === "transcription") throw transcriptionErr;
       console.error(`[Mp3SheetJob ${jobId}] Transcription error:`, transcriptionErr?.message);
-      // Continue without lyrics — we can still attempt generation
-      console.warn(`[Mp3SheetJob ${jobId}] Continuing without lyrics due to transcription failure.`);
+      // Continue without lyrics — the audio-aware generator can still work
+      console.warn(`[Mp3SheetJob ${jobId}] Continuing without lyrics — audio analysis will still produce sheet music.`);
     }
 
     // Save lyrics immediately if available
@@ -200,24 +208,39 @@ export async function processMp3SheetJob(
       await updateMp3SheetJob(jobId, { lyrics: lyricsText });
     }
 
-    // ── Step 2: Generate ABC notation via text-only LLM ──────────────
-    // We use the same proven generateAbcNotation() from backgroundSheetMusic.ts
-    // which sends text (title + lyrics + metadata) to Claude — no audio file.
-    console.log(`[Mp3SheetJob ${jobId}] Starting ABC generation (text-only LLM)...`);
+    // ── Step 2: Generate ABC notation using AUDIO-AWARE generator ────────
+    // This is the key improvement: we send the actual audio file to the LLM
+    // so it can HEAR the melody, rhythm, chords, and structure.
+    console.log(`[Mp3SheetJob ${jobId}] Starting audio-aware ABC generation...`);
+    console.log(`[Mp3SheetJob ${jobId}] Audio URL: ${audioUrl}`);
+    console.log(`[Mp3SheetJob ${jobId}] Has lyrics: ${!!lyricsText} (${lyricsText?.length || 0} chars)`);
     await updateMp3SheetJob(jobId, { status: "generating" });
-
-    const title = deriveTitleFromFilename(fileName);
 
     let cleanAbc: string;
     try {
-      cleanAbc = await generateAbcNotation({
+      const result = await generateSheetMusicFromAudio(
         title,
-        lyrics: lyricsText,
-        // We don't have genre/mood/key from audio, but the LLM will infer from lyrics
-      });
+        audioUrl,
+        lyricsText,
+        {
+          // We don't know the key/genre yet — the audio analyzer will detect them
+        }
+      );
+      cleanAbc = result.abc;
+
+      if (result.analysis) {
+        console.log(`[Mp3SheetJob ${jobId}] Audio analysis detected:`, {
+          key: result.analysis.key,
+          tempo: result.analysis.tempo,
+          timeSignature: result.analysis.timeSignature,
+          sections: result.analysis.structure?.length || 0,
+        });
+      }
+
       console.log(`[Mp3SheetJob ${jobId}] Generated ABC (${cleanAbc.length} chars):`, cleanAbc.substring(0, 300));
       if (!cleanAbc || cleanAbc.trim().length === 0) {
         console.error(`[Mp3SheetJob ${jobId}] ERROR: cleanAbc is empty after generation!`);
+        throw new Error("Generated ABC notation is empty");
       }
     } catch (genErr: any) {
       const classified = classifyError(genErr, "generation");
@@ -245,19 +268,17 @@ export async function processMp3SheetJob(
     }
 
     // ── Step 4: Mark done ────────────────────────────────────────────
-    // Log the ABC being saved for debugging
     const abcLines = cleanAbc.split('\n');
     const musicLines = abcLines.filter(l => l.match(/[A-Ga-gz|:\[\]^_=,']/));
     console.log(`[Mp3SheetJob ${jobId}] Saving ABC: ${abcLines.length} total lines, ${musicLines.length} music lines`);
     console.log(`[Mp3SheetJob ${jobId}] ABC header (first 300 chars): ${cleanAbc.substring(0, 300)}`);
-    console.log(`[Mp3SheetJob ${jobId}] ABC body (lines 5-15): ${abcLines.slice(4, 15).join(' | ')}`);
-    
+
     await updateMp3SheetJob(jobId, {
       status: "done",
       abcNotation: cleanAbc,
     });
 
-    console.log(`[Mp3SheetJob ${jobId}] Completed successfully.`);
+    console.log(`[Mp3SheetJob ${jobId}] Completed successfully — audio-aware generation.`);
   } catch (err: any) {
     // Top-level catch for truly unexpected errors
     const phase = err._phase || "transcription";

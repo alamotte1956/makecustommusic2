@@ -2345,3 +2345,17 @@
 - [x] Added chord format toggle to the Worship Set transpose dialog
 - [x] Nashville badge and reference legend on both print HTML and PDF outputs
 - [x] Full test coverage for Nashville Number converter (nashvilleNumber.test.ts)
+
+## Sheet Music Generator - Complete Redo
+- [x] Created new audioSheetMusicGenerator.ts — sends actual audio to the LLM via file_url
+- [x] Two-pass approach: Pass 1 analyzes audio (key, tempo, time sig, chords, structure, melody)
+- [x] Pass 2 generates complete ABC notation from the analysis + lyrics
+- [x] Rewrote mp3SheetProcessor.ts to use audio-aware generator instead of text-only
+- [x] Updated generateSheetMusic mutation to use audio when song has audioUrl
+- [x] Updated generateSheetMusicInBackground to use audio when available
+- [x] Maintains fallback to text-based generation for songs without audio
+- [x] Better error classification with structured error codes
+- [x] Retry logic with 3 attempts and increasing backoff in the audio generator
+- [x] Falls back to text-only generator if audio analysis fails completely
+- [x] Proper section markers (Verse, Chorus, Bridge, etc.) from audio structure detection
+- [x] Full song coverage — LLM hears the entire audio file, not just a snippet

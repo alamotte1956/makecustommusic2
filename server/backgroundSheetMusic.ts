@@ -581,10 +581,31 @@ export function generateSheetMusicInBackground(songId: number): void {
         }
 
         console.log(
-          `[BackgroundSheetMusic] Attempt ${attempt}/${MAX_BG_ATTEMPTS} — generating sheet music for song ${songId} "${song.title}"`
+          `[BackgroundSheetMusic] Attempt ${attempt}/${MAX_BG_ATTEMPTS} — generating sheet music for song ${songId} "${song.title}" (audio: ${!!song.audioUrl})`
         );
 
-        const abc = await generateAbcNotation(song);
+        let abc: string;
+
+        // If the song has an audio URL, use the audio-aware generator
+        if (song.audioUrl) {
+          const { generateSheetMusicFromAudio } = await import("./audioSheetMusicGenerator");
+          const result = await generateSheetMusicFromAudio(
+            song.title,
+            song.audioUrl,
+            song.lyrics || null,
+            {
+              key: song.keySignature || undefined,
+              genre: song.genre || undefined,
+              tempo: song.tempo || undefined,
+              timeSignature: song.timeSignature || undefined,
+            }
+          );
+          abc = result.abc;
+        } else {
+          // No audio — use text-based generator
+          abc = await generateAbcNotation(song);
+        }
+
         await updateSongSheetMusic(songId, abc);
         // updateSongSheetMusic already sets status to "done"
 
