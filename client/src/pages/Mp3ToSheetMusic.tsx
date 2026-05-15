@@ -142,6 +142,7 @@ export default function Mp3ToSheetMusic() {
   const saveToLibraryMutation = trpc.songs.saveMp3SheetToLibrary.useMutation();
   const trpcUtils = trpc.useUtils();
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingStartRef = useRef<number | null>(null);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [completedJobId, setCompletedJobId] = useState<number | null>(null);
 
@@ -433,8 +434,26 @@ export default function Mp3ToSheetMusic() {
   const pollJobStatus = useCallback((jobId: number) => {
     // Clear any existing polling
     if (pollingRef.current) clearInterval(pollingRef.current);
+    pollingStartRef.current = Date.now();
+
+    const CLIENT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
     pollingRef.current = setInterval(async () => {
+      // Client-side timeout: if polling for > 5 minutes, show error
+      if (pollingStartRef.current && Date.now() - pollingStartRef.current > CLIENT_TIMEOUT_MS) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        pollingStartRef.current = null;
+        setActiveJobId(null);
+        setStep("error");
+        setErrorInfo({
+          type: "generation_timeout",
+          message: "The conversion is taking longer than expected. The server may have restarted during processing. Please try again.",
+          detail: "generation_timeout",
+        });
+        return;
+      }
+
       try {
         const result = await trpcUtils.songs.getMp3SheetJobStatus.fetch({ jobId });
 
@@ -446,6 +465,7 @@ export default function Mp3ToSheetMusic() {
         } else if (result.status === "done") {
           if (pollingRef.current) clearInterval(pollingRef.current);
           pollingRef.current = null;
+          pollingStartRef.current = null;
           setCompletedJobId(jobId); // Preserve jobId for save-to-library
           setActiveJobId(null);
           setAbcNotation(result.abcNotation || null);
@@ -455,6 +475,7 @@ export default function Mp3ToSheetMusic() {
         } else if (result.status === "error") {
           if (pollingRef.current) clearInterval(pollingRef.current);
           pollingRef.current = null;
+          pollingStartRef.current = null;
           setActiveJobId(null);
           setStep("error");
           const errType = mapErrorCodeToType(result.errorCode ?? undefined, result.errorMessage ?? undefined);

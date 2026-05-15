@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, fileName, status, errorCode, createdAt FROM mp3_sheet_jobs ORDER BY createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, fileName, status, errorCode, createdAt FROM mp3_sheet_jobs ORDER BY createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "930001",
+      "fileName": "My People Need You (2).mp3",
+      "status": "transcribing",
+      "errorCode": "NULL",
+      "createdAt": "2026-05-15 22:19:47"
+    },
+    {
+      "id": "900002",
+      "fileName": "My People Need You (2).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-05-15 21:53:20"
+    },
+    {
+      "id": "900001",
+      "fileName": "My People Need You (2).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-05-15 21:43:44"
+    },
+    {
+      "id": "840001",
+      "fileName": "Lights, Camera, Guitar (Guitar).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-05-07 18:26:30"
+    },
+    {
+      "id": "810001",
+      "fileName": "Lights, Camera, Guitar (Guitar).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-05-07 17:56:50"
+    },
+    {
+      "id": "780001",
+      "fileName": "Lights, Camera, Guitar (Guitar).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-05-07 16:56:07"
+    },
+    {
+      "id": "750002",
+      "fileName": "Beer Burgers and Bikinis (3).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-04-23 22:14:43"
+    },
+    {
+      "id": "750001",
+      "fileName": "SHE'S HERE (Broadway Tonight) (1).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-04-23 22:13:06"
+    },
+    {
+      "id": "720001",
+      "fileName": "Lights, Camera, Guitar (1).mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-04-23 20:57:33"
+    },
+    {
+      "id": "690031",
+      "fileName": "Ron_And_SuzyS_Story_4.mp3",
+      "status": "done",
+      "errorCode": "NULL",
+      "createdAt": "2026-04-23 18:24:54"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfileName\tstatus\terrorCode\tcreatedAt\n930001\tMy People Need You (2).mp3\ttranscribing\tNULL\t2026-05-15 22:19:47\n900002\tMy People Need You (2).mp3\tdone\tNULL\t2026-05-15 21:53:20\n900001\tMy People Need You (2).mp3\tdone\tNULL\t2026-05-15 21:43:44\n840001\tLights, Camera, Guitar (Guitar).mp3\tdone\tNULL\t2026-05-07 18:26:30\n810001\tLights, Camera, Guitar (Guitar).mp3\tdone\tNULL\t2026-05-07 17:56:50\n780001\tLights, Camera, Guitar (Guitar).mp3\tdone\tNULL\t2026-05-07 16:56:07\n750002\tBeer Burgers and Bikinis (3).mp3\tdone\tNULL\t2026-04-23 22:14:43\n750001\tSHE'S HERE (Broadway Tonight) (1).mp3\tdone\tNULL\t2026-04-23 22:13:06\n720001\tLights, Camera, Guitar (1).mp3\tdone\tNULL\t2026-04-23 20:57:33\n690031\tRon_And_SuzyS_Story_4.mp3\tdone\tNULL\t2026-04-23 18:24:54\n",
+  "stderr": "",
+  "execution_time_ms": 262
+}

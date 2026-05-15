@@ -2404,3 +2404,15 @@
 - [x] Eliminated duplicated EASY_OPEN_CHORDS set in CapoChart.tsx (now imports from capoChart.ts)
 - [x] Fixed combinedPdfExport test to match US Letter format change
 - [x] All 1,872 tests passing (including 86 capo-specific tests)
+
+## Bug: MP3 to Sheet Music Stuck at "Processing"
+- [x] Conversion gets stuck at "Processing" and never completes
+- [x] Investigate server-side processing pipeline (mp3SheetProcessor, audioSheetMusicGenerator, backgroundSheetMusic)
+- [x] Check server logs for errors during LLM calls or audio processing
+- [x] Root cause: server restart during fire-and-forget background job kills the async task silently
+- [x] Fix: Added stale job detection (>5 min) in getMp3SheetJobStatus and getRecentMp3SheetJobs
+- [x] Fix: Auto-marks stuck jobs as "error" with clear timeout message
+- [x] Fix: Retry button now works on stuck jobs (not just "error" status)
+- [x] Fix: Added client-side 5-minute polling timeout for immediate user feedback
+- [x] Fix: Manually fixed stuck job #930001 in database
+- [x] All 1,872 tests passing

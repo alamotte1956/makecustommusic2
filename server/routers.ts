@@ -1497,6 +1497,28 @@ RULES:
         if (!job) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
         }
+
+        // Auto-detect stuck jobs: if transcribing/generating for > 5 minutes, mark as error
+        const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+        if ((job.status === "transcribing" || job.status === "generating") &&
+            (Date.now() - new Date(job.updatedAt ?? job.createdAt).getTime() > STALE_THRESHOLD_MS)) {
+          console.warn(`[Mp3SheetJob ${job.id}] Detected stale job (stuck in ${job.status} for > 5 min). Marking as error.`);
+          await updateMp3SheetJob(job.id, {
+            status: "error",
+            errorCode: "generation_timeout",
+            errorMessage: "The conversion timed out — the server may have restarted during processing. Please click Retry to try again.",
+          });
+          return {
+            status: "error" as const,
+            abcNotation: job.abcNotation,
+            lyrics: job.lyrics,
+            audioUrl: job.audioUrl,
+            fileName: job.fileName,
+            errorMessage: "The conversion timed out — the server may have restarted during processing. Please click Retry to try again.",
+            errorCode: "generation_timeout",
+          };
+        }
+
         return {
           status: job.status,
           abcNotation: job.abcNotation,
@@ -1514,16 +1536,43 @@ RULES:
       .query(async ({ ctx, input }) => {
         const limit = input?.limit ?? 20;
         const jobs = await getUserMp3SheetJobs(ctx.user.id, limit);
-        return jobs.map((j) => ({
-          id: j.id,
-          fileName: j.fileName,
-          status: j.status,
-          abcNotation: j.abcNotation,
-          lyrics: j.lyrics,
-          audioUrl: j.audioUrl,
-          errorMessage: j.errorMessage,
-          createdAt: j.createdAt,
-        }));
+        const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+        // Auto-detect and fix stale jobs in the list
+        const results = [];
+        for (const j of jobs) {
+          if ((j.status === "transcribing" || j.status === "generating") &&
+              (Date.now() - new Date(j.updatedAt ?? j.createdAt).getTime() > STALE_THRESHOLD_MS)) {
+            // Mark stale job as error in DB
+            await updateMp3SheetJob(j.id, {
+              status: "error",
+              errorCode: "generation_timeout",
+              errorMessage: "The conversion timed out \u2014 the server may have restarted during processing. Please click Retry to try again.",
+            });
+            results.push({
+              id: j.id,
+              fileName: j.fileName,
+              status: "error" as const,
+              abcNotation: j.abcNotation,
+              lyrics: j.lyrics,
+              audioUrl: j.audioUrl,
+              errorMessage: "The conversion timed out \u2014 the server may have restarted during processing. Please click Retry to try again.",
+              createdAt: j.createdAt,
+            });
+          } else {
+            results.push({
+              id: j.id,
+              fileName: j.fileName,
+              status: j.status,
+              abcNotation: j.abcNotation,
+              lyrics: j.lyrics,
+              audioUrl: j.audioUrl,
+              errorMessage: j.errorMessage,
+              createdAt: j.createdAt,
+            });
+          }
+        }
+        return results;
       }),
 
     // Delete an MP3-to-sheet-music job
@@ -1538,13 +1587,17 @@ RULES:
     retryMp3SheetJob: protectedProcedure
       .input(z.object({ jobId: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        // Fetch the job and verify ownership + failed status
+        // Fetch the job and verify ownership
         const job = await getMp3SheetJob(input.jobId, ctx.user.id);
         if (!job) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
         }
-        if (job.status !== "error") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Only failed jobs can be retried" });
+        // Allow retry for: error status OR stuck jobs (transcribing/generating for > 5 min)
+        const isError = job.status === "error";
+        const isStuck = (job.status === "transcribing" || job.status === "generating") &&
+          (Date.now() - new Date(job.updatedAt ?? job.createdAt).getTime() > 5 * 60 * 1000);
+        if (!isError && !isStuck) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Only failed or stuck jobs can be retried" });
         }
         if (!job.audioUrl) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "No audio URL available for retry" });
