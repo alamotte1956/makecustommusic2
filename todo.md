@@ -2380,3 +2380,27 @@
 - [x] Added length requirement to direct audio transcription prompt
 - [x] Added length requirement to buildAbcPromptFromAnalysis
 - [x] Updated SHEET_MUSIC_SYSTEM_PROMPT with full section structure template
+
+## MP3 to Sheet Music - PDF Format 8.5x11
+- [x] Set PDF export output to 8.5" x 11" (US Letter) paper size
+- [x] Updated pdfExport.ts page constants to Letter (215.9mm x 279.4mm)
+- [x] Updated combinedPdfExport.ts page constants to Letter
+- [x] Applied to all sheet music PDF exports (pdfExport, combinedPdfExport, WorshipSetBuilder)
+- [ ] Append chord charts after the sheet music in the PDF export
+- [ ] Include lead sheet (chords above lyrics) section after notation
+- [ ] Include guitar chord diagrams in the combined PDF
+
+## Capo Settings Logic Review
+- [x] Reviewed core capo calculation algorithm (calculateCapoChart, getBestCapoPositions)
+- [x] Verified correct transposition for all 12 major keys (chromatic cycle)
+- [x] Verified flat key input handling (Bb, Eb, Ab, Db, Gb)
+- [x] Verified minor key capo positions (Bm, F#m, Cm, Gm)
+- [x] Verified chord quality preservation (minor, 7th, maj7, add9, sus, slash chords)
+- [x] Verified enharmonic display (C#→Db, D#→Eb, G#→Ab, A#→Bb, F#→F#)
+- [x] Verified easy chord detection accuracy
+- [x] Verified recommended position criteria (≥75% easy chords AND easy key)
+- [x] Verified getBestCapoPositions sorting and filtering
+- [x] Tested real worship song scenarios (10,000 Reasons, How Great Is Our God, Oceans, Reckless Love)
+- [x] Eliminated duplicated EASY_OPEN_CHORDS set in CapoChart.tsx (now imports from capoChart.ts)
+- [x] Fixed combinedPdfExport test to match US Letter format change
+- [x] All 1,872 tests passing (including 86 capo-specific tests)

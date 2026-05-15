@@ -11,13 +11,13 @@
  */
 import jsPDF from "jspdf";
 
-// ─── Page Constants ───
-const PAGE_WIDTH = 210; // A4 mm
-const PAGE_HEIGHT = 297;
-const MARGIN_TOP = 25;
-const MARGIN_BOTTOM = 25;
-const MARGIN_LEFT = 20;
-const MARGIN_RIGHT = 20;
+// ─── Page Constants (US Letter: 8.5" x 11") ───
+const PAGE_WIDTH = 215.9; // 8.5 inches in mm
+const PAGE_HEIGHT = 279.4; // 11 inches in mm
+const MARGIN_TOP = 20;
+const MARGIN_BOTTOM = 20;
+const MARGIN_LEFT = 19; // ~0.75 inch
+const MARGIN_RIGHT = 19;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 const FOOTER_RESERVE = 12; // Space reserved for footer at bottom of each page
 const SAFE_BOTTOM = PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_RESERVE; // Content must not go below this
@@ -316,7 +316,7 @@ export async function exportSheetMusicPDF(
   copyrightHolder?: string,
   capoInfo?: { fret: number; playKey: string } | null
 ): Promise<void> {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
 
   // Title — start below top margin with enough room for text height
   let y = MARGIN_TOP + 6;
@@ -502,7 +502,7 @@ export async function exportChordPDF(
   diagramSvgs?: SVGElement[],
   copyrightHolder?: string
 ): Promise<void> {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
 
   // Title
   let y = MARGIN_TOP + 6;
@@ -736,7 +736,7 @@ export function exportLyricsPDF(
   },
   copyrightHolder?: string
 ): void {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
 
   // Title
   let y = MARGIN_TOP + 6;

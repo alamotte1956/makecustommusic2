@@ -115,7 +115,7 @@ function transposeChord(chord: string, semitones: number): string {
 /**
  * Check if a chord is an "easy" open chord.
  */
-function isEasyChord(chord: string): boolean {
+export function isEasyChord(chord: string): boolean {
   // Strip slash bass notes for the check
   const mainChord = chord.includes("/") ? chord.split("/")[0] : chord;
   return EASY_OPEN_CHORDS.has(mainChord);

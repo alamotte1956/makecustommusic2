@@ -12,13 +12,13 @@ import jsPDF from "jspdf";
 import type { LeadSheet } from "./leadSheetExtractor";
 import { renderSvgToCanvas, getSvgDimensions } from "./pdfExport";
 
-// ─── Page Constants ───
-const PAGE_WIDTH = 210; // A4 mm
-const PAGE_HEIGHT = 297;
-const MARGIN_TOP = 25;
-const MARGIN_BOTTOM = 25;
-const MARGIN_LEFT = 20;
-const MARGIN_RIGHT = 20;
+// ─── Page Constants (US Letter: 8.5" x 11") ───
+const PAGE_WIDTH = 215.9; // 8.5 inches in mm
+const PAGE_HEIGHT = 279.4; // 11 inches in mm
+const MARGIN_TOP = 20;
+const MARGIN_BOTTOM = 20;
+const MARGIN_LEFT = 19; // ~0.75 inch
+const MARGIN_RIGHT = 19;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 const FOOTER_RESERVE = 12;
 const SAFE_BOTTOM = PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_RESERVE;
@@ -629,7 +629,7 @@ export async function exportCombinedPdf(
     generateChordDiagramsSvgs,
   } = options;
 
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
 
   // ─── Cover Page ───
   addCoverPage(doc, songTitle, keyLabel);

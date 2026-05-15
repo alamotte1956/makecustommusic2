@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { calculateCapoChart, getBestCapoPositions, getCapoLabel } from "@/lib/capoChart";
+import { calculateCapoChart, getBestCapoPositions, getCapoLabel, isEasyChord } from "@/lib/capoChart";
 import type { CapoPosition } from "@/lib/capoChart";
 import { ChevronDown, ChevronUp, Guitar, Star, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -300,18 +300,7 @@ function FullCapoTable({
   );
 }
 
-/** Quick check if a chord is an easy open chord (mirrors the logic in capoChart.ts) */
+/** Quick check if a chord is an easy open chord (uses shared logic from capoChart.ts) */
 function isEasyOpenChord(chord: string): boolean {
-  const EASY = new Set([
-    "C", "G", "D", "A", "E", "F",
-    "Am", "Em", "Dm",
-    "C7", "G7", "D7", "A7", "E7", "B7",
-    "Cmaj7", "Gmaj7", "Dmaj7", "Amaj7", "Emaj7",
-    "Am7", "Em7", "Dm7",
-    "Cadd9", "Gadd9", "Dadd9",
-    "Csus2", "Dsus2", "Asus2",
-    "Csus4", "Dsus4", "Asus4", "Esus4",
-  ]);
-  const mainChord = chord.includes("/") ? chord.split("/")[0] : chord;
-  return EASY.has(mainChord);
+  return isEasyChord(chord);
 }

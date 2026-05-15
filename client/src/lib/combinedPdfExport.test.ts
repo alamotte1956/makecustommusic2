@@ -159,7 +159,7 @@ describe("combinedPdfExport", () => {
       expect(jsPDF).toHaveBeenCalledWith({
         orientation: "portrait",
         unit: "mm",
-        format: "a4",
+        format: "letter",
       });
     });
 
