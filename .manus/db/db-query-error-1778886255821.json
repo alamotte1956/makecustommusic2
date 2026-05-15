@@ -1,0 +1,8 @@
+{
+  "query": "UPDATE mp3_sheet_jobs SET status = 'transcribing', error_message = NULL, error_code = NULL, updated_at = NOW() WHERE id = 930001;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute UPDATE mp3_sheet_jobs SET status = 'transcribing', error_message = NULL, error_code = NULL, updated_at = NOW() WHERE id = 930001;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'error_message' in 'field list'"
+  ]
+}

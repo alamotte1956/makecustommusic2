@@ -54,6 +54,15 @@ import { notifyOwner } from "./_core/notification";
 import { generateSheetMusicInBackground, generateAbcNotation, sanitiseAbc, validateAbc } from "./backgroundSheetMusic";
 import { generateSheetMusicFromAudio } from "./audioSheetMusicGenerator";
 import { processMp3SheetJob } from "./mp3SheetProcessor";
+
+/**
+ * In-memory registry of active MP3 sheet jobs being processed on this instance.
+ * Used to detect orphaned jobs after a server restart — if a job is in
+ * "transcribing"/"generating" state but NOT in this set, it means the instance
+ * restarted and the background task was killed. The polling endpoint will
+ * auto-resume such jobs.
+ */
+const activeSheetJobs = new Set<number>();
 import { generateAllPartAbcs, PART_NAMES, INSTRUMENT_PARTS } from "./multiPartAbcGenerator";
 import { getAdminUserList, getAdminUserDetail, getAdminSiteStats, type AdminRevenueStats } from "./adminDb";
 import { eq, isNull, or, sql } from "drizzle-orm";
@@ -1482,9 +1491,15 @@ RULES:
         });
 
         // Fire-and-forget: run the heavy work in the background
-        processMp3SheetJob(jobId, ctx.user.id, audioUrl, input.fileName).catch((err: any) => {
-          console.error(`[Mp3SheetJob] Unhandled error for job ${jobId}:`, err);
-        });
+        // Register in active set so polling knows this instance is handling it
+        activeSheetJobs.add(jobId);
+        processMp3SheetJob(jobId, ctx.user.id, audioUrl, input.fileName)
+          .catch((err: any) => {
+            console.error(`[Mp3SheetJob] Unhandled error for job ${jobId}:`, err);
+          })
+          .finally(() => {
+            activeSheetJobs.delete(jobId);
+          });
 
         return { jobId, audioUrl };
       }),
@@ -1500,13 +1515,14 @@ RULES:
 
         // Auto-detect stuck jobs: if transcribing/generating for > 5 minutes, mark as error
         const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
-        if ((job.status === "transcribing" || job.status === "generating") &&
-            (Date.now() - new Date(job.updatedAt ?? job.createdAt).getTime() > STALE_THRESHOLD_MS)) {
+        const jobAge = Date.now() - new Date(job.updatedAt ?? job.createdAt).getTime();
+
+        if ((job.status === "transcribing" || job.status === "generating") && jobAge > STALE_THRESHOLD_MS) {
           console.warn(`[Mp3SheetJob ${job.id}] Detected stale job (stuck in ${job.status} for > 5 min). Marking as error.`);
           await updateMp3SheetJob(job.id, {
             status: "error",
             errorCode: "generation_timeout",
-            errorMessage: "The conversion timed out — the server may have restarted during processing. Please click Retry to try again.",
+            errorMessage: "The conversion timed out \u2014 the server may have restarted during processing. Please click Retry to try again.",
           });
           return {
             status: "error" as const,
@@ -1514,9 +1530,27 @@ RULES:
             lyrics: job.lyrics,
             audioUrl: job.audioUrl,
             fileName: job.fileName,
-            errorMessage: "The conversion timed out — the server may have restarted during processing. Please click Retry to try again.",
+            errorMessage: "The conversion timed out \u2014 the server may have restarted during processing. Please click Retry to try again.",
             errorCode: "generation_timeout",
           };
+        }
+
+        // Auto-resume orphaned jobs: if job is in processing state but NOT being
+        // handled by this instance (e.g., instance restarted), re-trigger it.
+        // This keeps the job alive because the polling request keeps the instance warm.
+        if ((job.status === "transcribing" || job.status === "generating") &&
+            !activeSheetJobs.has(job.id) && job.audioUrl) {
+          console.log(`[Mp3SheetJob ${job.id}] Detected orphaned job (not in active set). Auto-resuming...`);
+          activeSheetJobs.add(job.id);
+          // Reset to transcribing to restart from the beginning
+          await updateMp3SheetJob(job.id, { status: "transcribing" });
+          processMp3SheetJob(job.id, ctx.user.id, job.audioUrl, job.fileName)
+            .catch((err: any) => {
+              console.error(`[Mp3SheetJob] Auto-resume failed for job ${job.id}:`, err);
+            })
+            .finally(() => {
+              activeSheetJobs.delete(job.id);
+            });
         }
 
         return {
@@ -1611,9 +1645,14 @@ RULES:
           lyrics: null,
         });
         // Re-trigger background processing (fire and forget)
-        processMp3SheetJob(input.jobId, ctx.user.id, job.audioUrl, job.fileName).catch((err) => {
-          console.error(`[retryMp3SheetJob] Background processing failed for job ${input.jobId}:`, err);
-        });
+        activeSheetJobs.add(input.jobId);
+        processMp3SheetJob(input.jobId, ctx.user.id, job.audioUrl, job.fileName)
+          .catch((err) => {
+            console.error(`[retryMp3SheetJob] Background processing failed for job ${input.jobId}:`, err);
+          })
+          .finally(() => {
+            activeSheetJobs.delete(input.jobId);
+          });
         return { jobId: input.jobId, status: "transcribing" as const };
       }),
 

@@ -2416,3 +2416,14 @@
 - [x] Fix: Added client-side 5-minute polling timeout for immediate user feedback
 - [x] Fix: Manually fixed stuck job #930001 in database
 - [x] All 1,872 tests passing
+
+## Bug: MP3 to Sheet Music - Deep Logic Failure
+- [x] Conversion still not working even after stuck detection fix
+- [x] Trace through the actual LLM call pipeline (Whisper transcription + audio analysis + ABC generation)
+- [x] Test with a real MP3 upload and capture server-side logs — pipeline works perfectly (30s)
+- [x] Root cause: Cloud Run min-instances=0 kills fire-and-forget background tasks when instance scales down
+- [x] Fix: Added in-memory activeSheetJobs registry to track running jobs per instance
+- [x] Fix: Polling endpoint auto-resumes orphaned jobs (not in active set) on next poll
+- [x] Fix: startMp3SheetJob, retryMp3SheetJob both register in active set
+- [x] Fix: Reset stuck job #930001 to 'transcribing' so auto-resume kicks in after deploy
+- [x] All 1,872 tests passing, TypeScript clean

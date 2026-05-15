@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, audioUrl, fileName FROM mp3_sheet_jobs WHERE status = 'done' ORDER BY createdAt DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 27tCrNWdmQHZC2L.1303e64f5668 --database Q3oEbCsP6DUj527aoyypq7 --execute SELECT id, audioUrl, fileName FROM mp3_sheet_jobs WHERE status = 'done' ORDER BY createdAt DESC LIMIT 1;",
+  "rows": [
+    {
+      "id": "900002",
+      "audioUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/mp3-to-sheet/1/V7MHIguRkAkZEWgz65Ead.mp3",
+      "fileName": "My People Need You (2).mp3"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\taudioUrl\tfileName\n900002\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663211654017/Q3oEbCsP6DUj527aoyypq7/mp3-to-sheet/1/V7MHIguRkAkZEWgz65Ead.mp3\tMy People Need You (2).mp3\n",
+  "stderr": "",
+  "execution_time_ms": 264
+}
