@@ -2427,3 +2427,13 @@
 - [x] Fix: startMp3SheetJob, retryMp3SheetJob both register in active set
 - [x] Fix: Reset stuck job #930001 to 'transcribing' so auto-resume kicks in after deploy
 - [x] All 1,872 tests passing, TypeScript clean
+
+## MP3 to Sheet Music Enhancements
+- [x] Add required Song Title input field before upload/generate
+- [x] Inject user-provided title into ABC notation T: header for prominent display
+- [x] Add Transpose Up (+1) and Transpose Down (-1) buttons alongside key dropdown
+- [x] Add Print Sheet Music button with @media print CSS for US Letter (8.5x11)
+- [x] Print output: clean margins, staves fit width, hide all UI controls
+- [x] Polish drag-and-drop zone with clearer visual feedback
+- [x] Enhanced processing state with step-by-step status messages
+- [x] Fix sheet music SVG rendering (white-on-white in dark theme) — added text-black + color:#000

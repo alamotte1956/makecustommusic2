@@ -802,11 +802,80 @@ button {
   }
 }
 
+/* ─── Print Styles: US Letter (8.5 × 11 in) ─── */
 @media print {
-  .no-print {
+  @page {
+    size: letter portrait;
+    margin: 0.75in 0.5in;
+  }
+
+  /* Hide all non-essential UI */
+  .no-print,
+  nav,
+  header,
+  footer,
+  aside,
+  .sidebar,
+  [data-sonner-toaster] {
     display: none !important;
   }
+
   .print-only {
     display: block !important;
+  }
+
+  /* Reset page background and layout */
+  html, body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Remove page padding/margins from containers */
+  .min-h-screen {
+    min-height: auto !important;
+  }
+
+  .max-w-3xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Sheet music container: fill the page width */
+  #mp3-sheet-music-render,
+  #sheet-music-render {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    page-break-inside: auto;
+  }
+
+  /* Scale SVG staves to fit page width */
+  #mp3-sheet-music-render svg,
+  #sheet-music-render svg {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 7.5in;
+  }
+
+  /* Prevent cutting staves across pages */
+  .abcjs-staff-extra,
+  .abcjs-top-line {
+    page-break-inside: avoid;
+  }
+
+  /* Clean card backgrounds for print */
+  .bg-card {
+    background: white !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
   }
 }

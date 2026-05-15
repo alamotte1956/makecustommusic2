@@ -12,11 +12,12 @@ import {
   Music, FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Download, Play, Pause, Volume2, VolumeX, RefreshCw, WifiOff,
   Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save, RotateCcw, ListMusic,
+  Printer, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
 import { getBestCapoPositions } from "@/lib/capoChart";
-import { COMMON_KEYS, detectKeyFromABC, transposeABC } from "@/lib/transpose";
+import { COMMON_KEYS, detectKeyFromABC, transposeABC, getSemitoneInterval } from "@/lib/transpose";
 import { extractChordsFromABC } from "@/lib/midiExport";
 import { downloadMusicXml } from "@/lib/musicXmlExport";
 import { GuitarChordChart } from "@/components/GuitarChordChart";
@@ -100,6 +101,7 @@ export default function Mp3ToSheetMusic() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [file, setFile] = useState<File | null>(null);
+  const [songTitle, setSongTitle] = useState("");
   const [savedSongId, setSavedSongId] = useState<number | null>(null);
   const [saveTitle, setSaveTitle] = useState("");
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -159,11 +161,27 @@ export default function Mp3ToSheetMusic() {
     return detectKeyFromABC(abcNotation);
   }, [abcNotation]);
 
+  // Inject user-provided song title into ABC notation T: header
+  const titledAbc = useMemo(() => {
+    if (!abcNotation) return null;
+    if (!songTitle.trim()) return abcNotation;
+    // Replace existing T: line or add one after X:
+    const lines = abcNotation.split("\n");
+    const tIdx = lines.findIndex((l) => l.trim().startsWith("T:"));
+    if (tIdx >= 0) {
+      lines[tIdx] = `T:${songTitle.trim()}`;
+    } else {
+      const xIdx = lines.findIndex((l) => l.trim().startsWith("X:"));
+      lines.splice(xIdx >= 0 ? xIdx + 1 : 0, 0, `T:${songTitle.trim()}`);
+    }
+    return lines.join("\n");
+  }, [abcNotation, songTitle]);
+
   // Compute transposed ABC
   const displayAbc = useMemo(() => {
-    if (!abcNotation || selectedKey === "original" || !originalKey) return abcNotation;
-    return transposeABC(abcNotation, originalKey, selectedKey);
-  }, [abcNotation, selectedKey, originalKey]);
+    if (!titledAbc || selectedKey === "original" || !originalKey) return titledAbc;
+    return transposeABC(titledAbc, originalKey, selectedKey);
+  }, [titledAbc, selectedKey, originalKey]);
 
   // Frontend-side ABC sanitisation: strip V: directives and %%staves as a safety net
   const sanitisedDisplayAbc = useMemo(() => {
@@ -201,6 +219,42 @@ export default function Mp3ToSheetMusic() {
   }, [sanitisedDisplayAbc]);
 
 
+
+  // Transpose up/down by 1 semitone
+  const handleTransposeUp = useCallback(() => {
+    if (!originalKey) return;
+    const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+    const currentIdx = COMMON_KEYS.indexOf(currentKey);
+    // Find the key 1 semitone up using chromatic logic
+    const isMinor = currentKey.endsWith("m");
+    const majorKeys = COMMON_KEYS.filter((k) => !k.endsWith("m"));
+    const minorKeys = COMMON_KEYS.filter((k) => k.endsWith("m"));
+    const pool = isMinor ? minorKeys : majorKeys;
+    const idx = pool.indexOf(currentKey);
+    if (idx >= 0) {
+      const nextIdx = (idx + 1) % pool.length;
+      setSelectedKey(pool[nextIdx]);
+    }
+  }, [originalKey, selectedKey]);
+
+  const handleTransposeDown = useCallback(() => {
+    if (!originalKey) return;
+    const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+    const isMinor = currentKey.endsWith("m");
+    const majorKeys = COMMON_KEYS.filter((k) => !k.endsWith("m"));
+    const minorKeys = COMMON_KEYS.filter((k) => k.endsWith("m"));
+    const pool = isMinor ? minorKeys : majorKeys;
+    const idx = pool.indexOf(currentKey);
+    if (idx >= 0) {
+      const prevIdx = (idx - 1 + pool.length) % pool.length;
+      setSelectedKey(pool[prevIdx]);
+    }
+  }, [originalKey, selectedKey]);
+
+  // Print sheet music with @media print CSS
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
 
   const handleDownloadMusicXml = useCallback(() => {
     if (!sanitisedDisplayAbc) return;
@@ -404,6 +458,12 @@ export default function Mp3ToSheetMusic() {
       return;
     }
     setFile(f);
+    // Auto-populate song title from filename (strip extension, replace dashes/underscores, title case)
+    const autoTitle = f.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    setSongTitle(autoTitle);
     setAbcNotation(null);
     setLyrics(null);
     setStep("idle");
@@ -599,6 +659,7 @@ export default function Mp3ToSheetMusic() {
     setCompletedJobId(null);
     stopPreview();
     setFile(null);
+    setSongTitle("");
     setAbcNotation(null);
     setLyrics(null);
     setStep("idle");
@@ -633,7 +694,7 @@ export default function Mp3ToSheetMusic() {
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 print:hidden">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-sm font-medium mb-4">
             <FileAudio className="h-4 w-4" />
             AI-Powered Transcription
@@ -876,9 +937,28 @@ export default function Mp3ToSheetMusic() {
                arrangement inspired by your song's harmony and structure, not a note-for-note transcription.
                If vocals are detected, lyrics will be aligned beneath the notes.
             </p>
+
+            {/* Song Title Input (required) */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-foreground mb-1.5 block">
+                Song Title <span className="text-red-500">*</span>
+              </label>
+              <Input
+                value={songTitle}
+                onChange={(e) => setSongTitle(e.target.value)}
+                placeholder="Enter the title of the song..."
+                className="bg-white"
+                onKeyDown={(e) => { if (e.key === "Enter" && songTitle.trim()) handleGenerate(); }}
+              />
+              {!songTitle.trim() && (
+                <p className="text-xs text-muted-foreground mt-1">Required — this will appear as the title on your sheet music.</p>
+              )}
+            </div>
+
             <Button
               onClick={handleGenerate}
-              className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+              disabled={!songTitle.trim()}
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50"
             >
               <Music className="mr-2 h-4 w-4" /> Generate Sheet Music (1 credit)
             </Button>
@@ -940,8 +1020,8 @@ export default function Mp3ToSheetMusic() {
         {abcNotation && step === "done" && (
           <div className="mt-6 space-y-4">
             {/* Action bar */}
-            <div className="bg-card rounded-xl border p-6">
-              <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <div className="bg-card rounded-xl border p-6 print:border-0 print:shadow-none print:p-0">
+              <div className="flex items-center justify-between flex-wrap gap-3 mb-4 print:hidden">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
                   <span className="font-semibold text-black">Sheet Music Generated</span>
@@ -950,11 +1030,20 @@ export default function Mp3ToSheetMusic() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* Transpose */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">Transpose:</span>
+                  {/* Transpose Controls */}
+                  <div className="flex items-center gap-1 bg-muted/50 rounded-lg px-2 py-1">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap mr-1">Key:</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleTransposeDown}
+                      className="h-7 w-7 p-0"
+                      title="Transpose Down (-1)"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
                     <Select value={selectedKey} onValueChange={setSelectedKey}>
-                      <SelectTrigger className="w-[100px] h-8 text-xs">
+                      <SelectTrigger className="w-[100px] h-7 text-xs border-0 bg-transparent">
                         <SelectValue placeholder="Key" />
                       </SelectTrigger>
                       <SelectContent>
@@ -968,7 +1057,29 @@ export default function Mp3ToSheetMusic() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleTransposeUp}
+                      className="h-7 w-7 p-0"
+                      title="Transpose Up (+1)"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
+
+                  {/* Print Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    disabled={!isRendered}
+                    className="gap-1.5 print:hidden"
+                    title="Print sheet music (US Letter)"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    Print
+                  </Button>
 
                   <Button
                     variant="outline"
@@ -984,7 +1095,6 @@ export default function Mp3ToSheetMusic() {
                     )}
                     PDF
                   </Button>
-
 
                   <Button
                     variant="outline"
@@ -1048,7 +1158,7 @@ export default function Mp3ToSheetMusic() {
 
               {/* Save to Library dialog */}
               {showSaveDialog && (
-                <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-end gap-3">
+                <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-end gap-3 print:hidden">
                   <div className="flex-1 w-full">
                     <label className="text-sm font-medium text-violet-900 mb-1 block">Song Title</label>
                     <Input
@@ -1081,7 +1191,7 @@ export default function Mp3ToSheetMusic() {
               )}
 
               {/* View Mode Toggle */}
-              <div className="flex items-center gap-1 mb-4 bg-muted/50 rounded-lg p-1 w-fit">
+              <div className="flex items-center gap-1 mb-4 bg-muted/50 rounded-lg p-1 w-fit print:hidden">
                 <button
                   onClick={() => setViewMode("sheet")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
@@ -1112,17 +1222,19 @@ export default function Mp3ToSheetMusic() {
                   {/* Playback controls with note highlighting and progress tracking */}
                   <PlaybackControls
                     abc={sanitisedDisplayAbc}
-                    className="mb-4"
+                    className="mb-4 print:hidden"
                     onActiveNoteChange={onActiveNoteChange}
                     onPlaybackStateChange={handlePlaybackStateChange}
                   />
 
                   {/* Progress bar above sheet music */}
-                  <SheetMusicProgressBar
-                    progress={playbackProgress}
-                    isActive={playbackIsActive}
-                    isPlaying={playbackIsPlaying}
-                  />
+                  <div className="print:hidden">
+                    <SheetMusicProgressBar
+                      progress={playbackProgress}
+                      isActive={playbackIsActive}
+                      isPlaying={playbackIsPlaying}
+                    />
+                  </div>
 
                   {/* Sheet music rendering area — no overlay, always visible */}
                   <div className="relative">
@@ -1139,14 +1251,14 @@ export default function Mp3ToSheetMusic() {
                     <div
                       id="mp3-sheet-music-render"
                       ref={sheetRef}
-                      className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth"
-                      style={{ colorScheme: "light" }}
+                      className="bg-white rounded-lg border border-border p-4 min-h-[200px] overflow-x-auto scroll-smooth print:border-0 print:rounded-none print:p-0 print:overflow-visible print:min-h-0 text-black"
+                      style={{ colorScheme: "light", color: "#000" }}
                     />
                   </div>
 
                   {/* Guitar chord diagrams */}
                   {chords.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-border">
+                    <div className="mt-4 pt-4 border-t border-border print:hidden">
                       <GuitarChordChart chords={chords} />
                     </div>
                   )}
@@ -1165,15 +1277,17 @@ export default function Mp3ToSheetMusic() {
 
             {/* Instrument Parts */}
             {completedJobId && (
-              <InstrumentPartsSection
-                jobId={completedJobId}
-                songTitle={file?.name?.replace(/\.[^.]+$/, "") || "Sheet Music"}
-              />
+              <div className="print:hidden">
+                <InstrumentPartsSection
+                  jobId={completedJobId}
+                  songTitle={file?.name?.replace(/\.[^.]+$/, "") || "Sheet Music"}
+                />
+              </div>
             )}
 
             {/* Detected Lyrics */}
             {lyrics && (
-              <div className="bg-card rounded-xl border p-6">
+              <div className="bg-card rounded-xl border p-6 print:hidden">
                 <h3 className="font-semibold text-black flex items-center gap-2 mb-3">
                   <Music className="h-4 w-4 text-violet-500" /> Detected Lyrics
                 </h3>
@@ -1184,7 +1298,7 @@ export default function Mp3ToSheetMusic() {
             )}
 
             {/* Start Over */}
-            <div className="text-center">
+            <div className="text-center print:hidden">
               <Button variant="outline" onClick={handleReset} className="gap-2">
                 <FileAudio className="h-4 w-4" /> Convert Another File
               </Button>
@@ -1192,8 +1306,9 @@ export default function Mp3ToSheetMusic() {
           </div>
         )}
 
-        {/* Recent Jobs */}
-        <RecentJobsSection
+        {/* Recent Jobs & Info — hidden when printing */}
+        <div className="print:hidden">
+          <RecentJobsSection
           onLoadJob={(job) => {
             setAbcNotation(job.abcNotation);
             setLyrics(job.lyrics || null);
@@ -1205,8 +1320,8 @@ export default function Mp3ToSheetMusic() {
           }}
         />
 
-        {/* Info Box */}
-        <div className="mt-8 bg-muted/50 rounded-xl p-5 flex items-start gap-3">
+          {/* Info Box */}
+          <div className="mt-8 bg-muted/50 rounded-xl p-5 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-violet-500 mt-0.5 shrink-0" />
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">How It Works</p>
@@ -1217,6 +1332,7 @@ export default function Mp3ToSheetMusic() {
               the original melody. You can transpose to any key and download as PDF or MusicXML.
               Guitar chord diagrams are shown automatically. Each conversion costs 1 credit.
             </p>
+            </div>
           </div>
         </div>
       </div>
