@@ -71,6 +71,7 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
   const pdfAbortRef = useRef(false);
   const [dragItemId, setDragItemId] = useState<string | null>(null);
   const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+  const [justDroppedId, setJustDroppedId] = useState<string | null>(null);
 
   const startJobMutation = trpc.songs.startMp3SheetJob.useMutation();
   const trpcUtils = trpc.useUtils();
@@ -171,6 +172,9 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
         arr.splice(toIdx, 0, moved);
         return arr;
       });
+      // Flash the moved item briefly
+      setJustDroppedId(dragItemId);
+      setTimeout(() => setJustDroppedId(null), 700);
     }
     setDragItemId(null);
     setDragOverItemId(null);
@@ -493,6 +497,10 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
                 } ${
                   dragOverItemId === item.id && dragItemId !== item.id
                     ? "ring-2 ring-violet-400 ring-inset bg-violet-50/30 dark:bg-violet-900/20"
+                    : ""
+                } ${
+                  justDroppedId === item.id
+                    ? "animate-[dropFlash_0.7s_ease-out]"
                     : ""
                 }`}
                 draggable={canDragItem(item)}

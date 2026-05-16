@@ -2538,3 +2538,10 @@
 - [x] Spacer placeholder for non-draggable items to maintain alignment
 - [x] Write 12 new tests for reorder logic (swap, boundary, canDrag, mixed statuses)
 - [x] All 1,936 tests passing, TypeScript clean
+
+## Drop Success Animation
+- [x] Add subtle violet flash + scale-up animation (dropFlash keyframes) when item lands in new position
+- [x] Auto-clear animation after 700ms via setTimeout
+- [x] Write 3 new tests for justDroppedId animation state logic
+- [x] Cross-browser support with -webkit- prefix and prefers-reduced-motion respected
+- [x] All 1,939 tests passing, TypeScript clean

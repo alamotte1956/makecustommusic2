@@ -760,6 +760,16 @@ button {
   100% { transform: translateY(-40px) scale(0.5); opacity: 0; }
 }
 
+/* ─── Drop flash animation for drag-and-drop reorder ─── */
+@-webkit-keyframes dropFlash {
+  0%   { background-color: oklch(0.7 0.15 280 / 0.3); transform: scale(1.01); }
+  100% { background-color: transparent; transform: scale(1); }
+}
+@keyframes dropFlash {
+  0%   { background-color: oklch(0.7 0.15 280 / 0.3); transform: scale(1.01); }
+  100% { background-color: transparent; transform: scale(1); }
+}
+
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   .shimmer-bg::before,

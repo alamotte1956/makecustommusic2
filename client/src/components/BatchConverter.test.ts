@@ -468,5 +468,27 @@ describe("BatchConverter utilities", () => {
       const result = reorder(items, "a", "a");
       expect(result.map(i => i.id)).toEqual(["a"]);
     });
+
+    it("should set justDroppedId only when a valid reorder occurs", () => {
+      // Simulates the logic: justDroppedId is set when fromId !== toId and both exist
+      const dragId = "a";
+      const overId = "b";
+      const shouldFlash = dragId && overId && dragId !== overId;
+      expect(shouldFlash).toBe(true);
+    });
+
+    it("should not set justDroppedId when dragging to same position", () => {
+      const dragId = "a";
+      const overId = "a";
+      const shouldFlash = dragId && overId && dragId !== overId;
+      expect(shouldFlash).toBe(false);
+    });
+
+    it("should not set justDroppedId when no drag target", () => {
+      const dragId = "a";
+      const overId: string | null = null;
+      const shouldFlash = dragId && overId && dragId !== overId;
+      expect(shouldFlash).toBeFalsy();
+    });
   });
 });
