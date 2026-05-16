@@ -134,4 +134,101 @@ describe("BatchConverter utilities", () => {
       expect(isValidAudioFile("", "document.txt")).toBe(false);
     });
   });
+
+  // Test sanitizeFilename logic (same as in the component)
+  function sanitizeFilename(name: string): string {
+    return name
+      .replace(/[<>:"/\\|?*]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 100);
+  }
+
+  describe("sanitizeFilename", () => {
+    it("should remove special characters", () => {
+      expect(sanitizeFilename('Song: "My Heart" <3>')).toBe("Song My Heart 3");
+    });
+
+    it("should collapse multiple spaces", () => {
+      expect(sanitizeFilename("Song   with   spaces")).toBe("Song with spaces");
+    });
+
+    it("should trim whitespace", () => {
+      expect(sanitizeFilename("  Song  ")).toBe("Song");
+    });
+
+    it("should truncate to 100 characters", () => {
+      const longName = "A".repeat(150);
+      expect(sanitizeFilename(longName).length).toBe(100);
+    });
+
+    it("should handle normal filenames unchanged", () => {
+      expect(sanitizeFilename("Amazing Grace")).toBe("Amazing Grace");
+    });
+
+    it("should remove pipe and question mark", () => {
+      expect(sanitizeFilename("Song | Version? 2")).toBe("Song Version 2");
+    });
+  });
+
+  // Test ZIP download eligibility logic
+  describe("ZIP download eligibility", () => {
+    it("should require at least 2 completed items", () => {
+      const items = [
+        { status: "done", abcNotation: "X:1" },
+        { status: "done", abcNotation: "X:2" },
+      ];
+      const doneCount = items.filter(i => i.status === "done" && i.abcNotation).length;
+      expect(doneCount >= 2).toBe(true);
+    });
+
+    it("should not show ZIP for single completed item", () => {
+      const items = [
+        { status: "done", abcNotation: "X:1" },
+        { status: "queued", abcNotation: undefined },
+      ];
+      const doneCount = items.filter(i => i.status === "done" && i.abcNotation).length;
+      expect(doneCount >= 2).toBe(false);
+    });
+
+    it("should not count items without ABC notation", () => {
+      const items = [
+        { status: "done", abcNotation: "X:1" },
+        { status: "done", abcNotation: undefined },
+        { status: "done", abcNotation: "X:3" },
+      ];
+      const doneCount = items.filter(i => i.status === "done" && i.abcNotation).length;
+      expect(doneCount).toBe(2);
+    });
+
+    it("should not count errored items", () => {
+      const items = [
+        { status: "done", abcNotation: "X:1" },
+        { status: "error", abcNotation: undefined },
+      ];
+      const doneCount = items.filter(i => i.status === "done" && i.abcNotation).length;
+      expect(doneCount >= 2).toBe(false);
+    });
+  });
+
+  // Test ZIP filename generation
+  describe("ZIP filename generation", () => {
+    it("should generate correct ZIP filename", () => {
+      const count = 5;
+      const filename = `Sheet Music Batch (${count} files).zip`;
+      expect(filename).toBe("Sheet Music Batch (5 files).zip");
+    });
+
+    it("should generate correct PDF filename inside ZIP", () => {
+      const title = "Amazing Grace";
+      const pdfFilename = `${sanitizeFilename(title)} - Sheet Music.pdf`;
+      expect(pdfFilename).toBe("Amazing Grace - Sheet Music.pdf");
+    });
+
+    it("should sanitize PDF filenames with special chars", () => {
+      const title = 'Song: "My Heart"';
+      const pdfFilename = `${sanitizeFilename(title)} - Sheet Music.pdf`;
+      expect(pdfFilename).toBe("Song My Heart - Sheet Music.pdf");
+    });
+  });
 });

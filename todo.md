@@ -2490,3 +2490,14 @@
 - [x] Auto-retry for transient 503 errors (2 retries, 3s/6s backoff)
 - [x] 20 unit tests for BatchConverter utilities (titleFromFilename, formatFileSize, audio validation)
 - [x] All 1,892 tests passing, TypeScript clean
+
+## Batch Download All as ZIP
+- [x] Add "Download All as ZIP" button to BatchConverter when 2+ completed results exist
+- [x] Generate PDF from ABC notation for each completed batch item (client-side via generateSheetMusicPDFBytes)
+- [x] Bundle all PDFs into a single ZIP file using JSZip
+- [x] Name each PDF by sanitized song title ("Title - Sheet Music.pdf")
+- [x] Show loading state with progress bar during ZIP generation
+- [x] Disable button while ZIP is being generated
+- [x] Graceful handling of individual PDF failures (partial ZIP with warning toast)
+- [x] Write 13 new tests for ZIP logic (sanitizeFilename, eligibility, filename generation)
+- [x] All 1,905 tests passing, TypeScript clean

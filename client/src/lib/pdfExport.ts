@@ -472,6 +472,127 @@ export async function exportSheetMusicPDFFromAbc(
   }
 }
 
+/**
+ * Generate a sheet music PDF from ABC notation and return the raw bytes (Uint8Array).
+ * Used by batch ZIP export — does NOT trigger a download.
+ */
+export async function generateSheetMusicPDFBytes(
+  abc: string,
+  songTitle: string
+): Promise<Uint8Array> {
+  // Create an off-screen container for rendering
+  const offscreen = document.createElement("div");
+  offscreen.style.position = "absolute";
+  offscreen.style.left = "-9999px";
+  offscreen.style.top = "0";
+  offscreen.style.width = "800px";
+  offscreen.style.background = "white";
+  offscreen.style.colorScheme = "light";
+  document.body.appendChild(offscreen);
+
+  try {
+    const mod = await import("abcjs");
+    const abcjs = mod.default || mod;
+
+    abcjs.renderAbc(offscreen, abc, {
+      staffwidth: 740,
+      paddingtop: 20,
+      paddingbottom: 60,
+      paddingleft: 15,
+      paddingright: 15,
+      add_classes: true,
+    });
+
+    const svg = offscreen.querySelector("svg");
+    if (!svg || svg.querySelectorAll("path").length < 5) {
+      throw new Error("Failed to render sheet music for PDF export");
+    }
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+
+    // Title
+    let y = MARGIN_TOP + 6;
+    doc.setFontSize(TITLE_SIZE);
+    doc.setTextColor(30, 30, 30);
+    doc.setFont("helvetica", "bold");
+    doc.text(songTitle, PAGE_WIDTH / 2, y, { align: "center" });
+    y += 8;
+
+    doc.setFontSize(SUBTITLE_SIZE);
+    doc.setTextColor(120, 120, 120);
+    doc.setFont("helvetica", "normal");
+    doc.text("Sheet Music \u2022 Lead Sheet", PAGE_WIDTH / 2, y, { align: "center" });
+    y += 5;
+
+    // Divider line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(MARGIN_LEFT, y, PAGE_WIDTH - MARGIN_RIGHT, y);
+    y += 8;
+
+    // Render SVG to canvas then to image
+    const { canvas, dataUrl: imgData, width: svgWidth, height: svgHeight } = await renderSvgToCanvas(svg as SVGElement);
+
+    const imgAspect = svgWidth / svgHeight;
+    const fitWidth = CONTENT_WIDTH;
+    const fitHeight = fitWidth / imgAspect;
+    const remainingOnPage = SAFE_BOTTOM - y;
+
+    if (fitHeight <= remainingOnPage) {
+      doc.addImage(imgData, "PNG", MARGIN_LEFT, y, fitWidth, fitHeight);
+    } else {
+      const totalImageHeightMM = fitHeight;
+      const tempCanvas = document.createElement("canvas");
+      const tempCtx = tempCanvas.getContext("2d")!;
+
+      let remainingMM = totalImageHeightMM;
+      let sourceYOffset = 0;
+      let currentY = y;
+      let isFirstPage = true;
+
+      while (remainingMM > 0) {
+        const availableHeight = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
+        const sliceHeightMM = Math.min(remainingMM, availableHeight);
+        const sliceHeightPx = (sliceHeightMM / totalImageHeightMM) * canvas.height;
+
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = Math.ceil(sliceHeightPx);
+        tempCtx.fillStyle = "#ffffff";
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(
+          canvas,
+          0, sourceYOffset, canvas.width, sliceHeightPx,
+          0, 0, tempCanvas.width, tempCanvas.height
+        );
+
+        let sliceData: string;
+        try {
+          sliceData = tempCanvas.toDataURL("image/png", 1.0);
+        } catch {
+          break;
+        }
+        doc.addImage(sliceData, "PNG", MARGIN_LEFT, currentY, fitWidth, sliceHeightMM);
+
+        sourceYOffset += sliceHeightPx;
+        remainingMM -= sliceHeightMM;
+
+        if (remainingMM > 0) {
+          doc.addPage();
+          currentY = MARGIN_TOP;
+          isFirstPage = false;
+        }
+      }
+    }
+
+    addFooter(doc);
+    // doc.output("arraybuffer") is synchronous and returns ArrayBuffer
+    const arrayBuffer = doc.output("arraybuffer");
+    return new Uint8Array(arrayBuffer as ArrayBuffer);
+  } finally {
+    document.body.removeChild(offscreen);
+  }
+}
+
 // ─── Guitar Chord PDF ───
 export interface ChordPDFSection {
   section: string;

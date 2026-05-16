@@ -7,8 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import {
   FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Play, Trash2, RefreshCw, Eye, Music, Upload, Layers,
-  ChevronDown, ChevronUp, Edit2, Clock,
+  ChevronDown, ChevronUp, Edit2, Clock, Download, Archive,
 } from "lucide-react";
+import { generateSheetMusicPDFBytes } from "@/lib/pdfExport";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const MAX_FILE_SIZE = 16 * 1024 * 1024;
@@ -44,9 +45,20 @@ function titleFromFilename(name: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Sanitize a string for use as a filename */
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[<>:"/\\|?*]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 100);
+}
+
 export function BatchConverter({ onViewResult }: BatchConverterProps) {
   const [items, setItems] = useState<BatchItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGeneratingZip, setIsGeneratingZip] = useState(false);
+  const [zipProgress, setZipProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -266,6 +278,66 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
     setItems(prev => prev.filter(i => i.status === "queued" || i.status === "uploading" || i.status === "transcribing" || i.status === "generating"));
   }, []);
 
+  // Download All as ZIP — generates PDFs from ABC notation and bundles them
+  const downloadAllAsZip = useCallback(async () => {
+    const completedItems = items.filter(i => i.status === "done" && i.abcNotation);
+    if (completedItems.length === 0) {
+      toast.error("No completed sheet music to download.");
+      return;
+    }
+
+    setIsGeneratingZip(true);
+    setZipProgress(0);
+
+    try {
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+
+      let processed = 0;
+      let failed = 0;
+
+      for (const item of completedItems) {
+        try {
+          const pdfBytes = await generateSheetMusicPDFBytes(item.abcNotation!, item.title);
+          const filename = `${sanitizeFilename(item.title)} - Sheet Music.pdf`;
+          zip.file(filename, pdfBytes);
+        } catch (err) {
+          console.warn(`[ZIP] Failed to generate PDF for "${item.title}":`, err);
+          failed++;
+        }
+        processed++;
+        setZipProgress(Math.round((processed / completedItems.length) * 100));
+      }
+
+      if (processed - failed === 0) {
+        toast.error("Failed to generate any PDFs for the ZIP file.");
+        return;
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Sheet Music Batch (${completedItems.length} files).zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (failed > 0) {
+        toast.warning(`ZIP downloaded with ${processed - failed} of ${completedItems.length} PDFs. ${failed} failed to generate.`);
+      } else {
+        toast.success(`Downloaded ${completedItems.length} sheet music PDF${completedItems.length !== 1 ? "s" : ""} as ZIP!`);
+      }
+    } catch (err) {
+      console.error("[ZIP] Failed to generate ZIP:", err);
+      toast.error("Failed to generate ZIP file. Please try again.");
+    } finally {
+      setIsGeneratingZip(false);
+      setZipProgress(0);
+    }
+  }, [items]);
+
   // Stats
   const totalCount = items.length;
   const doneCount = items.filter(i => i.status === "done").length;
@@ -463,42 +535,75 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
           </div>
 
           {/* Action Bar */}
-          <div className="p-4 border-t bg-muted/20 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {isProcessing
-                ? `Processing... ${doneCount + errorCount} of ${totalCount} files`
-                : queuedCount > 0
-                  ? `${queuedCount} file${queuedCount !== 1 ? "s" : ""} ready to process (1 credit each)`
-                  : doneCount === totalCount && totalCount > 0
-                    ? "All files processed!"
-                    : `${errorCount} failed — click Retry to reprocess`
-              }
-            </p>
-            <div className="flex gap-2">
-              {isProcessing ? (
-                <Button
-                  variant="outline"
-                  onClick={cancelProcessing}
-                  className="gap-1.5"
-                >
-                  <X className="h-4 w-4" /> Stop
-                </Button>
-              ) : (
-                <>
-                  {(queuedCount > 0 || errorCount > 0) && (
-                    <Button
-                      onClick={processAll}
-                      className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
-                    >
-                      <Play className="h-4 w-4" />
-                      {errorCount > 0 && queuedCount === 0
-                        ? `Retry ${errorCount} Failed`
-                        : `Process ${queuedCount + errorCount} File${(queuedCount + errorCount) !== 1 ? "s" : ""}`
-                      }
-                    </Button>
-                  )}
-                </>
-              )}
+          <div className="p-4 border-t bg-muted/20">
+            {/* ZIP generation progress */}
+            {isGeneratingZip && (
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Generating PDFs for ZIP...
+                  </span>
+                  <span>{zipProgress}%</span>
+                </div>
+                <Progress value={zipProgress} className="h-1.5" />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {isProcessing
+                  ? `Processing... ${doneCount + errorCount} of ${totalCount} files`
+                  : queuedCount > 0
+                    ? `${queuedCount} file${queuedCount !== 1 ? "s" : ""} ready to process (1 credit each)`
+                    : doneCount === totalCount && totalCount > 0
+                      ? "All files processed!"
+                      : `${errorCount} failed — click Retry to reprocess`
+                }
+              </p>
+              <div className="flex gap-2">
+                {/* Download All as ZIP — shown when there are completed results */}
+                {doneCount >= 2 && !isProcessing && (
+                  <Button
+                    variant="outline"
+                    onClick={downloadAllAsZip}
+                    disabled={isGeneratingZip}
+                    className="gap-1.5"
+                  >
+                    {isGeneratingZip ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {isGeneratingZip ? "Generating..." : `Download All (${doneCount} PDFs)`}
+                  </Button>
+                )}
+
+                {isProcessing ? (
+                  <Button
+                    variant="outline"
+                    onClick={cancelProcessing}
+                    className="gap-1.5"
+                  >
+                    <X className="h-4 w-4" /> Stop
+                  </Button>
+                ) : (
+                  <>
+                    {(queuedCount > 0 || errorCount > 0) && (
+                      <Button
+                        onClick={processAll}
+                        className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
+                      >
+                        <Play className="h-4 w-4" />
+                        {errorCount > 0 && queuedCount === 0
+                          ? `Retry ${errorCount} Failed`
+                          : `Process ${queuedCount + errorCount} File${(queuedCount + errorCount) !== 1 ? "s" : ""}`
+                        }
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -506,4 +611,3 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
     </div>
   );
 }
-
