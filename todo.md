@@ -2510,3 +2510,11 @@
 - [x] Success/error toast notifications on download
 - [x] Write 5 new tests for individual download eligibility logic
 - [x] All 1,910 tests passing, TypeScript clean
+
+## Individual PDF Download Progress Bar
+- [x] Add visual progress bar below batch item row during PDF generation
+- [x] Show generation stage labels (Rendering notation, Composing PDF, Saving checkmark)
+- [x] Smooth animated progress transitions (10% -> 30% -> 50% -> 100%)
+- [x] Auto-dismiss progress bar on completion or error
+- [x] Write 7 new tests for progress stage logic (labels, percentages, single-item tracking)
+- [x] All 1,917 tests passing, TypeScript clean

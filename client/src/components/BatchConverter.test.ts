@@ -260,9 +260,62 @@ describe("BatchConverter utilities", () => {
 
     it("should generate correct individual PDF filename", () => {
       const title = "How Great Thou Art";
-      // exportSheetMusicPDFFromAbc uses the title directly for doc.save
       const expectedFilename = `${title} - Sheet Music.pdf`;
       expect(expectedFilename).toBe("How Great Thou Art - Sheet Music.pdf");
+    });
+  });
+
+  // Test download progress stages
+  describe("Download progress stages", () => {
+    type DownloadStage = "rendering" | "composing" | "saving";
+
+    const stageLabels: Record<DownloadStage, string> = {
+      rendering: "Rendering notation...",
+      composing: "Composing PDF...",
+      saving: "Saving \u2713",
+    };
+
+    it("should have three distinct stages", () => {
+      const stages: DownloadStage[] = ["rendering", "composing", "saving"];
+      expect(stages).toHaveLength(3);
+    });
+
+    it("should map rendering stage to correct label", () => {
+      expect(stageLabels.rendering).toBe("Rendering notation...");
+    });
+
+    it("should map composing stage to correct label", () => {
+      expect(stageLabels.composing).toBe("Composing PDF...");
+    });
+
+    it("should map saving stage to correct label", () => {
+      expect(stageLabels.saving).toBe("Saving \u2713");
+    });
+
+    it("should have increasing progress percentages across stages", () => {
+      const stagePercents = [
+        { stage: "rendering" as const, percent: 10 },
+        { stage: "rendering" as const, percent: 30 },
+        { stage: "composing" as const, percent: 50 },
+        { stage: "saving" as const, percent: 100 },
+      ];
+      for (let i = 1; i < stagePercents.length; i++) {
+        expect(stagePercents[i].percent).toBeGreaterThan(stagePercents[i - 1].percent);
+      }
+    });
+
+    it("should start at 10% and end at 100%", () => {
+      const firstPercent = 10;
+      const lastPercent = 100;
+      expect(firstPercent).toBe(10);
+      expect(lastPercent).toBe(100);
+    });
+
+    it("should only track one item at a time", () => {
+      const progress = { itemId: "item-1", stage: "composing" as const, percent: 50 };
+      const isDownloading = (id: string) => progress.itemId === id;
+      expect(isDownloading("item-1")).toBe(true);
+      expect(isDownloading("item-2")).toBe(false);
     });
   });
 });

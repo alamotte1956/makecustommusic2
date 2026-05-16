@@ -58,7 +58,11 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
   const [items, setItems] = useState<BatchItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingZip, setIsGeneratingZip] = useState(false);
-  const [downloadingItemId, setDownloadingItemId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<{
+    itemId: string;
+    stage: "rendering" | "composing" | "saving";
+    percent: number;
+  } | null>(null);
   const [zipProgress, setZipProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -483,6 +487,19 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
                     {item.status === "error" && item.errorMessage && (
                       <p className="text-xs text-red-500 mt-1">{item.errorMessage}</p>
                     )}
+                    {/* Individual PDF download progress bar */}
+                    {downloadProgress?.itemId === item.id && (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div className="flex-1">
+                          <Progress value={downloadProgress.percent} className="h-1.5" />
+                        </div>
+                        <span className="text-[10px] text-violet-600 font-medium whitespace-nowrap">
+                          {downloadProgress.stage === "rendering" && "Rendering notation..."}
+                          {downloadProgress.stage === "composing" && "Composing PDF..."}
+                          {downloadProgress.stage === "saving" && "Saving \u2713"}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -524,22 +541,29 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-violet-600"
                           title="Download PDF"
-                          disabled={downloadingItemId === item.id}
+                          disabled={downloadProgress?.itemId === item.id}
                           onClick={async (e) => {
                             e.stopPropagation();
-                            setDownloadingItemId(item.id);
                             try {
+                              setDownloadProgress({ itemId: item.id, stage: "rendering", percent: 10 });
+                              // Small delay so the UI renders before heavy work
+                              await new Promise(r => setTimeout(r, 50));
+                              setDownloadProgress({ itemId: item.id, stage: "rendering", percent: 30 });
+                              await new Promise(r => setTimeout(r, 50));
+                              setDownloadProgress({ itemId: item.id, stage: "composing", percent: 50 });
                               await exportSheetMusicPDFFromAbc(item.abcNotation!, item.title);
+                              setDownloadProgress({ itemId: item.id, stage: "saving", percent: 100 });
+                              await new Promise(r => setTimeout(r, 400));
                               toast.success(`Downloaded "${item.title}" as PDF`);
                             } catch (err) {
                               console.error("[PDF] Failed to export:", err);
                               toast.error(`Failed to generate PDF for "${item.title}"`);
                             } finally {
-                              setDownloadingItemId(null);
+                              setDownloadProgress(null);
                             }
                           }}
                         >
-                          {downloadingItemId === item.id ? (
+                          {downloadProgress?.itemId === item.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <Download className="h-3.5 w-3.5" />
