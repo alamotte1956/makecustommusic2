@@ -2,7 +2,10 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers, Clock } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers, Clock, Pencil, RotateCcw, Minus, Plus } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -148,6 +151,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>("original");
+  // User overrides for tempo and time signature
+  const [bpmOverride, setBpmOverride] = useState<number | null>(null);
+  const [timeSigOverride, setTimeSigOverride] = useState<string | null>(null);
   const [generateInKey, setGenerateInKey] = useState<string>("auto");
   const [error, setError] = useState<ErrorState | null>(null);
   // Print margin customization
@@ -419,9 +425,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     return Math.max(0, barLines);
   }, [sanitisedDisplayAbc]);
 
-  // Estimate playback duration from bar count, tempo (Q:), and time signature (M:)
-  const durationInfo = useMemo(() => {
-    if (!sanitisedDisplayAbc || barCount <= 0) return null;
+  // Detect tempo and time signature from ABC notation
+  const detectedMusicInfo = useMemo(() => {
+    if (!sanitisedDisplayAbc) return null;
 
     // Extract time signature (M: field) — defaults to 4/4
     const mMatch = sanitisedDisplayAbc.match(/M:\s*(\d+)\/(\d+)/);
@@ -430,31 +436,39 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     const timeSig = `${beatsPerBar}/${beatUnit}`;
     const timeSigDetected = !!mMatch;
 
-    // Extract tempo (Q: field) — supports multiple ABC tempo formats:
-    //   Q:120        (quarter note = 120)
-    //   Q:1/4=120    (quarter note = 120)
-    //   Q:1/8=160    (eighth note = 160)
-    //   Q:3/8=80     (dotted quarter = 80)
-    let bpm = 120; // sensible default
-    let tempoNoteLength = 1 / 4; // default: quarter note
-    let tempoNoteName = "\u2669"; // quarter note symbol
+    // Extract tempo (Q: field)
+    let bpm = 120;
+    let tempoNoteLength = 1 / 4;
+    let tempoNoteName = "\u2669";
     const qMatch = sanitisedDisplayAbc.match(/Q:\s*(?:(\d+)\/(\d+)\s*=\s*)?(\d+)/);
     const tempoDetected = !!qMatch;
     if (qMatch) {
       if (qMatch[1] && qMatch[2]) {
         tempoNoteLength = parseInt(qMatch[1], 10) / parseInt(qMatch[2], 10);
-        // Determine note name for display
         const noteVal = tempoNoteLength;
-        if (noteVal === 0.125) tempoNoteName = "\u266A"; // eighth note
-        else if (noteVal === 0.375) tempoNoteName = "\u2669."; // dotted quarter
-        else if (noteVal === 0.5) tempoNoteName = "\uD834\uDD5E"; // half note (fallback to text)
-        else if (noteVal === 1) tempoNoteName = "\uD834\uDD5D"; // whole note (fallback)
+        if (noteVal === 0.125) tempoNoteName = "\u266A";
+        else if (noteVal === 0.375) tempoNoteName = "\u2669.";
+        else if (noteVal === 0.5) tempoNoteName = "\uD834\uDD5E";
+        else if (noteVal === 1) tempoNoteName = "\uD834\uDD5D";
       }
       bpm = parseInt(qMatch[3], 10);
     }
 
-    // Calculate duration
-    const barDurationSeconds = (beatsPerBar / beatUnit) / tempoNoteLength / bpm * 60;
+    return { bpm, timeSig, tempoNoteName, tempoDetected, timeSigDetected, tempoNoteLength };
+  }, [sanitisedDisplayAbc]);
+
+  // Compute duration using overrides if set, otherwise detected values
+  const durationInfo = useMemo(() => {
+    if (!detectedMusicInfo || barCount <= 0) return null;
+
+    const effectiveBpm = bpmOverride ?? detectedMusicInfo.bpm;
+    const effectiveTimeSig = timeSigOverride ?? detectedMusicInfo.timeSig;
+    const [num, den] = effectiveTimeSig.split("/").map(Number);
+    const beatsPerBar = num || 4;
+    const beatUnit = den || 4;
+    const tempoNoteLength = detectedMusicInfo.tempoNoteLength;
+
+    const barDurationSeconds = (beatsPerBar / beatUnit) / tempoNoteLength / effectiveBpm * 60;
     const totalSeconds = Math.round(barCount * barDurationSeconds);
 
     if (totalSeconds <= 0 || !isFinite(totalSeconds)) return null;
@@ -463,15 +477,18 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     const seconds = totalSeconds % 60;
     const formatted = `~${minutes}:${seconds.toString().padStart(2, "0")}`;
 
+    const hasOverride = bpmOverride !== null || timeSigOverride !== null;
+
     return {
       formatted,
-      bpm,
-      timeSig,
-      tempoNoteName,
-      tempoDetected,
-      timeSigDetected,
+      bpm: effectiveBpm,
+      timeSig: effectiveTimeSig,
+      tempoNoteName: detectedMusicInfo.tempoNoteName,
+      tempoDetected: detectedMusicInfo.tempoDetected,
+      timeSigDetected: detectedMusicInfo.timeSigDetected,
+      hasOverride,
     };
-  }, [sanitisedDisplayAbc, barCount]);
+  }, [detectedMusicInfo, barCount, bpmOverride, timeSigOverride]);
 
   const handleGenerate = useCallback(async () => {
     setError(null);
@@ -1511,25 +1528,142 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             </span>
           )}
           {barCount > 0 && isRendered && (
-            <span
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full cursor-default"
-              title={[
-                `${barCount} bars detected`,
-                durationInfo ? `Estimated duration: ${durationInfo.formatted}` : null,
-                durationInfo ? `Tempo: ${durationInfo.tempoNoteName} = ${durationInfo.bpm} BPM${!durationInfo.tempoDetected ? " (default)" : ""}` : null,
-                durationInfo ? `Time signature: ${durationInfo.timeSig}${!durationInfo.timeSigDetected ? " (default)" : ""}` : null,
-              ].filter(Boolean).join("\n")}
-            >
-              <Hash className="w-3 h-3" />
-              {barCount} bars
-              {durationInfo && (
-                <>
-                  <span className="text-muted-foreground/50">·</span>
-                  <Clock className="w-3 h-3" />
-                  {durationInfo.formatted}
-                </>
-              )}
-            </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full cursor-pointer hover:bg-muted/80 transition-colors"
+                  title="Click to edit tempo & time signature"
+                >
+                  <Hash className="w-3 h-3" />
+                  {barCount} bars
+                  {durationInfo && (
+                    <>
+                      <span className="text-muted-foreground/50">·</span>
+                      <Clock className="w-3 h-3" />
+                      {durationInfo.formatted}
+                      {durationInfo.hasOverride && (
+                        <Pencil className="w-2.5 h-2.5 text-primary" />
+                      )}
+                    </>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3" align="start">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">Duration Settings</h4>
+                    {(bpmOverride !== null || timeSigOverride !== null) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs gap-1"
+                        onClick={() => {
+                          setBpmOverride(null);
+                          setTimeSigOverride(null);
+                        }}
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Reset
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* BPM Input */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Tempo (BPM)
+                      {detectedMusicInfo && !detectedMusicInfo.tempoDetected && !bpmOverride && (
+                        <span className="ml-1 text-yellow-500">· default</span>
+                      )}
+                      {bpmOverride !== null && (
+                        <span className="ml-1 text-primary">· custom</span>
+                      )}
+                    </Label>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => {
+                          const current = bpmOverride ?? detectedMusicInfo?.bpm ?? 120;
+                          setBpmOverride(Math.max(20, current - 5));
+                        }}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min={20}
+                        max={300}
+                        className="h-7 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={bpmOverride ?? detectedMusicInfo?.bpm ?? 120}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          if (!isNaN(val) && val >= 20 && val <= 300) {
+                            setBpmOverride(val);
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => {
+                          const current = bpmOverride ?? detectedMusicInfo?.bpm ?? 120;
+                          setBpmOverride(Math.min(300, current + 5));
+                        }}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Time Signature Select */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Time Signature
+                      {detectedMusicInfo && !detectedMusicInfo.timeSigDetected && !timeSigOverride && (
+                        <span className="ml-1 text-yellow-500">· default</span>
+                      )}
+                      {timeSigOverride !== null && (
+                        <span className="ml-1 text-primary">· custom</span>
+                      )}
+                    </Label>
+                    <Select
+                      value={timeSigOverride ?? detectedMusicInfo?.timeSig ?? "4/4"}
+                      onValueChange={(val) => setTimeSigOverride(val)}
+                    >
+                      <SelectTrigger className="h-7 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2/4">2/4</SelectItem>
+                        <SelectItem value="3/4">3/4</SelectItem>
+                        <SelectItem value="4/4">4/4</SelectItem>
+                        <SelectItem value="5/4">5/4</SelectItem>
+                        <SelectItem value="6/4">6/4</SelectItem>
+                        <SelectItem value="3/8">3/8</SelectItem>
+                        <SelectItem value="6/8">6/8</SelectItem>
+                        <SelectItem value="9/8">9/8</SelectItem>
+                        <SelectItem value="12/8">12/8</SelectItem>
+                        <SelectItem value="2/2">2/2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Duration display */}
+                  {durationInfo && (
+                    <div className="pt-1 border-t border-border/50">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Estimated duration</span>
+                        <span className="font-medium">{durationInfo.formatted}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">

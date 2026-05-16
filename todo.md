@@ -2588,3 +2588,14 @@
 - [x] Refactored estimatedDuration to durationInfo object with full metadata
 - [x] Updated 30 tests (5 new tooltip metadata tests + updated existing for new return type)
 - [x] All 1,969 tests passing, TypeScript clean
+
+## Editable Tempo & Time Signature in Duration Badge
+- [x] Replace static tooltip with interactive Popover (shadcn/ui) on badge click
+- [x] Add BPM number input with -/+ buttons (step 5, range 20-300)
+- [x] Add time signature dropdown selector (2/4, 3/4, 4/4, 5/4, 6/4, 3/8, 6/8, 9/8, 12/8, 2/2)
+- [x] Recalculate estimated duration in real time as user edits
+- [x] Show "Reset" button when values differ from auto-detected
+- [x] Labels show "default" (yellow) or "custom" (primary) indicators
+- [x] Small pencil icon on badge when overrides are active
+- [x] Write 11 new tests for computeDurationWithOverrides (override combinations, hasOverride flag)
+- [x] All 1,980 tests passing, TypeScript clean

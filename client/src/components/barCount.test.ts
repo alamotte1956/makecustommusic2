@@ -69,6 +69,63 @@ function estimateDurationInfo(abc: string | null, barCount: number): {
   return { formatted, bpm, timeSig, tempoNoteName, tempoDetected, timeSigDetected };
 }
 
+/**
+ * Duration calculation with user overrides, mirroring the component's durationInfo useMemo.
+ * Separates detection from computation so overrides can replace detected values.
+ */
+function computeDurationWithOverrides(
+  abc: string | null,
+  barCount: number,
+  bpmOverride: number | null,
+  timeSigOverride: string | null
+): {
+  formatted: string;
+  bpm: number;
+  timeSig: string;
+  hasOverride: boolean;
+} | null {
+  if (!abc || barCount <= 0) return null;
+
+  // Detect from ABC
+  const mMatch = abc.match(/M:\s*(\d+)\/(\d+)/);
+  const detectedBeatsPerBar = mMatch ? parseInt(mMatch[1], 10) : 4;
+  const detectedBeatUnit = mMatch ? parseInt(mMatch[2], 10) : 4;
+  const detectedTimeSig = `${detectedBeatsPerBar}/${detectedBeatUnit}`;
+
+  let detectedBpm = 120;
+  let tempoNoteLength = 1 / 4;
+  const qMatch = abc.match(/Q:\s*(?:(\d+)\/(\d+)\s*=\s*)?(\d+)/);
+  if (qMatch) {
+    if (qMatch[1] && qMatch[2]) {
+      tempoNoteLength = parseInt(qMatch[1], 10) / parseInt(qMatch[2], 10);
+    }
+    detectedBpm = parseInt(qMatch[3], 10);
+  }
+
+  // Apply overrides
+  const effectiveBpm = bpmOverride ?? detectedBpm;
+  const effectiveTimeSig = timeSigOverride ?? detectedTimeSig;
+  const [num, den] = effectiveTimeSig.split("/").map(Number);
+  const beatsPerBar = num || 4;
+  const beatUnit = den || 4;
+
+  const barDurationSeconds = (beatsPerBar / beatUnit) / tempoNoteLength / effectiveBpm * 60;
+  const totalSeconds = Math.round(barCount * barDurationSeconds);
+
+  if (totalSeconds <= 0 || !isFinite(totalSeconds)) return null;
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const formatted = `~${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+  return {
+    formatted,
+    bpm: effectiveBpm,
+    timeSig: effectiveTimeSig,
+    hasOverride: bpmOverride !== null || timeSigOverride !== null,
+  };
+}
+
 describe("countBarsFromAbc", () => {
   it("returns 0 for null input", () => {
     expect(countBarsFromAbc(null)).toBe(0);
@@ -266,8 +323,90 @@ describe("estimateDurationInfo", () => {
   it("returns correct tempoNoteName for simple Q:BPM format", () => {
     const abc = `X: 1\nT: Test\nM: 4/4\nQ: 140\nK: C\nCDEF|`;
     const info = estimateDurationInfo(abc, 10)!;
-    // Simple Q:140 means quarter note = 140
     expect(info.tempoNoteName).toBe("\u2669");
     expect(info.bpm).toBe(140);
+  });
+});
+
+describe("computeDurationWithOverrides", () => {
+  const baseAbc = `X: 1\nT: Test\nM: 4/4\nQ: 120\nK: C\nCDEF|`;
+
+  it("returns null for null ABC", () => {
+    expect(computeDurationWithOverrides(null, 10, null, null)).toBeNull();
+  });
+
+  it("returns null for 0 bars", () => {
+    expect(computeDurationWithOverrides(baseAbc, 0, null, null)).toBeNull();
+  });
+
+  it("uses detected values when no overrides are set", () => {
+    // 4/4, Q:120, 60 bars = 2:00
+    const info = computeDurationWithOverrides(baseAbc, 60, null, null)!;
+    expect(info.formatted).toBe("~2:00");
+    expect(info.bpm).toBe(120);
+    expect(info.timeSig).toBe("4/4");
+    expect(info.hasOverride).toBe(false);
+  });
+
+  it("applies BPM override and recalculates duration", () => {
+    // Override to 60 BPM: 4/4 at 60 BPM, 30 bars
+    // Each bar = 4 beats / 60 BPM * 60 = 4s, 30 * 4 = 120s = 2:00
+    const info = computeDurationWithOverrides(baseAbc, 30, 60, null)!;
+    expect(info.formatted).toBe("~2:00");
+    expect(info.bpm).toBe(60);
+    expect(info.timeSig).toBe("4/4");
+    expect(info.hasOverride).toBe(true);
+  });
+
+  it("applies time signature override and recalculates duration", () => {
+    // Override to 3/4: 3 beats at 120 BPM = 1.5s per bar, 80 bars = 120s = 2:00
+    const info = computeDurationWithOverrides(baseAbc, 80, null, "3/4")!;
+    expect(info.formatted).toBe("~2:00");
+    expect(info.bpm).toBe(120);
+    expect(info.timeSig).toBe("3/4");
+    expect(info.hasOverride).toBe(true);
+  });
+
+  it("applies both BPM and time signature overrides", () => {
+    // Override to 3/4 at 90 BPM: 3/90*60 = 2s per bar, 60 bars = 120s = 2:00
+    const info = computeDurationWithOverrides(baseAbc, 60, 90, "3/4")!;
+    expect(info.formatted).toBe("~2:00");
+    expect(info.bpm).toBe(90);
+    expect(info.timeSig).toBe("3/4");
+    expect(info.hasOverride).toBe(true);
+  });
+
+  it("hasOverride is true with only BPM override", () => {
+    const info = computeDurationWithOverrides(baseAbc, 10, 100, null)!;
+    expect(info.hasOverride).toBe(true);
+  });
+
+  it("hasOverride is true with only time sig override", () => {
+    const info = computeDurationWithOverrides(baseAbc, 10, null, "6/8")!;
+    expect(info.hasOverride).toBe(true);
+  });
+
+  it("hasOverride is false with no overrides", () => {
+    const info = computeDurationWithOverrides(baseAbc, 10, null, null)!;
+    expect(info.hasOverride).toBe(false);
+  });
+
+  it("correctly overrides when ABC has no Q: or M:", () => {
+    const minimalAbc = `X: 1\nT: Test\nK: C\nCDEF|`;
+    // No Q: defaults to 120, no M: defaults to 4/4
+    // Override to 80 BPM and 3/4: 3/80*60 = 2.25s per bar, 10 bars = 22.5 -> 23s
+    const info = computeDurationWithOverrides(minimalAbc, 10, 80, "3/4")!;
+    expect(info.formatted).toBe("~0:23");
+    expect(info.bpm).toBe(80);
+    expect(info.timeSig).toBe("3/4");
+    expect(info.hasOverride).toBe(true);
+  });
+
+  it("handles 6/8 time signature override", () => {
+    // 6/8 at 120 BPM (quarter note): (6/8) / (1/4) / 120 * 60 = 0.75/0.25/120*60 = 1.5s
+    // 80 bars * 1.5s = 120s = 2:00
+    const info = computeDurationWithOverrides(baseAbc, 80, null, "6/8")!;
+    expect(info.formatted).toBe("~2:00");
+    expect(info.timeSig).toBe("6/8");
   });
 });
