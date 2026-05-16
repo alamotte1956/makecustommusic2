@@ -9,7 +9,7 @@ import {
   Play, Trash2, RefreshCw, Eye, Music, Upload, Layers,
   ChevronDown, ChevronUp, Edit2, Clock, Download, Archive,
 } from "lucide-react";
-import { generateSheetMusicPDFBytes } from "@/lib/pdfExport";
+import { generateSheetMusicPDFBytes, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const MAX_FILE_SIZE = 16 * 1024 * 1024;
@@ -58,6 +58,7 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
   const [items, setItems] = useState<BatchItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingZip, setIsGeneratingZip] = useState(false);
+  const [downloadingItemId, setDownloadingItemId] = useState<string | null>(null);
   const [zipProgress, setZipProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -509,14 +510,42 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
                       </>
                     )}
                     {item.status === "done" && item.abcNotation && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs gap-1 text-violet-600 hover:text-violet-700"
-                        onClick={() => onViewResult(item.abcNotation!, item.title, item.lyrics)}
-                      >
-                        <Eye className="h-3.5 w-3.5" /> View
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1 text-violet-600 hover:text-violet-700"
+                          onClick={() => onViewResult(item.abcNotation!, item.title, item.lyrics)}
+                        >
+                          <Eye className="h-3.5 w-3.5" /> View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-violet-600"
+                          title="Download PDF"
+                          disabled={downloadingItemId === item.id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setDownloadingItemId(item.id);
+                            try {
+                              await exportSheetMusicPDFFromAbc(item.abcNotation!, item.title);
+                              toast.success(`Downloaded "${item.title}" as PDF`);
+                            } catch (err) {
+                              console.error("[PDF] Failed to export:", err);
+                              toast.error(`Failed to generate PDF for "${item.title}"`);
+                            } finally {
+                              setDownloadingItemId(null);
+                            }
+                          }}
+                        >
+                          {downloadingItemId === item.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Download className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </>
                     )}
                     {item.status === "error" && !isProcessing && (
                       <Button

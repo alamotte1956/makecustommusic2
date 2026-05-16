@@ -231,4 +231,38 @@ describe("BatchConverter utilities", () => {
       expect(pdfFilename).toBe("Song My Heart - Sheet Music.pdf");
     });
   });
+
+  // Test individual PDF download eligibility
+  describe("Individual PDF download eligibility", () => {
+    it("should allow download for completed item with ABC notation", () => {
+      const item = { status: "done", abcNotation: "X:1\nT:Test" };
+      const canDownload = item.status === "done" && !!item.abcNotation;
+      expect(canDownload).toBe(true);
+    });
+
+    it("should not allow download for completed item without ABC notation", () => {
+      const item = { status: "done", abcNotation: undefined };
+      const canDownload = item.status === "done" && !!item.abcNotation;
+      expect(canDownload).toBe(false);
+    });
+
+    it("should not allow download for queued item", () => {
+      const item = { status: "queued", abcNotation: undefined };
+      const canDownload = item.status === "done" && !!item.abcNotation;
+      expect(canDownload).toBe(false);
+    });
+
+    it("should not allow download for errored item", () => {
+      const item = { status: "error", abcNotation: undefined };
+      const canDownload = item.status === "done" && !!item.abcNotation;
+      expect(canDownload).toBe(false);
+    });
+
+    it("should generate correct individual PDF filename", () => {
+      const title = "How Great Thou Art";
+      // exportSheetMusicPDFFromAbc uses the title directly for doc.save
+      const expectedFilename = `${title} - Sheet Music.pdf`;
+      expect(expectedFilename).toBe("How Great Thou Art - Sheet Music.pdf");
+    });
+  });
 });

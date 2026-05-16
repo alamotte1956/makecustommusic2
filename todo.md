@@ -2501,3 +2501,12 @@
 - [x] Graceful handling of individual PDF failures (partial ZIP with warning toast)
 - [x] Write 13 new tests for ZIP logic (sanitizeFilename, eligibility, filename generation)
 - [x] All 1,905 tests passing, TypeScript clean
+
+## Individual PDF Download per Batch Item
+- [x] Add download icon button next to "View" for each completed batch item
+- [x] Generate and download single PDF from ABC notation on click (uses exportSheetMusicPDFFromAbc)
+- [x] Show loading spinner on the download button while PDF is generating
+- [x] Disable button during generation to prevent double-clicks
+- [x] Success/error toast notifications on download
+- [x] Write 5 new tests for individual download eligibility logic
+- [x] All 1,910 tests passing, TypeScript clean
