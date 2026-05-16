@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers, Clock } from "lucide-react";
 import { SheetMusicSkeleton } from "@/components/SheetMusicSkeleton";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -418,6 +418,43 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     const barLines = (musicText.match(/\|/g) || []).length;
     return Math.max(0, barLines);
   }, [sanitisedDisplayAbc]);
+
+  // Estimate playback duration from bar count, tempo (Q:), and time signature (M:)
+  const estimatedDuration = useMemo(() => {
+    if (!sanitisedDisplayAbc || barCount <= 0) return null;
+
+    // Extract time signature (M: field) — defaults to 4/4
+    const mMatch = sanitisedDisplayAbc.match(/M:\s*(\d+)\/(\d+)/);
+    const beatsPerBar = mMatch ? parseInt(mMatch[1], 10) : 4;
+    const beatUnit = mMatch ? parseInt(mMatch[2], 10) : 4;
+
+    // Extract tempo (Q: field) — supports multiple ABC tempo formats:
+    //   Q:120        (quarter note = 120)
+    //   Q:1/4=120    (quarter note = 120)
+    //   Q:1/8=160    (eighth note = 160)
+    //   Q:3/8=80     (dotted quarter = 80)
+    let bpm = 120; // sensible default
+    let tempoNoteLength = 1 / 4; // default: quarter note
+    const qMatch = sanitisedDisplayAbc.match(/Q:\s*(?:(\d+)\/(\d+)\s*=\s*)?(\d+)/);
+    if (qMatch) {
+      if (qMatch[1] && qMatch[2]) {
+        tempoNoteLength = parseInt(qMatch[1], 10) / parseInt(qMatch[2], 10);
+      }
+      bpm = parseInt(qMatch[3], 10);
+    }
+
+    // Calculate duration:
+    // Each bar has `beatsPerBar` beats of length 1/beatUnit
+    // Duration of one bar = beatsPerBar * (1/beatUnit) / tempoNoteLength / bpm * 60
+    const barDurationSeconds = (beatsPerBar / beatUnit) / tempoNoteLength / bpm * 60;
+    const totalSeconds = Math.round(barCount * barDurationSeconds);
+
+    if (totalSeconds <= 0 || !isFinite(totalSeconds)) return null;
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `~${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }, [sanitisedDisplayAbc, barCount]);
 
   const handleGenerate = useCallback(async () => {
     setError(null);
@@ -1457,9 +1494,16 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             </span>
           )}
           {barCount > 0 && isRendered && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full" title={`${barCount} bars detected in the sheet music`}>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full" title={`${barCount} bars detected in the sheet music${estimatedDuration ? ` · estimated duration ${estimatedDuration}` : ""}`}>
               <Hash className="w-3 h-3" />
               {barCount} bars
+              {estimatedDuration && (
+                <>
+                  <span className="text-muted-foreground/50">·</span>
+                  <Clock className="w-3 h-3" />
+                  {estimatedDuration}
+                </>
+              )}
             </span>
           )}
         </div>

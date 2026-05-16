@@ -2570,3 +2570,13 @@
 
 ## Fix Background Color
 - [x] Verified: black background is already correct on live site — no change needed
+
+## Estimated Playback Duration in Sheet Music Viewer
+- [x] Extract tempo (Q:) and time signature (M:) from ABC notation
+- [x] Supports multiple Q: formats: Q:120, Q:1/4=120, Q:1/8=160, Q:3/8=80
+- [x] Calculate estimated duration from bar count, tempo, and time signature
+- [x] Display duration next to bar count badge with Clock icon (e.g., "# 48 bars · ~3:20")
+- [x] Handle missing tempo (defaults to 120 BPM quarter note)
+- [x] Handle missing time signature (defaults to 4/4)
+- [x] Write 13 new tests for duration estimation (various tempos, time sigs, formats)
+- [x] All 1,964 tests passing, TypeScript clean
