@@ -145,6 +145,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const { user } = useAuth();
   const sheetRef = useRef<HTMLDivElement>(null);
   const prevHighlightRef = useRef<Element | null>(null);
+  const barHighlightRef = useRef<SVGRectElement | null>(null);
+  const prevBarKeyRef = useRef<string>("");
   const [abc, setAbc] = useState<string | null>(initialAbc ?? null);
   const [isRendered, setIsRendered] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -299,32 +301,108 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     setPlaybackIsPlaying(state.isPlaying);
   }, []);
 
-  // Note highlighting callback
+  // Note highlighting + bar highlighting callback
   const onActiveNoteChange = useCallback((noteIndex: number) => {
     const container = sheetRef.current;
     if (!container) return;
+
+    // ── Note highlight ──
     if (prevHighlightRef.current) {
       prevHighlightRef.current.classList.remove("abcjs-note-active");
       prevHighlightRef.current = null;
     }
-    if (noteIndex < 0) return;
+
+    if (noteIndex < 0) {
+      // Playback stopped — remove bar highlight too
+      if (barHighlightRef.current) {
+        barHighlightRef.current.remove();
+        barHighlightRef.current = null;
+        prevBarKeyRef.current = "";
+      }
+      return;
+    }
+
     const noteEl = container.querySelector(`.abcjs-n${noteIndex}`);
-    if (noteEl) {
-      noteEl.classList.add("abcjs-note-active");
-      prevHighlightRef.current = noteEl;
-      // Auto-scroll to keep active note visible
-      const containerRect = container.getBoundingClientRect();
-      const noteRect = noteEl.getBoundingClientRect();
-      if (noteRect.left < containerRect.left + 60) {
-        container.scrollBy({ left: noteRect.left - containerRect.left - 60, behavior: "smooth" });
-      } else if (noteRect.right > containerRect.right - 60) {
-        container.scrollBy({ left: noteRect.right - containerRect.right + 60, behavior: "smooth" });
+    if (!noteEl) return;
+
+    noteEl.classList.add("abcjs-note-active");
+    prevHighlightRef.current = noteEl;
+
+    // ── Bar highlight ──
+    // Find the staff group that contains this note
+    const staffGroup = noteEl.closest(".abcjs-staff-group") as SVGGElement | null;
+    if (staffGroup) {
+      // Collect all bar line elements in this staff group
+      const barLines = Array.from(staffGroup.querySelectorAll(".abcjs-bar")) as SVGElement[];
+      // Get the note's x-position in SVG coordinates
+      const noteBox = (noteEl as unknown as SVGGraphicsElement).getBBox();
+      const noteCenterX = noteBox.x + noteBox.width / 2;
+
+      // Find the bar region: the bar line just before and just after the note
+      let leftX = 0;
+      let rightX = 0;
+      const staffBox = staffGroup.getBBox();
+
+      // Sort bar lines by x position
+      const barPositions = barLines.map((bl) => {
+        const bbox = (bl as unknown as SVGGraphicsElement).getBBox();
+        return bbox.x + bbox.width / 2;
+      }).sort((a, b) => a - b);
+
+      // Find left and right boundaries
+      leftX = staffBox.x; // default: start of staff
+      rightX = staffBox.x + staffBox.width; // default: end of staff
+      for (let i = 0; i < barPositions.length; i++) {
+        if (barPositions[i] <= noteCenterX) {
+          leftX = barPositions[i];
+        }
+        if (barPositions[i] > noteCenterX) {
+          rightX = barPositions[i];
+          break;
+        }
       }
-      if (noteRect.top < containerRect.top + 40) {
-        container.scrollBy({ top: noteRect.top - containerRect.top - 40, behavior: "smooth" });
-      } else if (noteRect.bottom > containerRect.bottom - 40) {
-        container.scrollBy({ top: noteRect.bottom - containerRect.bottom + 40, behavior: "smooth" });
+
+      // Create a unique key for this bar region to avoid redundant updates
+      const barKey = `${Math.round(leftX)}-${Math.round(rightX)}-${Math.round(staffBox.y)}`;
+      if (barKey !== prevBarKeyRef.current) {
+        prevBarKeyRef.current = barKey;
+
+        // Find the SVG element to insert the highlight
+        const svg = staffGroup.closest("svg");
+        if (svg) {
+          // Remove old highlight
+          if (barHighlightRef.current) {
+            barHighlightRef.current.remove();
+          }
+
+          // Create highlight rectangle
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", String(leftX));
+          rect.setAttribute("y", String(staffBox.y));
+          rect.setAttribute("width", String(Math.max(rightX - leftX, 10)));
+          rect.setAttribute("height", String(staffBox.height));
+          rect.setAttribute("rx", "4");
+          rect.setAttribute("class", "abcjs-bar-highlight");
+
+          // Insert before the staff group so it renders behind the notes
+          staffGroup.insertBefore(rect, staffGroup.firstChild);
+          barHighlightRef.current = rect;
+        }
       }
+    }
+
+    // ── Auto-scroll to keep active note visible ──
+    const containerRect = container.getBoundingClientRect();
+    const noteRect = noteEl.getBoundingClientRect();
+    if (noteRect.left < containerRect.left + 60) {
+      container.scrollBy({ left: noteRect.left - containerRect.left - 60, behavior: "smooth" });
+    } else if (noteRect.right > containerRect.right - 60) {
+      container.scrollBy({ left: noteRect.right - containerRect.right + 60, behavior: "smooth" });
+    }
+    if (noteRect.top < containerRect.top + 40) {
+      container.scrollBy({ top: noteRect.top - containerRect.top - 40, behavior: "smooth" });
+    } else if (noteRect.bottom > containerRect.bottom - 40) {
+      container.scrollBy({ top: noteRect.bottom - containerRect.bottom + 40, behavior: "smooth" });
     }
   }, []);
 

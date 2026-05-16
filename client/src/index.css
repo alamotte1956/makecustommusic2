@@ -509,6 +509,33 @@
   filter: drop-shadow(0 0 4px rgba(232, 69, 126, 0.5));
 }
 
+/* ─── Bar highlight during playback ─── */
+.abcjs-bar-highlight {
+  fill: rgba(139, 92, 246, 0.10);
+  stroke: rgba(139, 92, 246, 0.25);
+  stroke-width: 1;
+  pointer-events: none;
+  -webkit-animation: barFadeIn 0.15s ease-out;
+  animation: barFadeIn 0.15s ease-out;
+}
+
+@-webkit-keyframes barFadeIn {
+  from { opacity: 0; -webkit-transform: scaleX(0.95); transform: scaleX(0.95); }
+  to   { opacity: 1; -webkit-transform: scaleX(1); transform: scaleX(1); }
+}
+
+@keyframes barFadeIn {
+  from { opacity: 0; transform: scaleX(0.95); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abcjs-bar-highlight {
+    -webkit-animation: none;
+    animation: none;
+  }
+}
+
 /* ─── Safari / WebKit compatibility ─── */
 @supports not (backdrop-filter: blur(1px)) {
   .backdrop-blur-lg,

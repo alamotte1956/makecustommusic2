@@ -2599,3 +2599,16 @@
 - [x] Small pencil icon on badge when overrides are active
 - [x] Write 11 new tests for computeDurationWithOverrides (override combinations, hasOverride flag)
 - [x] All 1,980 tests passing, TypeScript clean
+
+## Current Bar Highlight During Playback
+- [x] Highlight current bar region in abcjs SVG during playback via activeNoteIndex
+- [x] Semi-transparent violet overlay (abcjs-bar-highlight) inserted as SVG rect behind notes
+- [x] Bar boundaries detected from .abcjs-bar elements within .abcjs-staff-group
+- [x] Smooth barFadeIn animation (0.15s ease-out) with scaleX transition
+- [x] Auto-scroll keeps highlighted bar visible (reuses existing note scroll)
+- [x] Highlight removed when playback stops (noteIndex -1 cleanup)
+- [x] Stable barKey prevents redundant DOM updates when still in same bar
+- [x] Respects prefers-reduced-motion for accessibility
+- [x] Cross-browser -webkit- prefixes for animation
+- [x] Write 16 tests for findBarBoundaries, barKey, cleanup logic
+- [x] All 1,996 tests passing, TypeScript clean
