@@ -2528,3 +2528,13 @@
 - [x] Distinguish cancel errors from real errors via __cancelled__ sentinel
 - [x] Write 7 new tests for cancel logic (visibility, abort flag, error detection)
 - [x] All 1,924 tests passing, TypeScript clean
+
+## Drag-and-Drop Reorder Batch Queue
+- [x] Add drag handle (GripVertical icon) to each queued batch item
+- [x] Implement native HTML5 drag-and-drop for reordering items
+- [x] Visual feedback: dragged item dims (opacity-40, scale-down), drop target gets violet ring highlight
+- [x] Only allow reordering of queued items (not processing/done/error)
+- [x] Disable drag during batch processing
+- [x] Spacer placeholder for non-draggable items to maintain alignment
+- [x] Write 12 new tests for reorder logic (swap, boundary, canDrag, mixed statuses)
+- [x] All 1,936 tests passing, TypeScript clean

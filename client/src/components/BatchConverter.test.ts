@@ -365,4 +365,108 @@ describe("BatchConverter utilities", () => {
       expect(isCancelError).toBe(false);
     });
   });
+
+  // Test drag-and-drop reorder logic
+  describe("Drag-and-drop reorder", () => {
+    type TestItem = { id: string; status: string };
+
+    function reorder(items: TestItem[], fromId: string, toId: string): TestItem[] {
+      const arr = [...items];
+      const fromIdx = arr.findIndex(i => i.id === fromId);
+      const toIdx = arr.findIndex(i => i.id === toId);
+      if (fromIdx === -1 || toIdx === -1) return items;
+      const [moved] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, moved);
+      return arr;
+    }
+
+    function canDrag(item: TestItem, isProcessing: boolean): boolean {
+      return item.status === "queued" && !isProcessing;
+    }
+
+    it("should reorder items when dragging from first to third", () => {
+      const items: TestItem[] = [
+        { id: "a", status: "queued" },
+        { id: "b", status: "queued" },
+        { id: "c", status: "queued" },
+      ];
+      const result = reorder(items, "a", "c");
+      expect(result.map(i => i.id)).toEqual(["b", "c", "a"]);
+    });
+
+    it("should reorder items when dragging from third to first", () => {
+      const items: TestItem[] = [
+        { id: "a", status: "queued" },
+        { id: "b", status: "queued" },
+        { id: "c", status: "queued" },
+      ];
+      const result = reorder(items, "c", "a");
+      expect(result.map(i => i.id)).toEqual(["c", "a", "b"]);
+    });
+
+    it("should not change order when dragging to same position", () => {
+      const items: TestItem[] = [
+        { id: "a", status: "queued" },
+        { id: "b", status: "queued" },
+      ];
+      const result = reorder(items, "a", "a");
+      expect(result.map(i => i.id)).toEqual(["a", "b"]);
+    });
+
+    it("should return original array if fromId not found", () => {
+      const items: TestItem[] = [
+        { id: "a", status: "queued" },
+        { id: "b", status: "queued" },
+      ];
+      const result = reorder(items, "z", "a");
+      expect(result).toBe(items);
+    });
+
+    it("should return original array if toId not found", () => {
+      const items: TestItem[] = [
+        { id: "a", status: "queued" },
+        { id: "b", status: "queued" },
+      ];
+      const result = reorder(items, "a", "z");
+      expect(result).toBe(items);
+    });
+
+    it("should allow drag for queued items when not processing", () => {
+      expect(canDrag({ id: "a", status: "queued" }, false)).toBe(true);
+    });
+
+    it("should not allow drag for queued items when processing", () => {
+      expect(canDrag({ id: "a", status: "queued" }, true)).toBe(false);
+    });
+
+    it("should not allow drag for done items", () => {
+      expect(canDrag({ id: "a", status: "done" }, false)).toBe(false);
+    });
+
+    it("should not allow drag for error items", () => {
+      expect(canDrag({ id: "a", status: "error" }, false)).toBe(false);
+    });
+
+    it("should not allow drag for uploading items", () => {
+      expect(canDrag({ id: "a", status: "uploading" }, false)).toBe(false);
+    });
+
+    it("should handle reorder with mixed statuses correctly", () => {
+      const items: TestItem[] = [
+        { id: "a", status: "done" },
+        { id: "b", status: "queued" },
+        { id: "c", status: "queued" },
+        { id: "d", status: "error" },
+      ];
+      // Reorder only moves items in the array, status doesn't matter for the array operation
+      const result = reorder(items, "c", "b");
+      expect(result.map(i => i.id)).toEqual(["a", "c", "b", "d"]);
+    });
+
+    it("should handle single-item array gracefully", () => {
+      const items: TestItem[] = [{ id: "a", status: "queued" }];
+      const result = reorder(items, "a", "a");
+      expect(result.map(i => i.id)).toEqual(["a"]);
+    });
+  });
 });

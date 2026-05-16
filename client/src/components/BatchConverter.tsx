@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Play, Trash2, RefreshCw, Eye, Music, Upload, Layers,
-  ChevronDown, ChevronUp, Edit2, Clock, Download, Archive,
+  ChevronDown, ChevronUp, Edit2, Clock, Download, Archive, GripVertical,
 } from "lucide-react";
 import { generateSheetMusicPDFBytes, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
 
@@ -69,6 +69,8 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
   const pdfAbortRef = useRef(false);
+  const [dragItemId, setDragItemId] = useState<string | null>(null);
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
 
   const startJobMutation = trpc.songs.startMp3SheetJob.useMutation();
   const trpcUtils = trpc.useUtils();
@@ -134,6 +136,45 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
       return next;
     });
   }, []);
+
+  // Drag-and-drop reorder
+  const canDragItem = useCallback((item: BatchItem) => {
+    return item.status === "queued" && !isProcessing;
+  }, [isProcessing]);
+
+  const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
+    setDragItemId(id);
+    e.dataTransfer.effectAllowed = "move";
+    // Use a transparent 1x1 image as drag ghost to avoid default browser preview
+    const ghost = document.createElement("canvas");
+    ghost.width = 1;
+    ghost.height = 1;
+    e.dataTransfer.setDragImage(ghost, 0, 0);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragItemId && dragItemId !== id) {
+      setDragOverItemId(id);
+    }
+  }, [dragItemId]);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragItemId && dragOverItemId && dragItemId !== dragOverItemId) {
+      setItems(prev => {
+        const arr = [...prev];
+        const fromIdx = arr.findIndex(i => i.id === dragItemId);
+        const toIdx = arr.findIndex(i => i.id === dragOverItemId);
+        if (fromIdx === -1 || toIdx === -1) return prev;
+        const [moved] = arr.splice(fromIdx, 1);
+        arr.splice(toIdx, 0, moved);
+        return arr;
+      });
+    }
+    setDragItemId(null);
+    setDragOverItemId(null);
+  }, [dragItemId, dragOverItemId]);
 
   // Read file as base64
   const readFileAsBase64 = (f: File): Promise<string> => {
@@ -445,8 +486,31 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
           {/* File List */}
           <div className="divide-y max-h-[500px] overflow-y-auto">
             {items.map((item) => (
-              <div key={item.id} className="group">
+              <div
+                key={item.id}
+                className={`group transition-all duration-150 ${
+                  dragItemId === item.id ? "opacity-40 scale-[0.98]" : ""
+                } ${
+                  dragOverItemId === item.id && dragItemId !== item.id
+                    ? "ring-2 ring-violet-400 ring-inset bg-violet-50/30 dark:bg-violet-900/20"
+                    : ""
+                }`}
+                draggable={canDragItem(item)}
+                onDragStart={(e) => canDragItem(item) && handleDragStart(e, item.id)}
+                onDragOver={(e) => handleDragOver(e, item.id)}
+                onDragEnd={handleDragEnd}
+                onDragLeave={() => { if (dragOverItemId === item.id) setDragOverItemId(null); }}
+              >
                 <div className="flex items-center gap-3 p-3 hover:bg-muted/20 transition-colors">
+                  {/* Drag Handle (queued + not processing only) */}
+                  {canDragItem(item) ? (
+                    <div className="flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground">
+                      <GripVertical className="h-4 w-4" />
+                    </div>
+                  ) : (
+                    <div className="flex-shrink-0 w-4" />
+                  )}
+
                   {/* Status Icon */}
                   <div className="flex-shrink-0">
                     {statusIcon(item.status)}
