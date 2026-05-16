@@ -420,13 +420,15 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   }, [sanitisedDisplayAbc]);
 
   // Estimate playback duration from bar count, tempo (Q:), and time signature (M:)
-  const estimatedDuration = useMemo(() => {
+  const durationInfo = useMemo(() => {
     if (!sanitisedDisplayAbc || barCount <= 0) return null;
 
     // Extract time signature (M: field) — defaults to 4/4
     const mMatch = sanitisedDisplayAbc.match(/M:\s*(\d+)\/(\d+)/);
     const beatsPerBar = mMatch ? parseInt(mMatch[1], 10) : 4;
     const beatUnit = mMatch ? parseInt(mMatch[2], 10) : 4;
+    const timeSig = `${beatsPerBar}/${beatUnit}`;
+    const timeSigDetected = !!mMatch;
 
     // Extract tempo (Q: field) — supports multiple ABC tempo formats:
     //   Q:120        (quarter note = 120)
@@ -435,17 +437,23 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     //   Q:3/8=80     (dotted quarter = 80)
     let bpm = 120; // sensible default
     let tempoNoteLength = 1 / 4; // default: quarter note
+    let tempoNoteName = "\u2669"; // quarter note symbol
     const qMatch = sanitisedDisplayAbc.match(/Q:\s*(?:(\d+)\/(\d+)\s*=\s*)?(\d+)/);
+    const tempoDetected = !!qMatch;
     if (qMatch) {
       if (qMatch[1] && qMatch[2]) {
         tempoNoteLength = parseInt(qMatch[1], 10) / parseInt(qMatch[2], 10);
+        // Determine note name for display
+        const noteVal = tempoNoteLength;
+        if (noteVal === 0.125) tempoNoteName = "\u266A"; // eighth note
+        else if (noteVal === 0.375) tempoNoteName = "\u2669."; // dotted quarter
+        else if (noteVal === 0.5) tempoNoteName = "\uD834\uDD5E"; // half note (fallback to text)
+        else if (noteVal === 1) tempoNoteName = "\uD834\uDD5D"; // whole note (fallback)
       }
       bpm = parseInt(qMatch[3], 10);
     }
 
-    // Calculate duration:
-    // Each bar has `beatsPerBar` beats of length 1/beatUnit
-    // Duration of one bar = beatsPerBar * (1/beatUnit) / tempoNoteLength / bpm * 60
+    // Calculate duration
     const barDurationSeconds = (beatsPerBar / beatUnit) / tempoNoteLength / bpm * 60;
     const totalSeconds = Math.round(barCount * barDurationSeconds);
 
@@ -453,7 +461,16 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `~${minutes}:${seconds.toString().padStart(2, "0")}`;
+    const formatted = `~${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+    return {
+      formatted,
+      bpm,
+      timeSig,
+      tempoNoteName,
+      tempoDetected,
+      timeSigDetected,
+    };
   }, [sanitisedDisplayAbc, barCount]);
 
   const handleGenerate = useCallback(async () => {
@@ -1494,14 +1511,22 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             </span>
           )}
           {barCount > 0 && isRendered && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full" title={`${barCount} bars detected in the sheet music${estimatedDuration ? ` · estimated duration ${estimatedDuration}` : ""}`}>
+            <span
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full cursor-default"
+              title={[
+                `${barCount} bars detected`,
+                durationInfo ? `Estimated duration: ${durationInfo.formatted}` : null,
+                durationInfo ? `Tempo: ${durationInfo.tempoNoteName} = ${durationInfo.bpm} BPM${!durationInfo.tempoDetected ? " (default)" : ""}` : null,
+                durationInfo ? `Time signature: ${durationInfo.timeSig}${!durationInfo.timeSigDetected ? " (default)" : ""}` : null,
+              ].filter(Boolean).join("\n")}
+            >
               <Hash className="w-3 h-3" />
               {barCount} bars
-              {estimatedDuration && (
+              {durationInfo && (
                 <>
                   <span className="text-muted-foreground/50">·</span>
                   <Clock className="w-3 h-3" />
-                  {estimatedDuration}
+                  {durationInfo.formatted}
                 </>
               )}
             </span>

@@ -2580,3 +2580,11 @@
 - [x] Handle missing time signature (defaults to 4/4)
 - [x] Write 13 new tests for duration estimation (various tempos, time sigs, formats)
 - [x] All 1,964 tests passing, TypeScript clean
+
+## Duration Badge Tooltip with Tempo & Time Signature
+- [x] Show exact tempo (BPM) and time signature in multi-line hover tooltip
+- [x] Include whether tempo/time sig was detected or defaulted (e.g., "120 BPM (default)")
+- [x] Show music note symbol matching tempo note length (quarter, eighth, dotted quarter)
+- [x] Refactored estimatedDuration to durationInfo object with full metadata
+- [x] Updated 30 tests (5 new tooltip metadata tests + updated existing for new return type)
+- [x] All 1,969 tests passing, TypeScript clean
