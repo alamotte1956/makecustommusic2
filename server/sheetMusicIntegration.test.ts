@@ -250,7 +250,7 @@ describe("validateAbc", () => {
   });
 
   it("accepts ABC with lyrics lines", () => {
-    const abc = "X:1\nT:Test\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nw:Ama-zing grace how sweet";
+    const abc = "X:1\nT:Test\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nEFGA Bcde|dcBA GFED|\nCDEF GFED|EFGA Bcde|\nw:Ama-zing grace how sweet the sound that saved a wretch like me I once was lost but now";
     expect(validateAbc(abc)).toBeNull();
   });
 

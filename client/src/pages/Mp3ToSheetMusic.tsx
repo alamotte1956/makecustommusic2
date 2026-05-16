@@ -28,6 +28,7 @@ import { useNoteHighlight } from "@/hooks/useNoteHighlight";
 import type { PlaybackState } from "@/lib/abcPlayer";
 import { InstrumentPartsSection } from "@/components/InstrumentPartsSection";
 import { ChordChartView } from "@/components/ChordChartView";
+import { ProcessingProgress } from "@/components/ProcessingProgress";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.aiff,.aif";
@@ -856,73 +857,7 @@ export default function Mp3ToSheetMusic() {
 
         {/* Processing Status */}
         {isProcessing && (
-          <div className="mt-6 bg-card rounded-xl border p-6">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-black">{STEP_LABELS[step]}</p>
-                  <span className="text-sm font-medium text-violet-600">
-                    {step === "uploading" ? "15%" : step === "transcribing" ? "40%" : step === "analyzing" ? "60%" : step === "generating" ? "80%" : ""}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {step === "uploading"
-                    ? "Preparing your audio file..."
-                    : step === "transcribing"
-                    ? "Estimated time: 20-40 seconds remaining"
-                    : step === "generating"
-                    ? "Estimated time: 15-30 seconds remaining"
-                    : "Processing..."}
-                </p>
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="mt-4 h-2 bg-violet-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-1000 ease-out"
-                style={{
-                  width: step === "uploading" ? "15%" : step === "transcribing" ? "40%" : step === "analyzing" ? "60%" : step === "generating" ? "80%" : "0%",
-                }}
-              />
-            </div>
-
-            {/* Progress steps */}
-            <div className="mt-6 space-y-3">
-              {(["uploading", "transcribing", "generating"] as ProcessingStep[]).map((s, i) => {
-                const stepOrder = ["uploading", "transcribing", "generating"];
-                const currentIdx = stepOrder.indexOf(step);
-                const thisIdx = i;
-                const isDone = thisIdx < currentIdx;
-                const isCurrent = s === step || (step === "analyzing" && s === "transcribing");
-                const isDoneOrPast = isDone || (step === "generating" && s === "transcribing") || (step === "analyzing" && s === "uploading");
-                return (
-                  <div key={s} className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      isDoneOrPast ? "bg-green-500 text-white" :
-                      isCurrent ? "bg-violet-600 text-white" :
-                      "bg-muted text-muted-foreground"
-                    }`}>
-                      {isDoneOrPast ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
-                    </div>
-                    <span className={`text-sm ${
-                      isDoneOrPast ? "text-green-600 font-medium" :
-                      isCurrent ? "text-black font-medium" :
-                      "text-muted-foreground"
-                    }`}>
-                      {["Upload & prepare audio", "Transcribe audio with AI", "Generate sheet music notation"][i]}
-                    </span>
-                    {isCurrent && !isDoneOrPast && (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <ProcessingProgress step={step} />
         )}
 
         {/* Generate Button */}

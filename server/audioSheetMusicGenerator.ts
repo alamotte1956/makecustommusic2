@@ -238,36 +238,49 @@ export async function generateAbcFromAnalysis(
       // Build the user prompt with analysis details
       const userPrompt = buildAbcPromptFromAnalysis(title, analysis, lyrics);
 
+      // Build the initial messages
+      const messages: any[] = [
+        { role: "system", content: ABC_GENERATION_FROM_ANALYSIS_PROMPT },
+        {
+          role: "user",
+          content: [
+            {
+              type: "file_url",
+              file_url: {
+                url: audioUrl,
+                mime_type: "audio/mpeg",
+              },
+            },
+            {
+              type: "text",
+              text: userPrompt,
+            },
+          ],
+        },
+      ];
+
       // Send audio + analysis to the LLM for ABC generation
       const response = await invokeLLM({
-        messages: [
-          { role: "system", content: ABC_GENERATION_FROM_ANALYSIS_PROMPT },
-          {
-            role: "user",
-            content: [
-              {
-                type: "file_url",
-                file_url: {
-                  url: audioUrl,
-                  mime_type: "audio/mpeg",
-                },
-              },
-              {
-                type: "text",
-                text: userPrompt,
-              },
-            ],
-          },
-        ],
+        messages,
         max_tokens: 16384,
       });
 
-      const rawAbc = extractLLMText(response.choices?.[0]?.message?.content);
+      let rawAbc = extractLLMText(response.choices?.[0]?.message?.content);
       if (!rawAbc) {
         throw new Error("LLM returned empty ABC content");
       }
 
       console.log(`[AudioABC] Raw ABC length: ${rawAbc.length}, first 300 chars: ${rawAbc.substring(0, 300)}`);
+
+      // Check if the output seems truncated — try continuation if too short
+      const barCount = (rawAbc.match(/\|/g) || []).length;
+      const sectionCount = analysis.structure?.length || 0;
+      const expectedMinBars = Math.max(24, sectionCount * 4);
+
+      if (barCount < expectedMinBars) {
+        console.log(`[AudioABC] Output seems short (${barCount} bars, expected ~${expectedMinBars}). Requesting continuation...`);
+        rawAbc = await requestContinuation(messages, rawAbc, audioUrl, expectedMinBars);
+      }
 
       // Sanitise and validate
       const cleanAbc = sanitiseAbc(rawAbc);
@@ -454,6 +467,105 @@ export async function generateSheetMusicFromAudio(
 }
 
 // ─── Helper Functions ──────────────────────────────────────────────────────────
+
+/**
+ * Request the LLM to continue generating ABC notation if the initial output was too short.
+ * Appends the continuation to the original output and returns the combined result.
+ */
+async function requestContinuation(
+  originalMessages: any[],
+  partialAbc: string,
+  audioUrl: string,
+  expectedMinBars: number
+): Promise<string> {
+  const MAX_CONTINUATIONS = 2;
+  let combined = partialAbc;
+
+  for (let i = 0; i < MAX_CONTINUATIONS; i++) {
+    const currentBars = (combined.match(/\|/g) || []).length;
+    if (currentBars >= expectedMinBars) {
+      console.log(`[AudioABC] Continuation complete — ${currentBars} bars (target: ${expectedMinBars})`);
+      break;
+    }
+
+    console.log(`[AudioABC] Continuation ${i + 1}/${MAX_CONTINUATIONS} — have ${currentBars} bars, need ${expectedMinBars}...`);
+
+    // Get the last few lines of the partial output for context
+    const lastLines = combined.split("\n").slice(-6).join("\n");
+
+    // Identify which sections are missing
+    const sectionComments = combined.match(/% \w[\w\s]*/g) || [];
+    const existingSections = sectionComments.map(s => s.replace("% ", "").trim());
+
+    const continuationPrompt = `Your previous output was INCOMPLETE — it only generated ${currentBars} bars but the song needs at least ${expectedMinBars} bars.
+
+Here is what you generated so far (last few lines):
+${lastLines}
+
+Sections already written: ${existingSections.join(", ") || "(none identified)"}
+
+CONTINUE the ABC notation from EXACTLY where you left off. Do NOT repeat the headers (X:, T:, M:, L:, Q:, K:). Do NOT repeat sections you already wrote. Write the REMAINING sections of the song.
+
+IMPORTANT:
+- Start your output with the next music line (no headers)
+- Include section comments (% Verse 2, % Chorus, % Bridge, etc.)
+- Continue until the song is COMPLETE
+- Output ONLY ABC notation — no explanations`;
+
+    try {
+      const response = await invokeLLM({
+        messages: [
+          ...originalMessages,
+          { role: "assistant", content: combined },
+          {
+            role: "user",
+            content: [
+              {
+                type: "file_url",
+                file_url: { url: audioUrl, mime_type: "audio/mpeg" },
+              },
+              { type: "text", text: continuationPrompt },
+            ],
+          },
+        ],
+        max_tokens: 16384,
+      });
+
+      const continuation = extractLLMText(response.choices?.[0]?.message?.content);
+      if (!continuation || continuation.trim().length < 20) {
+        console.warn(`[AudioABC] Continuation ${i + 1} returned empty/short content`);
+        break;
+      }
+
+      // Clean the continuation — remove any repeated headers
+      const cleanContinuation = continuation
+        .split("\n")
+        .filter(line => {
+          const t = line.trim();
+          return !t.startsWith("X:") && !t.startsWith("T:") && !t.startsWith("M:") &&
+                 !t.startsWith("L:") && !t.startsWith("Q:") && !t.startsWith("K:");
+        })
+        .join("\n")
+        .replace(/^```[a-z]*\n?/gm, "")
+        .replace(/```\s*$/gm, "")
+        .trim();
+
+      if (cleanContinuation.length > 20) {
+        combined = combined.trimEnd() + "\n" + cleanContinuation;
+        const newBars = (combined.match(/\|/g) || []).length;
+        console.log(`[AudioABC] After continuation ${i + 1}: ${newBars} bars (was ${currentBars})`);
+      } else {
+        console.warn(`[AudioABC] Continuation ${i + 1} produced no usable content after cleaning`);
+        break;
+      }
+    } catch (err: any) {
+      console.warn(`[AudioABC] Continuation ${i + 1} failed:`, err?.message);
+      break;
+    }
+  }
+
+  return combined;
+}
 
 function buildAbcPromptFromAnalysis(
   title: string,

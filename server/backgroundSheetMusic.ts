@@ -381,19 +381,32 @@ export function validateAbc(abc: string): string | null {
   }
 
   // Check minimum length by counting bar lines
-  // Count repeat signs as extra measures (they represent repeated sections)
   const allMusicText = musicLines.join(" ");
   const barLineCount = (allMusicText.match(/\|/g) || []).length;
   const repeatSignCount = (allMusicText.match(/:\|/g) || []).length;
-  // Each repeat sign effectively doubles the section, so count them as extra measures
-  const effectiveMeasures = barLineCount + (repeatSignCount * 8);
+  // Each repeat sign adds some effective measures, but cap the bonus
+  const effectiveMeasures = barLineCount + Math.min(repeatSignCount * 4, 16);
   
   // Check if there are lyrics (w: lines) — songs with lyrics need more bars
   const hasLyrics = lines.some((l) => l.trim().startsWith("w:") || l.trim().startsWith("W:"));
-  const minMeasures = hasLyrics ? 16 : 8;
+  const minMeasures = hasLyrics ? 24 : 16;
   
   if (effectiveMeasures < minMeasures) {
     return `Sheet music is too short — found only ${barLineCount} measures (${repeatSignCount} repeats, effective: ${effectiveMeasures}), need at least ${minMeasures} measures for a ${hasLyrics ? 'song with lyrics' : 'piece'}`;
+  }
+
+  // Detect excessive repetition — reject if the same bar pattern repeats too many times
+  const barPatterns = allMusicText.split("|").map(b => b.replace(/"[^"]*"/g, "").replace(/\s+/g, "").trim()).filter(b => b.length > 2);
+  if (barPatterns.length >= 8) {
+    const patternCounts: Record<string, number> = {};
+    for (const p of barPatterns) {
+      patternCounts[p] = (patternCounts[p] || 0) + 1;
+    }
+    const maxRepeat = Math.max(...Object.values(patternCounts));
+    const repeatRatio = maxRepeat / barPatterns.length;
+    if (repeatRatio > 0.5 && maxRepeat >= 6) {
+      return `Sheet music is too repetitive — the same bar pattern repeats ${maxRepeat} times out of ${barPatterns.length} bars. The LLM likely failed to generate varied content.`;
+    }
   }
 
   // Verify music lines have reasonable content (not just bar lines)

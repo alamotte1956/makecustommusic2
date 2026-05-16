@@ -2437,3 +2437,21 @@
 - [x] Polish drag-and-drop zone with clearer visual feedback
 - [x] Enhanced processing state with step-by-step status messages
 - [x] Fix sheet music SVG rendering (white-on-white in dark theme) — added text-black + color:#000
+
+## Processing Progress Bar Enhancement
+- [x] Replace basic loading spinner with animated multi-step progress bar
+- [x] Created ProcessingProgress component with step indicators
+- [x] Show step indicators: Uploading → Transcribing → Analyzing → Generating
+- [x] Add elapsed time tracking display
+- [x] Add smooth animated progress fill between steps
+- [x] Add pulsing/shimmer animation during active processing
+- [x] Musical note animation during processing
+
+## Bug: Sheet Music Only Generates First Few Bars (FIXED)
+- [x] Investigated LLM output lengths — varies from 870 to 21,212 chars
+- [x] Root cause: No minimum length enforcement + no continuation mechanism
+- [x] Fix: Raised minimum bar thresholds (24 for lyrics, 16 for instrumental)
+- [x] Fix: Added repetition detection (rejects >50% repeated bar patterns)
+- [x] Fix: Added requestContinuation() — auto-requests LLM to continue if output too short
+- [x] Fix: Up to 2 continuation rounds, each sending partial output + audio for context
+- [x] All tests passing, TypeScript clean

@@ -187,7 +187,7 @@ describe("backgroundSheetMusic", () => {
     it("should accept ABC with w: lyrics as music content indicator", () => {
       // w: lines are filtered out when checking for music content,
       // so there must be actual note lines too
-      const withLyrics = 'X:1\nT:Test Song\nM:4/4\nL:1/8\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nw: Hel-lo world';
+      const withLyrics = 'X:1\nT:Test Song\nM:4/4\nL:1/8\nK:C\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nABcd dcBA|GFED CDEF|\nCDEF GABc|cBAG FEDC|\nGABc cBAG|FEDC DEFG|\nEFGA Bcde|dcBA GFED|\nCDEF GFED|EFGA Bcde|\nw: Hel-lo world this is a lon-ger song with more bars and more notes here';
       expect(validateAbc(withLyrics)).toBeNull();
     });
   });
