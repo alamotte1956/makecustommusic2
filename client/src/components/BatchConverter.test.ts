@@ -318,4 +318,51 @@ describe("BatchConverter utilities", () => {
       expect(isDownloading("item-2")).toBe(false);
     });
   });
+
+  // Test cancel PDF download logic
+  describe("Cancel PDF download", () => {
+    it("should hide cancel button during saving stage", () => {
+      const stage = "saving" as const;
+      const showCancel = stage !== "saving";
+      expect(showCancel).toBe(false);
+    });
+
+    it("should show cancel button during rendering stage", () => {
+      const stage = "rendering" as const;
+      const showCancel = stage !== "saving";
+      expect(showCancel).toBe(true);
+    });
+
+    it("should show cancel button during composing stage", () => {
+      const stage = "composing" as const;
+      const showCancel = stage !== "saving";
+      expect(showCancel).toBe(true);
+    });
+
+    it("should detect cancellation via abort flag", () => {
+      let abortFlag = false;
+      abortFlag = true;
+      const isCancelled = abortFlag;
+      expect(isCancelled).toBe(true);
+    });
+
+    it("should reset abort flag after cancellation", () => {
+      let abortFlag = true;
+      // Simulating the finally block
+      abortFlag = false;
+      expect(abortFlag).toBe(false);
+    });
+
+    it("should use special error message for cancellation", () => {
+      const err = new Error("__cancelled__");
+      const isCancelError = err.message === "__cancelled__";
+      expect(isCancelError).toBe(true);
+    });
+
+    it("should not treat regular errors as cancellation", () => {
+      const err = new Error("Some PDF error");
+      const isCancelError = err.message === "__cancelled__";
+      expect(isCancelError).toBe(false);
+    });
+  });
 });

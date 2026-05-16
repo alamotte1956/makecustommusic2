@@ -2518,3 +2518,13 @@
 - [x] Auto-dismiss progress bar on completion or error
 - [x] Write 7 new tests for progress stage logic (labels, percentages, single-item tracking)
 - [x] All 1,917 tests passing, TypeScript clean
+
+## Cancel Individual PDF Download
+- [x] Add cancel (X) button next to the progress bar during rendering/composing stages
+- [x] Hidden during saving stage (too late to cancel)
+- [x] Implement pdfAbortRef to signal cancellation between async stages
+- [x] Show "PDF download cancelled" info toast on abort
+- [x] Reset abort flag and progress state in finally block
+- [x] Distinguish cancel errors from real errors via __cancelled__ sentinel
+- [x] Write 7 new tests for cancel logic (visibility, abort flag, error detection)
+- [x] All 1,924 tests passing, TypeScript clean

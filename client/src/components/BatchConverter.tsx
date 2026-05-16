@@ -68,6 +68,7 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
+  const pdfAbortRef = useRef(false);
 
   const startJobMutation = trpc.songs.startMp3SheetJob.useMutation();
   const trpcUtils = trpc.useUtils();
@@ -498,6 +499,19 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
                           {downloadProgress.stage === "composing" && "Composing PDF..."}
                           {downloadProgress.stage === "saving" && "Saving \u2713"}
                         </span>
+                        {downloadProgress.stage !== "saving" && (
+                          <button
+                            type="button"
+                            className="p-0.5 rounded hover:bg-muted/60 text-muted-foreground hover:text-red-500 transition-colors"
+                            title="Cancel PDF download"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              pdfAbortRef.current = true;
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -544,21 +558,30 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
                           disabled={downloadProgress?.itemId === item.id}
                           onClick={async (e) => {
                             e.stopPropagation();
+                            pdfAbortRef.current = false;
                             try {
                               setDownloadProgress({ itemId: item.id, stage: "rendering", percent: 10 });
-                              // Small delay so the UI renders before heavy work
                               await new Promise(r => setTimeout(r, 50));
+                              if (pdfAbortRef.current) throw new Error("__cancelled__");
                               setDownloadProgress({ itemId: item.id, stage: "rendering", percent: 30 });
                               await new Promise(r => setTimeout(r, 50));
+                              if (pdfAbortRef.current) throw new Error("__cancelled__");
                               setDownloadProgress({ itemId: item.id, stage: "composing", percent: 50 });
+                              if (pdfAbortRef.current) throw new Error("__cancelled__");
                               await exportSheetMusicPDFFromAbc(item.abcNotation!, item.title);
+                              if (pdfAbortRef.current) throw new Error("__cancelled__");
                               setDownloadProgress({ itemId: item.id, stage: "saving", percent: 100 });
                               await new Promise(r => setTimeout(r, 400));
                               toast.success(`Downloaded "${item.title}" as PDF`);
-                            } catch (err) {
-                              console.error("[PDF] Failed to export:", err);
-                              toast.error(`Failed to generate PDF for "${item.title}"`);
+                            } catch (err: any) {
+                              if (err?.message === "__cancelled__") {
+                                toast.info("PDF download cancelled");
+                              } else {
+                                console.error("[PDF] Failed to export:", err);
+                                toast.error(`Failed to generate PDF for "${item.title}"`);
+                              }
                             } finally {
+                              pdfAbortRef.current = false;
                               setDownloadProgress(null);
                             }
                           }}
