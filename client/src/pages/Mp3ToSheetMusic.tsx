@@ -12,7 +12,7 @@ import {
   Music, FileAudio, X, Loader2, CheckCircle2, AlertCircle,
   Download, Play, Pause, Volume2, VolumeX, RefreshCw, WifiOff,
   Clock, Trash2, ChevronDown, ChevronUp, Eye, Library, Save, RotateCcw, ListMusic,
-  Printer, ChevronLeft, ChevronRight,
+  Printer, ChevronLeft, ChevronRight, Layers,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { exportSheetMusicPDF, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
@@ -29,6 +29,7 @@ import type { PlaybackState } from "@/lib/abcPlayer";
 import { InstrumentPartsSection } from "@/components/InstrumentPartsSection";
 import { ChordChartView } from "@/components/ChordChartView";
 import { ProcessingProgress } from "@/components/ProcessingProgress";
+import { BatchConverter } from "@/components/BatchConverter";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.aiff,.aif";
@@ -117,6 +118,7 @@ export default function Mp3ToSheetMusic() {
   const [isRendered, setIsRendered] = useState(false);
   const [errorInfo, setErrorInfo] = useState<{ type: ErrorType; message: string; detail?: string } | null>(null);
   const [viewMode, setViewMode] = useState<"sheet" | "chordChart">("sheet");
+  const [conversionMode, setConversionMode] = useState<"single" | "batch">("single");
 
   // Progress bar state for sheet music playback
   const [playbackProgress, setPlaybackProgress] = useState(0);
@@ -703,6 +705,7 @@ export default function Mp3ToSheetMusic() {
     setSaveTitle("");
     setShowSaveDialog(false);
     setViewMode("sheet");
+    // Note: conversionMode is NOT reset — user stays in whichever mode they were using
   }, [stopPreview]);
 
   // ─── AUTH GATE ───
@@ -739,8 +742,50 @@ export default function Mp3ToSheetMusic() {
           </p>
         </div>
 
-        {/* Drop Zone */}
-        {!abcNotation && (
+        {/* Mode Toggle — Single vs Batch */}
+        {!abcNotation && step === "idle" && (
+          <div className="flex items-center justify-center gap-1 mb-6 print:hidden">
+            <button
+              onClick={() => setConversionMode("single")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                conversionMode === "single"
+                  ? "bg-violet-100 text-violet-700"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <FileAudio className="h-4 w-4" />
+              Single File
+            </button>
+            <button
+              onClick={() => setConversionMode("batch")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                conversionMode === "batch"
+                  ? "bg-violet-100 text-violet-700"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              Batch Mode
+            </button>
+          </div>
+        )}
+
+        {/* Batch Mode */}
+        {conversionMode === "batch" && !abcNotation && (
+          <BatchConverter
+            onViewResult={(abc, title, lyr) => {
+              setAbcNotation(abc);
+              setSongTitle(title);
+              setLyrics(lyr || null);
+              setStep("done");
+              setSelectedKey("original");
+              setIsRendered(false);
+            }}
+          />
+        )}
+
+        {/* Single File Drop Zone */}
+        {conversionMode === "single" && !abcNotation && (
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}

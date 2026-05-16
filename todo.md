@@ -2473,3 +2473,20 @@
 - [x] Fix: User-friendly toast "Server is warming up, retrying..." during retry
 - [x] Fix: Clear error messages instead of raw "Service Unavailable" text
 - [x] All 1,872 tests passing, TypeScript clean
+
+## Batch MP3 Conversion
+- [x] Multi-file drag-and-drop upload (select multiple MP3s at once)
+- [x] Batch queue UI showing each file's status (queued, uploading, transcribing, generating, done, error)
+- [x] Sequential processing — one file at a time to avoid overloading the server
+- [x] Individual retry for failed files in the batch
+- [x] View results for each completed file (click to open sheet music viewer)
+- [x] Batch progress indicator ("3 of 7 files processed" + progress bar)
+- [x] Credit-aware: stops batch if insufficient credits detected
+- [x] Song title auto-populated from each filename (editable before processing)
+- [x] Mode toggle (Single File / Batch Mode) on MP3 to Sheet Music page
+- [x] Cancel batch processing mid-run
+- [x] Clear finished / Clear all buttons
+- [x] Max 20 files per batch, 16MB per file validation
+- [x] Auto-retry for transient 503 errors (2 retries, 3s/6s backoff)
+- [x] 20 unit tests for BatchConverter utilities (titleFromFilename, formatFileSize, audio validation)
+- [x] All 1,892 tests passing, TypeScript clean
