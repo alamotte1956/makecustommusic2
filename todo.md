@@ -2545,3 +2545,17 @@
 - [x] Write 3 new tests for justDroppedId animation state logic
 - [x] Cross-browser support with -webkit- prefix and prefers-reduced-motion respected
 - [x] All 1,939 tests passing, TypeScript clean
+
+## CRITICAL BUG: MP3 to Sheet Music Truncation (Only 4 Bars)
+- [x] Backend: Confirmed strong anti-truncation (continuation logic, min 24 bars, explicit prompts)
+- [x] Backend: Added validateAbc logging for bar count diagnostics
+- [x] Frontend: REMOVED 8-second rendering timeout that replaced full song with 8-bar fallback (ROOT CAUSE)
+- [x] Frontend: abcjs now renders synchronously — errors shown to user instead of silently truncating
+- [x] Frontend: Added wrap config to SheetMusic.tsx (was missing entirely)
+- [x] Frontend: Added wrap config to InstrumentPartsSection.tsx
+- [x] Frontend: Added wrap config to pdfExport.ts (both renderAbc calls)
+- [x] Frontend: Increased maxSpacing from 2.4 to 2.8 for better readability
+- [x] Frontend: Fixed @media print CSS — overflow:visible on ALL ancestors (#root, main, .flex, .flex-1)
+- [x] Frontend: Added .abcjs-container { overflow:visible; height:auto } for screen rendering
+- [x] Frontend: Added page-break-inside:avoid on .abcjs-staff-group for clean page breaks
+- [x] All 1,939 tests passing, TypeScript clean

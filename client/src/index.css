@@ -480,9 +480,15 @@
 }
 
 /* ─── ABC.js sheet music styling ─── */
+.abcjs-container {
+  overflow: visible;
+  height: auto;
+}
+
 .abcjs-container svg {
   max-width: 100%;
   height: auto;
+  overflow: visible;
 }
 
 .abcjs-note-active path,
@@ -839,46 +845,67 @@ button {
     background: white !important;
     color: black !important;
     font-size: 12pt;
+    height: auto !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Remove page padding/margins from containers */
-  .min-h-screen {
+  /* CRITICAL: Ensure ALL ancestor containers allow content to flow across pages */
+  html, body, #root, main, [role="main"],
+  .min-h-screen, .flex, .flex-1,
+  [class*="overflow-"] {
+    height: auto !important;
     min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
-  .max-w-3xl {
+  .max-w-3xl, .max-w-4xl, .max-w-5xl, .container {
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
+    overflow: visible !important;
   }
 
-  /* Sheet music container: fill the page width */
+  /* Sheet music container: fill the page width, allow natural pagination */
   #mp3-sheet-music-render,
-  #sheet-music-render {
+  #sheet-music-render,
+  .abcjs-container {
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
     overflow: visible !important;
     border: none !important;
     padding: 0 !important;
     margin: 0 !important;
     background: white !important;
     page-break-inside: auto;
+    break-inside: auto;
   }
 
-  /* Scale SVG staves to fit page width */
+  /* Scale SVG staves to fit page width and allow natural height */
   #mp3-sheet-music-render svg,
-  #sheet-music-render svg {
+  #sheet-music-render svg,
+  .abcjs-container svg {
     width: 100% !important;
     height: auto !important;
     max-width: 7.5in;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
-  /* Prevent cutting staves across pages */
+  /* Prevent cutting individual staff groups across pages */
+  .abcjs-staff-group {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
   .abcjs-staff-extra,
   .abcjs-top-line {
     page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   /* Clean card backgrounds for print */

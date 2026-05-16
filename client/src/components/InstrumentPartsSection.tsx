@@ -95,6 +95,11 @@ function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: str
           paddingleft: 10,
           paddingright: 10,
           add_classes: true,
+          wrap: {
+            minSpacing: 1.8,
+            maxSpacing: 2.8,
+            preferredMeasuresPerLine: 4,
+          },
         });
 
         const svg = container.querySelector("svg");

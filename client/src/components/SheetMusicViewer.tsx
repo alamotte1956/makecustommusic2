@@ -521,45 +521,37 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         const staffWidth = Math.max(300, Math.floor(postRafRect.width - 40));
         console.log("[SheetMusic] Staff width:", staffWidth);
         
-        // Add rendering timeout to prevent stuck renders
-        const renderTimeout = new Promise<void>((_, reject) => {
-          setTimeout(() => reject(new Error('Rendering timeout')), 8000);
-        });
-        
+        // Render the full ABC notation — no timeout-based fallback to avoid truncation.
+        // abcjs.renderAbc is synchronous (returns immediately), so a timeout race
+        // would only fire if the Promise.resolve microtask was delayed by layout,
+        // which incorrectly replaced the full song with an 8-bar dummy.
         let visualObj;
         try {
-          visualObj = await Promise.race([
-            Promise.resolve(abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
-              responsive: "resize",
-              staffwidth: staffWidth,
-              paddingtop: 10,
-              paddingbottom: 10,
-              paddingleft: 5,
-              paddingright: 5,
-              add_classes: true,
-              wrap: {
-                minSpacing: 1.8,
-                maxSpacing: 2.4,
-                preferredMeasuresPerLine: 4,
-              },
-            })),
-            renderTimeout
-          ]);
-        } catch (timeoutErr) {
-          if (cancelled) { isRenderingRef.current = false; return; }
-          console.warn("[SheetMusic] Rendering timeout - using fallback");
-          // Render fallback immediately
-          const titleMatch = sanitisedDisplayAbc?.match(/T: (.+)/)?.[1] || 'Song';
-          const fallbackAbc = `X: 1\nT: ${titleMatch}\nM: 4/4\nL: 1/4\nK: C\nCDEF|GABc|cdec|BAGF|EDEF|GABc|d2c2|B4|`;
-          renderTarget.innerHTML = '';
-          visualObj = abcjs.renderAbc(renderTarget, fallbackAbc, {
+          visualObj = abcjs.renderAbc(renderTarget, sanitisedDisplayAbc!, {
             responsive: "resize",
             staffwidth: staffWidth,
             paddingtop: 10,
             paddingbottom: 10,
             paddingleft: 5,
             paddingright: 5,
+            add_classes: true,
+            wrap: {
+              minSpacing: 1.8,
+              maxSpacing: 2.8,
+              preferredMeasuresPerLine: 4,
+            },
           });
+        } catch (renderErr) {
+          if (cancelled) { isRenderingRef.current = false; return; }
+          console.error("[SheetMusic] Rendering failed:", renderErr);
+          // Show the error to the user instead of silently truncating
+          setError({
+            type: "rendering",
+            message: "Failed to render the full sheet music. Please try regenerating.",
+            detail: String(renderErr),
+          });
+          isRenderingRef.current = false;
+          return;
         }
 
         // Hide the reference number (X:) that abcjs renders at the top

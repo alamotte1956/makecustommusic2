@@ -391,6 +391,8 @@ export function validateAbc(abc: string): string | null {
   const hasLyrics = lines.some((l) => l.trim().startsWith("w:") || l.trim().startsWith("W:"));
   const minMeasures = hasLyrics ? 24 : 16;
   
+  console.log(`[validateAbc] Bar count: ${barLineCount}, repeats: ${repeatSignCount}, effective: ${effectiveMeasures}, min required: ${minMeasures}, hasLyrics: ${hasLyrics}`);
+  
   if (effectiveMeasures < minMeasures) {
     return `Sheet music is too short — found only ${barLineCount} measures (${repeatSignCount} repeats, effective: ${effectiveMeasures}), need at least ${minMeasures} measures for a ${hasLyrics ? 'song with lyrics' : 'piece'}`;
   }

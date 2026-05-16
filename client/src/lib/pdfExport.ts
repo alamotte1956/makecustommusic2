@@ -456,6 +456,11 @@ export async function exportSheetMusicPDFFromAbc(
       paddingleft: 15,
       paddingright: 15,
       add_classes: true,
+      wrap: {
+        minSpacing: 1.8,
+        maxSpacing: 2.8,
+        preferredMeasuresPerLine: 4,
+      },
     });
 
     const svg = offscreen.querySelector("svg");
@@ -501,6 +506,11 @@ export async function generateSheetMusicPDFBytes(
       paddingleft: 15,
       paddingright: 15,
       add_classes: true,
+      wrap: {
+        minSpacing: 1.8,
+        maxSpacing: 2.8,
+        preferredMeasuresPerLine: 4,
+      },
     });
 
     const svg = offscreen.querySelector("svg");
