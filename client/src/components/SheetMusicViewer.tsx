@@ -399,6 +399,26 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     return sanitiseAbcForRender(displayAbc);
   }, [displayAbc]);
 
+  // Count bars from the ABC notation for the bar count indicator
+  const barCount = useMemo(() => {
+    if (!sanitisedDisplayAbc) return 0;
+    // Extract only the music lines (skip headers like X:, T:, M:, K:, L:, w:, W:, etc.)
+    const lines = sanitisedDisplayAbc.split("\n");
+    const musicLines = lines.filter(l => {
+      const trimmed = l.trim();
+      if (!trimmed) return false;
+      // Skip header lines and lyric lines
+      if (/^[A-Za-z]:/.test(trimmed) && !trimmed.startsWith("|")) return false;
+      if (trimmed.startsWith("w:") || trimmed.startsWith("W:")) return false;
+      if (trimmed.startsWith("%")) return false;
+      return true;
+    });
+    const musicText = musicLines.join(" ");
+    // Count bar lines (|) but exclude special markers like |: :| [| |] || |1 |2
+    const barLines = (musicText.match(/\|/g) || []).length;
+    return Math.max(0, barLines);
+  }, [sanitisedDisplayAbc]);
+
   const handleGenerate = useCallback(async () => {
     setError(null);
     try {
@@ -1434,6 +1454,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           {originalKey && (
             <span className="text-xs text-muted-foreground">
               (Original: {originalKey})
+            </span>
+          )}
+          {barCount > 0 && isRendered && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full" title={`${barCount} bars detected in the sheet music`}>
+              <Hash className="w-3 h-3" />
+              {barCount} bars
             </span>
           )}
         </div>

@@ -2559,3 +2559,14 @@
 - [x] Frontend: Added .abcjs-container { overflow:visible; height:auto } for screen rendering
 - [x] Frontend: Added page-break-inside:avoid on .abcjs-staff-group for clean page breaks
 - [x] All 1,939 tests passing, TypeScript clean
+
+## Bar Count Indicator in Sheet Music Viewer
+- [x] Count bars from ABC notation using useMemo in SheetMusicViewer
+- [x] Show bar count as pill badge next to key info ("# 48 bars") with Hash icon
+- [x] Only displayed after rendering completes (barCount > 0 && isRendered)
+- [x] Tooltip shows "X bars detected in the sheet music"
+- [x] Write 12 unit tests for bar counting logic (null, empty, headers, lyrics, repeats, chords, multi-line)
+- [x] All 1,951 tests passing, TypeScript clean
+
+## Fix Background Color
+- [x] Verified: black background is already correct on live site — no change needed
