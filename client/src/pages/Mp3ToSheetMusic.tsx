@@ -560,22 +560,54 @@ export default function Mp3ToSheetMusic() {
     try {
       const base64 = await readFileAsBase64(file);
       setStep("transcribing");
-      const { jobId } = await startJobMutation.mutateAsync({
-        fileData: base64,
-        fileName: file.name,
-        mimeType: file.type || "audio/mpeg",
-      });
+
+      // Helper to attempt the mutation with retry on transient errors (503, network)
+      const attemptStart = async (retries = 2): Promise<{ jobId: number }> => {
+        try {
+          return await startJobMutation.mutateAsync({
+            fileData: base64,
+            fileName: file.name,
+            mimeType: file.type || "audio/mpeg",
+          });
+        } catch (err: any) {
+          const msg = (err?.message || "").toLowerCase();
+          const isTransient = msg.includes("service unavailable") ||
+            msg.includes("503") ||
+            msg.includes("fetch failed") ||
+            msg.includes("network") ||
+            msg.includes("failed to fetch") ||
+            msg.includes("load failed");
+          if (isTransient && retries > 0) {
+            // Wait before retry — gives Cloud Run time to warm up
+            const delay = retries === 2 ? 3000 : 6000;
+            toast.info(`Server is warming up, retrying in ${delay / 1000}s...`);
+            await new Promise(r => setTimeout(r, delay));
+            return attemptStart(retries - 1);
+          }
+          throw err;
+        }
+      };
+
+      const { jobId } = await attemptStart();
       setActiveJobId(jobId);
       // Start polling for job completion
       pollJobStatus(jobId);
     } catch (err: any) {
       setStep("error");
-      const msg = err?.message || "";
-      const errType = mapErrorCodeToType(null, msg);
+      const rawMsg = err?.message || "";
+      // Provide user-friendly messages for common transient errors
+      let msg = rawMsg;
+      const lower = rawMsg.toLowerCase();
+      if (lower.includes("service unavailable") || lower.includes("503")) {
+        msg = "The server is temporarily unavailable. This usually happens after a period of inactivity. Please try again in a few seconds.";
+      } else if (lower.includes("failed to fetch") || lower.includes("load failed") || lower.includes("network")) {
+        msg = "Network error — please check your internet connection and try again.";
+      }
+      const errType = mapErrorCodeToType(null, rawMsg);
       setErrorInfo({
         type: errType,
         message: msg || "Failed to start sheet music generation.",
-        detail: msg || undefined,
+        detail: rawMsg !== msg ? rawMsg : undefined,
       });
     }
   }, [file, readFileAsBase64, startJobMutation, pollJobStatus]);

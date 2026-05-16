@@ -2455,3 +2455,21 @@
 - [x] Fix: Added requestContinuation() — auto-requests LLM to continue if output too short
 - [x] Fix: Up to 2 continuation rounds, each sending partial output + audio for context
 - [x] All tests passing, TypeScript clean
+
+## Sheet Music Audio Playback (Listen to Sheet Music) — ALREADY EXISTS
+- [x] PlaybackControls component already exists with custom Web Audio API synthesis
+- [x] Play/pause/stop controls with progress slider (Slider component)
+- [x] Tempo control with +/- buttons showing BPM
+- [x] Note highlighting via onActiveNoteChange callback
+- [x] Integrated into MP3 to Sheet Music page
+- [x] Integrated into SheetMusicViewer (Song Detail pages)
+- [x] SheetMusicProgressBar shows playback progress above notation
+- [x] Removed redundant SheetMusicPlayer.tsx (duplicate of existing PlaybackControls)
+
+## Bug: "Service Unavailable" Error on MP3 to Sheet Music
+- [x] Investigate "Unexpected token 'S', 'Service Unavailable' is not valid JSON" error
+- [x] Root cause: Cloud Run 503 during cold start — large base64 payload times out
+- [x] Fix: Added auto-retry (2 retries, 3s/6s backoff) for transient 503/network errors
+- [x] Fix: User-friendly toast "Server is warming up, retrying..." during retry
+- [x] Fix: Clear error messages instead of raw "Service Unavailable" text
+- [x] All 1,872 tests passing, TypeScript clean
