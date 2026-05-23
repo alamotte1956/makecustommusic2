@@ -2612,3 +2612,15 @@
 - [x] Cross-browser -webkit- prefixes for animation
 - [x] Write 16 tests for findBarBoundaries, barKey, cleanup logic
 - [x] All 1,996 tests passing, TypeScript clean
+
+## Playback Speed Control Slider
+- [x] Add speed control button with Gauge icon that opens a Popover
+- [x] Popover contains fine-grained slider (0.25x to 4x, step 0.05x) and preset buttons
+- [x] Support speed presets: 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
+- [x] Apply playback rate via existing setTempoMultiplier on abcjs player
+- [x] Show current speed label on button (highlighted when non-default)
+- [x] Show current BPM in popover header
+- [x] "Reset to 1×" button appears when speed is modified
+- [x] Speed persists during session (resets when new ABC is loaded)
+- [x] Write 19 tests for formatSpeed, clampSpeed, slider conversion, presets
+- [x] All 2,015 tests passing, TypeScript clean
