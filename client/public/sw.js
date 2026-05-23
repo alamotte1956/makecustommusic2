@@ -1,5 +1,5 @@
 // ─── Service Worker: PWA with offline support & audio caching ───
-const CACHE_NAME = "mcm-cache-v2";
+const CACHE_NAME = "mcm-cache-v3";
 const AUDIO_CACHE_NAME = "mcm-audio-v1";
 const MAX_AUDIO_CACHE_ITEMS = 50; // Limit cached audio files
 

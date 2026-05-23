@@ -67,5 +67,30 @@ createRoot(document.getElementById("root")!).render(
   </trpc.Provider>
 );
 
+// Force clear stale caches from old service worker versions
+(async () => {
+  const APP_CACHE_VERSION = "v3";
+  const stored = localStorage.getItem("app-cache-version");
+  if (stored !== APP_CACHE_VERSION) {
+    // Version mismatch - clear all caches and force SW update
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg?.waiting) {
+        reg.waiting.postMessage("skipWaiting");
+      }
+      await reg?.update();
+    }
+    localStorage.setItem("app-cache-version", APP_CACHE_VERSION);
+    // Reload to get fresh assets
+    if (stored !== null) {
+      window.location.reload();
+    }
+  }
+})();
+
 // Register service worker for caching static assets (production only)
 registerServiceWorker();
