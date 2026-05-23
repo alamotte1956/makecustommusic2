@@ -205,6 +205,35 @@ export function PrintPreviewModal({
 
   const zoomPresets = [25, 50, 75, 100, 125, 150, 175, 200];
 
+  // Keyboard shortcuts for zoom control
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+
+      // Ctrl/Cmd + "+" or "=" → zoom in
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        setZoom((z) => Math.min(z + 10, 200));
+      }
+      // Ctrl/Cmd + "-" → zoom out
+      else if (e.key === "-") {
+        e.preventDefault();
+        setZoom((z) => Math.max(z - 10, 25));
+      }
+      // Ctrl/Cmd + "0" → reset to 100%
+      else if (e.key === "0") {
+        e.preventDefault();
+        setZoom(100);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
