@@ -1,47 +1,24 @@
-# Suno.com Color Palette Analysis
+# Suno.com Color Palette Analysis (Updated May 2026)
 
-## Background Colors
-- Main background: Very dark, near-black (#0d0d0d or #111111)
-- Sidebar: Same dark background, slightly lighter border
-- Cards/content areas: Same dark background, no separate card bg
-- The overall feel is a TRUE BLACK dark theme, not gray-dark
+## Confirmed Colors from Browser
+- **Body Background**: rgb(16, 16, 18) = #101012 — very dark near-black
+- **Body Text/Foreground**: rgb(247, 244, 239) = #f7f4ef — warm off-white/cream
+- **Buttons (secondary)**: 5% white overlay bg, cream text
+- **Create button**: warm gradient image (pink→orange→yellow), white text
+- **Gradients**: fade from transparent to #101012
 
-## Text Colors
-- Primary text: White (#ffffff or near-white)
-- Secondary text: Light gray (#a0a0a0 or similar muted gray)
-- Section headings: White, bold
-
-## Accent Colors
-- Primary accent: Warm coral/red-orange for the "Create" button (gradient from pink to orange)
-- The landing page has a warm gradient background (dark brown/amber/red tones)
-- Green badges for version tags (v4.5+, v5.5)
-- Like/play counts: Light gray text
-
-## Sidebar
-- Dark black background
-- White text for nav items
-- Active item: slightly brighter or has subtle highlight
-- Icons: white/light gray
-
-## Key Design Characteristics
-- Very dark, almost pure black background
-- Minimal use of borders - content flows naturally
-- Album art provides the color - the UI itself is neutral/dark
-- No visible card backgrounds - content sits directly on the dark bg
-- Warm accent color (coral/orange/pink gradient) for CTAs
-- Clean, minimal, lots of breathing room
-- No gradient backgrounds on the main app (only the landing/hero page has the warm gradient)
-
-## CSS Variables to Match
-- background: #0d0d0d (near black)
-- foreground: #ffffff (white)
-- card: #1a1a1a (very subtle lift from bg)
-- card-foreground: #ffffff
-- muted: #1a1a1a
-- muted-foreground: #a0a0a0 (readable gray)
-- accent: coral/orange gradient
-- primary: #ffffff (white buttons on dark)
-- primary-foreground: #0d0d0d
-- border: #2a2a2a (subtle)
-- input: #1a1a1a
+## CSS Variables to Apply
+- background: #101012 (near black, slightly warm)
+- foreground: #f7f4ef (warm cream)
+- card: #1a1a1c (very subtle lift from bg)
+- card-foreground: #f7f4ef
+- muted: #1a1a1c
+- muted-foreground: #a8a29e (readable warm gray)
+- accent: warm coral/orange gradient
+- primary: #f7f4ef (cream buttons on dark)
+- primary-foreground: #101012
+- border: #2a2a2c (subtle)
+- input: #1a1a1c
 - ring: coral/orange accent
+- popover: #1a1a1c
+- popover-foreground: #f7f4ef
