@@ -110,9 +110,9 @@ export function PrintPreviewModal({
               const miniSvg = document.createElementNS(svgNS, "svg");
               miniSvg.setAttribute("xmlns", svgNS);
               miniSvg.setAttribute("width", "100%");
-              // Add generous padding (12px top, 16px bottom) to prevent lyrics/notation truncation
+              // Add generous padding (12px top, 30px bottom) to prevent lyrics/notation truncation
               const padTop = 12;
-              const padBottom = 16;
+              const padBottom = 30;
               miniSvg.setAttribute("viewBox", `0 ${bbox.y - padTop} ${fullWidth} ${bbox.height + padTop + padBottom}`);
               miniSvg.setAttribute("preserveAspectRatio", "xMinYMin meet");
               miniSvg.style.display = "block";

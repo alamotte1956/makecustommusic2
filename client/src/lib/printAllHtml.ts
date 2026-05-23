@@ -64,9 +64,9 @@ function splitSvgIntoStaffSystems(svgElement: SVGElement): string {
       const bbox = (group as SVGGraphicsElement).getBBox?.();
       if (!bbox || bbox.height === 0) return;
 
-      // Generous padding (12px top, 16px bottom) to prevent lyrics/notation truncation
+      // Generous padding (12px top, 30px bottom) to prevent lyrics/notation truncation
       const padTop = 12;
-      const padBottom = 16;
+      const padBottom = 30;
       const y = Math.max(0, bbox.y - padTop);
       const h = bbox.height + padTop + padBottom;
 

@@ -325,7 +325,7 @@ export default function Mp3ToSheetMusic() {
           responsive: "resize",
           staffwidth: Math.max(600, Math.floor(rect.width - 40)),
           paddingtop: 20,
-          paddingbottom: 20,
+          paddingbottom: 50,
           paddingleft: 15,
           paddingright: 15,
           add_classes: true,

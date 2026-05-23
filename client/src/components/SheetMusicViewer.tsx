@@ -723,7 +723,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             responsive: "resize",
             staffwidth: staffWidth,
             paddingtop: 10,
-            paddingbottom: 10,
+            paddingbottom: 50,
             paddingleft: 5,
             paddingright: 5,
             add_classes: true,
@@ -1027,7 +1027,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       abcjs.renderAbc(printContainer, abcToRender, {
         staffwidth: 520,
         paddingtop: 10,
-        paddingbottom: 10,
+        paddingbottom: 50,
         paddingleft: 5,
         paddingright: 5,
         add_classes: true,
@@ -1060,9 +1060,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           const miniSvg = document.createElementNS(svgNS, "svg");
           miniSvg.setAttribute("xmlns", svgNS);
           miniSvg.setAttribute("width", "100%");
-          // Add generous padding (12px top, 16px bottom) to prevent lyrics/notation truncation
+          // Add generous padding (12px top, 30px bottom) to prevent lyrics/notation truncation
           const padTop = 12;
-          const padBottom = 16;
+          const padBottom = 30;
           miniSvg.setAttribute("viewBox", `0 ${bbox.y - padTop} ${fullWidth} ${bbox.height + padTop + padBottom}`);
           miniSvg.setAttribute("preserveAspectRatio", "xMinYMin meet");
           miniSvg.style.display = "block";
@@ -2385,7 +2385,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           id="sheet-music-render"
           ref={sheetRef}
           className="bg-white rounded-lg border border-border p-4 overflow-auto scroll-smooth"
-          style={{ colorScheme: "light", maxHeight: "600px" }}
+          style={{ colorScheme: "light" }}
         />
         
         {/* Floating Download PDF Button - appears on hover */}

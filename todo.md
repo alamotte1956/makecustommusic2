@@ -2816,3 +2816,6 @@
 - [x] Added overflow: visible to all staff-system SVGs
 - [x] Updated all print outputs to use 0.75in bottom margin (0.5in top/right/left)
 - [x] Applied consistently across SheetMusicViewer, PrintPreviewModal, and printAllHtml
+
+## Bug Fixes
+- [x] Fix last line of music truncation in sheet music display (increased paddingbottom from 10 to 50, removed maxHeight:600px constraint, increased staff system split padBottom from 16 to 30)
