@@ -309,6 +309,81 @@ export async function renderSvgToCanvas(
   return { canvas, dataUrl, width, height };
 }
 
+/**
+ * Detect vertical positions between staff systems in an SVG rendered by abcjs.
+ * Returns sorted array of Y coordinates (in SVG units) where page breaks can safely occur.
+ * These are the midpoints between consecutive staff systems.
+ */
+export function getStaffBreakPoints(svgElement: SVGElement, svgHeight: number): number[] {
+  // abcjs wraps each staff system in a <g> with class "abcjs-staff-extra" or uses
+  // staff lines (paths with class "abcjs-staff") as markers.
+  // The most reliable approach: find all top-level staff group containers.
+  const staffGroups = svgElement.querySelectorAll(".abcjs-staff");
+  
+  if (staffGroups.length < 2) {
+    // Can't determine break points with fewer than 2 staff systems
+    // Fall back to evenly spaced breaks based on estimated staff count
+    const estimatedStaffHeight = svgHeight / Math.max(1, Math.round(svgHeight / 80));
+    const breaks: number[] = [];
+    for (let pos = estimatedStaffHeight; pos < svgHeight; pos += estimatedStaffHeight) {
+      breaks.push(pos);
+    }
+    return breaks;
+  }
+
+  // Collect the bounding box of each staff line element
+  const staffPositions: { top: number; bottom: number }[] = [];
+  staffGroups.forEach((group) => {
+    try {
+      const bbox = (group as SVGGraphicsElement).getBBox();
+      if (bbox && bbox.height > 0) {
+        staffPositions.push({ top: bbox.y, bottom: bbox.y + bbox.height });
+      }
+    } catch {
+      // getBBox can fail on hidden elements
+    }
+  });
+
+  if (staffPositions.length < 2) {
+    return [];
+  }
+
+  // Sort by vertical position
+  staffPositions.sort((a, b) => a.top - b.top);
+
+  // Group nearby staff lines into staff systems (lines within 5px are same system)
+  const systems: { top: number; bottom: number }[] = [];
+  let currentSystem = { ...staffPositions[0] };
+  for (let i = 1; i < staffPositions.length; i++) {
+    if (staffPositions[i].top - currentSystem.bottom < 30) {
+      // Same system - extend it
+      currentSystem.bottom = Math.max(currentSystem.bottom, staffPositions[i].bottom);
+    } else {
+      // New system
+      systems.push(currentSystem);
+      currentSystem = { ...staffPositions[i] };
+    }
+  }
+  systems.push(currentSystem);
+
+  if (systems.length < 2) {
+    return [];
+  }
+
+  // Break points are midway between consecutive systems
+  // But we add extra padding below each system to account for lyrics
+  const breaks: number[] = [];
+  for (let i = 0; i < systems.length - 1; i++) {
+    const gapStart = systems[i].bottom;
+    const gapEnd = systems[i + 1].top;
+    // Place break point at the midpoint of the gap between systems
+    const breakPoint = (gapStart + gapEnd) / 2;
+    breaks.push(breakPoint);
+  }
+
+  return breaks;
+}
+
 // ─── Sheet Music PDF ───
 export interface SheetMusicPDFMetadata {
   subtitle?: string;
@@ -394,29 +469,60 @@ export async function exportSheetMusicPDF(
     // Image fits entirely on current page
     doc.addImage(imgData, "PNG", MARGIN_LEFT, y, fitWidth, fitHeight);
   } else {
-    // Split across pages using tiling
+    // Staff-aware pagination: detect staff system boundaries in the SVG
+    // and ensure page breaks only happen between staff systems
+    const staffBreakPoints = getStaffBreakPoints(svgElement, svgHeight);
     const totalImageHeightMM = fitHeight;
+    const mmPerPx = totalImageHeightMM / svgHeight;
     const tempCanvas = document.createElement("canvas");
     const tempCtx = tempCanvas.getContext("2d")!;
+    const scale = canvas.height / svgHeight;
 
-    let remainingMM = totalImageHeightMM;
-    let sourceYOffset = 0;
+    let sourceYPx = 0; // Current position in SVG coordinates
     let currentY = y;
     let isFirstPage = true;
 
-    while (remainingMM > 0) {
-      const availableHeight = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
-      const sliceHeightMM = Math.min(remainingMM, availableHeight);
-      const sliceHeightPx = (sliceHeightMM / totalImageHeightMM) * canvas.height;
+    while (sourceYPx < svgHeight - 1) {
+      const availableHeightMM = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
+      const availableHeightPx = availableHeightMM / mmPerPx;
+
+      // Find the best break point that fits within the available space
+      let breakPx = sourceYPx + availableHeightPx;
+
+      if (breakPx >= svgHeight) {
+        // Everything remaining fits on this page
+        breakPx = svgHeight;
+      } else {
+        // Find the last staff break point that fits within available space
+        let bestBreak = sourceYPx; // fallback: no content on this page
+        for (const bp of staffBreakPoints) {
+          if (bp <= sourceYPx) continue; // skip break points we've already passed
+          if (bp - sourceYPx <= availableHeightPx) {
+            bestBreak = bp;
+          } else {
+            break; // break points are sorted, no need to check further
+          }
+        }
+        // Use the staff-aware break if we found one, otherwise use the raw break
+        if (bestBreak > sourceYPx) {
+          breakPx = bestBreak;
+        }
+        // Safety: if bestBreak == sourceYPx (no staff break fits), use raw slice to avoid infinite loop
+      }
+
+      const sliceHeightPx = breakPx - sourceYPx;
+      const sliceHeightMM = sliceHeightPx * mmPerPx;
+      const sliceHeightCanvas = sliceHeightPx * scale;
+      const sourceYCanvas = sourceYPx * scale;
 
       // Create a slice of the image
       tempCanvas.width = canvas.width;
-      tempCanvas.height = Math.ceil(sliceHeightPx);
+      tempCanvas.height = Math.ceil(sliceHeightCanvas);
       tempCtx.fillStyle = "#ffffff";
       tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
       tempCtx.drawImage(
         canvas,
-        0, sourceYOffset, canvas.width, sliceHeightPx,
+        0, sourceYCanvas, canvas.width, sliceHeightCanvas,
         0, 0, tempCanvas.width, tempCanvas.height
       );
 
@@ -429,10 +535,9 @@ export async function exportSheetMusicPDF(
       }
       doc.addImage(sliceData, "PNG", MARGIN_LEFT, currentY, fitWidth, sliceHeightMM);
 
-      sourceYOffset += sliceHeightPx;
-      remainingMM -= sliceHeightMM;
+      sourceYPx = breakPx;
 
-      if (remainingMM > 0) {
+      if (sourceYPx < svgHeight - 1) {
         doc.addPage();
         currentY = MARGIN_TOP;
         isFirstPage = false;
@@ -606,27 +711,53 @@ export async function generateSheetMusicPDFBytes(
     if (fitHeight <= remainingOnPage) {
       doc.addImage(imgData, "PNG", MARGIN_LEFT, y, fitWidth, fitHeight);
     } else {
+      // Staff-aware pagination
+      const staffBreakPoints = getStaffBreakPoints(svg as SVGElement, svgHeight);
       const totalImageHeightMM = fitHeight;
+      const mmPerPx = totalImageHeightMM / svgHeight;
       const tempCanvas = document.createElement("canvas");
       const tempCtx = tempCanvas.getContext("2d")!;
+      const canvasScale = canvas.height / svgHeight;
 
-      let remainingMM = totalImageHeightMM;
-      let sourceYOffset = 0;
+      let sourceYPx = 0;
       let currentY = y;
       let isFirstPage = true;
 
-      while (remainingMM > 0) {
-        const availableHeight = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
-        const sliceHeightMM = Math.min(remainingMM, availableHeight);
-        const sliceHeightPx = (sliceHeightMM / totalImageHeightMM) * canvas.height;
+      while (sourceYPx < svgHeight - 1) {
+        const availableHeightMM = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
+        const availableHeightPx = availableHeightMM / mmPerPx;
+
+        let breakPx = sourceYPx + availableHeightPx;
+
+        if (breakPx >= svgHeight) {
+          breakPx = svgHeight;
+        } else {
+          let bestBreak = sourceYPx;
+          for (const bp of staffBreakPoints) {
+            if (bp <= sourceYPx) continue;
+            if (bp - sourceYPx <= availableHeightPx) {
+              bestBreak = bp;
+            } else {
+              break;
+            }
+          }
+          if (bestBreak > sourceYPx) {
+            breakPx = bestBreak;
+          }
+        }
+
+        const sliceHeightPx = breakPx - sourceYPx;
+        const sliceHeightMM = sliceHeightPx * mmPerPx;
+        const sliceHeightCanvas = sliceHeightPx * canvasScale;
+        const sourceYCanvas = sourceYPx * canvasScale;
 
         tempCanvas.width = canvas.width;
-        tempCanvas.height = Math.ceil(sliceHeightPx);
+        tempCanvas.height = Math.ceil(sliceHeightCanvas);
         tempCtx.fillStyle = "#ffffff";
         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
         tempCtx.drawImage(
           canvas,
-          0, sourceYOffset, canvas.width, sliceHeightPx,
+          0, sourceYCanvas, canvas.width, sliceHeightCanvas,
           0, 0, tempCanvas.width, tempCanvas.height
         );
 
@@ -638,10 +769,9 @@ export async function generateSheetMusicPDFBytes(
         }
         doc.addImage(sliceData, "PNG", MARGIN_LEFT, currentY, fitWidth, sliceHeightMM);
 
-        sourceYOffset += sliceHeightPx;
-        remainingMM -= sliceHeightMM;
+        sourceYPx = breakPx;
 
-        if (remainingMM > 0) {
+        if (sourceYPx < svgHeight - 1) {
           doc.addPage();
           currentY = MARGIN_TOP;
           isFirstPage = false;

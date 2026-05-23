@@ -2819,3 +2819,4 @@
 
 ## Bug Fixes
 - [x] Fix last line of music truncation in sheet music display (increased paddingbottom from 10 to 50, removed maxHeight:600px constraint, increased staff system split padBottom from 16 to 30)
+- [x] Fix PDF export page breaks cutting through staff systems (implemented staff-aware pagination using .abcjs-staff element positions to find safe break points between systems)

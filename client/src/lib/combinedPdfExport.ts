@@ -10,7 +10,7 @@
  */
 import jsPDF from "jspdf";
 import type { LeadSheet } from "./leadSheetExtractor";
-import { renderSvgToCanvas, getSvgDimensions } from "./pdfExport";
+import { renderSvgToCanvas, getSvgDimensions, getStaffBreakPoints } from "./pdfExport";
 
 // ─── Page Constants (US Letter: 8.5" x 11") ───
 const PAGE_WIDTH = 215.9; // 8.5 inches in mm
@@ -189,32 +189,56 @@ async function addFullNotationSection(
       doc.addImage(imgData, "PNG", MARGIN_LEFT, y, fitWidth, fitHeight);
       y += fitHeight + 6;
     } else {
-      // Split across pages using tiling
+      // Staff-aware pagination
+      const staffBreakPoints = getStaffBreakPoints(svgElement, svgHeight);
       const totalImageHeightMM = fitHeight;
+      const mmPerPx = totalImageHeightMM / svgHeight;
       const tempCanvas = document.createElement("canvas");
       const tempCtx = tempCanvas.getContext("2d")!;
+      const canvasScale = canvas.height / svgHeight;
 
-      let remainingMM = totalImageHeightMM;
-      let sourceYOffset = 0;
+      let sourceYPx = 0;
       let currentY = y;
       let isFirstPage = true;
 
-      while (remainingMM > 0) {
-        const availableHeight = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
-        const sliceHeightMM = Math.min(remainingMM, availableHeight);
-        const sliceHeightPx =
-          (sliceHeightMM / totalImageHeightMM) * canvas.height;
+      while (sourceYPx < svgHeight - 1) {
+        const availableHeightMM = isFirstPage ? remainingOnPage : USABLE_HEIGHT;
+        const availableHeightPx = availableHeightMM / mmPerPx;
+
+        let breakPx = sourceYPx + availableHeightPx;
+
+        if (breakPx >= svgHeight) {
+          breakPx = svgHeight;
+        } else {
+          let bestBreak = sourceYPx;
+          for (const bp of staffBreakPoints) {
+            if (bp <= sourceYPx) continue;
+            if (bp - sourceYPx <= availableHeightPx) {
+              bestBreak = bp;
+            } else {
+              break;
+            }
+          }
+          if (bestBreak > sourceYPx) {
+            breakPx = bestBreak;
+          }
+        }
+
+        const sliceHeightPx = breakPx - sourceYPx;
+        const sliceHeightMM = sliceHeightPx * mmPerPx;
+        const sliceHeightCanvas = sliceHeightPx * canvasScale;
+        const sourceYCanvas = sourceYPx * canvasScale;
 
         tempCanvas.width = canvas.width;
-        tempCanvas.height = Math.ceil(sliceHeightPx);
+        tempCanvas.height = Math.ceil(sliceHeightCanvas);
         tempCtx.fillStyle = "#ffffff";
         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
         tempCtx.drawImage(
           canvas,
           0,
-          sourceYOffset,
+          sourceYCanvas,
           canvas.width,
-          sliceHeightPx,
+          sliceHeightCanvas,
           0,
           0,
           tempCanvas.width,
@@ -237,10 +261,9 @@ async function addFullNotationSection(
           sliceHeightMM
         );
 
-        sourceYOffset += sliceHeightPx;
-        remainingMM -= sliceHeightMM;
+        sourceYPx = breakPx;
 
-        if (remainingMM > 0) {
+        if (sourceYPx < svgHeight - 1) {
           doc.addPage();
           currentY = MARGIN_TOP;
           isFirstPage = false;
