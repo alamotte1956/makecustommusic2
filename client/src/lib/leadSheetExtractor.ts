@@ -346,6 +346,12 @@ export function generateLeadSheetHtml(
     @page {
       size: 8.5in 11in;
       margin: ${marginStr};
+      @bottom-center {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 10px;
+        color: #999;
+        font-family: 'Georgia', 'Times New Roman', serif;
+      }
     }
     * {
       margin: 0;
@@ -559,6 +565,12 @@ export function generateNashvilleLeadSheetHtml(
     @page {
       size: 8.5in 11in;
       margin: ${marginStr};
+      @bottom-center {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 10px;
+        color: #999;
+        font-family: 'Georgia', 'Times New Roman', serif;
+      }
     }
     * {
       margin: 0;

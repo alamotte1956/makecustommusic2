@@ -2765,3 +2765,9 @@
 - [x] Ensure print margins are sufficient (0.5in all sides minimum)
 - [x] Each staff system gets its own mini-SVG with correct viewBox
 - [x] Applied same splitting logic in both handlePrint and PrintPreviewModal
+
+## Page X of Y Footer on Printed Pages
+- [x] Add CSS @page @bottom-center counter(page)/counter(pages) to all print outputs (handlePrint, lead sheet, Nashville, Print All)
+- [x] Add visual page number footer in the PrintPreviewModal paper simulation
+- [x] Ensure footer appears at bottom of every page, centered, in small 10px Georgia font
+- [x] Added fixed-position fallback footer + JS page count for browsers without @page margin box support

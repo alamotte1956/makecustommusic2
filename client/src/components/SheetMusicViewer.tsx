@@ -1102,6 +1102,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           @page {
             size: 8.5in 11in;
             margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
+            @bottom-center {
+              content: "Page " counter(page) " of " counter(pages);
+              font-size: 10px;
+              color: #999;
+              font-family: 'Georgia', 'Times New Roman', serif;
+            }
           }
           * {
             margin: 0;
@@ -1197,6 +1203,12 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             @page {
               size: 8.5in 11in;
               margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
+              @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10px;
+                color: #999;
+                font-family: 'Georgia', 'Times New Roman', serif;
+              }
             }
             body { 
               margin: 0;
@@ -1206,6 +1218,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             .no-print { display: none !important; }
             .print-btn-bar { display: none !important; }
             .print-body { margin-top: 0 !important; }
+            /* Page number footer — fixed position repeats on every printed page */
+            .page-footer {
+              display: block;
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              text-align: center;
+              font-size: 10px;
+              color: #999;
+              font-family: 'Georgia', 'Times New Roman', serif;
+              padding-bottom: 4px;
+            }
             .print-header {
               page-break-after: avoid;
               break-after: avoid;
@@ -1283,6 +1308,9 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             color: #374151;
           }
           .close-btn:hover { background: #d1d5db; }
+          .page-footer {
+            display: none;
+          }
           .print-body {
             margin-top: 64px;
           }
@@ -1296,6 +1324,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             <button class="print-btn" onclick="window.print()">Print</button>
           </div>
         </div>
+        <div class="page-footer no-screen"></div>
         <div class="print-body">
           <div class="print-header">
             <div class="print-title">${songTitle}</div>
@@ -1309,6 +1338,29 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           ${generateChordDiagramsHtml(chords)}
           ${generateCreditsFooterHtml(meta)}
         </div>
+        <script>
+          // Calculate total pages and inject page footer text
+          (function() {
+            function updatePageCount() {
+              var body = document.querySelector('.print-body');
+              if (!body) return;
+              var totalHeight = body.scrollHeight;
+              // Page height: 11in - top margin - bottom margin at 96dpi
+              var pageH = (11 - ${printMargins.top} - ${printMargins.bottom}) * 96;
+              var totalPages = Math.max(1, Math.ceil(totalHeight / pageH));
+              var footer = document.querySelector('.page-footer');
+              if (footer) {
+                footer.textContent = 'Page 1 of ' + totalPages;
+              }
+            }
+            // Run after content loads
+            if (document.readyState === 'complete') {
+              setTimeout(updatePageCount, 100);
+            } else {
+              window.addEventListener('load', function() { setTimeout(updatePageCount, 100); });
+            }
+          })();
+        </script>
       </body>
       </html>
     `);

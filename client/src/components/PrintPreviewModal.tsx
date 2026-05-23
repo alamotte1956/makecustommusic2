@@ -277,13 +277,31 @@ export function PrintPreviewModal({
                   boxShadow: "0 4px 24px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.1)",
                   borderRadius: "2px",
                   padding: `${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in`,
+                  paddingBottom: `${Math.max(margins.bottom, 0.75)}in`,
                   fontFamily: "'Georgia', 'Times New Roman', serif",
                   color: "#000",
                   colorScheme: "light",
                   position: "relative",
                 }}
-                dangerouslySetInnerHTML={{ __html: renderedHtml }}
-              />
+              >
+                <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+                {/* Page footer indicator */}
+                <div
+                  className="print-preview-page-footer"
+                  style={{
+                    position: "absolute",
+                    bottom: "0.25in",
+                    left: 0,
+                    right: 0,
+                    textAlign: "center",
+                    fontSize: "10px",
+                    color: "#999",
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
+                  }}
+                >
+                  Page 1 of {pageCount}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center py-20">

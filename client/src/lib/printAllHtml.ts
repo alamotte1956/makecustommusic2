@@ -205,6 +205,12 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
     @page {
       size: 8.5in 11in;
       margin: 0.75in;
+      @bottom-center {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 10px;
+        color: #999;
+        font-family: 'Georgia', 'Times New Roman', serif;
+      }
     }
     * {
       margin: 0;
