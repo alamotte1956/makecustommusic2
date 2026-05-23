@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Printer, Download, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Loader2, Printer, Download, X, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from "lucide-react";
 import { generateCreditsFooterHtml, generateSubtitleHtml, CREDITS_CSS, type PrintCreditsData } from "@/lib/printCreditsHtml";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
 
@@ -180,12 +180,29 @@ export function PrintPreviewModal({
   }, [open]);
 
   const handleZoomIn = useCallback(() => {
-    setZoom((z) => Math.min(z + 25, 200));
+    setZoom((z) => Math.min(z + 10, 200));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setZoom((z) => Math.max(z - 25, 50));
+    setZoom((z) => Math.max(z - 10, 25));
   }, []);
+
+  const handleZoomReset = useCallback(() => {
+    setZoom(100);
+  }, []);
+
+  const handleFitToWidth = useCallback(() => {
+    // Calculate zoom to fit 8.5in page width within the preview container
+    const container = previewRef.current?.parentElement?.parentElement;
+    if (container) {
+      const containerWidth = container.clientWidth - 48; // subtract padding
+      const pageWidthPx = 8.5 * 96; // 8.5in at 96dpi
+      const fitZoom = Math.round((containerWidth / pageWidthPx) * 100);
+      setZoom(Math.max(25, Math.min(200, fitZoom)));
+    }
+  }, []);
+
+  const zoomPresets = [25, 50, 75, 100, 125, 150, 175, 200];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -202,27 +219,68 @@ export function PrintPreviewModal({
           </div>
           <div className="flex items-center gap-2">
             {/* Zoom controls */}
-            <div className="flex items-center gap-1 mr-2 border border-border rounded-md px-1">
+            <div className="flex items-center gap-1 mr-2 border border-border rounded-md px-1 py-0.5">
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleZoomOut}
-                disabled={zoom <= 50}
-                title="Zoom out"
+                disabled={zoom <= 25}
+                title="Zoom out (−10%)"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </Button>
-              <span className="text-xs font-medium w-10 text-center tabular-nums">{zoom}%</span>
+              {/* Zoom level dropdown */}
+              <div className="relative group">
+                <button
+                  className="text-xs font-medium w-12 text-center tabular-nums py-1 px-1 rounded hover:bg-accent cursor-pointer"
+                  title="Click to select zoom level"
+                >
+                  {zoom}%
+                </button>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-popover border border-border rounded-md shadow-lg py-1 z-50 hidden group-hover:block min-w-[80px]">
+                  {zoomPresets.map((preset) => (
+                    <button
+                      key={preset}
+                      className={`block w-full text-left px-3 py-1 text-xs hover:bg-accent transition-colors ${
+                        zoom === preset ? "font-bold text-violet-600" : ""
+                      }`}
+                      onClick={() => setZoom(preset)}
+                    >
+                      {preset}%
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleZoomIn}
                 disabled={zoom >= 200}
-                title="Zoom in"
+                title="Zoom in (+10%)"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
+              </Button>
+              <div className="w-px h-4 bg-border mx-0.5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleFitToWidth}
+                title="Fit to width"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleZoomReset}
+                disabled={zoom === 100}
+                title="Reset to 100%"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
               </Button>
             </div>
 
