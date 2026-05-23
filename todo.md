@@ -2728,3 +2728,9 @@
 - [x] Pass user-provided lyrics to the backend along with the audio file
 - [x] Make it optional — user can skip and rely on Whisper transcription
 - [x] If lyrics are provided, skip Whisper transcription and use the provided text directly
+
+## CCLI Song Number Input
+- [x] Add CCLI song number input field to SheetMusicMetadata panel
+- [x] Include CCLI number in all print outputs (footer area, styled prominently)
+- [x] Include CCLI number in PDF export
+- [x] Persist CCLI number per song via localStorage (included in metadata object)

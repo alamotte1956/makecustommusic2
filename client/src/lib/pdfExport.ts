@@ -317,6 +317,7 @@ export interface SheetMusicPDFMetadata {
   publisher?: string;
   producer?: string;
   phonographic?: string;
+  ccli?: string;
   chordSummary?: string;
   keyLabel?: string;
 }
@@ -457,6 +458,7 @@ export async function exportSheetMusicPDF(
     if (metadata.copyright) legalParts.push(metadata.copyright);
     if (metadata.phonographic) legalParts.push(metadata.phonographic);
     if (legalParts.length > 0) creditLines.push(legalParts.join("  \u2022  "));
+    if (metadata.ccli) creditLines.push(`CCLI Song # ${metadata.ccli}`);
 
     if (creditLines.length > 0) {
       doc.setTextColor(120, 120, 120);

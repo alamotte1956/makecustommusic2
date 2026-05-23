@@ -220,6 +220,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     publisher: "",
     producer: "",
     phonographic: "",
+    ccli: "",
   });
   const handleMetadataChange = useCallback((metadata: SheetMusicMetadataValues) => {
     metadataRef.current = metadata;
@@ -952,6 +953,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         publisher: meta.publisher || undefined,
         producer: meta.producer || undefined,
         phonographic: meta.phonographic || undefined,
+        ccli: meta.ccli || undefined,
         chordSummary: chords.length > 0 ? chords.join("  ") : undefined,
         keyLabel: currentKey ? `Key: ${currentKey}` : undefined,
       };

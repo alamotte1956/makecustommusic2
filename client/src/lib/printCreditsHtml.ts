@@ -16,6 +16,7 @@ export interface PrintCreditsData {
   publisher?: string;
   producer?: string;
   phonographic?: string;
+  ccli?: string;
 }
 
 /**
@@ -44,6 +45,10 @@ export function generateCreditsFooterHtml(credits: PrintCreditsData): string {
   }
   if (legalParts.length > 0) {
     lines.push(`<div class="credits-legal">${legalParts.join(" &nbsp;&bull;&nbsp; ")}</div>`);
+  }
+
+  if (credits.ccli) {
+    lines.push(`<div class="credits-ccli">CCLI Song # ${escapeHtml(credits.ccli)}</div>`);
   }
 
   if (lines.length === 0) {
@@ -92,6 +97,13 @@ export const CREDITS_CSS = `
       font-size: 9px;
       color: #888;
       letter-spacing: 0.2px;
+    }
+    .credits-ccli {
+      margin-top: 4px;
+      font-size: 9px;
+      font-weight: 600;
+      color: #555;
+      letter-spacing: 0.3px;
     }
     .print-subtitle {
       font-size: 14px;

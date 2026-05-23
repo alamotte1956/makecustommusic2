@@ -27,6 +27,7 @@ export interface SheetMusicMetadataValues {
   publisher: string;
   producer: string;
   phonographic: string;
+  ccli: string;
 }
 
 const DEFAULT_METADATA: SheetMusicMetadataValues = {
@@ -36,6 +37,7 @@ const DEFAULT_METADATA: SheetMusicMetadataValues = {
   publisher: "",
   producer: "",
   phonographic: "",
+  ccli: "",
 };
 
 interface SheetMusicMetadataProps {
@@ -193,6 +195,22 @@ export function SheetMusicMetadata({ songId, songTitle, onChange }: SheetMusicMe
               placeholder="e.g., Albert LaMotte"
               className="mt-1 text-sm bg-white dark:bg-amber-900/50 border-amber-300 dark:border-amber-600"
             />
+          </div>
+
+          {/* CCLI Song Number */}
+          <div>
+            <Label className="text-xs font-medium text-amber-800 dark:text-amber-200">
+              CCLI Song Number
+            </Label>
+            <Input
+              value={metadata.ccli}
+              onChange={(e) => handleChange("ccli", e.target.value)}
+              placeholder="e.g., 1234567"
+              className="mt-1 text-sm bg-white dark:bg-amber-900/50 border-amber-300 dark:border-amber-600"
+            />
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+              Required for churches with a CCLI license. Find your song number at ccli.com
+            </p>
           </div>
 
           {/* Two-column row: Copyright and Phonographic */}
