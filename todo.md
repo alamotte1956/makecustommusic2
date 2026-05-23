@@ -2771,3 +2771,11 @@
 - [x] Add visual page number footer in the PrintPreviewModal paper simulation
 - [x] Ensure footer appears at bottom of every page, centered, in small 10px Georgia font
 - [x] Added fixed-position fallback footer + JS page count for browsers without @page margin box support
+
+## Lyrics Input Field on Create Page
+- [x] Add a collapsible textarea for users to paste/type their own lyrics in Describe mode
+- [x] Make the field optional — if empty, AI generates lyrics as before
+- [x] Pass user-provided lyrics through the generation API (switches to custom mode behind the scenes)
+- [x] Backend already supports customLyrics in custom mode — no changes needed
+- [x] Add a character count indicator (X/5,000) and Clear button
+- [x] Include helper text explaining section markers and behavior

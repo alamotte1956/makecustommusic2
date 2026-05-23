@@ -463,6 +463,8 @@ export default function Generator() {
   const [customLyrics, setCustomLyrics] = useState("");
   const [customStyle, setCustomStyle] = useState("");
   const userEditedStyleRef = useRef(false);
+  const [showDescribeLyrics, setShowDescribeLyrics] = useState(false);
+  const [describeLyrics, setDescribeLyrics] = useState("");
 
   // AI Lyrics sub-state
   const [lyricsSubject, setLyricsSubject] = useState("");
@@ -512,6 +514,7 @@ export default function Generator() {
   const isCustomMode = creationMode === "write-lyrics" || creationMode === "ai-lyrics";
 
   // Prompt preview query — only fetches when the preview panel is open
+  const hasDescribeLyricsForPreview = creationMode === "describe" && describeLyrics.trim().length > 0;
   const previewInput = useMemo(() => ({
     keywords: isCustomMode
       ? (customTitle || keywords.trim() || "Custom Song")
@@ -520,11 +523,15 @@ export default function Generator() {
     mood: selectedMood || undefined,
     vocalType: vocalType as "none" | "male" | "female" | "mixed" | "male_and_female",
     duration,
-    mode: (isCustomMode ? "custom" : "simple") as "simple" | "custom",
+    mode: (isCustomMode || hasDescribeLyricsForPreview ? "custom" : "simple") as "simple" | "custom",
     customTitle: isCustomMode ? customTitle : undefined,
-    customLyrics: isCustomMode ? customLyrics : undefined,
+    customLyrics: isCustomMode
+      ? customLyrics
+      : hasDescribeLyricsForPreview
+        ? describeLyrics.trim()
+        : undefined,
     customStyle: isCustomMode ? customStyle : undefined,
-  }), [keywords, selectedGenre, selectedMood, vocalType, duration, isCustomMode, customTitle, customLyrics, customStyle]);
+  }), [keywords, selectedGenre, selectedMood, vocalType, duration, isCustomMode, customTitle, customLyrics, customStyle, hasDescribeLyricsForPreview, describeLyrics]);
 
   const previewQuery = trpc.songs.promptPreview.useQuery(previewInput, {
     enabled: showPreview && !isGenerating,
@@ -653,6 +660,10 @@ export default function Generator() {
       setProgressMessage("Submitting your request to the AI...");
       setProgress(15);
 
+      // If user provided lyrics in describe mode, treat as custom mode
+      const hasDescribeLyrics = creationMode === "describe" && describeLyrics.trim().length > 0;
+      const effectiveMode = isCustomMode || hasDescribeLyrics ? "custom" : "simple";
+
       const result = await generateMutation.mutateAsync({
         keywords: isCustomMode
           ? (customTitle || keywords.trim() || "Custom Song")
@@ -662,9 +673,13 @@ export default function Generator() {
         mood: selectedMood || undefined,
         vocalType,
         duration,
-        mode: isCustomMode ? "custom" : "simple",
+        mode: effectiveMode,
         customTitle: isCustomMode ? customTitle : undefined,
-        customLyrics: isCustomMode ? customLyrics : undefined,
+        customLyrics: isCustomMode
+          ? customLyrics
+          : hasDescribeLyrics
+            ? describeLyrics.trim()
+            : undefined,
         customStyle: isCustomMode ? customStyle : undefined,
       });
 
@@ -920,6 +935,52 @@ export default function Generator() {
                     ))}
                   </div>
                 )}
+
+                {/* Optional lyrics section */}
+                <div className="border-t border-border pt-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDescribeLyrics(!showDescribeLyrics)}
+                    className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    disabled={isGenerating}
+                  >
+                    <PenLine className="w-3.5 h-3.5" />
+                    <span>Add your own lyrics</span>
+                    <span className="text-[10px] text-muted-foreground/70">(optional)</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showDescribeLyrics ? "rotate-180" : ""}`} />
+                  </button>
+
+                  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    showDescribeLyrics ? "max-h-[400px] opacity-100 mt-3" : "max-h-0 opacity-0"
+                  }`}>
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] text-muted-foreground">
+                        Paste or type your lyrics below. Use section markers like [Verse], [Chorus], [Bridge]. If provided, the AI will set these lyrics to music instead of generating new ones.
+                      </p>
+                      <Textarea
+                        placeholder={`[Verse 1]\nAmazing grace, how sweet the sound\nThat saved a wretch like me\n\n[Chorus]\nI once was lost, but now I'm found\nWas blind but now I see`}
+                        value={describeLyrics}
+                        onChange={(e) => setDescribeLyrics(e.target.value)}
+                        rows={8}
+                        maxLength={5000}
+                        disabled={isGenerating}
+                        className="resize-none text-sm font-mono leading-relaxed"
+                      />
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] text-muted-foreground">{describeLyrics.length}/5,000 characters</p>
+                        {describeLyrics.trim().length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setDescribeLyrics("")}
+                            className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            Clear lyrics
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 
