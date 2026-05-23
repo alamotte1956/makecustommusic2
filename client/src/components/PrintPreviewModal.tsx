@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Printer, Download, X, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from "lucide-react";
+import { Loader2, Printer, Download, X, ZoomIn, ZoomOut, RotateCcw, Maximize2, Hash } from "lucide-react";
 import { generateCreditsFooterHtml, generateSubtitleHtml, CREDITS_CSS, type PrintCreditsData } from "@/lib/printCreditsHtml";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
 
@@ -57,6 +57,7 @@ export function PrintPreviewModal({
   const [renderedHtml, setRenderedHtml] = useState<string>("");
   const [zoom, setZoom] = useState(100);
   const [pageCount, setPageCount] = useState(1);
+  const [showPageFooter, setShowPageFooter] = useState(true);
 
   // Re-render ABC at print-optimized dimensions when modal opens
   useEffect(() => {
@@ -282,6 +283,16 @@ export function PrintPreviewModal({
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </Button>
+              <div className="w-px h-4 bg-border mx-0.5" />
+              <Button
+                variant={showPageFooter ? "default" : "ghost"}
+                size="icon"
+                className={`h-7 w-7 ${showPageFooter ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200" : ""}`}
+                onClick={() => setShowPageFooter((v) => !v)}
+                title={showPageFooter ? "Hide page numbers" : "Show page numbers"}
+              >
+                <Hash className="w-3.5 h-3.5" />
+              </Button>
             </div>
 
             <Button
@@ -344,21 +355,23 @@ export function PrintPreviewModal({
               >
                 <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
                 {/* Page footer indicator */}
-                <div
-                  className="print-preview-page-footer"
-                  style={{
-                    position: "absolute",
-                    bottom: "0.25in",
-                    left: 0,
-                    right: 0,
-                    textAlign: "center",
-                    fontSize: "10px",
-                    color: "#999",
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                  }}
-                >
-                  Page 1 of {pageCount}
-                </div>
+                {showPageFooter && (
+                  <div
+                    className="print-preview-page-footer"
+                    style={{
+                      position: "absolute",
+                      bottom: "0.25in",
+                      left: 0,
+                      right: 0,
+                      textAlign: "center",
+                      fontSize: "10px",
+                      color: "#999",
+                      fontFamily: "'Georgia', 'Times New Roman', serif",
+                    }}
+                  >
+                    Page 1 of {pageCount}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
