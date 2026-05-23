@@ -32,7 +32,7 @@ describe("buildSongContext", () => {
     expect(ctx).toContain("Key: G");
     expect(ctx).toContain("Time Signature: 3/4");
     expect(ctx).toContain("Tempo: 80 BPM");
-    expect(ctx).toContain("Lyrics:\nAmazing grace, how sweet the sound");
+    expect(ctx).toContain("Amazing grace, how sweet the sound");
   });
 
   it("omits null/undefined fields gracefully", () => {

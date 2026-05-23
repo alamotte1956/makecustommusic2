@@ -973,29 +973,25 @@ export default function Mp3ToSheetMusic() {
               )}
             </div>
 
-            {/* Lyrics Input (optional but recommended) */}
-            <div className="mb-4">
-              <button
-                type="button"
-                onClick={() => setShowLyricsInput(!showLyricsInput)}
-                className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-violet-600 transition-colors mb-1.5"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showLyricsInput ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                Add Lyrics (Recommended)
-              </button>
-              {showLyricsInput && (
-                <div className="mt-2">
-                  <textarea
-                    value={userLyrics}
-                    onChange={(e) => setUserLyrics(e.target.value)}
-                    placeholder={"Paste your song lyrics here...\n\nVerse 1:\nAmazing grace, how sweet the sound\nThat saved a wretch like me\n\nChorus:\nI once was lost, but now am found\nWas blind, but now I see"}
-                    className="w-full min-h-[160px] p-3 rounded-lg border border-border bg-white text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Providing lyrics helps the AI accurately align words to notes. If left empty, the AI will attempt to transcribe lyrics from the audio.
-                  </p>
-                </div>
-              )}
+            {/* Lyrics Input — always visible, prominent */}
+            <div className="mb-4 p-4 rounded-xl border-2 border-dashed border-violet-300 bg-violet-50/50">
+              <div className="flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <label className="text-sm font-semibold text-violet-800">Paste Your Lyrics</label>
+                <span className="text-xs font-medium text-violet-600 bg-violet-100 px-2 py-0.5 rounded-full">Recommended</span>
+              </div>
+              <p className="text-xs text-violet-700 mb-2">
+                For best results, paste your lyrics below. The AI will align each word to the melody. Without lyrics, the AI will attempt to transcribe them from the audio (less accurate).
+              </p>
+              <textarea
+                value={userLyrics}
+                onChange={(e) => setUserLyrics(e.target.value)}
+                placeholder={"Paste your song lyrics here...\n\nVerse 1:\nAmazing grace, how sweet the sound\nThat saved a wretch like me\nI once was lost, but now am found\nWas blind, but now I see\n\nChorus:\nHow sweet the sound..."}
+                className="w-full min-h-[180px] p-3 rounded-lg border border-violet-200 bg-white text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent placeholder:text-violet-300"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Include section labels (Verse, Chorus, Bridge) for better structure. Leave empty to rely on AI transcription.
+              </p>
             </div>
 
             <Button

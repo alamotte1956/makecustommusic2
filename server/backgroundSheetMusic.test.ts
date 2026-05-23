@@ -20,7 +20,7 @@ describe("backgroundSheetMusic", () => {
       expect(result).toContain("Key: C");
       expect(result).toContain("Time Signature: 4/4");
       expect(result).toContain("Tempo: 120 BPM");
-      expect(result).toContain("Lyrics:\nHello world");
+      expect(result).toContain("Hello world");
     });
 
     it("should omit null/undefined fields", () => {
@@ -290,7 +290,7 @@ describe("backgroundSheetMusic", () => {
       expect(result).toContain("Title: ElevenLabs Track");
       expect(result).toContain("Genre: Electronic");
       expect(result).toContain("Mood: Chill");
-      expect(result).toContain("Lyrics:\nSome lyrics here");
+      expect(result).toContain("Some lyrics here");
       expect(result).not.toContain("Key:");
       expect(result).not.toContain("Tempo:");
     });

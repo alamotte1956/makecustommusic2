@@ -72,7 +72,7 @@ describe("generatePrintAllHtml", () => {
     it("includes print-friendly CSS with @page rule", () => {
       const html = generatePrintAllHtml(createDefaultOptions());
       expect(html).toContain("@page");
-      expect(html).toContain("size: letter portrait");
+      expect(html).toContain("size: 8.5in 11in");
     });
   });
 

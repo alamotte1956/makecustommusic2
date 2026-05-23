@@ -2734,3 +2734,17 @@
 - [x] Include CCLI number in all print outputs (footer area, styled prominently)
 - [x] Include CCLI number in PDF export
 - [x] Persist CCLI number per song via localStorage (included in metadata object)
+
+## Fix: Lyrics Not Appearing With Music in Print
+- [x] Investigate why w: lines in ABC notation aren't rendering as lyrics under the staff
+- [x] Ensure the ABC-to-SVG renderer (abcjs) properly includes lyrics in the rendered output
+- [x] Verify lyrics appear in the SVG that gets cloned for print windows
+- [x] Test with a song that has w: lines to confirm lyrics display
+- [x] Re-render ABC at fixed staffwidth (520px) for print-optimized output with lyrics
+
+## Fix: Print Output Not Fitting 8.5x11 Pages
+- [x] Investigate why content overflows or doesn't paginate properly on US Letter paper
+- [x] Ensure SVG staff systems scale to fit within page margins (staffwidth: 520 = 7.5in at 72dpi)
+- [x] Add proper page-break-inside: avoid for staff systems
+- [x] Test print preview in browser to verify proper pagination
+- [x] Use dedicated print rendering with wrap config for proper line breaks

@@ -978,7 +978,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
 
 
-  const handlePrint = useCallback(() => {
+  const handlePrint = useCallback(async () => {
     if (!sheetRef.current) return;
     const svgElement = sheetRef.current.querySelector("svg");
     if (!svgElement) {
@@ -1009,54 +1009,52 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       return;
     }
 
-    // Split the SVG into individual staff systems for clean page breaks
-    const svgClone = svgElement.cloneNode(true) as SVGElement;
-    const staffGroups = svgClone.querySelectorAll(".abcjs-staff-group");
-    let staffSystemsHtml = "";
+    // Re-render the ABC specifically for print at a fixed width optimized for 8.5x11 paper.
+    // 8.5in - margins (0.5in each side) = 7.5in printable width ≈ 540px at 72dpi.
+    // This ensures proper line breaks, lyrics alignment, and page fitting.
+    const printContainer = document.createElement("div");
+    printContainer.style.position = "absolute";
+    printContainer.style.left = "-9999px";
+    printContainer.style.top = "0";
+    printContainer.style.width = "540px";
+    document.body.appendChild(printContainer);
 
-    if (staffGroups.length > 1) {
-      // Extract each staff group as a separate SVG for page-break-inside:avoid
-      const svgNS = "http://www.w3.org/2000/svg";
-      const originalViewBox = svgElement.getAttribute("viewBox");
-      const vbParts = originalViewBox?.split(/\s+/).map(Number) || [0, 0, 800, 600];
-      const fullWidth = vbParts[2] || 800;
-
-      staffGroups.forEach((group) => {
-        const bbox = (group as SVGGraphicsElement).getBBox?.();
-        if (!bbox || bbox.height === 0) return;
-
-        // Add padding around each staff system
-        const pad = 5;
-        const y = Math.max(0, bbox.y - pad);
-        const h = bbox.height + pad * 2;
-
-        const miniSvg = document.createElementNS(svgNS, "svg");
-        miniSvg.setAttribute("viewBox", `0 ${y} ${fullWidth} ${h}`);
-        miniSvg.setAttribute("width", "100%");
-        miniSvg.setAttribute("preserveAspectRatio", "xMinYMin meet");
-        miniSvg.style.display = "block";
-        miniSvg.style.maxWidth = "100%";
-        miniSvg.style.height = "auto";
-
-        // Copy defs (fonts, styles) from original
-        const defs = svgClone.querySelector("defs");
-        if (defs) miniSvg.appendChild(defs.cloneNode(true));
-        // Copy style elements
-        svgClone.querySelectorAll("style").forEach((s) => miniSvg.appendChild(s.cloneNode(true)));
-
-        miniSvg.appendChild(group.cloneNode(true));
-        staffSystemsHtml += `<div class="staff-system">${miniSvg.outerHTML}</div>`;
+    try {
+      const abcjs = (await import("abcjs")).default;
+      const abcToRender = displayAbc || "";
+      abcjs.renderAbc(printContainer, abcToRender, {
+        staffwidth: 520,
+        paddingtop: 10,
+        paddingbottom: 10,
+        paddingleft: 5,
+        paddingright: 5,
+        add_classes: true,
+        wrap: { minSpacing: 1.5, maxSpacing: 2.8, preferredMeasuresPerLine: 4 },
       });
+    } catch (e) {
+      console.error("[Print] Failed to re-render ABC for print:", e);
     }
 
-    // Fallback: if splitting failed or only one staff group, use the full SVG
-    if (!staffSystemsHtml) {
-      svgClone.removeAttribute("viewBox");
+    const printSvg = printContainer.querySelector("svg");
+    let staffSystemsHtml = "";
+    if (printSvg) {
+      printSvg.setAttribute("width", "100%");
+      printSvg.removeAttribute("height");
+      printSvg.style.maxWidth = "100%";
+      printSvg.style.height = "auto";
+      printSvg.style.display = "block";
+      staffSystemsHtml = printSvg.outerHTML;
+    } else {
+      // Fallback: use the on-screen SVG clone
+      const svgClone = svgElement.cloneNode(true) as SVGElement;
       svgClone.setAttribute("width", "100%");
+      svgClone.removeAttribute("height");
       svgClone.style.maxWidth = "100%";
       svgClone.style.height = "auto";
+      svgClone.style.display = "block";
       staffSystemsHtml = svgClone.outerHTML;
     }
+    document.body.removeChild(printContainer);
 
     // Get metadata from the ref
     const meta = metadataRef.current;
@@ -1117,21 +1115,14 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           }
           .print-content {
             width: 100%;
+            overflow: visible;
           }
           .print-content svg {
             width: 100%;
             height: auto;
             display: block;
-          }
-          .staff-system {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-bottom: 2px;
-          }
-          .staff-system svg {
-            width: 100%;
-            height: auto;
-            display: block;
+            max-width: 7.5in;
+            margin: 0 auto;
           }
           .chord-section {
             margin-top: 32px;
@@ -1159,17 +1150,23 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             }
             body { 
               margin: 0;
+              width: 100%;
             }
             .no-print { display: none !important; }
+            .print-btn-bar { display: none !important; }
+            .print-body { margin-top: 0 !important; }
             .print-header {
               page-break-after: avoid;
             }
             .print-content {
-              page-break-inside: auto;
+              width: 100%;
+              overflow: visible;
             }
             .print-content svg {
-              page-break-inside: avoid;
-              max-width: 100%;
+              width: 100% !important;
+              max-width: 7.5in !important;
+              height: auto !important;
+              display: block;
             }
             .chord-section {
               page-break-before: auto;
@@ -1249,7 +1246,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     printWindow.onload = () => {
       printWindow.focus();
     };
-  }, [songTitle, selectedKey, originalKey, chords, printOrientation, printMargins]);
+  }, [songTitle, selectedKey, originalKey, chords, printOrientation, printMargins, displayAbc]);
 
   // Print lead sheet (lyrics with chord symbols)
   const handlePrintLeadSheet = useCallback(() => {
