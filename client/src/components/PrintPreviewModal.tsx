@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Printer, Download, X, ZoomIn, ZoomOut, RotateCcw, Maximize2, Hash } from "lucide-react";
+import { Loader2, Printer, Download, X, ZoomIn, ZoomOut, RotateCcw, Maximize2, Scan, Hash } from "lucide-react";
 import { generateCreditsFooterHtml, generateSubtitleHtml, CREDITS_CSS, type PrintCreditsData } from "@/lib/printCreditsHtml";
 import { generateChordDiagramsHtml } from "@/lib/chordSvgPrint";
 
@@ -203,6 +203,22 @@ export function PrintPreviewModal({
     }
   }, []);
 
+  const handleFitToPage = useCallback(() => {
+    // Calculate zoom to fit the full 11in page height within the preview container
+    const container = previewRef.current?.parentElement?.parentElement;
+    if (container) {
+      const containerHeight = container.clientHeight - 48; // subtract padding
+      const containerWidth = container.clientWidth - 48;
+      const pageHeightPx = 11 * 96; // 11in at 96dpi
+      const pageWidthPx = 8.5 * 96; // 8.5in at 96dpi
+      // Fit both dimensions — use the smaller scale factor
+      const fitByHeight = Math.round((containerHeight / pageHeightPx) * 100);
+      const fitByWidth = Math.round((containerWidth / pageWidthPx) * 100);
+      const fitZoom = Math.min(fitByHeight, fitByWidth);
+      setZoom(Math.max(25, Math.min(200, fitZoom)));
+    }
+  }, []);
+
   const zoomPresets = [25, 50, 75, 100, 125, 150, 175, 200];
 
   // Keyboard shortcuts for zoom control
@@ -293,6 +309,15 @@ export function PrintPreviewModal({
                 <ZoomIn className="w-3.5 h-3.5" />
               </Button>
               <div className="w-px h-4 bg-border mx-0.5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleFitToPage}
+                title="Fit to page (show full page)"
+              >
+                <Scan className="w-3.5 h-3.5" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
