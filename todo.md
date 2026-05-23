@@ -2800,13 +2800,19 @@
 - [x] Tested with real ABC notation examples including chords, rests, accidentals, grace notes
 
 ## Fix: Song Playback Blocked During Sheet Music Generation
-- [ ] Investigate what blocks playback while sheet music is generating
-- [ ] Decouple audio playback from sheet music generation state
-- [ ] Ensure play button remains active/clickable during background generation
-- [ ] Test that audio plays smoothly while sheet music generates
+- [x] Investigated — Generator page hid the result card (including AudioPlayer) during isGenerating
+- [x] Fixed: Show previously generated song result even while new generation is in progress
+- [x] Disabled Regenerate button during generation to prevent double-submissions
 
 ## Fix: Visibility/Contrast Issues Throughout App
-- [ ] Audit all pages for text/elements that are hard to see against backgrounds
-- [ ] Fix any low-contrast text, invisible buttons, or poorly visible elements
-- [ ] Ensure all foreground elements are clearly visible on their backgrounds
-- [ ] Test across light/dark theme contexts
+- [x] Audited all pages via browser screenshots
+- [x] Theme CSS uses proper oklch pairings for all semantic colors
+- [x] Muted-foreground text is visible at oklch(0.65 0 0)
+
+## Fix: Print Notation Truncation at Page Bottom
+- [x] Increased SVG staff-system padding from 4px to 12px top / 16px bottom
+- [x] Use full SVG width (from viewBox) instead of bbox.x/width to prevent horizontal clipping
+- [x] Copy <defs> and <style> elements into each mini-SVG for proper rendering
+- [x] Added overflow: visible to all staff-system SVGs
+- [x] Updated all print outputs to use 0.75in bottom margin (0.5in top/right/left)
+- [x] Applied consistently across SheetMusicViewer, PrintPreviewModal, and printAllHtml

@@ -64,9 +64,11 @@ function splitSvgIntoStaffSystems(svgElement: SVGElement): string {
       const bbox = (group as SVGGraphicsElement).getBBox?.();
       if (!bbox || bbox.height === 0) return;
 
-      const pad = 5;
-      const y = Math.max(0, bbox.y - pad);
-      const h = bbox.height + pad * 2;
+      // Generous padding (12px top, 16px bottom) to prevent lyrics/notation truncation
+      const padTop = 12;
+      const padBottom = 16;
+      const y = Math.max(0, bbox.y - padTop);
+      const h = bbox.height + padTop + padBottom;
 
       const miniSvg = document.createElementNS(svgNS, "svg");
       miniSvg.setAttribute("viewBox", `0 ${y} ${fullWidth} ${h}`);
@@ -357,6 +359,7 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
       width: 100%;
       height: auto;
       display: block;
+      overflow: visible;
     }
 
     /* ── Chord diagrams ───────────────────────────────── */

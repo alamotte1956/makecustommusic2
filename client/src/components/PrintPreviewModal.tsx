@@ -100,18 +100,29 @@ export function PrintPreviewModal({
           if (staffGroups.length > 1) {
             const svgNS = "http://www.w3.org/2000/svg";
             const parts: string[] = [];
+            // Get the full SVG width from the viewBox for consistent horizontal sizing
+            const originalViewBox = svg.getAttribute("viewBox");
+            const vbParts = originalViewBox?.split(/\s+/).map(Number) || [0, 0, 520, 600];
+            const fullWidth = vbParts[2] || 520;
+
             staffGroups.forEach((group) => {
               const bbox = (group as SVGGraphicsElement).getBBox();
               const miniSvg = document.createElementNS(svgNS, "svg");
               miniSvg.setAttribute("xmlns", svgNS);
               miniSvg.setAttribute("width", "100%");
-              const padY = 4;
-              miniSvg.setAttribute("viewBox", `${bbox.x} ${bbox.y - padY} ${bbox.width} ${bbox.height + padY * 2}`);
+              // Add generous padding (12px top, 16px bottom) to prevent lyrics/notation truncation
+              const padTop = 12;
+              const padBottom = 16;
+              miniSvg.setAttribute("viewBox", `0 ${bbox.y - padTop} ${fullWidth} ${bbox.height + padTop + padBottom}`);
               miniSvg.setAttribute("preserveAspectRatio", "xMinYMin meet");
               miniSvg.style.display = "block";
               miniSvg.style.maxWidth = "100%";
               miniSvg.style.height = "auto";
               miniSvg.style.overflow = "visible";
+              // Copy <defs> and <style> elements for proper rendering
+              const defs = svg.querySelector("defs");
+              if (defs) miniSvg.appendChild(defs.cloneNode(true));
+              svg.querySelectorAll("style").forEach((s) => miniSvg.appendChild(s.cloneNode(true)));
               miniSvg.appendChild(group.cloneNode(true));
               parts.push(`<div class="staff-system-wrapper">${miniSvg.outerHTML}</div>`);
             });
