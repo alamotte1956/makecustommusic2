@@ -128,7 +128,9 @@ K: <key from analysis>
 - NO dynamics (!p!, !mf!, !f!), NO decorations (!fermata!, !accent!)
 - NO V: voice directives, NO %%staves
 - K: must be the LAST header line before music begins
-- NO blank line between K: and the first music line
+- NEVER insert blank lines ANYWHERE in the output — not between K: and music, not between sections, NOWHERE
+- Blank lines in ABC are TUNE SEPARATORS that break rendering — use % comments for section labels instead
+- Section comments (% Verse 1, % Chorus) go on their own line WITHOUT any blank lines before or after them
 
 ═══ ABSOLUTE LENGTH REQUIREMENT ═══
 - Generate the COMPLETE song — ALL sections from the analysis
@@ -509,6 +511,7 @@ CONTINUE the ABC notation from EXACTLY where you left off. Do NOT repeat the hea
 IMPORTANT:
 - Start your output with the next music line (no headers)
 - Include section comments (% Verse 2, % Chorus, % Bridge, etc.)
+- NEVER insert blank lines — they break rendering by acting as tune separators
 - Continue until the song is COMPLETE
 - Output ONLY ABC notation — no explanations`;
 

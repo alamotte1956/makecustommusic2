@@ -98,6 +98,8 @@ const SHEET_MUSIC_SYSTEM_PROMPT = [
   "- Use proper bar lines | at every measure boundary",
   "- Use repeat signs |: and :| for repeated sections",
   "- Use section comments: % Intro, % Verse 1, % Chorus, % Bridge, % Outro",
+  "- NEVER insert blank lines ANYWHERE in the output — blank lines are TUNE SEPARATORS in ABC that break rendering",
+  "- Section comments go on their own line WITHOUT any blank lines before or after them",
   "- Do NOT use [P:] section markers",
   "- Do NOT include ANY dynamics: no !p!, !mp!, !mf!, !f!, !ff!, !pp!, !ppp!, !fff!",
   "- Do NOT include ANY decorations: no !accent!, !fermata!, !tenuto!, !staccato!, !trill!, etc.",
@@ -306,14 +308,16 @@ export function sanitiseAbc(raw: string): string {
     headerLines.push("K:C"); // Default key if missing
   }
 
-  // CRITICAL: Strip leading blank lines from musicLines to prevent
-  // abcjs from treating music as a separate tune (blank line = tune separator)
-  while (musicLines.length > 0 && musicLines[0].trim() === "") {
-    musicLines.shift();
-  }
+  // CRITICAL FIX: Strip ALL blank lines from musicLines.
+  // In ABC notation, a blank line is a TUNE SEPARATOR. The LLM often inserts
+  // blank lines between sections (e.g., between "% Intro" and "% Verse 1") for
+  // readability, but abcjs interprets these as new tune boundaries and only
+  // renders the first fragment (typically 4-8 bars). This was the ROOT CAUSE
+  // of the "only 4 bars" truncation bug.
+  const cleanMusicLines = musicLines.filter((l) => l.trim() !== "");
 
-  // Reconstruct ABC with headers followed by music (NO blank line between them)
-  abc = [...headerLines, ...musicLines].join("\n").trim();
+  // Reconstruct ABC with headers followed by music (NO blank lines anywhere)
+  abc = [...headerLines, ...cleanMusicLines].join("\n").trim();
 
   return abc;
 }

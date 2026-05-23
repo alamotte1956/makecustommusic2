@@ -38,15 +38,10 @@ function sanitisePartAbc(abc: string): string {
       if (/^![pmf]{1,3}!$/.test(t)) return false;
       return true;
     });
-  // Remove blank lines between K: header and first music line
-  const kIdx = lines.findIndex((l) => l.trim().startsWith("K:"));
-  if (kIdx >= 0) {
-    let i = kIdx + 1;
-    while (i < lines.length && lines[i].trim() === "") {
-      lines.splice(i, 1);
-    }
-  }
-  return lines.join("\n").trim();
+  // CRITICAL FIX: Remove ALL blank lines. In ABC, blank lines are tune separators
+  // that cause abcjs to only render the first fragment.
+  const filtered = lines.filter((l) => l.trim() !== "");
+  return filtered.join("\n").trim();
 }
 
 function PartRenderer({ abc, partName, songTitle }: { abc: string; partName: string; songTitle: string }) {

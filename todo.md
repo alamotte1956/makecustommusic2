@@ -2624,3 +2624,16 @@
 - [x] Speed persists during session (resets when new ABC is loaded)
 - [x] Write 19 tests for formatSpeed, clampSpeed, slider conversion, presets
 - [x] All 2,015 tests passing, TypeScript clean
+
+## CRITICAL FIX: Blank Lines as Tune Separators (Root Cause of Truncation)
+- [x] ROOT CAUSE IDENTIFIED: LLM inserts blank lines between sections (% Intro → blank → % Verse 1) which ABC treats as tune separators — abcjs only renders the first fragment
+- [x] Frontend fix: SheetMusicViewer sanitiseAbcForRender now removes ALL blank lines from music body
+- [x] Frontend fix: Mp3ToSheetMusic.tsx sanitisedDisplayAbc removes ALL blank lines
+- [x] Frontend fix: InstrumentPartsSection sanitisePartAbc removes ALL blank lines
+- [x] Backend fix: backgroundSheetMusic.ts sanitiseAbc strips ALL blank lines from stored ABC
+- [x] Backend fix: simpleSheetMusicGenerator.ts removed blank line after K: header
+- [x] Prompt fix: audioSheetMusicGenerator.ts — added "NEVER insert blank lines ANYWHERE" to main prompt and continuation prompt
+- [x] Prompt fix: backgroundSheetMusic.ts SHEET_MUSIC_SYSTEM_PROMPT — added blank-line prohibition
+- [x] Prompt fix: improvedSheetMusicGenerator.ts — added blank-line prohibition
+- [x] Mp3ToSheetMusic.tsx — added wrap config to abcjs.renderAbc (was missing)
+- [x] All 2,015 tests passing, TypeScript clean

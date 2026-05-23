@@ -202,17 +202,13 @@ export default function Mp3ToSheetMusic() {
         if (/^\[P:.*\]$/.test(t)) return `% ${t}`;
         return l;
       });
-    // CRITICAL: Remove blank lines between K: header and first music line.
-    // In ABC notation, a blank line separates tunes — if one appears after K:,
-    // abcjs treats the music as a separate (headerless) tune and renders 0 paths.
-    const kIdx = lines.findIndex((l) => l.trim().startsWith("K:"));
-    if (kIdx >= 0) {
-      let i = kIdx + 1;
-      while (i < lines.length && lines[i].trim() === "") {
-        lines.splice(i, 1);
-      }
-    }
-    return lines.join("\n").trim();
+    // CRITICAL FIX: Remove ALL blank lines from the entire ABC notation.
+    // In ABC, blank lines are TUNE SEPARATORS. The LLM often inserts them between
+    // sections (e.g., between "% Intro" and "% Verse 1") for readability, but
+    // abcjs interprets these as new tune boundaries and only renders the first
+    // fragment (typically 4-8 bars). This was the ROOT CAUSE of the truncation bug.
+    const filtered = lines.filter((l) => l.trim() !== "");
+    return filtered.join("\n").trim();
   }, [displayAbc]);
 
   // Extract chords from the currently displayed (transposed) ABC notation
@@ -331,6 +327,11 @@ export default function Mp3ToSheetMusic() {
           paddingleft: 15,
           paddingright: 15,
           add_classes: true,
+          wrap: {
+            minSpacing: 1.8,
+            maxSpacing: 2.8,
+            preferredMeasuresPerLine: 4,
+          },
         });
         if (visualObj && visualObj[0] && visualObj[0].warnings && visualObj[0].warnings.length > 0) {
           console.warn("[SheetMusic] abcjs warnings:", visualObj[0].warnings);

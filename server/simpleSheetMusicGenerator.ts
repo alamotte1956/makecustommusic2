@@ -21,7 +21,6 @@ export function generateSimpleSheetMusic(
   lines.push("L: 1/8");
   lines.push(`Q: 1/4=${tempo}`);
   lines.push(`K: ${key}`);
-  lines.push("");
 
   // Define note sequences for different keys
   const keySequences: Record<string, string[]> = {

@@ -111,8 +111,11 @@ function classifyError(error: any): ErrorState {
 /**
  * Minimal frontend safety pass for ABC notation.
  * The primary sanitisation happens on the backend (backgroundSheetMusic.sanitiseAbc).
- * This only strips V: directives and %%staves as a safety net in case old data
- * was stored before the backend sanitiser was improved.
+ * This strips V: directives, %%staves, and — critically — ALL blank lines in the
+ * music body. In ABC notation, a blank line is a TUNE SEPARATOR that tells abcjs
+ * to start a new tune. If the LLM inserts blank lines between sections (e.g.,
+ * between Intro and Verse 1), abcjs only renders the first "tune" (typically 4 bars)
+ * and silently discards the rest. This was the ROOT CAUSE of the truncation bug.
  */
 function sanitiseAbcForRender(raw: string): string {
   const lines = raw
@@ -122,17 +125,16 @@ function sanitiseAbcForRender(raw: string): string {
       if (t.startsWith("V:") || t.startsWith("%%staves")) return false;
       return true;
     });
-  // CRITICAL: Remove blank lines between K: header and first music line.
-  // In ABC notation, a blank line separates tunes — if one appears after K:,
-  // abcjs treats the music as a separate (headerless) tune and renders 0 paths.
-  const kIdx = lines.findIndex((l) => l.trim().startsWith("K:"));
-  if (kIdx >= 0) {
-    let i = kIdx + 1;
-    while (i < lines.length && lines[i].trim() === "") {
-      lines.splice(i, 1);
-    }
-  }
-  return lines.join("\n").trim();
+
+  // CRITICAL FIX: Remove ALL blank lines from the entire ABC notation.
+  // In ABC, blank lines are tune separators. The LLM often inserts them between
+  // sections (e.g., between "% Intro" and "% Verse 1") for readability, but this
+  // causes abcjs to only render the first section (4-8 bars) and discard the rest.
+  // Comments (% Section Name) provide sufficient visual separation without breaking
+  // the tune into multiple fragments.
+  const filtered = lines.filter((l) => l.trim() !== "");
+
+  return filtered.join("\n").trim();
 }
 
 export default function SheetMusicViewer({ songId, abcNotation: initialAbc, songTitle, songKeySignature, sheetMusicStatus, sheetMusicError, sheetMusicFeedback: initialFeedback }: SheetMusicViewerProps) {

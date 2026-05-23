@@ -77,7 +77,8 @@ Generate at least 32 measures with clear sections:
 - NO dynamics (!p!, !mf!, !f!), NO decorations (!fermata!, !accent!)
 - NO V: voice directives, NO %%staves
 - K: must be the LAST header line before music begins
-- NO blank line between K: and the first music line
+- NEVER insert blank lines ANYWHERE in the output — blank lines are TUNE SEPARATORS in ABC that break rendering
+- Section comments (% Verse 1, % Chorus) go on their own line WITHOUT blank lines before or after
 
 ═══ EXAMPLE OF GOOD MELODY (key of G, worship style) ═══
 % Verse
