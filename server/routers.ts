@@ -1081,11 +1081,18 @@ ${genreGuide}${moodGuide}${vocalGuidance}`;
 
     // Generate professional sheet music (ABC notation) from song data
     generateSheetMusic: protectedProcedure
-      .input(z.object({ songId: z.number(), key: z.string().optional(), force: z.boolean().optional() }))
+      .input(z.object({ songId: z.number(), key: z.string().optional(), force: z.boolean().optional(), lyrics: z.string().max(10000).optional() }))
       .mutation(async ({ ctx, input }) => {
         const song = await getSongById(input.songId);
         if (!song || song.userId !== ctx.user.id) {
           throw new Error("Song not found");
+        }
+
+        // If lyrics were provided, save them to the song first so the generator can use them
+        if (input.lyrics !== undefined && input.lyrics.trim()) {
+          await updateSong(input.songId, ctx.user.id, { lyrics: input.lyrics.trim() });
+          // Refresh song object with updated lyrics
+          Object.assign(song, { lyrics: input.lyrics.trim() });
         }
 
         // If already generated and no specific key requested and not forced, return cached

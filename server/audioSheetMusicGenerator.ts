@@ -117,10 +117,13 @@ K: <key from analysis>
 - Align w: bar pipes | with music bar lines
 - Match syllables to notes 1:1 (one syllable per note, unless melisma)
 
-═══ STRUCTURE ═══
+═══ STRUCTURE & REPEATS ═══
 - Use section comments: % Intro, % Verse 1, % Chorus, % Bridge, % Outro
 - Include ALL sections from the analysis
-- Use repeat signs |: and :| for repeated sections with same melody
+- CRITICAL REPEAT RULE: When the CHORUS (or any section) has IDENTICAL melody AND lyrics each time it appears, write it ONCE using repeat signs |: ... :| — do NOT write it out multiple times
+- Only write a section out separately if it has DIFFERENT lyrics or melody from its previous occurrence
+- Example: Verse 1 (unique lyrics) → Chorus (write with |: :|) → Verse 2 (different lyrics, write out) → Chorus (do NOT repeat the chorus bars — the repeat signs handle it)
+- For a typical song structure: write Verse 1, then |: Chorus :|, then Verse 2, then just add a % Chorus comment (the repeat signs mean "play chorus again")
 - Generate the FULL song — do not truncate or abbreviate
 
 ═══ NOTATION RULES ═══
@@ -133,12 +136,14 @@ K: <key from analysis>
 - Section comments (% Verse 1, % Chorus) go on their own line WITHOUT any blank lines before or after them
 
 ═══ ABSOLUTE LENGTH REQUIREMENT ═══
-- Generate the COMPLETE song — ALL sections from the analysis
-- Minimum 32 measures for a song with lyrics (typically 40-60 measures)
+- Generate the COMPLETE song — ALL unique sections from the analysis
+- Minimum 24 measures of UNIQUE content (not counting repeated choruses)
 - Do NOT stop after one verse and chorus
 - Every section in the structure analysis MUST appear in the ABC output
 - Different verses with different lyrics MUST be written out separately
-- FAILURE MODE TO AVOID: Generating only 4-8 bars and stopping. This is WRONG.
+- Identical choruses MUST use repeat markers — do NOT write the same chorus bars 3-4 times
+- FAILURE MODE 1: Generating only 4-8 bars and stopping. This is WRONG.
+- FAILURE MODE 2: Writing the chorus out identically 3+ times. Use |: :| instead.
 
 ═══ OUTPUT ═══
 Output ONLY valid ABC notation. No markdown fences, no explanations, no JSON.`;

@@ -22,6 +22,8 @@ import { generatePrintAllHtml } from "@/lib/printAllHtml";
 import { extractLeadSheet, generateLeadSheetHtml, generateNashvilleLeadSheetHtml } from "@/lib/leadSheetExtractor";
 import { convertChordLineToNashville } from "@/lib/nashvilleNumbers";
 import { CapoChart } from "@/components/CapoChart";
+import { SheetMusicMetadata, type SheetMusicMetadataValues } from "@/components/SheetMusicMetadata";
+import { generateCreditsFooterHtml, generateSubtitleHtml, CREDITS_CSS } from "@/lib/printCreditsHtml";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import { SheetMusicEditor } from "@/components/SheetMusicEditor";
@@ -209,6 +211,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const isRenderingRef = useRef(false);
   // Track the last rendered ABC to avoid unnecessary re-renders
   const lastRenderedAbcRef = useRef<string | null>(null);
+  // Sheet music metadata (subtitle, copyright, rights)
+  const metadataRef = useRef<SheetMusicMetadataValues>({
+    subtitle: "",
+    copyright: "",
+    writer: "",
+    publisher: "",
+    producer: "",
+    phonographic: "",
+  });
+  const handleMetadataChange = useCallback((metadata: SheetMusicMetadataValues) => {
+    metadataRef.current = metadata;
+  }, []);
+  // Lyrics input for pre-generation context
+  const [lyricsInput, setLyricsInput] = useState("");
+  const [showLyricsInput, setShowLyricsInput] = useState(false);
   const generateMutation = trpc.songs.generateSheetMusic.useMutation();
   const utils = trpc.useUtils();
 
@@ -576,7 +593,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const startTime = Date.now();
       const keyParam = generateInKey === "auto" ? undefined : generateInKey;
       // Pass force: true to bypass cache and regenerate with improved generator
-      const result = await generateMutation.mutateAsync({ songId, key: keyParam, force: true });
+      const result = await generateMutation.mutateAsync({ songId, key: keyParam, force: true, lyrics: lyricsInput.trim() || undefined });
       const regenerationTime = ((Date.now() - startTime) / 1000).toFixed(1);
       setAbc(result.abcNotation || null);
       setSelectedKey("original");
@@ -593,7 +610,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       const errorState = classifyError(err);
       setError(errorState);
     }
-  }, [songId, generateInKey, generateMutation, utils]);
+  }, [songId, generateInKey, generateMutation, utils, lyricsInput]);
 
   // ─── Core rendering effect ───
   // Renders the ABC notation using abcjs when:
@@ -957,6 +974,18 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       ? (originalKey ? `Key: ${originalKey}` : "")
       : `Key: ${selectedKey}`;
 
+    // Calculate capo info and chord summary for the header
+    const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+    let capoLabel = "";
+    if (currentKey && chords.length > 0) {
+      const bestCapos = getBestCapoPositions(currentKey, chords, 1);
+      if (bestCapos.length > 0 && bestCapos[0].fret > 0) {
+        const ordinal = bestCapos[0].fret === 1 ? "1st" : bestCapos[0].fret === 2 ? "2nd" : bestCapos[0].fret === 3 ? "3rd" : `${bestCapos[0].fret}th`;
+        capoLabel = `Capo ${ordinal} Fret (play in ${bestCapos[0].playKey})`;
+      }
+    }
+    const chordSummary = chords.length > 0 ? chords.join("  ") : "";
+
     // Create a new window with print-friendly layout
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -1013,7 +1042,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       staffSystemsHtml = svgClone.outerHTML;
     }
 
-    const currentYear = new Date().getFullYear();
+    // Get metadata from the ref
+    const meta = metadataRef.current;
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -1022,7 +1052,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <title>${songTitle} - Sheet Music</title>
         <style>
           @page {
-            size: letter ${printOrientation};
+            size: 8.5in 11in;
             margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
           }
           * {
@@ -1034,6 +1064,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             font-family: 'Georgia', 'Times New Roman', serif;
             color: #000;
             background: #fff;
+            max-width: 8.5in;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
@@ -1046,13 +1077,27 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           .print-title {
             font-size: 28px;
             font-weight: bold;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             letter-spacing: 0.5px;
+          }
+          .print-subtitle {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 4px;
           }
           .print-meta {
             font-size: 14px;
             color: #555;
             margin-top: 4px;
+          }
+          .print-chord-summary {
+            font-family: 'Courier New', 'Consolas', monospace;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1a56db;
+            margin-top: 8px;
+            letter-spacing: 0.3px;
           }
           .print-content {
             width: 100%;
@@ -1072,14 +1117,6 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             height: auto;
             display: block;
           }
-          .print-footer {
-            margin-top: 32px;
-            padding-top: 12px;
-            border-top: 1px solid #ccc;
-            text-align: center;
-            font-size: 11px;
-            color: #888;
-          }
           .chord-section {
             margin-top: 32px;
             padding-top: 20px;
@@ -1098,14 +1135,14 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             gap: 16px;
             justify-content: flex-start;
           }
+          ${CREDITS_CSS}
           @media print {
             @page {
-              size: ${printOrientation};
+              size: 8.5in 11in;
               margin: ${printMargins.top}in ${printMargins.right}in ${printMargins.bottom}in ${printMargins.left}in;
             }
             body { 
               margin: 0;
-              size: ${printOrientation};
             }
             .no-print { display: none !important; }
             .print-header {
@@ -1125,7 +1162,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             .chord-grid {
               page-break-inside: avoid;
             }
-            .print-footer {
+            .credits-block {
               page-break-before: avoid;
               page-break-inside: avoid;
             }
@@ -1177,15 +1214,15 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         <div class="print-body">
           <div class="print-header">
             <div class="print-title">${songTitle}</div>
-            ${keyLabel ? `<div class="print-meta">${keyLabel}</div>` : ""}
+            ${generateSubtitleHtml(meta.subtitle)}
+            ${keyLabel || capoLabel ? `<div class="print-meta">${[keyLabel, capoLabel].filter(Boolean).join(" \u00B7 ")}</div>` : ""}
+            ${chordSummary ? `<div class="print-chord-summary">Chords: ${chordSummary}</div>` : ""}
           </div>
           <div class="print-content">
             ${staffSystemsHtml}
           </div>
           ${generateChordDiagramsHtml(chords)}
-          <div class="print-footer">
-            &copy; ${currentYear} Albert LaMotte &middot; Generated by Create Christian Music
-          </div>
+          ${generateCreditsFooterHtml(meta)}
         </div>
       </body>
       </html>
@@ -1196,7 +1233,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     printWindow.onload = () => {
       printWindow.focus();
     };
-  }, [songTitle, selectedKey, originalKey, chords]);
+  }, [songTitle, selectedKey, originalKey, chords, printOrientation, printMargins]);
 
   // Print lead sheet (lyrics with chord symbols)
   const handlePrintLeadSheet = useCallback(() => {
@@ -1208,6 +1245,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     const keyLabel = selectedKey === "original"
       ? (originalKey ? `Key: ${originalKey}` : "")
       : `Key: ${selectedKey}`;
+
+    // Calculate capo info
+    const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+    let capoLabel = "";
+    if (currentKey && chords.length > 0) {
+      const bestCapos = getBestCapoPositions(currentKey, chords, 1);
+      if (bestCapos.length > 0 && bestCapos[0].fret > 0) {
+        const ordinal = bestCapos[0].fret === 1 ? "1st" : bestCapos[0].fret === 2 ? "2nd" : bestCapos[0].fret === 3 ? "3rd" : `${bestCapos[0].fret}th`;
+        capoLabel = `Capo ${ordinal} Fret (play in ${bestCapos[0].playKey})`;
+      }
+    }
+    const combinedKeyLabel = [keyLabel, capoLabel].filter(Boolean).join(" \u00B7 ");
+    const chordSummary = chords.length > 0 ? chords.join("  ") : "";
 
     const leadSheet = extractLeadSheet(displayAbc);
 
@@ -1222,14 +1272,15 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       return;
     }
 
-    const html = generateLeadSheetHtml(leadSheet, songTitle, keyLabel, printMargins);
+    const meta = metadataRef.current;
+    const html = generateLeadSheetHtml(leadSheet, songTitle, combinedKeyLabel, printMargins, chordSummary, meta.subtitle, meta);
     printWindow.document.write(html);
     printWindow.document.close();
 
     printWindow.onload = () => {
       printWindow.focus();
     };
-  }, [displayAbc, songTitle, selectedKey, originalKey]);
+  }, [displayAbc, songTitle, selectedKey, originalKey, chords]);
 
   // Download All — combined PDF with all sheet music variations
   const handleDownloadAll = useCallback(async () => {
@@ -1312,20 +1363,37 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       ? (originalKey ? `Key: ${originalKey}` : "")
       : `Key: ${selectedKey}`;
 
+    // Calculate capo info
+    const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+    let capoLabel = "";
+    if (currentKey && chords.length > 0) {
+      const bestCapos = getBestCapoPositions(currentKey, chords, 1);
+      if (bestCapos.length > 0 && bestCapos[0].fret > 0) {
+        const ordinal = bestCapos[0].fret === 1 ? "1st" : bestCapos[0].fret === 2 ? "2nd" : bestCapos[0].fret === 3 ? "3rd" : `${bestCapos[0].fret}th`;
+        capoLabel = `Capo ${ordinal} Fret (play in ${bestCapos[0].playKey})`;
+      }
+    }
+    const combinedKeyLabel = [keyLabel, capoLabel].filter(Boolean).join(" \u00B7 ");
+    const chordSummary = chords.length > 0 ? chords.join("  ") : "";
+
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Pop-up blocked. Please allow pop-ups for this site.");
       return;
     }
 
+    const meta = metadataRef.current;
     const html = generatePrintAllHtml({
       svgElement,
       leadSheet,
       songTitle,
-      keyLabel,
+      keyLabel: combinedKeyLabel,
       chords,
+      chordSummary,
       convertChordLine: convertChordLineToNashville,
       generateChordDiagramsHtml,
+      subtitle: meta.subtitle,
+      credits: meta,
     });
     printWindow.document.write(html);
     printWindow.document.close();
@@ -1346,6 +1414,19 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       ? (originalKey ? `Key: ${originalKey}` : "")
       : `Key: ${selectedKey}`;
 
+    // Calculate capo info
+    const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+    let capoLabel = "";
+    if (currentKey && chords.length > 0) {
+      const bestCapos = getBestCapoPositions(currentKey, chords, 1);
+      if (bestCapos.length > 0 && bestCapos[0].fret > 0) {
+        const ordinal = bestCapos[0].fret === 1 ? "1st" : bestCapos[0].fret === 2 ? "2nd" : bestCapos[0].fret === 3 ? "3rd" : `${bestCapos[0].fret}th`;
+        capoLabel = `Capo ${ordinal} Fret (play in ${bestCapos[0].playKey})`;
+      }
+    }
+    const combinedKeyLabel = [keyLabel, capoLabel].filter(Boolean).join(" \u00B7 ");
+    const chordSummary = chords.length > 0 ? chords.join("  ") : "";
+
     const leadSheet = extractLeadSheet(displayAbc);
 
     if (leadSheet.sections.length === 0 || leadSheet.sections.every(s => s.lines.length === 0)) {
@@ -1359,14 +1440,15 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       return;
     }
 
-    const html = generateNashvilleLeadSheetHtml(leadSheet, songTitle, keyLabel, convertChordLineToNashville, printMargins);
+    const meta = metadataRef.current;
+    const html = generateNashvilleLeadSheetHtml(leadSheet, songTitle, combinedKeyLabel, convertChordLineToNashville, printMargins, chordSummary, meta.subtitle, meta);
     printWindow.document.write(html);
     printWindow.document.close();
 
     printWindow.onload = () => {
       printWindow.focus();
     };
-  }, [displayAbc, songTitle, selectedKey, originalKey]);
+  }, [displayAbc, songTitle, selectedKey, originalKey, chords]);
 
   // Shared error banner component
   const renderErrorBanner = () => {
@@ -1910,6 +1992,16 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             </Select>
           </div>
           <Button
+            variant={showLyricsInput ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setShowLyricsInput(!showLyricsInput)}
+            className="gap-1.5"
+            title="Add lyrics before regenerating for better interpretation"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Lyrics
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             onClick={handleGenerate}
@@ -1925,6 +2017,33 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           </Button>
         </div>
       </div>
+
+      {/* Lyrics Input Panel */}
+      {showLyricsInput && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Lyrics for Sheet Music Generation</h3>
+            <button
+              onClick={() => setShowLyricsInput(false)}
+              className="text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200"
+            >
+              \u2715
+            </button>
+          </div>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
+            Paste or type lyrics here before regenerating. The AI will use these words to better interpret the melody and align syllables.
+          </p>
+          <textarea
+            value={lyricsInput}
+            onChange={(e) => setLyricsInput(e.target.value)}
+            placeholder="Verse 1:\nAmazing grace, how sweet the sound\nThat saved a wretch like me...\n\nChorus:\nI once was lost, but now am found..."
+            className="w-full h-32 p-3 text-sm border border-amber-300 dark:border-amber-700 rounded-md bg-white dark:bg-amber-950/50 text-foreground resize-y font-mono"
+          />
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+            Tip: Include section labels (Verse 1, Chorus, Bridge) for better structure.
+          </p>
+        </div>
+      )}
 
       {/* Print Margin Settings Panel */}
       {showMarginSettings && (
@@ -2096,6 +2215,13 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           </div>
         </div>
       )}
+
+      {/* Sheet Music Credits & Metadata Panel */}
+      <SheetMusicMetadata
+        songId={songId}
+        songTitle={songTitle}
+        onChange={handleMetadataChange}
+      />
 
       {/* Playback controls with note highlighting and progress tracking */}
       <PlaybackControls
