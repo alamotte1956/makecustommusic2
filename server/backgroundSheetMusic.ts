@@ -10,6 +10,7 @@
 import { invokeLLM } from "./_core/llm";
 import { getSongById, updateSongSheetMusic, updateSongSheetMusicStatus } from "./db";
 import { extractLLMText } from "./llmHelpers";
+import { alignAllLyrics } from "./lyricsAligner";
 
 import { generateSheetMusicImproved } from "./improvedSheetMusicGenerator";
 import { generateSimpleSheetMusic } from "./simpleSheetMusicGenerator";
@@ -338,6 +339,21 @@ export function sanitiseAbc(raw: string): string {
 
   // Reconstruct ABC with headers followed by music (NO blank lines anywhere)
   abc = [...headerLines, ...cleanMusicLines].join("\n").trim();
+
+  // Post-process: align lyrics syllables to note counts
+  // This fixes LLM-generated w: lines where syllable count doesn't match note count,
+  // which causes abcjs to misalign words under the wrong notes.
+  const hasLyricsLines = cleanMusicLines.some(
+    (l) => l.trim().startsWith("w:") || l.trim().startsWith("W:")
+  );
+  if (hasLyricsLines) {
+    try {
+      abc = alignAllLyrics(abc);
+    } catch (e) {
+      // If alignment fails, keep the original — better to have misaligned lyrics than none
+      console.warn("[Sanitizer] Lyrics alignment post-processing failed:", e);
+    }
+  }
 
   return abc;
 }

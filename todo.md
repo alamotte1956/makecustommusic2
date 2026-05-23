@@ -2788,3 +2788,13 @@
 - [x] Also fixed the bar highlight selector for on-screen playback highlighting
 - [x] Updated all test files to use the correct class name
 - [x] Now staff systems split correctly WITH lyrics included in each system's bounding box
+
+## Lyrics Syllable Alignment Post-Processor
+- [x] Create countNotesInMusicLine() - counts notes excluding bar lines, decorations, chords, grace notes
+- [x] Create countSyllablesInLyricsLine() and parseLyricsSyllables() for w: line parsing
+- [x] Implement auto-padding: adds * (skip) tokens when fewer syllables than notes
+- [x] Implement auto-trimming: truncates excess syllables (removes trailing hyphens cleanly)
+- [x] Integrated alignAllLyrics() into sanitiseAbc pipeline (runs after clean music lines assembled)
+- [x] Handles multi-bar music lines, multiple w: lines per music line, comments between lines
+- [x] 43 comprehensive unit tests covering all edge cases (all passing)
+- [x] Tested with real ABC notation examples including chords, rests, accidentals, grace notes

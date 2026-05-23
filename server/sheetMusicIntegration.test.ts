@@ -170,7 +170,8 @@ describe("sanitiseAbc", () => {
   it("preserves w: lyrics lines", () => {
     const raw = "X:1\nT:Test\nK:C\nCDEF GABc|\nw:A-ma-zing grace how sweet";
     const result = sanitiseAbc(raw);
-    expect(result).toContain("w:A-ma-zing grace how sweet");
+    // After alignment: CDEF GABc| = 8 notes, "A-ma-zing grace how sweet" = 6 syllables → padded to 8
+    expect(result).toContain("w: A- ma- zing grace how sweet * *");
   });
 
   it("preserves % comment lines", () => {

@@ -133,7 +133,8 @@ describe("backgroundSheetMusic", () => {
     it("should preserve w: lyrics lines", () => {
       const raw = 'X:1\nT:Test\nK:C\nCDEF|\nw: Hel-lo world';
       const result = sanitiseAbc(raw);
-      expect(result).toContain("w: Hel-lo world");
+      // After alignment: CDEF| = 4 notes, "Hel-lo world" = 3 syllables → padded to 4
+      expect(result).toContain("w: Hel- lo world *");
     });
 
     it("should preserve comment lines starting with %", () => {
