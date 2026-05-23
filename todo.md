@@ -2705,3 +2705,11 @@
 - [x] Generate a formatted 8.5x11 PDF with all metadata (chords, capo, subtitle, credits)
 - [x] Download the PDF with a proper filename based on song title
 - [x] Ensure PDF includes Nashville-standard layout (header, content, footer)
+
+## Make Interface More Intuitive
+- [x] Group toolbar buttons into logical sections with visual separators (Export, Print, Edit, Generate)
+- [x] Replace flat button row with dropdown menus for Print options and Export options
+- [x] Add clear section labels/dividers between button groups
+- [x] Reduce visual clutter by hiding secondary actions behind "More" dropdown
+- [x] Improve button hierarchy — primary actions prominent, secondary actions subtle
+- [x] Add tooltips with keyboard shortcuts where applicable

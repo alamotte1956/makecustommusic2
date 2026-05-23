@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers, Clock, Pencil, RotateCcw, Minus, Plus } from "lucide-react";
+import { Loader2, Download, Music, RefreshCw, FileAudio, FileText, AlertCircle, WifiOff, ThumbsUp, ThumbsDown, Printer, FileType, Hash, PackageOpen, Layers, Clock, Pencil, RotateCcw, Minus, Plus, ChevronDown, Settings2, Eye } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1842,11 +1843,10 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Key selector */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Transpose to:</span>
+          {/* ─── GROUP 1: Key / Transpose ─── */}
+          <div className="flex items-center gap-1.5 pr-3 border-r border-border/50">
             <Select value={selectedKey} onValueChange={setSelectedKey}>
-              <SelectTrigger className="w-[100px] h-8 text-xs">
+              <SelectTrigger className="w-[110px] h-8 text-xs">
                 <SelectValue placeholder="Key" />
               </SelectTrigger>
               <SelectContent>
@@ -1862,134 +1862,122 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             </Select>
           </div>
 
-          {/* Preview PDF */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShowPdfPreview}
-            disabled={!isRendered}
-            className="gap-1.5"
-            title="Preview sheet music before downloading"
-          >
-            <Music className="w-3.5 h-3.5" />
-            Preview
-          </Button>
+          {/* ─── GROUP 2: Export / Download (Primary Actions) ─── */}
+          <div className="flex items-center gap-1.5 pr-3 border-r border-border/50">
+            {/* Export to PDF — primary CTA */}
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleDownloadPDF}
+              disabled={!isRendered || exporting}
+              className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all"
+              title="Export formatted 8.5x11 sheet music as PDF with all metadata"
+            >
+              {exporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              {exporting ? "Exporting..." : "Export PDF"}
+            </Button>
 
-          {/* Download PDF - Enhanced with primary styling */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleDownloadPDF}
-            disabled={!isRendered || exporting}
-            className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all"
-            title="Export formatted 8.5x11 sheet music as PDF with all metadata"
-          >
-            {exporting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Download className="w-3.5 h-3.5" />
-            )}
-            {exporting ? "Generating..." : "Export to PDF"}
-          </Button>
+            {/* Download All — combined PDF */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadAll}
+              disabled={!isRendered || exporting}
+              className="gap-1.5"
+              title="Download all formats (notation + lead sheet + Nashville) as one PDF"
+            >
+              {exporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <PackageOpen className="w-3.5 h-3.5" />
+              )}
+              All Formats
+            </Button>
+          </div>
 
-          {/* Print */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrint}
-            disabled={!isRendered}
-            className="gap-1.5"
-            title="Open print-friendly view"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            Print
-          </Button>
+          {/* ─── GROUP 3: Print Options (Dropdown) ─── */}
+          <div className="flex items-center gap-1.5 pr-3 border-r border-border/50">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!isRendered}
+                  className="gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Print
+                  <ChevronDown className="w-3 h-3 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Print Format</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handlePrint}>
+                  <Music className="w-4 h-4 mr-2" />
+                  Full Notation
+                  <span className="ml-auto text-xs text-muted-foreground">Standard</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePrintLeadSheet}>
+                  <FileType className="w-4 h-4 mr-2" />
+                  Lead Sheet
+                  <span className="ml-auto text-xs text-muted-foreground">Lyrics + Chords</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePrintNashville}>
+                  <Hash className="w-4 h-4 mr-2" />
+                  Nashville Numbers
+                  <span className="ml-auto text-xs text-muted-foreground">Session Chart</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handlePrintAll}>
+                  <Layers className="w-4 h-4 mr-2" />
+                  Print All Formats
+                  <span className="ml-auto text-xs text-muted-foreground">Combined</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowMarginSettings(!showMarginSettings)}>
+                  <Settings2 className="w-4 h-4 mr-2" />
+                  Page Setup & Margins
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {/* Print Lead Sheet */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrintLeadSheet}
-            disabled={!isRendered}
-            className="gap-1.5"
-            title="Print lyrics with chord symbols (lead sheet)"
-          >
-            <FileType className="w-3.5 h-3.5" />
-            Lead Sheet
-          </Button>
+            {/* Preview */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShowPdfPreview}
+              disabled={!isRendered}
+              className="gap-1.5"
+              title="Preview before printing"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Preview
+            </Button>
+          </div>
 
-          {/* Nashville Number Chart */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrintNashville}
-            disabled={!isRendered}
-            className="gap-1.5"
-            title="Print Nashville Number System chart"
-          >
-            <Hash className="w-3.5 h-3.5" />
-            Nashville
-          </Button>
+          {/* ─── GROUP 4: Edit ─── */}
+          <div className="flex items-center gap-1.5 pr-3 border-r border-border/50">
+            <Button
+              variant={isEditing ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsEditing(!isEditing)}
+              disabled={!isRendered}
+              className="gap-1.5"
+              title="Edit lyrics and chords directly"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              {isEditing ? "Done" : "Edit"}
+            </Button>
+          </div>
 
-          {/* Print Margin Settings */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowMarginSettings(!showMarginSettings)}
-            className="gap-1.5"
-            title="Customize print margins"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            Margins
-          </Button>
-
-          {/* Print All — all formats in one print-friendly window */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handlePrintAll}
-            disabled={!isRendered}
-            className="gap-1.5"
-            title="Print all sheet music formats in one window"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            Print All
-          </Button>
-
-          {/* Download All — combined PDF */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleDownloadAll}
-            disabled={!isRendered || exporting}
-            className="gap-1.5"
-            title="Download all sheet music formats as a single PDF"
-          >
-            {exporting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <PackageOpen className="w-3.5 h-3.5" />
-            )}
-            Download All
-          </Button>
-
-          {/* Edit Sheet Music */}
-          <Button
-            variant={isEditing ? "default" : "outline"}
-            size="sm"
-            onClick={() => setIsEditing(!isEditing)}
-            disabled={!isRendered}
-            className="gap-1.5"
-            title="Edit lyrics and chords"
-          >
-            {isEditing ? "Done Editing" : "Edit"}
-          </Button>
-
-          {/* Regenerate with key selection */}
+          {/* ─── GROUP 5: Regenerate ─── */}
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Regenerate in:</span>
             <Select value={generateInKey} onValueChange={setGenerateInKey}>
-              <SelectTrigger className="w-[100px] h-8 text-xs">
+              <SelectTrigger className="w-[95px] h-8 text-xs">
                 <SelectValue placeholder="Key" />
               </SelectTrigger>
               <SelectContent>
@@ -2003,31 +1991,31 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant={showLyricsInput ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setShowLyricsInput(!showLyricsInput)}
+              title="Add lyrics before regenerating for better interpretation"
+            >
+              <FileText className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleGenerate}
+              disabled={generateMutation.isPending}
+              className="gap-1.5"
+              title="Regenerate sheet music with AI"
+            >
+              {generateMutation.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              Regenerate
+            </Button>
           </div>
-          <Button
-            variant={showLyricsInput ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setShowLyricsInput(!showLyricsInput)}
-            className="gap-1.5"
-            title="Add lyrics before regenerating for better interpretation"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            Lyrics
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleGenerate}
-            disabled={generateMutation.isPending}
-            className="gap-1.5"
-          >
-            {generateMutation.isPending ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3.5 h-3.5" />
-            )}
-            Regenerate
-          </Button>
         </div>
       </div>
 
