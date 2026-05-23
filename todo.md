@@ -2713,3 +2713,18 @@
 - [x] Reduce visual clutter by hiding secondary actions behind "More" dropdown
 - [x] Improve button hierarchy — primary actions prominent, secondary actions subtle
 - [x] Add tooltips with keyboard shortcuts where applicable
+
+## Fix Sheet Music Generation Quality
+- [x] Ensure lyrics (w: lines) are properly embedded in generated ABC notation
+- [x] Improve LLM prompt to produce varied, musical melodies (avoid monotone single-note patterns)
+- [x] Add explicit instructions for melodic contour, intervals, and rhythmic variety
+- [x] Verify lyrics from user input or transcription are included in the output
+- [x] Add validateAbc check that rejects output missing w: lines when lyrics were provided
+- [x] Add melodic interval diversity check (rejects melodies with <3 distinct intervals)
+
+## Prompt User for Lyrics Before MP3 Analysis
+- [x] Add a step in the MP3 upload flow that asks the user if they have lyrics to provide
+- [x] Show a textarea/paste area for lyrics before starting audio analysis
+- [x] Pass user-provided lyrics to the backend along with the audio file
+- [x] Make it optional — user can skip and rely on Whisper transcription
+- [x] If lyrics are provided, skip Whisper transcription and use the provided text directly

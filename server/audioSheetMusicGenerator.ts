@@ -96,7 +96,8 @@ K: <key from analysis>
 2. The melody MUST match the audio — use the melody descriptions from the analysis
 3. The chords MUST match the analysis — place them where they actually occur
 4. The structure MUST match the analysis — include all sections in order
-5. If lyrics are provided, align them precisely with the melody using w: lines
+5. If lyrics are provided, EVERY music line with vocals MUST be followed by a w: line — NO EXCEPTIONS. A song with lyrics that is missing w: lines is INVALID.
+6. The melody must have VARIETY — use a mix of intervals (steps and leaps), rhythmic values, and contour changes. Do NOT produce a monotone or single-note melody.
 
 ═══ MELODY TRANSCRIPTION RULES ═══
 - Write the ACTUAL melody heard in the recording
@@ -110,12 +111,15 @@ K: <key from analysis>
 - Change chords exactly where they change in the recording
 - Use the exact chord voicings from the analysis (e.g., "Dm/F" not just "Dm")
 
-═══ LYRICS ALIGNMENT ═══
-- Every music line with vocals MUST be followed by a w: line
+═══ LYRICS ALIGNMENT — MANDATORY ═══
+- EVERY music line with vocals MUST be followed by a w: line — NO EXCEPTIONS
+- If lyrics are provided or you can hear words, you MUST include w: lines
+- A song with vocals that is missing w: lines is INVALID and will be REJECTED
 - Use hyphens for syllable splits: w: A-ma-zing grace how sweet
 - Use asterisks to skip instrumental notes: w: * * Hold on
 - Align w: bar pipes | with music bar lines
 - Match syllables to notes 1:1 (one syllable per note, unless melisma)
+- FAILURE MODE: Generating a vocal song without w: lines. This is WRONG.
 
 ═══ STRUCTURE & REPEATS ═══
 - Use section comments: % Intro, % Verse 1, % Chorus, % Bridge, % Outro
@@ -291,7 +295,8 @@ export async function generateAbcFromAnalysis(
 
       // Sanitise and validate
       const cleanAbc = sanitiseAbc(rawAbc);
-      const validationError = validateAbc(cleanAbc);
+      const hasLyrics = !!(lyrics && lyrics.trim().length > 10);
+      const validationError = validateAbc(cleanAbc, { lyricsProvided: hasLyrics });
       if (validationError) {
         console.warn(`[AudioABC] Validation failed (attempt ${attempt}): ${validationError}`);
         throw new Error("Validation failed: " + validationError);
@@ -388,7 +393,8 @@ K: <detected key>
       }
 
       const cleanAbc = sanitiseAbc(rawAbc);
-      const validationError = validateAbc(cleanAbc);
+      const hasLyrics = !!(lyrics && lyrics.trim().length > 10);
+      const validationError = validateAbc(cleanAbc, { lyricsProvided: hasLyrics });
       if (validationError) {
         console.warn(`[AudioDirect] Validation failed (attempt ${attempt}): ${validationError}`);
         throw new Error("Validation failed: " + validationError);

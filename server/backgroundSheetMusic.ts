@@ -82,13 +82,16 @@ const SHEET_MUSIC_SYSTEM_PROMPT = [
   '- Example of CORRECT usage: "C"E2 "Am"c2 "F"A2 "G"B2',
   '- Example of WRONG usage: "C"C2 "Am"A2 "F"F2 "G"G2 (melody just follows chord roots)',
   "",
-  "LYRICS ALIGNMENT RULES:",
-  "- Use w: lines to align lyrics under the melody notes",
+  "LYRICS ALIGNMENT RULES (MANDATORY):",
+  "- EVERY music line with vocals MUST be followed by a w: line — NO EXCEPTIONS",
+  "- If lyrics are provided, EVERY section (verse, chorus, bridge) MUST have w: lines",
+  "- A song with lyrics that is missing w: lines is INVALID and will be REJECTED",
   "- Each w: line corresponds to the music line directly above it",
   "- Use hyphens (-) to split syllables across multiple notes: w: A-ma-zing grace",
   "- Use asterisks (*) to skip notes that have no syllable: w: * * Hold on",
   "- Use pipes (|) in w: lines to align with bar lines in the music",
-  "- Every music line that has lyrics MUST be followed by a w: line",
+  "- Match syllables to notes 1:1 (one syllable per note, unless melisma)",
+  "- FAILURE MODE: Generating music without w: lines when lyrics exist. This is WRONG.",
   "",
   "NOTATION RULES:",
   "- Write a singable melody line that matches the lyrics and genre",
@@ -117,10 +120,17 @@ const SHEET_MUSIC_SYSTEM_PROMPT = [
   "- If the lyrics are short, repeat them with melodic variation across sections",
   "- For instrumental songs, generate at least 32 measures with clear sections",
   "",
-  "QUALITY:",
+  "QUALITY (PROFESSIONAL GRADE):",
   "- The melody must be musically coherent, singable, and match the mood/genre",
   "- Vary the melody between verse and chorus — the chorus should feel like a lift",
   "- Keep the vocal range within an octave and a half (roughly C4 to A5 for most voices)",
+  "- Use a MIX of intervals: stepwise motion (2nds) combined with leaps (3rds, 4ths, 5ths)",
+  "- Use RHYTHMIC VARIETY: mix eighth notes, quarter notes, dotted quarters, half notes, syncopation",
+  "- Include BREATHING SPACE: rests (z, z2) between phrases where a singer would breathe",
+  "- The melody must have CONTOUR: phrases should rise and fall, with a climax point",
+  "- DO NOT write a melody that stays on one note or repeats the same pitch",
+  "- DO NOT write a melody that just follows chord roots (C chord = C note is WRONG)",
+  "- DO NOT write a scale exercise — melodies must have musical phrasing",
   "- Use only basic ABC notation: notes, rests, bar lines, repeat signs, chord symbols, and lyrics",
   "- The output must be parseable by the abcjs JavaScript library without errors",
 ].join("\n");
@@ -144,7 +154,17 @@ export function buildSongContext(song: {
   if (song.keySignature) parts.push("Key: " + song.keySignature);
   if (song.timeSignature) parts.push("Time Signature: " + song.timeSignature);
   if (song.tempo) parts.push("Tempo: " + song.tempo + " BPM");
-  if (song.lyrics) parts.push("Lyrics:\n" + song.lyrics);
+  if (song.lyrics && song.lyrics.trim().length > 10) {
+    parts.push("");
+    parts.push("═══ LYRICS (MUST be included as w: lines in the output) ═══");
+    parts.push(song.lyrics);
+    parts.push("");
+    parts.push("CRITICAL REMINDER: You MUST include w: lines after every music line that has vocals.");
+    parts.push("Each syllable needs its own note. Use hyphens for multi-syllable words.");
+    parts.push("The melody rhythm must match the natural speech rhythm of these lyrics.");
+  } else if (song.lyrics) {
+    parts.push("Lyrics:\n" + song.lyrics);
+  }
   return parts.join("\n");
 }
 
@@ -325,8 +345,11 @@ export function sanitiseAbc(raw: string): string {
 /**
  * Validate that the ABC notation has the minimum required structure.
  * Returns null if valid, or an error message string if invalid.
+ * @param abc - The ABC notation to validate
+ * @param options - Optional validation options
+ * @param options.lyricsProvided - If true, validates that w: lines are present in the output
  */
-export function validateAbc(abc: string): string | null {
+export function validateAbc(abc: string, options?: { lyricsProvided?: boolean }): string | null {
   if (!abc || abc.trim().length === 0) {
     return "Empty ABC notation";
   }
@@ -424,6 +447,67 @@ export function validateAbc(abc: string): string | null {
     return "Sheet music content appears to be mostly bar lines with no actual notes";
   }
 
+  // Check that lyrics are present when they were provided as input
+  if (options?.lyricsProvided) {
+    const lyricLines = lines.filter((l) => l.trim().startsWith("w:") || l.trim().startsWith("W:"));
+    if (lyricLines.length === 0) {
+      return "Lyrics were provided but no w: lines appear in the generated notation — the LLM failed to include lyrics";
+    }
+    // Check that lyrics lines have actual content (not just empty w: lines)
+    const nonEmptyLyricLines = lyricLines.filter((l) => l.replace(/^[wW]:/, "").trim().length > 3);
+    if (nonEmptyLyricLines.length < 2) {
+      return "Lyrics were provided but the generated notation has too few lyric lines (need at least 2 non-empty w: lines)";
+    }
+  }
+
+  // Check for melodic diversity — detect "one note" or very limited pitch range
+  const allNotesRaw = musicLines.join(" ")
+    .replace(/"[^"]*"/g, "") // remove chord symbols
+    .match(/[A-Ga-g][,']*\d*/g) || [];
+  if (allNotesRaw.length >= 16) {
+    // Map notes to a simple pitch value for interval analysis
+    const pitchMap: Record<string, number> = {
+      "C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11,
+      "c": 12, "d": 14, "e": 16, "f": 17, "g": 19, "a": 21, "b": 23,
+    };
+    const pitches = allNotesRaw.map(n => {
+      const base = n[0];
+      let p = pitchMap[base] ?? -1;
+      if (p < 0) return -1;
+      // Handle octave modifiers
+      for (let i = 1; i < n.length; i++) {
+        if (n[i] === "'") p += 12;
+        else if (n[i] === ",") p -= 12;
+      }
+      return p;
+    }).filter(p => p >= 0);
+
+    if (pitches.length >= 16) {
+      // Check pitch variety — count unique pitches used
+      const uniquePitches = new Set(pitches);
+      if (uniquePitches.size <= 3) {
+        return `Melody uses only ${uniquePitches.size} distinct pitches — too monotone. The LLM failed to generate a varied melody.`;
+      }
+
+      // Check interval variety — a good melody has a mix of intervals
+      const intervals: number[] = [];
+      for (let i = 1; i < pitches.length; i++) {
+        intervals.push(Math.abs(pitches[i] - pitches[i - 1]));
+      }
+      const uniqueIntervals = new Set(intervals);
+      // If more than 70% of intervals are the same value, it's too monotone
+      const intervalCounts: Record<number, number> = {};
+      for (const iv of intervals) {
+        intervalCounts[iv] = (intervalCounts[iv] || 0) + 1;
+      }
+      const maxIntervalCount = Math.max(...Object.values(intervalCounts));
+      if (maxIntervalCount / intervals.length > 0.7 && intervals.length >= 16) {
+        const dominantInterval = Object.entries(intervalCounts).find(([, c]) => c === maxIntervalCount)?.[0];
+        return `Melody is too monotone — ${Math.round(maxIntervalCount / intervals.length * 100)}% of intervals are the same (interval=${dominantInterval}). The LLM produced a mechanical pattern.`;
+      }
+    }
+  }
+
   return null;
 }
 
@@ -482,7 +566,8 @@ export async function generateAbcNotation(
 
       // Sanitise and validate
       const cleanAbc = sanitiseAbc(rawAbc);
-      const validationError = validateAbc(cleanAbc);
+      const hasLyrics = !!(song.lyrics && song.lyrics.trim().length > 10);
+      const validationError = validateAbc(cleanAbc, { lyricsProvided: hasLyrics });
       if (validationError) {
         console.error(
           `[SheetMusic] Validation failed (attempt ${attempt}/${MAX_ATTEMPTS}): ${validationError}\nRaw output (first 500 chars):\n${rawAbc.substring(0, 500)}`

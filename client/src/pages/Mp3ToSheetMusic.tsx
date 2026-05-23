@@ -119,6 +119,8 @@ export default function Mp3ToSheetMusic() {
   const [errorInfo, setErrorInfo] = useState<{ type: ErrorType; message: string; detail?: string } | null>(null);
   const [viewMode, setViewMode] = useState<"sheet" | "chordChart">("sheet");
   const [conversionMode, setConversionMode] = useState<"single" | "batch">("single");
+  const [userLyrics, setUserLyrics] = useState("");
+  const [showLyricsInput, setShowLyricsInput] = useState(false);
 
   // Progress bar state for sheet music playback
   const [playbackProgress, setPlaybackProgress] = useState(0);
@@ -571,6 +573,7 @@ export default function Mp3ToSheetMusic() {
             fileData: base64,
             fileName: file.name,
             mimeType: file.type || "audio/mpeg",
+            userLyrics: userLyrics.trim() || undefined,
           });
         } catch (err: any) {
           const msg = (err?.message || "").toLowerCase();
@@ -613,7 +616,7 @@ export default function Mp3ToSheetMusic() {
         detail: rawMsg !== msg ? rawMsg : undefined,
       });
     }
-  }, [file, readFileAsBase64, startJobMutation, pollJobStatus]);
+  }, [file, readFileAsBase64, startJobMutation, pollJobStatus, userLyrics]);
 
   const handleDownloadPDF = useCallback(async () => {
     setExporting(true);
@@ -698,6 +701,8 @@ export default function Mp3ToSheetMusic() {
     setSongTitle("");
     setAbcNotation(null);
     setLyrics(null);
+    setUserLyrics("");
+    setShowLyricsInput(false);
     setStep("idle");
     setSelectedKey("original");
     setIsRendered(false);
@@ -965,6 +970,31 @@ export default function Mp3ToSheetMusic() {
               />
               {!songTitle.trim() && (
                 <p className="text-xs text-muted-foreground mt-1">Required — this will appear as the title on your sheet music.</p>
+              )}
+            </div>
+
+            {/* Lyrics Input (optional but recommended) */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => setShowLyricsInput(!showLyricsInput)}
+                className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-violet-600 transition-colors mb-1.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showLyricsInput ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                Add Lyrics (Recommended)
+              </button>
+              {showLyricsInput && (
+                <div className="mt-2">
+                  <textarea
+                    value={userLyrics}
+                    onChange={(e) => setUserLyrics(e.target.value)}
+                    placeholder={"Paste your song lyrics here...\n\nVerse 1:\nAmazing grace, how sweet the sound\nThat saved a wretch like me\n\nChorus:\nI once was lost, but now am found\nWas blind, but now I see"}
+                    className="w-full min-h-[160px] p-3 rounded-lg border border-border bg-white text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Providing lyrics helps the AI accurately align words to notes. If left empty, the AI will attempt to transcribe lyrics from the audio.
+                  </p>
+                </div>
               )}
             </div>
 

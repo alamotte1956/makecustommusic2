@@ -64,11 +64,15 @@ Generate at least 32 measures with clear sections:
 - Use genre-appropriate progressions (I-V-vi-IV, I-IV-V, ii-V-I, etc.)
 - Include some secondary dominants or borrowed chords for color
 
-═══ LYRICS (w: lines) ═══
-- Every music line with vocals MUST be followed by a w: line
+═══ LYRICS (w: lines) — MANDATORY ═══
+- EVERY music line with vocals MUST be followed by a w: line — NO EXCEPTIONS
+- If lyrics are provided, EVERY section (verse, chorus, bridge) MUST have w: lines
+- A song with lyrics that is missing w: lines is INVALID and will be REJECTED
 - Use hyphens for syllable splits: w: A-ma-zing grace how sweet
 - Use asterisks to skip instrumental notes: w: * * Hold on
 - Align w: bar pipes | with music bar lines
+- Match syllables to notes 1:1 (one syllable per note, unless melisma)
+- FAILURE MODE TO AVOID: Generating music without any w: lines when lyrics exist. This is WRONG.
 
 ═══ NOTATION RULES ═══
 - Use proper bar lines | at every measure boundary
@@ -158,7 +162,8 @@ export async function generateSheetMusicImproved(
 
       // Sanitise and validate
       const cleanAbc = sanitiseAbc(rawAbc);
-      const validationError = validateAbc(cleanAbc);
+      const hasLyrics = !!(lyrics && lyrics.trim().length > 10);
+      const validationError = validateAbc(cleanAbc, { lyricsProvided: hasLyrics });
       if (validationError) {
         console.warn(`[ImprovedGenerator] Validation failed (attempt ${attempt}): ${validationError}`);
         console.warn(`[ImprovedGenerator] Raw ABC (first 500 chars): ${rawAbc.substring(0, 500)}`);

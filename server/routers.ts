@@ -1452,6 +1452,7 @@ RULES:
           t => ["audio/mpeg", "audio/wav", "audio/mp4", "audio/ogg", "audio/flac", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"].includes(t),
           "Unsupported audio format. Please upload MP3, WAV, FLAC, OGG, M4A, or AIFF."
         ),
+        userLyrics: z.string().max(10000).optional(), // User-provided lyrics to skip Whisper transcription
       }))
       .mutation(async ({ ctx, input }) => {
         // Check credits (admins bypass)
@@ -1500,7 +1501,7 @@ RULES:
         // Fire-and-forget: run the heavy work in the background
         // Register in active set so polling knows this instance is handling it
         activeSheetJobs.add(jobId);
-        processMp3SheetJob(jobId, ctx.user.id, audioUrl, input.fileName)
+        processMp3SheetJob(jobId, ctx.user.id, audioUrl, input.fileName, input.userLyrics || null)
           .catch((err: any) => {
             console.error(`[Mp3SheetJob] Unhandled error for job ${jobId}:`, err);
           })

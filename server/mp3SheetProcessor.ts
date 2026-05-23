@@ -148,59 +148,66 @@ export async function processMp3SheetJob(
   jobId: number,
   userId: number,
   audioUrl: string,
-  fileName: string
+  fileName: string,
+  userLyrics?: string | null
 ): Promise<void> {
   try {
     const title = deriveTitleFromFilename(fileName);
 
     // ── Step 1: Transcribe audio with Whisper (for lyrics) ──────────────
-    // We run this first to get lyrics, which helps the ABC generator align
-    // melody to words. The audio itself is sent separately to the LLM.
+    // If user provided lyrics, skip Whisper transcription entirely.
+    // Otherwise, transcribe to get lyrics for the ABC generator.
     console.log(`[Mp3SheetJob ${jobId}] Starting transcription for lyrics...`);
     await updateMp3SheetJob(jobId, { status: "transcribing" });
 
     let lyricsText: string | null = null;
     let audioDuration: number | null = null;
 
-    try {
-      const { transcribeAudio } = await import("./_core/voiceTranscription");
-      const transcription = await transcribeAudio({
-        audioUrl,
-        prompt: "Transcribe the song lyrics. Include all sung words accurately.",
-      });
+    if (userLyrics && userLyrics.trim().length > 10) {
+      // User provided lyrics — skip Whisper transcription
+      console.log(`[Mp3SheetJob ${jobId}] Using user-provided lyrics (${userLyrics.length} chars), skipping Whisper.`);
+      lyricsText = userLyrics.trim();
+    } else {
+      try {
+        const { transcribeAudio } = await import("./_core/voiceTranscription");
+        const transcription = await transcribeAudio({
+          audioUrl,
+          prompt: "Transcribe the song lyrics. Include all sung words accurately.",
+        });
 
-      if ("error" in transcription) {
-        console.warn(`[Mp3SheetJob ${jobId}] Transcription warning: ${transcription.code} — ${transcription.error}`);
+        if ("error" in transcription) {
+          console.warn(`[Mp3SheetJob ${jobId}] Transcription warning: ${transcription.code} — ${transcription.error}`);
 
-        // Fatal transcription errors
-        if (transcription.code === "FILE_TOO_LARGE") {
-          throw Object.assign(new Error(transcription.error), { _phase: "transcription" as const });
-        }
-        if (transcription.code === "INVALID_FORMAT") {
-          throw Object.assign(new Error(transcription.error), { _phase: "transcription" as const });
-        }
-        // For other transcription errors, continue without lyrics
-        // The audio-aware generator can still produce sheet music from the audio alone
-      } else {
-        const hasLyrics = transcription.text && transcription.text.trim().length > 10;
-        lyricsText = hasLyrics ? transcription.text : null;
-        audioDuration = transcription.duration ?? null;
+          // Fatal transcription errors
+          if (transcription.code === "FILE_TOO_LARGE") {
+            throw Object.assign(new Error(transcription.error), { _phase: "transcription" as const });
+          }
+          if (transcription.code === "INVALID_FORMAT") {
+            throw Object.assign(new Error(transcription.error), { _phase: "transcription" as const });
+          }
+          // For other transcription errors, continue without lyrics
+          // The audio-aware generator can still produce sheet music from the audio alone
+        } else {
+          const hasLyrics = transcription.text && transcription.text.trim().length > 10;
+          lyricsText = hasLyrics ? transcription.text : null;
+          audioDuration = transcription.duration ?? null;
 
-        // Check audio duration limit
-        if (audioDuration && audioDuration > MAX_AUDIO_DURATION_SEC) {
-          await updateMp3SheetJob(jobId, {
-            status: "error",
-            errorCode: "audio_too_long",
-            errorMessage: `Audio is ${Math.round(audioDuration / 60)} minutes long. Maximum supported duration is ${MAX_AUDIO_DURATION_SEC / 60} minutes. Please trim the audio and try again.`,
-          });
-          return;
+          // Check audio duration limit
+          if (audioDuration && audioDuration > MAX_AUDIO_DURATION_SEC) {
+            await updateMp3SheetJob(jobId, {
+              status: "error",
+              errorCode: "audio_too_long",
+              errorMessage: `Audio is ${Math.round(audioDuration / 60)} minutes long. Maximum supported duration is ${MAX_AUDIO_DURATION_SEC / 60} minutes. Please trim the audio and try again.`,
+            });
+            return;
+          }
         }
+      } catch (transcriptionErr: any) {
+        if (transcriptionErr._phase === "transcription") throw transcriptionErr;
+        console.error(`[Mp3SheetJob ${jobId}] Transcription error:`, transcriptionErr?.message);
+        // Continue without lyrics — the audio-aware generator can still work
+        console.warn(`[Mp3SheetJob ${jobId}] Continuing without lyrics — audio analysis will still produce sheet music.`);
       }
-    } catch (transcriptionErr: any) {
-      if (transcriptionErr._phase === "transcription") throw transcriptionErr;
-      console.error(`[Mp3SheetJob ${jobId}] Transcription error:`, transcriptionErr?.message);
-      // Continue without lyrics — the audio-aware generator can still work
-      console.warn(`[Mp3SheetJob ${jobId}] Continuing without lyrics — audio analysis will still produce sheet music.`);
     }
 
     // Save lyrics immediately if available
