@@ -96,7 +96,7 @@ export function PrintPreviewModal({
           // Split the single SVG into individual staff-system SVGs so that
           // each system can have page-break-inside: avoid applied via CSS.
           // This prevents bars from being cut off at page boundaries.
-          const staffGroups = svg.querySelectorAll("g.abcjs-staff-group");
+          const staffGroups = svg.querySelectorAll("g.abcjs-staff-wrapper");
           if (staffGroups.length > 1) {
             const svgNS = "http://www.w3.org/2000/svg";
             const parts: string[] = [];

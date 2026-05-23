@@ -10,7 +10,7 @@ function createMockSvg(): SVGElement {
   svg.setAttribute("width", "800");
   // Add a staff group so the splitting logic has something to work with
   const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  g.classList.add("abcjs-staff-group");
+  g.classList.add("abcjs-staff-wrapper");
   svg.appendChild(g);
   return svg;
 }

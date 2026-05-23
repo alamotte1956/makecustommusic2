@@ -352,8 +352,8 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     prevHighlightRef.current = noteEl;
 
     // ── Bar highlight ──
-    // Find the staff group that contains this note
-    const staffGroup = noteEl.closest(".abcjs-staff-group") as SVGGElement | null;
+    // Find the staff wrapper that contains this note
+    const staffGroup = noteEl.closest(".abcjs-staff-wrapper") as SVGGElement | null;
     if (staffGroup) {
       // Collect all bar line elements in this staff group
       const barLines = Array.from(staffGroup.querySelectorAll(".abcjs-bar")) as SVGElement[];
@@ -1043,7 +1043,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       // Split the single SVG into individual staff-system SVGs so that
       // each system can have page-break-inside: avoid applied via CSS.
       // This prevents bars from being cut off at page boundaries.
-      const staffGroups = printSvg.querySelectorAll("g.abcjs-staff-group");
+      const staffGroups = printSvg.querySelectorAll("g.abcjs-staff-wrapper");
       if (staffGroups.length > 1) {
         // Extract each staff group into its own wrapper div with break-inside: avoid
         const svgNS = "http://www.w3.org/2000/svg";
@@ -1195,7 +1195,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             max-width: 7.5in;
             overflow: visible;
           }
-          .print-content svg g.abcjs-staff-group {
+          .print-content svg g.abcjs-staff-wrapper {
             page-break-inside: avoid;
             break-inside: avoid;
           }
@@ -1258,7 +1258,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               display: block;
               overflow: visible !important;
             }
-            .print-content svg g.abcjs-staff-group {
+            .print-content svg g.abcjs-staff-wrapper {
               page-break-inside: avoid !important;
               break-inside: avoid !important;
             }

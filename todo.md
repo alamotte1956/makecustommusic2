@@ -2779,3 +2779,12 @@
 - [x] Backend already supports customLyrics in custom mode — no changes needed
 - [x] Add a character count indicator (X/5,000) and Clear button
 - [x] Include helper text explaining section markers and behavior
+
+## Fix: Lyrics Not Printing Logically Under Notation
+- [x] Investigated abcjs 6.6.2 SVG DOM structure — lyrics are inside g.abcjs-staff-wrapper (NOT g.abcjs-staff-group)
+- [x] ROOT CAUSE: Print code used selector "g.abcjs-staff-group" which doesn't exist in abcjs 6.6.2
+- [x] This caused the splitting logic to ALWAYS fall through to the full-SVG fallback (no page-break-inside:avoid)
+- [x] Fixed all selectors to use "g.abcjs-staff-wrapper" across SheetMusicViewer, PrintPreviewModal, printAllHtml
+- [x] Also fixed the bar highlight selector for on-screen playback highlighting
+- [x] Updated all test files to use the correct class name
+- [x] Now staff systems split correctly WITH lyrics included in each system's bounding box

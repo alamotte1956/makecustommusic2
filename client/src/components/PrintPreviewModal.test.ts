@@ -23,10 +23,10 @@ describe("PrintPreviewModal", () => {
 
   describe("staff-system splitting logic", () => {
     it("SVG staff group class name is correct for abcjs", () => {
-      // The component splits SVGs by querying for "g.abcjs-staff-group"
+      // The component splits SVGs by querying for "g.abcjs-staff-wrapper"
       // This test ensures the class name we look for matches what abcjs generates
-      const expectedClassName = "abcjs-staff-group";
-      expect(expectedClassName).toBe("abcjs-staff-group");
+      const expectedClassName = "abcjs-staff-wrapper";
+      expect(expectedClassName).toBe("abcjs-staff-wrapper");
     });
 
     it("page break CSS properties are correctly defined", () => {

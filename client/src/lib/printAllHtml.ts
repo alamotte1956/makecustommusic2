@@ -51,7 +51,7 @@ export interface PrintAllOptions {
  */
 function splitSvgIntoStaffSystems(svgElement: SVGElement): string {
   const svgClone = svgElement.cloneNode(true) as SVGElement;
-  const staffGroups = svgClone.querySelectorAll(".abcjs-staff-group");
+  const staffGroups = svgClone.querySelectorAll(".abcjs-staff-wrapper");
   let staffSystemsHtml = "";
 
   if (staffGroups.length > 1) {
