@@ -942,8 +942,21 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         }
       }
 
+      // Build metadata for the PDF from the metadata panel
+      const meta = metadataRef.current;
+      const pdfMetadata = {
+        subtitle: meta.subtitle || undefined,
+        copyright: meta.copyright || undefined,
+        writer: meta.writer || undefined,
+        publisher: meta.publisher || undefined,
+        producer: meta.producer || undefined,
+        phonographic: meta.phonographic || undefined,
+        chordSummary: chords.length > 0 ? chords.join("  ") : undefined,
+        keyLabel: currentKey ? `Key: ${currentKey}` : undefined,
+      };
+
       await Promise.race([
-        exportSheetMusicPDF(svgElement, songTitle + keyLabel, user?.name || undefined, capoInfo),
+        exportSheetMusicPDF(svgElement, songTitle, user?.name || undefined, capoInfo, pdfMetadata),
         timeoutPromise,
       ]);
       toast.success("Sheet music PDF downloaded!");
@@ -956,7 +969,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     } finally {
       setExporting(false);
     }
-  }, [songTitle, selectedKey, originalKey]);
+  }, [songTitle, selectedKey, originalKey, chords]);
 
 
 
@@ -1869,14 +1882,14 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             onClick={handleDownloadPDF}
             disabled={!isRendered || exporting}
             className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all"
-            title="Download sheet music as PDF"
+            title="Export formatted 8.5x11 sheet music as PDF with all metadata"
           >
             {exporting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <Download className="w-3.5 h-3.5" />
             )}
-            {exporting ? "Generating..." : "Download PDF"}
+            {exporting ? "Generating..." : "Export to PDF"}
           </Button>
 
           {/* Print */}
@@ -2262,7 +2275,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             onClick={handleDownloadPDF}
             disabled={exporting}
             className="absolute bottom-4 right-4 z-20 rounded-full w-12 h-12 p-0 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center"
-            title="Download sheet music as PDF"
+            title="Export formatted 8.5x11 sheet music as PDF with all metadata"
           >
             {exporting ? (
               <Loader2 className="w-5 h-5 animate-spin" />

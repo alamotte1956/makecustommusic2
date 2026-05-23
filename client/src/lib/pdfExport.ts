@@ -310,11 +310,23 @@ export async function renderSvgToCanvas(
 }
 
 // ─── Sheet Music PDF ───
+export interface SheetMusicPDFMetadata {
+  subtitle?: string;
+  copyright?: string;
+  writer?: string;
+  publisher?: string;
+  producer?: string;
+  phonographic?: string;
+  chordSummary?: string;
+  keyLabel?: string;
+}
+
 export async function exportSheetMusicPDF(
   svgElement: SVGElement,
   songTitle: string,
   copyrightHolder?: string,
-  capoInfo?: { fret: number; playKey: string } | null
+  capoInfo?: { fret: number; playKey: string } | null,
+  metadata?: SheetMusicPDFMetadata
 ): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
 
@@ -326,27 +338,37 @@ export async function exportSheetMusicPDF(
   doc.text(songTitle, PAGE_WIDTH / 2, y, { align: "center" });
   y += 8;
 
-  doc.setFontSize(SUBTITLE_SIZE);
-  doc.setTextColor(120, 120, 120);
-  doc.setFont("helvetica", "normal");
-  doc.text("Sheet Music \u2022 Lead Sheet", PAGE_WIDTH / 2, y, { align: "center" });
-  y += 5;
-
-  // Copyright notice
-  if (copyrightHolder) {
-    doc.setFontSize(SMALL_SIZE);
+  // Subtitle (from metadata panel)
+  if (metadata?.subtitle) {
+    doc.setFontSize(SUBTITLE_SIZE + 1);
     doc.setTextColor(100, 100, 100);
     doc.setFont("helvetica", "italic");
-    doc.text(`\u00A9 2026 ${copyrightHolder}. All rights reserved.`, PAGE_WIDTH / 2, y, { align: "center" });
-    y += 4;
+    doc.text(metadata.subtitle, PAGE_WIDTH / 2, y, { align: "center" });
+    y += 5;
   }
 
-  // Capo recommendation
+  // Key and Capo line
+  const keyCapoParts: string[] = [];
+  if (metadata?.keyLabel) {
+    keyCapoParts.push(metadata.keyLabel);
+  }
   if (capoInfo && capoInfo.fret > 0) {
-    doc.setFontSize(SMALL_SIZE);
-    doc.setTextColor(140, 100, 30);
+    keyCapoParts.push(`Capo: Fret ${capoInfo.fret} (play in ${capoInfo.playKey} shapes)`);
+  }
+  if (keyCapoParts.length > 0) {
+    doc.setFontSize(SMALL_SIZE + 1);
+    doc.setTextColor(60, 60, 60);
     doc.setFont("helvetica", "bold");
-    doc.text(`Capo: Fret ${capoInfo.fret} (play in ${capoInfo.playKey} shapes)`, PAGE_WIDTH / 2, y, { align: "center" });
+    doc.text(keyCapoParts.join("  \u00B7  "), PAGE_WIDTH / 2, y, { align: "center" });
+    y += 5;
+  }
+
+  // Chord summary
+  if (metadata?.chordSummary) {
+    doc.setFontSize(SMALL_SIZE);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Chords: ${metadata.chordSummary}`, PAGE_WIDTH / 2, y, { align: "center" });
     y += 5;
   }
 
@@ -417,6 +439,36 @@ export async function exportSheetMusicPDF(
     }
   }
 
+  // Credits footer (Nashville production standard)
+  if (metadata) {
+    const lastPage = doc.getNumberOfPages();
+    doc.setPage(lastPage);
+    const creditsY = PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_RESERVE - 2;
+    doc.setFontSize(FOOTER_SIZE);
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.2);
+    doc.line(MARGIN_LEFT, creditsY - 4, PAGE_WIDTH - MARGIN_RIGHT, creditsY - 4);
+
+    const creditLines: string[] = [];
+    if (metadata.writer) creditLines.push(`Written by: ${metadata.writer}`);
+    if (metadata.publisher) creditLines.push(`Published by: ${metadata.publisher}`);
+    if (metadata.producer) creditLines.push(`Produced by: ${metadata.producer}`);
+    const legalParts: string[] = [];
+    if (metadata.copyright) legalParts.push(metadata.copyright);
+    if (metadata.phonographic) legalParts.push(metadata.phonographic);
+    if (legalParts.length > 0) creditLines.push(legalParts.join("  \u2022  "));
+
+    if (creditLines.length > 0) {
+      doc.setTextColor(120, 120, 120);
+      doc.setFont("helvetica", "normal");
+      let creditY = creditsY;
+      for (const line of creditLines) {
+        doc.text(line, PAGE_WIDTH / 2, creditY, { align: "center" });
+        creditY += 3;
+      }
+    }
+  }
+
   addFooter(doc);
   doc.save(`${songTitle} - Sheet Music.pdf`);
 }
@@ -431,7 +483,8 @@ export async function exportSheetMusicPDFFromAbc(
   songTitle: string,
   fallbackSvg?: SVGElement,
   copyrightHolder?: string,
-  capoInfo?: { fret: number; playKey: string } | null
+  capoInfo?: { fret: number; playKey: string } | null,
+  metadata?: SheetMusicPDFMetadata
 ): Promise<void> {
   // Create an off-screen container for rendering
   const offscreen = document.createElement("div");
@@ -465,10 +518,10 @@ export async function exportSheetMusicPDFFromAbc(
 
     const svg = offscreen.querySelector("svg");
     if (svg && svg.querySelectorAll("path").length >= 5) {
-      await exportSheetMusicPDF(svg as SVGElement, songTitle, copyrightHolder, capoInfo);
+      await exportSheetMusicPDF(svg as SVGElement, songTitle, copyrightHolder, capoInfo, metadata);
     } else if (fallbackSvg) {
       console.warn("[PDF] Off-screen render produced insufficient content, using fallback SVG");
-      await exportSheetMusicPDF(fallbackSvg, songTitle, copyrightHolder, capoInfo);
+      await exportSheetMusicPDF(fallbackSvg, songTitle, copyrightHolder, capoInfo, metadata);
     } else {
       throw new Error("Failed to render sheet music for PDF export");
     }

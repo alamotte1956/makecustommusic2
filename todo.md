@@ -2699,3 +2699,9 @@
 - [x] Verify SVG content scales properly within page margins
 - [x] Ensure staff systems break cleanly across pages without overflow
 - [x] Test that chord diagrams, headers, and footers all fit within page bounds
+
+## Export to PDF Button
+- [x] Add "Export to PDF" button in the sheet music toolbar
+- [x] Generate a formatted 8.5x11 PDF with all metadata (chords, capo, subtitle, credits)
+- [x] Download the PDF with a proper filename based on song title
+- [x] Ensure PDF includes Nashville-standard layout (header, content, footer)
