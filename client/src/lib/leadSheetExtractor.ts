@@ -336,7 +336,7 @@ export function generateLeadSheetHtml(
 
   const marginStr = margins 
     ? `${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in`
-    : '0.75in';
+    : '0.5in 0.5in 0.75in 0.5in';
 
   return `<!DOCTYPE html>
 <html>
@@ -555,7 +555,7 @@ export function generateNashvilleLeadSheetHtml(
 
   const marginStr = margins 
     ? `${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in`
-    : '0.75in';
+    : '0.5in 0.5in 0.75in 0.5in';
 
   return `<!DOCTYPE html>
 <html>

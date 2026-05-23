@@ -120,7 +120,7 @@ export function getPageSizeCss(
   orientation: "portrait" | "landscape" = "portrait",
   margins?: { top: number; right: number; bottom: number; left: number }
 ): string {
-  const m = margins || { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 };
+  const m = margins || { top: 0.5, right: 0.5, bottom: 0.75, left: 0.5 };
   return `
     @page {
       size: 8.5in 11in;

@@ -2798,3 +2798,15 @@
 - [x] Handles multi-bar music lines, multiple w: lines per music line, comments between lines
 - [x] 43 comprehensive unit tests covering all edge cases (all passing)
 - [x] Tested with real ABC notation examples including chords, rests, accidentals, grace notes
+
+## Fix: Song Playback Blocked During Sheet Music Generation
+- [ ] Investigate what blocks playback while sheet music is generating
+- [ ] Decouple audio playback from sheet music generation state
+- [ ] Ensure play button remains active/clickable during background generation
+- [ ] Test that audio plays smoothly while sheet music generates
+
+## Fix: Visibility/Contrast Issues Throughout App
+- [ ] Audit all pages for text/elements that are hard to see against backgrounds
+- [ ] Fix any low-contrast text, invisible buttons, or poorly visible elements
+- [ ] Ensure all foreground elements are clearly visible on their backgrounds
+- [ ] Test across light/dark theme contexts

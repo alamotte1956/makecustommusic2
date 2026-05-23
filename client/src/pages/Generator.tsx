@@ -1509,7 +1509,7 @@ export default function Generator() {
       {/* ═══════════════════════════════════════════════ */}
       {/* RESULT                                         */}
       {/* ═══════════════════════════════════════════════ */}
-      {generatedSong && !isGenerating && (
+      {generatedSong && (
         <div className="space-y-4 result-glow">
           <Card className="glow-card glow-card-active">
             <CardHeader className="pb-3">
@@ -1576,8 +1576,8 @@ export default function Generator() {
                   <Download className="w-4 h-4 mr-1.5" /> Download
                 </Button>
                 <FavoriteButton songId={generatedSong.id} variant="outline" showLabel />
-                <Button size="sm" variant="outline" onClick={() => handleGenerate()}>
-                  <RefreshCw className="w-4 h-4 mr-1.5" /> Regenerate
+                <Button size="sm" variant="outline" onClick={() => handleGenerate()} disabled={isGenerating}>
+                  <RefreshCw className={`w-4 h-4 mr-1.5 ${isGenerating ? "animate-spin" : ""}`} /> Regenerate
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleShare}>
                   <Share2 className="w-4 h-4 mr-1.5" /> Share

@@ -146,7 +146,7 @@ export function ChordChartView({ abc, songTitle, songKeySignature }: ChordChartV
 <head>
   <title>${escapeHtml(songTitle)} - Chord Chart</title>
   <style>
-    @page { size: letter portrait; margin: 0.75in; }
+    @page { size: letter portrait; margin: 0.5in 0.5in 0.75in 0.5in; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Georgia', 'Times New Roman', serif;

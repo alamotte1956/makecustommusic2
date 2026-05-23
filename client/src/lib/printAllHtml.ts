@@ -204,7 +204,7 @@ export function generatePrintAllHtml(options: PrintAllOptions): string {
   <style>
     @page {
       size: 8.5in 11in;
-      margin: 0.75in;
+      margin: 0.5in 0.5in 0.75in 0.5in;
       @bottom-center {
         content: "Page " counter(page) " of " counter(pages);
         font-size: 10px;

@@ -186,7 +186,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
         }
       }
     }
-    return { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 };
+    return { top: 0.5, right: 0.5, bottom: 0.75, left: 0.5 };
   });
   const [customPresets, setCustomPresets] = useState<Array<{ name: string; margins: typeof printMargins; orientation: 'landscape' | 'portrait' }>>(() => {
     if (typeof window !== 'undefined') {
