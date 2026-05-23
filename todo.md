@@ -2748,3 +2748,20 @@
 - [x] Add proper page-break-inside: avoid for staff systems
 - [x] Test print preview in browser to verify proper pagination
 - [x] Use dedicated print rendering with wrap config for proper line breaks
+
+## Print Preview Modal
+- [x] Create PrintPreviewModal component with paper-like 8.5x11 visual representation
+- [x] Re-render ABC at print-optimized staffwidth (520px) inside the modal
+- [x] Show full metadata (title, subtitle, key/capo, chord summary, credits footer)
+- [x] Add page simulation with proper margins and shadow for paper effect
+- [x] Include Print and PDF buttons in the modal header
+- [x] Support scrolling for multi-page content with zoom controls (50%-200%)
+- [x] Integrate into SheetMusicViewer toolbar (Preview button)
+- [x] Write unit tests for the PrintPreviewModal component
+
+## Fix: Bars Cut Off at Page Boundaries in Print
+- [x] Split SVG into individual staff-system-wrapper divs (one per staff line)
+- [x] Add page-break-inside: avoid + break-inside: avoid to .staff-system-wrapper
+- [x] Ensure print margins are sufficient (0.5in all sides minimum)
+- [x] Each staff system gets its own mini-SVG with correct viewBox
+- [x] Applied same splitting logic in both handlePrint and PrintPreviewModal

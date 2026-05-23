@@ -28,6 +28,7 @@ import { generateCreditsFooterHtml, generateSubtitleHtml, CREDITS_CSS } from "@/
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { SheetMusicProgressBar } from "@/components/SheetMusicProgressBar";
 import { SheetMusicEditor } from "@/components/SheetMusicEditor";
+import { PrintPreviewModal } from "@/components/PrintPreviewModal";
 import type { PlaybackState } from "@/lib/abcPlayer";
 
 interface SheetMusicViewerProps {
@@ -314,6 +315,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
   const [pdfPreviewSvg, setPdfPreviewSvg] = useState<SVGElement | null>(null);
   const [previewFormat, setPreviewFormat] = useState<'pdf' | 'lead-sheet' | 'nashville'>('pdf');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   const handlePlaybackStateChange = useCallback((state: PlaybackState) => {
     const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
@@ -1038,12 +1040,44 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
     const printSvg = printContainer.querySelector("svg");
     let staffSystemsHtml = "";
     if (printSvg) {
-      printSvg.setAttribute("width", "100%");
-      printSvg.removeAttribute("height");
-      printSvg.style.maxWidth = "100%";
-      printSvg.style.height = "auto";
-      printSvg.style.display = "block";
-      staffSystemsHtml = printSvg.outerHTML;
+      // Split the single SVG into individual staff-system SVGs so that
+      // each system can have page-break-inside: avoid applied via CSS.
+      // This prevents bars from being cut off at page boundaries.
+      const staffGroups = printSvg.querySelectorAll("g.abcjs-staff-group");
+      if (staffGroups.length > 1) {
+        // Extract each staff group into its own wrapper div with break-inside: avoid
+        const svgNS = "http://www.w3.org/2000/svg";
+        const viewBox = printSvg.getAttribute("viewBox");
+        const svgWidth = parseFloat(printSvg.getAttribute("width") || "520");
+        const parts: string[] = [];
+        staffGroups.forEach((group) => {
+          // Get the bounding box of this staff group
+          const bbox = (group as SVGGraphicsElement).getBBox();
+          // Create a mini-SVG for just this staff system
+          const miniSvg = document.createElementNS(svgNS, "svg");
+          miniSvg.setAttribute("xmlns", svgNS);
+          miniSvg.setAttribute("width", "100%");
+          // Add padding around the staff group (4px top/bottom)
+          const padY = 4;
+          miniSvg.setAttribute("viewBox", `${bbox.x} ${bbox.y - padY} ${bbox.width} ${bbox.height + padY * 2}`);
+          miniSvg.setAttribute("preserveAspectRatio", "xMinYMin meet");
+          miniSvg.style.display = "block";
+          miniSvg.style.maxWidth = "100%";
+          miniSvg.style.height = "auto";
+          miniSvg.style.overflow = "visible";
+          miniSvg.appendChild(group.cloneNode(true));
+          parts.push(`<div class="staff-system-wrapper">${miniSvg.outerHTML}</div>`);
+        });
+        staffSystemsHtml = parts.join("\n");
+      } else {
+        // Single staff group or no class names — use the full SVG
+        printSvg.setAttribute("width", "100%");
+        printSvg.removeAttribute("height");
+        printSvg.style.maxWidth = "100%";
+        printSvg.style.height = "auto";
+        printSvg.style.display = "block";
+        staffSystemsHtml = printSvg.outerHTML;
+      }
     } else {
       // Fallback: use the on-screen SVG clone
       const svgClone = svgElement.cloneNode(true) as SVGElement;
@@ -1143,6 +1177,22 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             justify-content: flex-start;
           }
           ${CREDITS_CSS}
+          /* Staff group page-break rules — prevent bars from being cut off */
+          .staff-system-wrapper {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .staff-system-wrapper svg {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-width: 7.5in;
+            overflow: visible;
+          }
+          .print-content svg g.abcjs-staff-group {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
           @media print {
             @page {
               size: 8.5in 11in;
@@ -1150,6 +1200,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             }
             body { 
               margin: 0;
+              padding: 0;
               width: 100%;
             }
             .no-print { display: none !important; }
@@ -1157,6 +1208,7 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
             .print-body { margin-top: 0 !important; }
             .print-header {
               page-break-after: avoid;
+              break-after: avoid;
             }
             .print-content {
               width: 100%;
@@ -1167,17 +1219,37 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               max-width: 7.5in !important;
               height: auto !important;
               display: block;
+              overflow: visible !important;
+            }
+            /* CRITICAL: Prevent staff lines from being split across pages */
+            .staff-system-wrapper {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            .staff-system-wrapper svg {
+              width: 100% !important;
+              max-width: 7.5in !important;
+              height: auto !important;
+              display: block;
+              overflow: visible !important;
+            }
+            .print-content svg g.abcjs-staff-group {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
             }
             .chord-section {
               page-break-before: auto;
               page-break-inside: avoid;
+              break-inside: avoid;
             }
             .chord-grid {
               page-break-inside: avoid;
+              break-inside: avoid;
             }
             .credits-block {
               page-break-before: avoid;
               page-break-inside: avoid;
+              break-inside: avoid;
             }
           }
           .print-btn-bar {
@@ -1944,14 +2016,14 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Preview */}
+            {/* Print Preview */}
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleShowPdfPreview}
+              onClick={() => setShowPrintPreview(true)}
               disabled={!isRendered}
               className="gap-1.5"
-              title="Preview before printing"
+              title="Preview how sheet music will look on paper"
             >
               <Eye className="w-3.5 h-3.5" />
               Preview
@@ -2315,55 +2387,32 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
       {/* Sheet music quality feedback */}
       {isRendered && <SheetMusicFeedback songId={songId} initialFeedback={initialFeedback} />}
 
-      {/* PDF Preview Modal */}
-      <Dialog open={showPdfPreview} onOpenChange={setShowPdfPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Sheet Music Preview</DialogTitle>
-            <DialogDescription>
-              Preview of {songTitle} - {selectedKey === "original" ? (originalKey || "Original Key") : `Key of ${selectedKey}`}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {pdfPreviewSvg ? (
-            <div className="bg-white rounded-lg border border-border p-4 overflow-auto max-h-[65vh]">
-              <div 
-                dangerouslySetInnerHTML={{ __html: pdfPreviewSvg.outerHTML }}
-                className="flex justify-center [&>svg]:w-full [&>svg]:h-auto [&>svg]:overflow-visible"
-                style={{ colorScheme: "light" }}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          
-          <div className="flex gap-2 justify-end mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowPdfPreview(false)}
-            >
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                setShowPdfPreview(false);
-                handleDownloadPDF();
-              }}
-              disabled={exporting}
-              className="gap-1.5"
-            >
-              {exporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              Download PDF
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Print Preview Modal */}
+      <PrintPreviewModal
+        open={showPrintPreview}
+        onOpenChange={setShowPrintPreview}
+        abcNotation={displayAbc}
+        songTitle={songTitle}
+        keyLabel={selectedKey === "original" ? (originalKey ? `Key: ${originalKey}` : "") : `Key: ${selectedKey}`}
+        capoLabel={(() => {
+          const currentKey = selectedKey === "original" ? originalKey : selectedKey;
+          if (currentKey && chords.length > 0) {
+            const bestCapos = getBestCapoPositions(currentKey, chords, 1);
+            if (bestCapos.length > 0 && bestCapos[0].fret > 0) {
+              const ordinal = bestCapos[0].fret === 1 ? "1st" : bestCapos[0].fret === 2 ? "2nd" : bestCapos[0].fret === 3 ? "3rd" : `${bestCapos[0].fret}th`;
+              return `Capo ${ordinal} Fret (play in ${bestCapos[0].playKey})`;
+            }
+          }
+          return "";
+        })()}
+        chordSummary={chords.length > 0 ? chords.join("  ") : ""}
+        chords={chords}
+        credits={metadataRef.current}
+        margins={printMargins}
+        onPrint={handlePrint}
+        onDownloadPdf={handleDownloadPDF}
+        exporting={exporting}
+      />
     </div>
   );
 }
