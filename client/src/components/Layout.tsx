@@ -135,12 +135,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (isAuthenticated) {
     return (
       <div className="min-h-screen flex bg-background">
-        {/* ─── Shimmer Aurora Background ─── */}
-        <div className="shimmer-bg">
-          <div className="shimmer-orb-1" />
-          <div className="shimmer-orb-2" />
-          <div className="shimmer-orb-3" />
-        </div>
         {/* ─── Left Sidebar (Desktop) ─── */}
         <aside className={`hidden lg:flex flex-col fixed top-0 left-0 h-full z-40 border-r border-white/[0.06] bg-[#0a0a0a] transition-all duration-200 ${
           sidebarCollapsed ? "w-16" : "w-56"
@@ -385,12 +379,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   /* ─── Visitor: Minimal top nav (Suno public style) ─── */
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* ─── Shimmer Aurora Background ─── */}
-      <div className="shimmer-bg">
-        <div className="shimmer-orb-1" />
-        <div className="shimmer-orb-2" />
-        <div className="shimmer-orb-3" />
-      </div>
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-background/95 backdrop-blur-xl">
         <div className="container flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2 no-underline shrink-0">
