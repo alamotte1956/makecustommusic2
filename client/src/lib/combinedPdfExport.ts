@@ -146,7 +146,8 @@ async function addFullNotationSection(
   svgElement: SVGElement,
   songTitle: string,
   keyLabel: string,
-  chordDiagramSvgs: SVGElement[]
+  chordDiagramSvgs: SVGElement[],
+  chordNames: string[] = []
 ): Promise<void> {
   // Title
   let y = MARGIN_TOP + 6;
@@ -174,10 +175,11 @@ async function addFullNotationSection(
   if (chordDiagramSvgs.length > 0) {
     const diagramWidth = 22;
     const diagramHeight = 30;
+    const labelHeight = 5; // space for chord name label below diagram
     const diagramGap = 3;
     const maxPerRow = Math.floor((CONTENT_WIDTH + diagramGap) / (diagramWidth + diagramGap));
     const totalRows = Math.ceil(chordDiagramSvgs.length / maxPerRow);
-    const chordBlockHeight = totalRows * (diagramHeight + diagramGap) + 10; // 10 for heading
+    const chordBlockHeight = totalRows * (diagramHeight + labelHeight + diagramGap) + 10; // 10 for heading
 
     y = checkPageBreak(doc, y, chordBlockHeight);
 
@@ -193,10 +195,11 @@ async function addFullNotationSection(
     doc.setFont("helvetica", "normal");
 
     let dx = MARGIN_LEFT;
+    let diagramIndex = 0;
     for (const svg of chordDiagramSvgs) {
       if (dx + diagramWidth > PAGE_WIDTH - MARGIN_RIGHT) {
         dx = MARGIN_LEFT;
-        y += diagramHeight + diagramGap;
+        y += diagramHeight + labelHeight + diagramGap;
       }
       try {
         const { dataUrl: imgDataUrl } = await renderSvgToCanvas(svg, 3);
@@ -204,9 +207,17 @@ async function addFullNotationSection(
       } catch {
         // Skip diagram on error
       }
+      // Add chord name label beneath the diagram
+      if (chordNames[diagramIndex]) {
+        doc.setFontSize(7);
+        doc.setTextColor(50, 50, 50);
+        doc.setFont("helvetica", "bold");
+        doc.text(chordNames[diagramIndex], dx + diagramWidth / 2, y + diagramHeight + 3.5, { align: "center" });
+      }
       dx += diagramWidth + diagramGap;
+      diagramIndex++;
     }
-    y += diagramHeight + 8;
+    y += diagramHeight + labelHeight + 8;
   }
 
   // Divider
@@ -657,6 +668,7 @@ export async function exportCombinedPdf(
     leadSheet,
     songTitle,
     keyLabel,
+    chords,
     convertChordLine,
     generateChordDiagramsSvgs,
   } = options;
@@ -682,7 +694,8 @@ export async function exportCombinedPdf(
     svgElement,
     songTitle,
     keyLabel,
-    chordDiagramSvgs
+    chordDiagramSvgs,
+    chords
   );
 
   // ─── Section 2: Lead Sheet ───
