@@ -1454,9 +1454,16 @@ export default function SheetMusicViewer({ songId, abcNotation: initialAbc, song
 
       // Get chord diagram SVGs from the rendered GuitarChordChart component
       const generateChordDiagramsSvgs = (): SVGElement[] => {
-        const chordSection = sheetRef.current?.parentElement?.querySelector(".guitar-chord-chart-container");
+        // The chord container is a sibling of sheetRef's parent wrapper,
+        // so we need to go up to the grandparent or use document-level query
+        const chordSection = sheetRef.current?.closest('[class*="space-y"]')?.querySelector(".guitar-chord-chart-container")
+          || document.querySelector(".guitar-chord-chart-container");
         if (!chordSection) return [];
-        return Array.from(chordSection.querySelectorAll("svg")) as SVGElement[];
+        // Filter out icon SVGs (small viewBox like 0 0 24 24) - only keep chord diagrams (viewBox 0 0 80 100)
+        return Array.from(chordSection.querySelectorAll("svg")).filter(svg => {
+          const vb = svg.getAttribute("viewBox");
+          return vb && vb.includes("80 100");
+        }) as SVGElement[];
       };
 
       // Wrap in a timeout to prevent infinite hangs

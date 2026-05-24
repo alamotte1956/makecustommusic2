@@ -170,6 +170,45 @@ async function addFullNotationSection(
     y += 8;
   }
 
+  // ─── Guitar Chord Diagrams (at top of first notation page) ───
+  if (chordDiagramSvgs.length > 0) {
+    const diagramWidth = 22;
+    const diagramHeight = 30;
+    const diagramGap = 3;
+    const maxPerRow = Math.floor((CONTENT_WIDTH + diagramGap) / (diagramWidth + diagramGap));
+    const totalRows = Math.ceil(chordDiagramSvgs.length / maxPerRow);
+    const chordBlockHeight = totalRows * (diagramHeight + diagramGap) + 10; // 10 for heading
+
+    y = checkPageBreak(doc, y, chordBlockHeight);
+
+    // Light background box for chord diagrams
+    doc.setFillColor(248, 248, 250);
+    doc.roundedRect(MARGIN_LEFT - 2, y - 2, CONTENT_WIDTH + 4, chordBlockHeight + 4, 2, 2, "F");
+
+    doc.setFontSize(SMALL_SIZE);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "bold");
+    doc.text("CHORD DIAGRAMS", MARGIN_LEFT + 2, y + 4);
+    y += 10;
+    doc.setFont("helvetica", "normal");
+
+    let dx = MARGIN_LEFT;
+    for (const svg of chordDiagramSvgs) {
+      if (dx + diagramWidth > PAGE_WIDTH - MARGIN_RIGHT) {
+        dx = MARGIN_LEFT;
+        y += diagramHeight + diagramGap;
+      }
+      try {
+        const { dataUrl: imgDataUrl } = await renderSvgToCanvas(svg, 3);
+        doc.addImage(imgDataUrl, "PNG", dx, y, diagramWidth, diagramHeight);
+      } catch {
+        // Skip diagram on error
+      }
+      dx += diagramWidth + diagramGap;
+    }
+    y += diagramHeight + 8;
+  }
+
   // Divider
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.3);
@@ -286,37 +325,7 @@ async function addFullNotationSection(
     y += 10;
   }
 
-  // Chord diagrams
-  if (chordDiagramSvgs.length > 0) {
-    y = checkPageBreak(doc, y, 50);
-    doc.setFontSize(HEADING_SIZE);
-    doc.setTextColor(30, 30, 30);
-    doc.setFont("helvetica", "bold");
-    doc.text("Guitar Chord Diagrams", MARGIN_LEFT, y);
-    y += 8;
-    doc.setFont("helvetica", "normal");
-
-    const diagramWidth = 25;
-    const diagramHeight = 35;
-    let dx = MARGIN_LEFT;
-
-    for (const svg of chordDiagramSvgs) {
-      if (dx + diagramWidth > PAGE_WIDTH - MARGIN_RIGHT) {
-        dx = MARGIN_LEFT;
-        y += diagramHeight + 4;
-      }
-      y = checkPageBreak(doc, y, diagramHeight + 4);
-
-      try {
-        const { dataUrl: imgDataUrl } = await renderSvgToCanvas(svg, 3);
-        doc.addImage(imgDataUrl, "PNG", dx, y, diagramWidth, diagramHeight);
-      } catch {
-        // Skip diagram on error
-      }
-
-      dx += diagramWidth + 3;
-    }
-  }
+  // (Chord diagrams already rendered at top of first notation page)
 }
 
 /**

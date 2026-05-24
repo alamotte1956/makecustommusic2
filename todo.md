@@ -2388,7 +2388,7 @@
 - [x] Applied to all sheet music PDF exports (pdfExport, combinedPdfExport, WorshipSetBuilder)
 - [ ] Append chord charts after the sheet music in the PDF export
 - [ ] Include lead sheet (chords above lyrics) section after notation
-- [ ] Include guitar chord diagrams in the combined PDF
+- [x] Include guitar chord diagrams in the combined PDF
 
 ## Capo Settings Logic Review
 - [x] Reviewed core capo calculation algorithm (calculateCapoChart, getBestCapoPositions)
@@ -2820,3 +2820,4 @@
 ## Bug Fixes
 - [x] Fix last line of music truncation in sheet music display (increased paddingbottom from 10 to 50, removed maxHeight:600px constraint, increased staff system split padBottom from 16 to 30)
 - [x] Fix PDF export page breaks cutting through staff systems (implemented staff-aware pagination using .abcjs-staff element positions to find safe break points between systems)
+- [x] Add guitar chord diagram boxes to the first notation page in the combined PDF (move from end to top of notation section)
