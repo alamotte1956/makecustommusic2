@@ -11,6 +11,7 @@
 import jsPDF from "jspdf";
 import type { LeadSheet } from "./leadSheetExtractor";
 import { renderSvgToCanvas, getSvgDimensions, getStaffBreakPoints } from "./pdfExport";
+import { recommendCapo, type CapoRecommendation } from "./transpose";
 
 // ─── Page Constants (US Letter: 8.5" x 11") ───
 const PAGE_WIDTH = 215.9; // 8.5 inches in mm
@@ -147,7 +148,8 @@ async function addFullNotationSection(
   songTitle: string,
   keyLabel: string,
   chordDiagramSvgs: SVGElement[],
-  chordNames: string[] = []
+  chordNames: string[] = [],
+  capoRecommendation: CapoRecommendation | null = null
 ): Promise<void> {
   // Title
   let y = MARGIN_TOP + 6;
@@ -233,6 +235,24 @@ async function addFullNotationSection(
       currentRowCount++;
     }
     y += diagramHeight + labelHeight + 4;
+
+    // ─── Capo Position Indicator ───
+    if (capoRecommendation) {
+      y += 1;
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "italic");
+      if (capoRecommendation.capoFret > 0) {
+        doc.setTextColor(130, 100, 50); // Warm brown for capo indicator
+        const ordinal = capoRecommendation.capoFret === 1 ? "1st" : capoRecommendation.capoFret === 2 ? "2nd" : capoRecommendation.capoFret === 3 ? "3rd" : `${capoRecommendation.capoFret}th`;
+        const capoText = `Capo ${ordinal} fret \u2192 play ${capoRecommendation.capoKey} shapes`;
+        doc.text(capoText, PAGE_WIDTH / 2, y + 2, { align: "center" });
+      } else {
+        doc.setTextColor(100, 140, 100); // Muted green for "no capo needed"
+        doc.text("No capo needed \u2014 chords are already easy open shapes", PAGE_WIDTH / 2, y + 2, { align: "center" });
+      }
+      y += 5;
+      doc.setFont("helvetica", "normal");
+    }
 
     // Subtle bottom border flowing into notation
     doc.setDrawColor(200, 200, 200);
@@ -710,13 +730,19 @@ export async function exportCombinedPdf(
   doc.addPage();
 
   const chordDiagramSvgs = generateChordDiagramsSvgs();
+
+  // Calculate capo recommendation from key and chords
+  const songKey = keyLabel.replace(/^Key:\s*/, "").trim();
+  const capoRec = songKey && chords.length > 0 ? recommendCapo(chords, songKey) : null;
+
   await addFullNotationSection(
     doc,
     svgElement,
     songTitle,
     keyLabel,
     chordDiagramSvgs,
-    chords
+    chords,
+    capoRec
   );
 
   // ─── Section 2: Lead Sheet ───

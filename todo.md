@@ -2838,3 +2838,4 @@
 - [ ] Highlight current note in sheet music during playback
 - [ ] Test playback across browsers (Safari compatibility required)
 - [x] Modify chord diagram layout for better integration with notation in PDF
+- [x] Add capo position indicator next to chord diagrams in combined PDF
