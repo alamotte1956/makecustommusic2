@@ -2831,3 +2831,10 @@
 - [x] Pass 4: Programmatic ABC assembly — guaranteed correct formatting
 - [x] Wire new generator into backgroundSheetMusic.ts as primary generator
 - [x] Test with existing songs and verify quality improvement (all 2087 tests passing)
+
+## Melody Playback Preview (Web Audio API)
+- [ ] Create ABC-to-audio synthesizer module (parse ABC notes → Web Audio API piano tones)
+- [ ] Add Play/Pause/Stop melody controls to the sheet music viewer
+- [ ] Highlight current note in sheet music during playback
+- [ ] Test playback across browsers (Safari compatibility required)
+- [x] Modify chord diagram layout for better integration with notation in PDF

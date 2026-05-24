@@ -171,35 +171,49 @@ async function addFullNotationSection(
     y += 8;
   }
 
-  // ─── Guitar Chord Diagrams (at top of first notation page) ───
+  // ─── Guitar Chord Diagrams (compact inline strip) ───
   if (chordDiagramSvgs.length > 0) {
-    const diagramWidth = 22;
-    const diagramHeight = 30;
-    const labelHeight = 5; // space for chord name label below diagram
-    const diagramGap = 3;
+    const diagramWidth = 16;
+    const diagramHeight = 22;
+    const labelHeight = 4;
+    const diagramGap = 2;
     const maxPerRow = Math.floor((CONTENT_WIDTH + diagramGap) / (diagramWidth + diagramGap));
     const totalRows = Math.ceil(chordDiagramSvgs.length / maxPerRow);
-    const chordBlockHeight = totalRows * (diagramHeight + labelHeight + diagramGap) + 10; // 10 for heading
+    const chordBlockHeight = totalRows * (diagramHeight + labelHeight + diagramGap) + 6;
 
     y = checkPageBreak(doc, y, chordBlockHeight);
 
-    // Light background box for chord diagrams
-    doc.setFillColor(248, 248, 250);
-    doc.roundedRect(MARGIN_LEFT - 2, y - 2, CONTENT_WIDTH + 4, chordBlockHeight + 4, 2, 2, "F");
+    // Subtle top border
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.2);
+    doc.line(MARGIN_LEFT, y, PAGE_WIDTH - MARGIN_RIGHT, y);
+    y += 4;
 
-    doc.setFontSize(SMALL_SIZE);
-    doc.setTextColor(100, 100, 100);
-    doc.setFont("helvetica", "bold");
-    doc.text("CHORD DIAGRAMS", MARGIN_LEFT + 2, y + 4);
-    y += 10;
+    // Compact label aligned left
+    doc.setFontSize(7);
+    doc.setTextColor(130, 130, 130);
+    doc.setFont("helvetica", "italic");
+    doc.text("Chords used:", MARGIN_LEFT, y + 2);
+    y += 5;
     doc.setFont("helvetica", "normal");
 
-    let dx = MARGIN_LEFT;
+    // Center the diagrams row(s) within content width
+    const diagramsInFirstRow = Math.min(chordDiagramSvgs.length, maxPerRow);
+    const rowWidth = diagramsInFirstRow * diagramWidth + (diagramsInFirstRow - 1) * diagramGap;
+    const startX = MARGIN_LEFT + (CONTENT_WIDTH - rowWidth) / 2;
+
+    let dx = startX;
     let diagramIndex = 0;
+    let currentRowCount = 0;
     for (const svg of chordDiagramSvgs) {
-      if (dx + diagramWidth > PAGE_WIDTH - MARGIN_RIGHT) {
-        dx = MARGIN_LEFT;
+      if (currentRowCount >= maxPerRow) {
+        // New row - recenter
+        currentRowCount = 0;
         y += diagramHeight + labelHeight + diagramGap;
+        const remaining = chordDiagramSvgs.length - diagramIndex;
+        const inThisRow = Math.min(remaining, maxPerRow);
+        const thisRowWidth = inThisRow * diagramWidth + (inThisRow - 1) * diagramGap;
+        dx = MARGIN_LEFT + (CONTENT_WIDTH - thisRowWidth) / 2;
       }
       try {
         const { dataUrl: imgDataUrl } = await renderSvgToCanvas(svg, 3);
@@ -207,24 +221,31 @@ async function addFullNotationSection(
       } catch {
         // Skip diagram on error
       }
-      // Add chord name label beneath the diagram
+      // Chord name label beneath
       if (chordNames[diagramIndex]) {
-        doc.setFontSize(7);
-        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(6.5);
+        doc.setTextColor(60, 60, 60);
         doc.setFont("helvetica", "bold");
-        doc.text(chordNames[diagramIndex], dx + diagramWidth / 2, y + diagramHeight + 3.5, { align: "center" });
+        doc.text(chordNames[diagramIndex], dx + diagramWidth / 2, y + diagramHeight + 3, { align: "center" });
       }
       dx += diagramWidth + diagramGap;
       diagramIndex++;
+      currentRowCount++;
     }
-    y += diagramHeight + labelHeight + 8;
-  }
+    y += diagramHeight + labelHeight + 4;
 
-  // Divider
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.3);
-  doc.line(MARGIN_LEFT, y, PAGE_WIDTH - MARGIN_RIGHT, y);
-  y += 8;
+    // Subtle bottom border flowing into notation
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.2);
+    doc.line(MARGIN_LEFT, y, PAGE_WIDTH - MARGIN_RIGHT, y);
+    y += 6;
+  } else {
+    // No chord diagrams - just a simple divider
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(MARGIN_LEFT, y, PAGE_WIDTH - MARGIN_RIGHT, y);
+    y += 8;
+  }
 
   // Render the sheet music SVG using robust renderSvgToCanvas
   try {
