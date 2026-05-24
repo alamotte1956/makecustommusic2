@@ -2822,3 +2822,12 @@
 - [x] Fix PDF export page breaks cutting through staff systems (implemented staff-aware pagination using .abcjs-staff element positions to find safe break points between systems)
 - [x] Add guitar chord diagram boxes to the first notation page in the combined PDF (move from end to top of notation section)
 - [x] Add chord name labels beneath each diagram box in the combined PDF for quick identification
+
+## Sheet Music Generator Redesign (Multi-Pass Architecture)
+- [x] Create new multi-pass sheet music generator (server/multiPassSheetMusicGenerator.ts)
+- [x] Pass 1: Deterministic lyrics parser — sections, syllable counts, structure
+- [x] Pass 2: LLM chord progression generation — constrained to section structure
+- [x] Pass 3: LLM melody generation — one section at a time, syllable-count constrained
+- [x] Pass 4: Programmatic ABC assembly — guaranteed correct formatting
+- [x] Wire new generator into backgroundSheetMusic.ts as primary generator
+- [x] Test with existing songs and verify quality improvement (all 2087 tests passing)

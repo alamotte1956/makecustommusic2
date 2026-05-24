@@ -15,6 +15,7 @@ import { alignAllLyrics } from "./lyricsAligner";
 import { generateSheetMusicImproved } from "./improvedSheetMusicGenerator";
 import { generateSimpleSheetMusic } from "./simpleSheetMusicGenerator";
 import { generateComprehensiveSheetMusic } from "./comprehensiveSheetMusicGenerator";
+import { generateSheetMusicMultiPass } from "./multiPassSheetMusicGenerator";
 // ─── Key Signature Accidentals Map ───────────────────────────────────────────
 // Maps key names to the set of notes that are sharped or flatted by default.
 // Used by validation and could be exported for the player.
@@ -538,7 +539,38 @@ export async function generateAbcNotation(
   const MAX_ATTEMPTS = 2;
   let lastError: Error | null = null;
 
-  // Try the improved two-phase approach first
+  // Try the new multi-pass architecture first (most accurate)
+  if (song.lyrics && song.lyrics.trim().length > 20) {
+    try {
+      console.log("[SheetMusic] Attempting multi-pass generation...");
+      const abc = await generateSheetMusicMultiPass(
+        song.title,
+        song.genre || "Christian",
+        song.keySignature || "C",
+        song.timeSignature || "4/4",
+        song.tempo || 120,
+        song.lyrics
+      );
+      // Validate the multi-pass output
+      const cleanAbc = sanitiseAbc(abc);
+      const validationError = validateAbc(cleanAbc, { lyricsProvided: true });
+      if (validationError) {
+        console.warn(`[SheetMusic] Multi-pass output failed validation: ${validationError}`);
+        throw new Error(validationError);
+      }
+      // Align lyrics as a final safety pass
+      const alignedAbc = alignAllLyrics(cleanAbc);
+      console.log("[SheetMusic] Multi-pass generation succeeded");
+      return alignedAbc;
+    } catch (error) {
+      console.warn(
+        "[SheetMusic] Multi-pass generation failed, falling back to improved generator:",
+        error
+      );
+    }
+  }
+
+  // Fallback: Try the improved two-phase approach
   try {
     console.log("[SheetMusic] Attempting improved two-phase generation...");
     const abc = await generateSheetMusicImproved(
