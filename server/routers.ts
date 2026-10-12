@@ -5,6 +5,7 @@ import { arrangementRouter } from "./arrangementRouters";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { normalizeAudioMime } from "@shared/audioMime";
 import { invokeLLM } from "./_core/llm";
 import {
   createSong, getSongById, getSongsByIds, getUserSongs, deleteSong, updateSong, updateSongMp3,
@@ -1448,12 +1449,12 @@ RULES:
       .input(z.object({
         fileData: z.string().min(1), // base64 encoded MP3
         fileName: z.string().min(1).max(255),
-        mimeType: z.string().refine(
-          t => ["audio/mpeg", "audio/wav", "audio/mp4", "audio/ogg", "audio/flac", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"].includes(t),
-          "Unsupported audio format. Please upload MP3, WAV, FLAC, OGG, M4A, or AIFF."
-        ),
+        mimeType: z.string(),
         userLyrics: z.string().max(10000).optional(), // User-provided lyrics to skip Whisper transcription
-      }))
+      }).refine(
+        (value) => normalizeAudioMime(value.mimeType, value.fileName) !== null,
+        "Unsupported audio format. Please upload MP3, WAV, FLAC, OGG, M4A, AAC, or AIFF."
+      ))
       .mutation(async ({ ctx, input }) => {
         // Check credits (admins bypass)
         const { isUserAdmin } = await import("./credits");
@@ -1484,11 +1485,12 @@ RULES:
           });
         }
 
-        // Upload to S3 for processing
-        const mimeSubtype = input.mimeType.split("/")[1];
+        // Upload for processing. Browser aliases (audio/mp3, audio/x-wav, …) are stored as canonical types.
+        const mimeType = normalizeAudioMime(input.mimeType, input.fileName) ?? input.mimeType;
+        const mimeSubtype = mimeType.split("/")[1];
         const ext = mimeSubtype === "mpeg" ? "mp3" : mimeSubtype === "x-m4a" ? "m4a" : mimeSubtype === "x-aiff" ? "aiff" : mimeSubtype;
         const fileKey = `mp3-to-sheet/${ctx.user.id}/${nanoid()}.${ext}`;
-        const { url: audioUrl } = await storagePut(fileKey, buffer, input.mimeType);
+        const { url: audioUrl } = await storagePut(fileKey, buffer, mimeType);
 
         // Create a job record
         const jobId = await createMp3SheetJob({
