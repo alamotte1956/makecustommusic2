@@ -13,10 +13,17 @@ import {
   CheckCircle2, AlertCircle, Wand2, ArrowRight, Play, Pause, Volume2, VolumeX,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { normalizeAudioMime } from "@shared/audioMime";
 
 type UploadMode = "audio" | "sheet-music";
 
 const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
+
+function acceptedAudioMime(file: { name: string; type: string }): string | null {
+  const mime = normalizeAudioMime(file.type, file.name);
+  if (!mime || !AUDIO_TYPES.includes(mime)) return null;
+  return mime;
+}
 const SHEET_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf", "text/xml", "application/xml"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.mp4,.aiff,.aif";
 const SHEET_ACCEPT = ".png,.jpg,.jpeg,.webp,.pdf,.xml,.musicxml";
@@ -85,7 +92,7 @@ export default function UploadPage() {
 
   const setupPreview = useCallback((f: File) => {
     stopPreview();
-    if (AUDIO_TYPES.some(t => f.type === t)) {
+    if (acceptedAudioMime(f)) {
       const url = URL.createObjectURL(f);
       setPreviewUrl(url);
       const audio = new Audio(url);
@@ -175,11 +182,13 @@ export default function UploadPage() {
   };
 
   const validateAndSetFile = useCallback((f: File) => {
-    const validTypes = mode === "audio" ? AUDIO_TYPES : SHEET_TYPES;
-    if (!validTypes.some(t => f.type === t || f.name.endsWith(".musicxml") || (mode === "audio" && /\.(aiff?|m4a)$/i.test(f.name)))) {
-      toast.error(mode === "audio"
-        ? "Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC, AIFF)"
-        : "Please upload an image (PNG, JPG), PDF, or MusicXML file");
+    if (mode === "audio") {
+      if (!acceptedAudioMime(f)) {
+        toast.error("Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC, AIFF)");
+        return;
+      }
+    } else if (!SHEET_TYPES.some(t => f.type === t) && !f.name.endsWith(".musicxml")) {
+      toast.error("Please upload an image (PNG, JPG), PDF, or MusicXML file");
       return;
     }
     const maxSize = mode === "audio" ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
@@ -217,10 +226,15 @@ export default function UploadPage() {
     setUploading(true);
     try {
       const base64 = await readFileAsBase64(file);
+      const mimeType = acceptedAudioMime(file);
+      if (!mimeType) {
+        toast.error("Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC, AIFF)");
+        return;
+      }
       const result = await uploadAudio.mutateAsync({
         fileName: file.name,
         fileData: base64,
-        mimeType: file.type || "audio/mpeg",
+        mimeType,
         title: title || undefined,
         genre: genre || undefined,
         mood: mood || undefined,
