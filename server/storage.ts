@@ -3,6 +3,7 @@
 // When those credentials are unset, files are written under .local-storage
 // and served from /local-storage.
 
+import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Express } from "express";
@@ -131,23 +132,26 @@ export function registerLocalStorageRoute(app: Express): void {
       return;
     }
     const filePath = path.resolve(LOCAL_STORAGE_DIR, key);
-    const contentType = contentTypeForKey(key);
-    res.sendFile(
-      filePath,
-      {
-        headers: {
-          "Content-Type": contentType,
-          "Access-Control-Allow-Origin": "*",
-          "X-Content-Type-Options": "nosniff",
-        },
-        dotfiles: "deny",
-      },
-      (err) => {
-        if (err && !res.headersSent) {
+    fs.stat(filePath)
+      .then((stat) => {
+        if (!stat.isFile()) {
           res.status(404).end();
+          return;
         }
-      }
-    );
+        res.status(200);
+        res.setHeader("Content-Type", contentTypeForKey(key));
+        res.setHeader("Content-Length", stat.size);
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        if (req.method === "HEAD") {
+          res.end();
+          return;
+        }
+        createReadStream(filePath).pipe(res);
+      })
+      .catch(() => {
+        if (!res.headersSent) res.status(404).end();
+      });
   });
 }
 
