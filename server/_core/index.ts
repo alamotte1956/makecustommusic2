@@ -15,6 +15,7 @@ import { recoverStuckSheetMusicJobs } from "../backgroundSheetMusic";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startCreditMonitor } from "../creditMonitor";
+import { registerLocalStorageRoute } from "../storage";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -67,6 +68,8 @@ async function startServer() {
   registerSitemapRoute(app);
   // OG meta tag injection for shared song pages
   registerOgTagsMiddleware(app);
+  // Local audio files for the sheet-music converter when Forge storage is unset
+  registerLocalStorageRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",
