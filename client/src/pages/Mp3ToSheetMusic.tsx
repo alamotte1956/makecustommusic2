@@ -30,8 +30,8 @@ import { InstrumentPartsSection } from "@/components/InstrumentPartsSection";
 import { ChordChartView } from "@/components/ChordChartView";
 import { ProcessingProgress } from "@/components/ProcessingProgress";
 import { BatchConverter } from "@/components/BatchConverter";
+import { normalizeAudioMime } from "@shared/audioMime";
 
-const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const AUDIO_ACCEPT = ".mp3,.wav,.flac,.ogg,.m4a,.aac,.aiff,.aif";
 const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB for Whisper
 
@@ -455,7 +455,7 @@ export default function Mp3ToSheetMusic() {
   };
 
   const validateAndSetFile = useCallback((f: File) => {
-    if (!AUDIO_TYPES.some(t => f.type === t) && !/\.(aiff?|m4a)$/i.test(f.name)) {
+    if (!normalizeAudioMime(f.type, f.name)) {
       toast.error("Please upload an audio file (MP3, WAV, FLAC, OGG, M4A, AAC, AIFF)");
       return;
     }
@@ -572,7 +572,7 @@ export default function Mp3ToSheetMusic() {
           return await startJobMutation.mutateAsync({
             fileData: base64,
             fileName: file.name,
-            mimeType: file.type || "audio/mpeg",
+            mimeType: normalizeAudioMime(file.type, file.name) ?? "audio/mpeg",
             userLyrics: userLyrics.trim() || undefined,
           });
         } catch (err: any) {

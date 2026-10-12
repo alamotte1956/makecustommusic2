@@ -10,8 +10,8 @@ import {
   ChevronDown, ChevronUp, Edit2, Clock, Download, Archive, GripVertical,
 } from "lucide-react";
 import { generateSheetMusicPDFBytes, exportSheetMusicPDFFromAbc } from "@/lib/pdfExport";
+import { normalizeAudioMime } from "@shared/audioMime";
 
-const AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/aiff", "audio/x-aiff"];
 const MAX_FILE_SIZE = 16 * 1024 * 1024;
 const MAX_BATCH_SIZE = 20;
 
@@ -83,7 +83,7 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
 
     for (const f of fileArray) {
       // Validate file type
-      if (!AUDIO_TYPES.some(t => f.type === t) && !/\.(aiff?|m4a|mp3|wav|flac|ogg)$/i.test(f.name)) {
+      if (!normalizeAudioMime(f.type, f.name)) {
         toast.error(`Skipped "${f.name}" — unsupported format`);
         continue;
       }
@@ -270,7 +270,11 @@ export function BatchConverter({ onViewResult }: BatchConverterProps) {
 
         setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: "transcribing" as const } : i));
 
-        const { jobId } = await attemptStart(base64, item.file.name, item.file.type || "audio/mpeg");
+        const { jobId } = await attemptStart(
+          base64,
+          item.file.name,
+          normalizeAudioMime(item.file.type, item.file.name) ?? "audio/mpeg",
+        );
 
         setItems(prev => prev.map(i => i.id === item.id ? { ...i, jobId, status: "transcribing" as const } : i));
 
